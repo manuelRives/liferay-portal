@@ -964,18 +964,7 @@ public class LayoutReferencesExportImportContentProcessor
 			}
 
 			if (locale != null) {
-				String urlWithoutLocale = url.substring(localePath.length());
-
-				if (urlWithoutLocale.startsWith(
-						_PRIVATE_GROUP_SERVLET_MAPPING) ||
-					urlWithoutLocale.startsWith(
-						_PRIVATE_USER_SERVLET_MAPPING) ||
-					urlWithoutLocale.startsWith(
-						_PUBLIC_GROUP_SERVLET_MAPPING) ||
-					_isVirtualHostDefined(urlSB)) {
-
-					url = urlWithoutLocale;
-				}
+				url = url.substring(localePath.length());
 			}
 
 			boolean privateLayout = false;
