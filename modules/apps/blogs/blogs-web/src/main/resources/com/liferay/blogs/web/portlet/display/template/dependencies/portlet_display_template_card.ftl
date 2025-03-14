@@ -17,19 +17,8 @@
 						<div class="card-body widget-topbar">
 							<div class="autofit-row card-title">
 									<div class="autofit-col autofit-col-expand">
-										<#assign viewEntryPortletURL = renderResponse.createRenderURL() />
-
-										${viewEntryPortletURL.setParameter("mvcRenderCommandName", "/blogs/view_entry")}
-										${viewEntryPortletURL.setParameter("redirect", currentURL)}
-
-										<#if validator.isNotNull(curBlogEntry.getUrlTitle())>
-											${viewEntryPortletURL.setParameter("urlTitle", curBlogEntry.getUrlTitle())}
-										<#else>
-											${viewEntryPortletURL.setParameter("entryId", curBlogEntry.getEntryId()?string)}
-										</#if>
-
 										<h3 class="title">
-											<a class="title-link" href="${viewEntryPortletURL.toString()}">
+											<a class="title-link" href="${blogsEntryUtil.getViewEntryPortletURL(curBlogEntry, currentURL, renderResponse, renderRequest, themeDisplay)}">
 											${htmlUtil.escape(blogsEntryUtil.getDisplayTitle(resourceBundle, curBlogEntry))}</a>
 										</h3>
 									</div>
