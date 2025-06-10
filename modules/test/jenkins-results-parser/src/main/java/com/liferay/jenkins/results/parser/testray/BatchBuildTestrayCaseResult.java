@@ -11,6 +11,7 @@ import com.liferay.jenkins.results.parser.DownstreamBuild;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.Job;
 import com.liferay.jenkins.results.parser.QAWebsitesGitRepositoryJob;
+import com.liferay.jenkins.results.parser.TestResult;
 import com.liferay.jenkins.results.parser.TopLevelBuild;
 import com.liferay.jenkins.results.parser.job.property.JobProperty;
 import com.liferay.jenkins.results.parser.job.property.JobPropertyFactory;
@@ -87,7 +88,7 @@ public class BatchBuildTestrayCaseResult extends BuildTestrayCaseResult {
 		Build build = getBuild();
 
 		if (build == null) {
-			return "Failed to run on CI";
+			return "Unable to run on CI";
 		}
 
 		if (!build.isFailing()) {
@@ -97,11 +98,11 @@ public class BatchBuildTestrayCaseResult extends BuildTestrayCaseResult {
 		String result = build.getResult();
 
 		if (result == null) {
-			return "Failed to finish build on CI";
+			return "Unable to finish build on CI";
 		}
 
 		if (result.equals("ABORTED")) {
-			return "Aborted prior to running test";
+			return build.getJobName() + " timed out after 2 hours";
 		}
 
 		String errorMessage = build.getFailureMessage();
@@ -208,6 +209,8 @@ public class BatchBuildTestrayCaseResult extends BuildTestrayCaseResult {
 		List<TestrayAttachment> testrayAttachments = new ArrayList<>();
 
 		testrayAttachments.addAll(_getDockerLogsTestrayAttachments());
+		testrayAttachments.addAll(_getGCLogsTestrayAttachments());
+		testrayAttachments.addAll(_getJStacksTestrayAttachments());
 
 		testrayAttachments.add(_getGradlePluginsAttachment());
 		testrayAttachments.add(_getJenkinsConsoleTestrayAttachment());
@@ -349,6 +352,121 @@ public class BatchBuildTestrayCaseResult extends BuildTestrayCaseResult {
 		return testrayAttachments;
 	}
 
+	protected TestResult getTestResult() {
+		return null;
+	}
+
+	protected long getTestResultDuration() {
+		TestResult testResult = getTestResult();
+
+		if (testResult == null) {
+			return 0;
+		}
+
+		return testResult.getDuration();
+	}
+
+	protected String getTestResultErrors() {
+		String testResultErrors = null;
+
+		Build build = getBuild();
+
+		TestResult testResult = getTestResult();
+
+		if (testResult == null) {
+			if (build == null) {
+				return "Unable to run build on CI";
+			}
+
+			String result = build.getResult();
+
+			testResultErrors = "Failed prior to running test";
+
+			if (result == null) {
+				testResultErrors = "Unable to finish build on CI";
+			}
+
+			if (result.equals("ABORTED")) {
+				testResultErrors =
+					build.getJobName() + " timed out after 2 hours";
+			}
+
+			if (result.equals("SUCCESS") || result.equals("UNSTABLE")) {
+				testResultErrors = "Unable to run test on CI";
+			}
+
+			String failureMessage = build.getFailureMessage();
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(failureMessage)) {
+				return testResultErrors;
+			}
+
+			return testResultErrors + ": " + failureMessage;
+		}
+
+		if (testResult.isSkipped()) {
+			return "Failed to run test on CI";
+		}
+
+		if (!testResult.isFailing()) {
+			return null;
+		}
+
+		testResultErrors = testResult.getErrorDetails();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(testResultErrors)) {
+			testResultErrors = build.getFailureMessage();
+		}
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(testResultErrors)) {
+			return "Failed for unknown reason";
+		}
+
+		if (testResultErrors.contains("\n")) {
+			testResultErrors = testResultErrors.substring(
+				0, testResultErrors.indexOf("\n"));
+		}
+
+		testResultErrors = testResultErrors.trim();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(testResultErrors)) {
+			return "Failed for unknown reason";
+		}
+
+		return testResultErrors;
+	}
+
+	protected Status getTestResultStatus() {
+		Build build = getBuild();
+
+		if (build == null) {
+			return Status.UNTESTED;
+		}
+
+		TestResult testResult = getTestResult();
+
+		if (testResult == null) {
+			String result = build.getResult();
+
+			if ((result == null) || result.equals("SUCCESS") ||
+				result.equals("UNSTABLE")) {
+
+				return Status.UNTESTED;
+			}
+
+			return Status.FAILED;
+		}
+
+		if (testResult.isFailing()) {
+			return Status.FAILED;
+		}
+		else if (testResult.isSkipped()) {
+			return Status.UNTESTED;
+		}
+
+		return Status.PASSED;
+	}
+
 	@Override
 	protected TestrayAttachment getTopLevelBuildReportTestrayAttachment() {
 		TopLevelBuildTestrayCaseResult topLevelBuildTestrayCaseResult =
@@ -420,6 +538,10 @@ public class BatchBuildTestrayCaseResult extends BuildTestrayCaseResult {
 
 		Build build = getBuild();
 
+		if (build == null) {
+			return testrayAttachments;
+		}
+
 		for (URL testrayAttachmentURL : build.getTestrayAttachmentURLs()) {
 			Matcher matcher = _dockerLogsURLPattern.matcher(
 				String.valueOf(testrayAttachmentURL));
@@ -431,6 +553,32 @@ public class BatchBuildTestrayCaseResult extends BuildTestrayCaseResult {
 			testrayAttachments.add(
 				getTestrayAttachment(
 					build, "Docker Log (" + matcher.group("fileName") + ")",
+					getAxisBuildURLPath() + "/" + matcher.group("key")));
+		}
+
+		return testrayAttachments;
+	}
+
+	private List<TestrayAttachment> _getGCLogsTestrayAttachments() {
+		List<TestrayAttachment> testrayAttachments = new ArrayList<>();
+
+		Build build = getBuild();
+
+		if (build == null) {
+			return testrayAttachments;
+		}
+
+		for (URL testrayAttachmentURL : build.getTestrayAttachmentURLs()) {
+			Matcher matcher = _gcLogsURLPattern.matcher(
+				String.valueOf(testrayAttachmentURL));
+
+			if (!matcher.find()) {
+				continue;
+			}
+
+			testrayAttachments.add(
+				getTestrayAttachment(
+					build, "GC Log (" + matcher.group("fileName") + ")",
 					getAxisBuildURLPath() + "/" + matcher.group("key")));
 		}
 
@@ -511,6 +659,32 @@ public class BatchBuildTestrayCaseResult extends BuildTestrayCaseResult {
 		return JobPropertyFactory.newJobProperty(basePropertyName, job);
 	}
 
+	private List<TestrayAttachment> _getJStacksTestrayAttachments() {
+		List<TestrayAttachment> testrayAttachments = new ArrayList<>();
+
+		Build build = getBuild();
+
+		if (build == null) {
+			return testrayAttachments;
+		}
+
+		for (URL testrayAttachmentURL : build.getTestrayAttachmentURLs()) {
+			Matcher matcher = _jStacksURLPattern.matcher(
+				String.valueOf(testrayAttachmentURL));
+
+			if (!matcher.find()) {
+				continue;
+			}
+
+			testrayAttachments.add(
+				getTestrayAttachment(
+					build, "Docker Log (" + matcher.group("fileName") + ")",
+					getAxisBuildURLPath() + "/" + matcher.group("key")));
+		}
+
+		return testrayAttachments;
+	}
+
 	private TestrayAttachment _getWarningsTestrayAttachment() {
 		return getTestrayAttachment(
 			getBuild(), "Warnings",
@@ -519,6 +693,10 @@ public class BatchBuildTestrayCaseResult extends BuildTestrayCaseResult {
 
 	private static final Pattern _dockerLogsURLPattern = Pattern.compile(
 		"https?://.+/(?<key>docker-logs/(?<fileName>[^/]+.log).txt.gz)");
+	private static final Pattern _gcLogsURLPattern = Pattern.compile(
+		"https?://.+/(?<key>gc/(?<fileName>[^/]+.log).txt.gz)");
+	private static final Pattern _jStacksURLPattern = Pattern.compile(
+		"https?://.+/(?<key>jstacks/(?<fileName>[^/]+.log).txt.gz)");
 
 	private final AxisTestClassGroup _axisTestClassGroup;
 	private TopLevelBuildTestrayCaseResult _topLevelBuildTestrayCaseResult;

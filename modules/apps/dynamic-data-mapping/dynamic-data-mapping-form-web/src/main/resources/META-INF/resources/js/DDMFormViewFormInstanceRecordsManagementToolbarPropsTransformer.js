@@ -3,11 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	getCheckedCheckboxes,
-	openConfirmModal,
-	postForm,
-} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {getCheckedCheckboxes, postForm} from 'frontend-js-web';
 
 export default function propsTransformer({
 	additionalProps: {
@@ -36,9 +33,10 @@ export default function propsTransformer({
 								`${portletNamespace}ddmFormInstanceRecord`
 							);
 
-							const managementBarSelection = document.querySelector(
-								'.management-bar'
-							)?.textContent;
+							const managementBarSelection =
+								document.querySelector(
+									'.management-bar'
+								)?.textContent;
 
 							if (form && searchContainer) {
 								if (
@@ -49,7 +47,8 @@ export default function propsTransformer({
 								) {
 									postForm(form, {
 										data: {
-											deleteFormInstanceRecordIds: ddmFormInstanceRecordIds,
+											deleteFormInstanceRecordIds:
+												ddmFormInstanceRecordIds,
 										},
 										url: deleteFormInstanceRecordURL,
 									});
@@ -57,10 +56,11 @@ export default function propsTransformer({
 								else {
 									postForm(form, {
 										data: {
-											deleteFormInstanceRecordIds: getCheckedCheckboxes(
-												searchContainer,
-												`${portletNamespace}allRowIds`
-											),
+											deleteFormInstanceRecordIds:
+												getCheckedCheckboxes(
+													searchContainer,
+													`${portletNamespace}allRowIds`
+												),
 										},
 										url: deleteFormInstanceRecordURL,
 									});

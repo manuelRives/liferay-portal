@@ -16,10 +16,6 @@ import Jethr0NavigationBar from '../../components/Jethr0NavigationBar/Jethr0Navi
 import {getUpstreamGitBranch} from '../../objects/gitbranches/GitBranchUtil';
 import {toLocaleString} from '../../services/DateUtil';
 
-const gitHubURLRegExp = new RegExp(
-	'https://github.com/([^/]+)/([^/]+)/tree/([^/]+)'
-);
-
 function UpstreamBranchInformation({upstreamBranch}) {
 	if (!upstreamBranch) {
 		return (
@@ -34,13 +30,6 @@ function UpstreamBranchInformation({upstreamBranch}) {
 		);
 	}
 
-	const gitHubURLMatch = upstreamBranch.branchURL.match(gitHubURLRegExp);
-
-	const upstreamBranchName = gitHubURLMatch[3];
-	const upstreamBranchRepositoryName = gitHubURLMatch[2];
-	const upstreamBranchUserName = gitHubURLMatch[1];
-	const upstreamBranchSHA = upstreamBranch.branchSHA;
-
 	return (
 		<ClayPanel
 			collapsable
@@ -52,37 +41,39 @@ function UpstreamBranchInformation({upstreamBranch}) {
 				Branch ID: {upstreamBranch.id}
 				<br />
 				Branch Name:{' '}
-				<Link to={upstreamBranch.branchURL}>{upstreamBranchName}</Link>
+				<Link to={upstreamBranch.url}>{upstreamBranch.name}</Link>
 				<br />
 				Branch SHA:{' '}
-				<Link
-					to={
-						'https://github.com/' +
-						upstreamBranchUserName +
-						'/' +
-						upstreamBranchRepositoryName +
-						'/commit/' +
-						upstreamBranchSHA
-					}
-				>
-					{upstreamBranchSHA.substring(0, 7)}
-				</Link>
+				{upstreamBranch.latestSHA && (
+					<Link
+						to={
+							'https://github.com/' +
+							upstreamBranch.userName +
+							'/' +
+							upstreamBranch.repositoryName +
+							'/commit/' +
+							upstreamBranch.latestSHA
+						}
+					>
+						{upstreamBranch.latestSHA.substring(0, 7)}
+					</Link>
+				)}
 				<br />
 				Repository Name:{' '}
 				<Link
 					to={
 						'https://github.com/' +
-						upstreamBranchUserName +
+						upstreamBranch.userName +
 						'/' +
-						upstreamBranchRepositoryName
+						upstreamBranch.repositoryName
 					}
 				>
-					{upstreamBranchRepositoryName}
+					{upstreamBranch.repositoryName}
 				</Link>
 				<br />
 				User Name:{' '}
-				<Link to={'https://github.com/' + upstreamBranchUserName}>
-					{upstreamBranchUserName}
+				<Link to={'https://github.com/' + upstreamBranch.userName}>
+					{upstreamBranch.userName}
 				</Link>
 				<br />
 				Create Date:
@@ -106,15 +97,12 @@ function UpstreamBranchPage() {
 	let upstreamBranchTitle = 'Git Branch #' + id;
 
 	if (upstreamGitBranch) {
-		const gitHubURLMatch = upstreamGitBranch.branchURL.match(
-			gitHubURLRegExp
-		);
-
-		const upstreamBranchName = gitHubURLMatch[3];
-		const upstreamBranchRepositoryName = gitHubURLMatch[2];
-
 		upstreamBranchTitle =
-			upstreamBranchRepositoryName + '/' + upstreamBranchName;
+			upstreamGitBranch.userName +
+			'/' +
+			upstreamGitBranch.repositoryName +
+			'/' +
+			upstreamGitBranch.name;
 	}
 
 	const breadcrumbs = [
@@ -131,7 +119,9 @@ function UpstreamBranchPage() {
 		<ClayLayout.Container>
 			<Jethr0Card>
 				<Jethr0NavigationBar active="Upstream Branches" />
+
 				<Jethr0Breadcrumbs breadcrumbs={breadcrumbs} />
+
 				<Jethr0ContainerFluid>
 					<ClayLayout.Row justify="between">
 						<Heading level={3} weight="lighter">
@@ -139,6 +129,7 @@ function UpstreamBranchPage() {
 						</Heading>
 					</ClayLayout.Row>
 				</Jethr0ContainerFluid>
+
 				<UpstreamBranchInformation upstreamBranch={upstreamGitBranch} />
 			</Jethr0Card>
 		</ClayLayout.Container>

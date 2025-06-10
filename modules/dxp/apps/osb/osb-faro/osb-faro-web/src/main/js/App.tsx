@@ -16,6 +16,7 @@ import {ClayIconSpriteContext} from '@clayui/icon';
 import {ClayLinkContext} from '@clayui/link';
 import {ClayTooltipProvider} from '@clayui/tooltip';
 import {close, modalTypes, open} from 'shared/actions/modals';
+import {ENABLE_ADD_TRIAL_WORKSPACE} from 'shared/util/constants';
 import {
 	Link,
 	matchPath,
@@ -25,7 +26,8 @@ import {
 	useLocation
 } from 'react-router-dom';
 import {OnboardingContext} from 'shared/context/onboarding';
-import {PROD_MODE, spritemap} from 'shared/util/constants';
+import {Pendo} from 'shared/util/pendo';
+import {Project} from 'shared/util/records';
 import {Provider, useSelector} from 'react-redux';
 import {Routes} from 'shared/util/router';
 import {saveState} from 'shared/store/local-storage';
@@ -80,33 +82,16 @@ const RoutesContainer = ({children}) => {
 
 	const groupId = matchingPath?.params.groupId ?? '0';
 
-	const {data: currentUser, loading} = useFetchCurrentUser(groupId);
-
-	const project = useSelector<any, any>(state =>
+	const project: Project = useSelector<any, any>(state =>
 		state.getIn(['projects', groupId, 'data'])
 	);
 
-	const pendoFn =
-		pendo && pendo.isReady && pendo.isReady()
-			? pendo.identify
-			: pendo.initialize;
+	const {data: currentUser, loading} = useFetchCurrentUser(groupId);
 
 	useEffect(() => {
 		const {
-			document: {referrer, title},
-			location: {href, pathname, search}
+			location: {pathname, search}
 		} = window;
-
-		analytics.page(
-			{
-				path: pathname,
-				referrer,
-				search,
-				title,
-				url: href
-			},
-			{ip: '0'}
-		);
 
 		if (!SETTINGS_PATH_REGEX.test(pathname)) {
 			store.dispatch(setBackURL(`${pathname}${search}`));
@@ -114,66 +99,12 @@ const RoutesContainer = ({children}) => {
 	}, [location]);
 
 	useEffect(() => {
-		let account;
-		let visitor;
+		if (currentUser?.id && project?.corpProjectName) {
+			const pendo = new Pendo();
 
-		if (currentUser) {
-			// We use userId instead of id because userId persists across workspaces.
-			const {emailAddress, name, roleName, userId} = currentUser;
-
-			visitor = {
-				emailAddress,
-				id: userId,
-				name,
-				roleName
-			};
-
-			analytics && analytics.identify(userId, null, {ip: '0'});
+			pendo.initialize({currentUser, project});
 		}
-
-		if (project) {
-			const {
-				corpProjectName,
-				corpProjectUuid,
-				faroSubscription: faroSubscriptionIMap,
-				groupId,
-				name: workspaceName,
-				ownerEmailAddress: workspaceOwnerEmailAddress,
-				serverLocation
-			} = project;
-
-			const subscriptionName = faroSubscriptionIMap.get('name');
-
-			account = {
-				corpProjectNameId: `${corpProjectName}: ${corpProjectUuid}`,
-				id: groupId,
-				serverLocation,
-				subscriptionName,
-				workspaceName,
-				workspaceOwnerEmailAddress
-			};
-
-			analytics &&
-				analytics.group(
-					groupId,
-					{
-						groupId,
-						serverLocation,
-						subscriptionName,
-						workspaceName
-					},
-					{ip: '0'}
-				);
-		}
-
-		if (account || visitor) {
-			pendoFn &&
-				pendoFn({
-					account,
-					visitor
-				});
-		}
-	}, [location, currentUser, project]);
+	}, [currentUser?.id, project?.corpProjectName]);
 
 	if (loading) {
 		return <Loading />;
@@ -219,14 +150,18 @@ const App = () => {
 		<ApolloProvider client={client}>
 			<ApolloProviderHooks client={client}>
 				<Provider store={store}>
-					<ClayIconSpriteContext.Provider value={spritemap}>
+					<ClayIconSpriteContext.Provider value='/o/osb-faro-web/dist/sprite.svg'>
 						<ClayLinkContext.Provider
 							value={({
 								children,
-								externalLink,
+								externalLink = false,
 								href,
 								...otherProps
-							}: any) => {
+							}: {
+								children: React.ReactNode;
+								externalLink?: boolean;
+								href?: string;
+							}) => {
 								if (href?.startsWith('http') || externalLink) {
 									return (
 										<a {...otherProps} href={href}>
@@ -236,7 +171,7 @@ const App = () => {
 								}
 
 								return (
-									<Link {...otherProps} to={href}>
+									<Link {...otherProps} to={href || ''}>
 										{children}
 									</Link>
 								);
@@ -299,7 +234,7 @@ const App = () => {
 																	}
 																/>
 
-																{!PROD_MODE && (
+																{ENABLE_ADD_TRIAL_WORKSPACE && (
 																	<BundleRouter
 																		data={
 																			AddWorkspace

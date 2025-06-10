@@ -7,12 +7,12 @@ package com.liferay.portal.remote.json.web.service.web.internal;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceActionMapping;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MethodParameter;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.remote.json.web.service.JSONWebServiceActionMapping;
 import com.liferay.portal.remote.json.web.service.web.internal.util.MethodParametersResolverUtil;
 
 import java.lang.reflect.Method;
@@ -121,11 +121,8 @@ public class JSONWebServiceActionConfig
 		JSONWebServiceActionConfig jsonWebServiceActionConfig =
 			(JSONWebServiceActionConfig)object;
 
-		if (Objects.equals(_signature, jsonWebServiceActionConfig._signature)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			_signature, jsonWebServiceActionConfig._signature);
 	}
 
 	@Override

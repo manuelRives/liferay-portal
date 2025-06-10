@@ -35,6 +35,8 @@ import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.PropsImpl;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.lang.reflect.Field;
 
 import java.util.Arrays;
@@ -42,8 +44,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -348,7 +348,7 @@ public class DDMFormValuesFactoryTest {
 		expectedDDMFormValues.addDDMFormFieldValue(paulDDMFormFieldValue);
 
 		DDMFormFieldValue joeDDMFormFieldValue = createDDMFormFieldValue(
-			"fahu", "Name", createLocalizedValue("Joe", "Joao", defaultLocale));
+			"fahu", "Name", createLocalizedValue("Joe", "João", defaultLocale));
 
 		joeDDMFormFieldValue.addNestedDDMFormFieldValue(
 			createDDMFormFieldValue(
@@ -365,7 +365,7 @@ public class DDMFormValuesFactoryTest {
 		mockHttpServletRequest.addParameter("ddm$$Name$wqer$0$$en_US", "Paul");
 		mockHttpServletRequest.addParameter("ddm$$Name$wqer$0$$pt_BR", "Paulo");
 		mockHttpServletRequest.addParameter("ddm$$Name$fahu$1$$en_US", "Joe");
-		mockHttpServletRequest.addParameter("ddm$$Name$fahu$1$$pt_BR", "Joao");
+		mockHttpServletRequest.addParameter("ddm$$Name$fahu$1$$pt_BR", "João");
 
 		// Phone
 
@@ -447,18 +447,18 @@ public class DDMFormValuesFactoryTest {
 		expectedDDMFormValues.addDDMFormFieldValue(paulDDMFormFieldValue);
 
 		DDMFormFieldValue joeDDMFormFieldValue = createDDMFormFieldValue(
-			"fahu", "Name", createLocalizedValue("Joe", "Joao", defaultLocale));
+			"fahu", "Name", createLocalizedValue("Joe", "João", defaultLocale));
 
 		joeDDMFormFieldValue.addNestedDDMFormFieldValue(
 			createDDMFormFieldValue(
 				"banm", "Text1",
 				createLocalizedValue(
-					"Text1 Joe One", "Text1 Joao Um", defaultLocale)));
+					"Text1 Joe One", "Text1 João Um", defaultLocale)));
 		joeDDMFormFieldValue.addNestedDDMFormFieldValue(
 			createDDMFormFieldValue(
 				"bagj", "Text2",
 				createLocalizedValue(
-					"Text2 Joe One", "Text2 Joao Um", defaultLocale)));
+					"Text2 Joe One", "Text2 João Um", defaultLocale)));
 
 		expectedDDMFormValues.addDDMFormFieldValue(joeDDMFormFieldValue);
 
@@ -470,7 +470,7 @@ public class DDMFormValuesFactoryTest {
 		mockHttpServletRequest.addParameter("ddm$$Name$wqer$0$$en_US", "Paul");
 		mockHttpServletRequest.addParameter("ddm$$Name$wqer$0$$pt_BR", "Paulo");
 		mockHttpServletRequest.addParameter("ddm$$Name$fahu$1$$en_US", "Joe");
-		mockHttpServletRequest.addParameter("ddm$$Name$fahu$1$$pt_BR", "Joao");
+		mockHttpServletRequest.addParameter("ddm$$Name$fahu$1$$pt_BR", "João");
 
 		// Text 1
 
@@ -485,7 +485,7 @@ public class DDMFormValuesFactoryTest {
 		mockHttpServletRequest.addParameter(
 			"ddm$$Name$fahu$1#Text1$banm$0$$en_US", "Text1 Joe One");
 		mockHttpServletRequest.addParameter(
-			"ddm$$Name$fahu$1#Text1$banm$0$$pt_BR", "Text1 Joao Um");
+			"ddm$$Name$fahu$1#Text1$banm$0$$pt_BR", "Text1 João Um");
 
 		// Text 2
 
@@ -500,7 +500,7 @@ public class DDMFormValuesFactoryTest {
 		mockHttpServletRequest.addParameter(
 			"ddm$$Name$fahu$1#Text2$bagj$0$$en_US", "Text2 Joe One");
 		mockHttpServletRequest.addParameter(
-			"ddm$$Name$fahu$1#Text2$bagj$0$$pt_BR", "Text2 Joao Um");
+			"ddm$$Name$fahu$1#Text2$bagj$0$$pt_BR", "Text2 João Um");
 
 		DDMFormValues actualDDMFormValues = _ddmFormValuesFactory.create(
 			mockHttpServletRequest, ddmForm);
@@ -727,7 +727,7 @@ public class DDMFormValuesFactoryTest {
 		separator1DDMFormFieldValue.addNestedDDMFormFieldValue(
 			createDDMFormFieldValue(
 				"gatu", "Name",
-				createLocalizedValue("Joe", "Joao", defaultLocale)));
+				createLocalizedValue("Joe", "João", defaultLocale)));
 
 		expectedDDMFormValues.addDDMFormFieldValue(separator1DDMFormFieldValue);
 
@@ -759,7 +759,7 @@ public class DDMFormValuesFactoryTest {
 		mockHttpServletRequest.addParameter(
 			"ddm$$Separator$wqer$0#Name$gatu$0$$en_US", "Joe");
 		mockHttpServletRequest.addParameter(
-			"ddm$$Separator$wqer$0#Name$gatu$0$$pt_BR", "Joao");
+			"ddm$$Separator$wqer$0#Name$gatu$0$$pt_BR", "João");
 		mockHttpServletRequest.addParameter(
 			"ddm$$Separator$haby$1#Name$hato$0$$en_US", "Paul");
 		mockHttpServletRequest.addParameter(

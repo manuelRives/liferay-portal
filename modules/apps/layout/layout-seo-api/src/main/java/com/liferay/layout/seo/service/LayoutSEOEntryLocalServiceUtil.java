@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -55,22 +56,13 @@ public class LayoutSEOEntryLocalServiceUtil {
 
 	public static LayoutSEOEntry copyLayoutSEOEntry(
 			long userId, long groupId, boolean privateLayout,
-			long sourceLayoutId, boolean canonicalURLEnabled,
-			Map<java.util.Locale, String> canonicalURLMap,
-			long copyDDMStorageId, boolean openGraphDescriptionEnabled,
-			Map<java.util.Locale, String> openGraphDescriptionMap,
-			Map<java.util.Locale, String> openGraphImageAltMap,
-			long openGraphImageFileEntryId, boolean openGraphTitleEnabled,
-			Map<java.util.Locale, String> openGraphTitleMap,
+			long targetLayoutId, LayoutSEOEntry sourceLayoutSEOEntry,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().copyLayoutSEOEntry(
-			userId, groupId, privateLayout, sourceLayoutId, canonicalURLEnabled,
-			canonicalURLMap, copyDDMStorageId, openGraphDescriptionEnabled,
-			openGraphDescriptionMap, openGraphImageAltMap,
-			openGraphImageFileEntryId, openGraphTitleEnabled, openGraphTitleMap,
-			serviceContext);
+			userId, groupId, privateLayout, targetLayoutId,
+			sourceLayoutSEOEntry, serviceContext);
 	}
 
 	/**
@@ -363,6 +355,13 @@ public class LayoutSEOEntryLocalServiceUtil {
 		return getService().getLayoutSEOEntryByUuidAndGroupId(uuid, groupId);
 	}
 
+	public static List<com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTag>
+		getLayoutSEOEntryCustomMetaTags(long groupId, long layoutSEOEntryId) {
+
+		return getService().getLayoutSEOEntryCustomMetaTags(
+			groupId, layoutSEOEntryId);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -383,11 +382,16 @@ public class LayoutSEOEntryLocalServiceUtil {
 
 	public static LayoutSEOEntry updateCustomMetaTags(
 			long userId, long groupId, boolean privateLayout, long layoutId,
+			List
+				<com.liferay.layout.seo.model.
+					LayoutSEOEntryCustomMetaTagProperty>
+						layoutSEOEntryCustomMetaTagProperties,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCustomMetaTags(
-			userId, groupId, privateLayout, layoutId, serviceContext);
+			userId, groupId, privateLayout, layoutId,
+			layoutSEOEntryCustomMetaTagProperties, serviceContext);
 	}
 
 	/**
@@ -428,6 +432,23 @@ public class LayoutSEOEntryLocalServiceUtil {
 
 	public static LayoutSEOEntry updateLayoutSEOEntry(
 			long userId, long groupId, boolean privateLayout, long layoutId,
+			boolean openGraphDescriptionEnabled,
+			Map<java.util.Locale, String> openGraphDescriptionMap,
+			Map<java.util.Locale, String> openGraphImageAltMap,
+			long openGraphImageFileEntryId, boolean openGraphTitleEnabled,
+			Map<java.util.Locale, String> openGraphTitleMap,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateLayoutSEOEntry(
+			userId, groupId, privateLayout, layoutId,
+			openGraphDescriptionEnabled, openGraphDescriptionMap,
+			openGraphImageAltMap, openGraphImageFileEntryId,
+			openGraphTitleEnabled, openGraphTitleMap, serviceContext);
+	}
+
+	public static LayoutSEOEntry updateLayoutSEOEntry(
+			long userId, long groupId, boolean privateLayout, long layoutId,
 			boolean canonicalURLEnabled,
 			Map<java.util.Locale, String> canonicalURLMap,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -439,13 +460,12 @@ public class LayoutSEOEntryLocalServiceUtil {
 	}
 
 	public static LayoutSEOEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(LayoutSEOEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile LayoutSEOEntryLocalService _service;
+	private static final Snapshot<LayoutSEOEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			LayoutSEOEntryLocalServiceUtil.class,
+			LayoutSEOEntryLocalService.class);
 
 }

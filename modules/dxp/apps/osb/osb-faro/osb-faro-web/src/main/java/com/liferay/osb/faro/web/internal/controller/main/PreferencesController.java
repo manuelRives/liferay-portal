@@ -24,21 +24,21 @@ import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.annotation.security.RolesAllowed;
+
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+
 import java.util.Collections;
 import java.util.Map;
-
-import javax.annotation.security.RolesAllowed;
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -114,27 +114,6 @@ public class PreferencesController extends BaseFaroController {
 	}
 
 	@GET
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public FaroPreferencesDisplay get(
-			@PathParam("groupId") long groupId,
-			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
-			@QueryParam("scope")
-			String scope)
-		throws Exception {
-
-		long ownerId = _getOwnerId(groupId, scope);
-
-		FaroPreferences faroPreferences =
-			_faroPreferencesLocalService.fetchFaroPreferences(groupId, ownerId);
-
-		if (faroPreferences == null) {
-			return new FaroPreferencesDisplay(groupId, ownerId);
-		}
-
-		return new FaroPreferencesDisplay(faroPreferences);
-	}
-
-	@GET
 	@Path("/default_channel_id")
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
 	public Map<String, String> getDefaultChannelId(
@@ -199,6 +178,27 @@ public class PreferencesController extends BaseFaroController {
 			groupId, _getOwnerId(groupId, scope));
 
 		return workspacePreferences.getEmailReportPreferences(null);
+	}
+
+	@GET
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public FaroPreferencesDisplay getFaroPreferencesDisplay(
+			@PathParam("groupId") long groupId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@QueryParam("scope")
+			String scope)
+		throws Exception {
+
+		long ownerId = _getOwnerId(groupId, scope);
+
+		FaroPreferences faroPreferences =
+			_faroPreferencesLocalService.fetchFaroPreferences(groupId, ownerId);
+
+		if (faroPreferences == null) {
+			return new FaroPreferencesDisplay(groupId, ownerId);
+		}
+
+		return new FaroPreferencesDisplay(faroPreferences);
 	}
 
 	@GET

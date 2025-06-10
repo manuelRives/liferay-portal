@@ -41,16 +41,16 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
 import java.text.Format;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Objects;
 import java.util.TimeZone;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,11 +60,11 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ARTICLE,
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_DISPLAY,
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SEARCH,
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SECTION,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ARTICLE,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_DISPLAY,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SEARCH,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SECTION,
 		"mvc.command.name=/knowledge_base/update_kb_article"
 	},
 	service = MVCActionCommand.class
@@ -360,17 +360,26 @@ public class UpdateKBArticleMVCActionCommand
 			long[] removeFileEntryIds = ParamUtil.getLongValues(
 				actionRequest, "removeFileEntryIds");
 
-			if (workflowAction == WorkflowConstants.ACTION_SAVE_DRAFT) {
-				kbArticle = _kbArticleService.updateKBArticle(
-					resourcePrimKey, title, content, description, sections,
-					sourceURL, displayDate, expirationDate, reviewDate,
-					selectedFileNames, removeFileEntryIds, serviceContext);
+			try {
+				if (workflowAction == WorkflowConstants.ACTION_SAVE_DRAFT) {
+					kbArticle = _kbArticleService.updateKBArticle(
+						resourcePrimKey, title, content, description, sections,
+						sourceURL, displayDate, expirationDate, reviewDate,
+						selectedFileNames, removeFileEntryIds, serviceContext);
+				}
+				else {
+					kbArticle = _kbArticleService.updateAndUnlockKBArticle(
+						resourcePrimKey, title, content, description, sections,
+						sourceURL, displayDate, expirationDate, reviewDate,
+						selectedFileNames, removeFileEntryIds, serviceContext);
+				}
 			}
-			else {
-				kbArticle = _kbArticleService.updateAndUnlockKBArticle(
-					resourcePrimKey, title, content, description, sections,
-					sourceURL, displayDate, expirationDate, reviewDate,
-					selectedFileNames, removeFileEntryIds, serviceContext);
+			catch (LockedKBArticleException lockedKBArticleException) {
+				hideDefaultErrorMessage(actionRequest);
+
+				lockedKBArticleException.setCmd(Constants.SAVE);
+
+				throw lockedKBArticleException;
 			}
 		}
 

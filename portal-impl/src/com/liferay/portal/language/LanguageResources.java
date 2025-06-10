@@ -5,6 +5,7 @@
 
 package com.liferay.portal.language;
 
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.module.service.Snapshot;
@@ -16,10 +17,15 @@ import com.liferay.portal.kernel.util.AggregateResourceBundle;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -47,6 +53,10 @@ public class LanguageResources {
 			}
 
 		};
+
+	public static void clearResourceBundles() {
+		_resourceBundles.clear();
+	}
 
 	public static String getMessage(Locale locale, String key) {
 		if (locale == null) {
@@ -79,17 +89,11 @@ public class LanguageResources {
 	}
 
 	public static ResourceBundle getResourceBundle(Locale locale) {
-		ResourceBundle resourceBundle = new LanguageResourcesBundle(locale);
-
-		ResourceBundle overrideResourceBundle = _getOverrideResourceBundle(
-			locale);
-
-		if (overrideResourceBundle != null) {
-			resourceBundle = new AggregateResourceBundle(
-				overrideResourceBundle, resourceBundle);
-		}
-
-		return resourceBundle;
+		return _resourceBundles.computeIfAbsent(
+			locale,
+			key -> new CachelessAggregateResourceBundle(
+				new DynamicOverrideResourceBundle(key),
+				new LanguageResourcesBundle(key)));
 	}
 
 	public static Locale getSuperLocale(Locale locale) {
@@ -218,8 +222,119 @@ public class LanguageResources {
 	private static final Map<Locale, MapHolder> _mapHolders =
 		new ConcurrentHashMap<>();
 	private static final Locale _nullLocale = new Locale(StringPool.BLANK);
+	private static final Map<Locale, ResourceBundle> _resourceBundles =
+		new ConcurrentHashMap<>();
 	private static final Map<Long, Map<Locale, Locale>> _superLocalesMap =
 		new ConcurrentHashMap<>();
+
+	private static class CachelessAggregateResourceBundle
+		extends AggregateResourceBundle {
+
+		public CachelessAggregateResourceBundle(
+			ResourceBundle... resourceBundles) {
+
+			super(resourceBundles);
+
+			_resourceBundles = resourceBundles;
+		}
+
+		@Override
+		protected Set<String> handleKeySet() {
+			Set<String> keys = new HashSet<>();
+
+			for (ResourceBundle resourceBundle : _resourceBundles) {
+				keys.addAll(resourceBundle.keySet());
+			}
+
+			return keys;
+		}
+
+		private final ResourceBundle[] _resourceBundles;
+
+	}
+
+	private static class DynamicOverrideResourceBundle extends ResourceBundle {
+
+		@Override
+		public Enumeration<String> getKeys() {
+			ResourceBundle overrideResourceBundle = _getOverrideResourceBundle(
+				_locale);
+
+			if (overrideResourceBundle != null) {
+				return overrideResourceBundle.getKeys();
+			}
+
+			return Collections.emptyEnumeration();
+		}
+
+		@Override
+		public Locale getLocale() {
+			return _locale;
+		}
+
+		@Override
+		protected Object handleGetObject(String key) {
+			ResourceBundle overrideResourceBundle = _getOverrideResourceBundle(
+				_locale);
+
+			if (overrideResourceBundle != null) {
+				try {
+					return _handleGetObjectMethodHandle.invokeExact(
+						overrideResourceBundle, key);
+				}
+				catch (Throwable throwable) {
+					ReflectionUtil.throwException(throwable);
+				}
+			}
+
+			return null;
+		}
+
+		@Override
+		protected Set<String> handleKeySet() {
+			ResourceBundle overrideResourceBundle = _getOverrideResourceBundle(
+				_locale);
+
+			if (overrideResourceBundle != null) {
+				try {
+					return (Set<String>)_handleKeySetMethodHandle.invokeExact(
+						overrideResourceBundle);
+				}
+				catch (Throwable throwable) {
+					ReflectionUtil.throwException(throwable);
+				}
+			}
+
+			return Collections.emptySet();
+		}
+
+		private DynamicOverrideResourceBundle(Locale locale) {
+			_locale = locale;
+		}
+
+		private static final MethodHandle _handleGetObjectMethodHandle;
+		private static final MethodHandle _handleKeySetMethodHandle;
+
+		static {
+			try {
+				MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+				_handleGetObjectMethodHandle = lookup.findVirtual(
+					ResourceBundle.class, "handleGetObject",
+					MethodType.methodType(Object.class, String.class));
+				_handleKeySetMethodHandle = lookup.findVirtual(
+					ResourceBundle.class, "handleKeySet",
+					MethodType.methodType(Set.class));
+			}
+			catch (ReflectiveOperationException reflectiveOperationException) {
+				throw new ExceptionInInitializerError(
+					reflectiveOperationException);
+			}
+		}
+
+		private final Locale _locale;
+
+	}
 
 	private static class LanguageResourcesBundle extends ResourceBundle {
 
@@ -304,7 +419,7 @@ public class LanguageResources {
 			try {
 				_serviceReferences = _bundleContext.getServiceReferences(
 					ResourceBundle.class,
-					"(&(!(javax.portlet.name=*))(language.id=" +
+					"(&(!(jakarta.portlet.name=*))(language.id=" +
 						LocaleUtil.toLanguageId(locale) + "))");
 			}
 			catch (InvalidSyntaxException invalidSyntaxException) {
@@ -355,7 +470,7 @@ public class LanguageResources {
 						}
 
 					},
-					"(&(!(javax.portlet.name=*))(language.id=*))");
+					"(&(!(jakarta.portlet.name=*))(language.id=*))");
 			}
 			catch (InvalidSyntaxException invalidSyntaxException) {
 				throw new ExceptionInInitializerError(invalidSyntaxException);

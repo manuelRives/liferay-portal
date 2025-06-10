@@ -17,8 +17,8 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Marco Leo
@@ -44,7 +44,11 @@ public class SearchResultsTag extends IncludeTag {
 				CommerceWebKeys.COMMERCE_CONTEXT);
 
 		try {
-			AccountEntry accountEntry = commerceContext.getAccountEntry();
+			AccountEntry accountEntry = null;
+
+			if (commerceContext != null) {
+				accountEntry = commerceContext.getAccountEntry();
+			}
 
 			if (accountEntry != null) {
 				httpServletRequest.setAttribute(

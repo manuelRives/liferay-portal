@@ -21,13 +21,13 @@ import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author Eudaldo Alonso
@@ -107,6 +107,13 @@ public class SelectStructureFieldDisplayContext {
 	}
 
 	public List<SelectOption> getSelectOptions() throws Exception {
+		List<SelectOption> selectOptions = new ArrayList<>();
+
+		selectOptions.add(
+			new SelectOption(
+				LanguageUtil.get(_themeDisplay.getLocale(), "none"),
+				StringPool.BLANK));
+
 		AssetRendererFactory<?> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
 				_getClassName());
@@ -116,13 +123,6 @@ public class SelectStructureFieldDisplayContext {
 
 		ClassType classType = classTypeReader.getClassType(
 			_getClassTypeId(), _themeDisplay.getLocale());
-
-		List<SelectOption> selectOptions = new ArrayList<>();
-
-		selectOptions.add(
-			new SelectOption(
-				LanguageUtil.get(_themeDisplay.getLocale(), "none"),
-				StringPool.BLANK));
 
 		for (ClassTypeField classTypeField : classType.getClassTypeFields()) {
 			selectOptions.add(

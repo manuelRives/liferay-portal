@@ -20,7 +20,6 @@ import com.liferay.item.selector.taglib.servlet.taglib.RepositoryEntryBrowserTag
 import com.liferay.item.selector.taglib.servlet.taglib.util.RepositoryEntryBrowserTagUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -47,15 +46,15 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -353,14 +352,9 @@ public class ItemSelectorRepositoryEntryManagementToolbarDisplayContext {
 					"allowedCreationMenuUIItemKeys");
 
 		if (allowedCreationMenuUIItemKeys == null) {
-			if (FeatureFlagManagerUtil.isEnabled("LPD-10793")) {
-				return SetUtil.fromArray(
-					DLUIItemKeys.ADD_FOLDER, DLUIItemKeys.AI_CREATOR,
-					DLUIItemKeys.UPLOAD);
-			}
-
 			return SetUtil.fromArray(
-				DLUIItemKeys.ADD_FOLDER, DLUIItemKeys.UPLOAD);
+				DLUIItemKeys.ADD_FOLDER, DLUIItemKeys.AI_CREATOR,
+				DLUIItemKeys.UPLOAD);
 		}
 
 		return allowedCreationMenuUIItemKeys;
@@ -465,7 +459,7 @@ public class ItemSelectorRepositoryEntryManagementToolbarDisplayContext {
 		_dlPortletToolbarContributorSnapshot = new Snapshot<>(
 			ItemSelectorRepositoryEntryManagementToolbarDisplayContext.class,
 			PortletToolbarContributor.class,
-			"(javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY + ")");
+			"(jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY + ")");
 
 	private final PortletURL _currentURLObj;
 	private final HttpServletRequest _httpServletRequest;

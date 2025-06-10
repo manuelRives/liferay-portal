@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import deepFreeze from '../src/main/resources/META-INF/resources/deepFreeze';
+import deepFreeze from '../src/main/resources/META-INF/resources/main/deepFreeze';
 import {withEnv} from './helpers';
 
 describe('deepFreeze()', () => {
@@ -48,7 +48,9 @@ describe('deepFreeze()', () => {
 		});
 
 		it('prevents properties from being added', () => {
-			value.extra = 'added';
+			expect(() => {
+				value.extra = 'added';
+			}).toThrow(TypeError);
 
 			expect(value).toEqual({
 				hello: true,
@@ -57,7 +59,9 @@ describe('deepFreeze()', () => {
 		});
 
 		it('prevents properties from being mutated', () => {
-			value.hello = false;
+			expect(() => {
+				value.hello = false;
+			}).toThrow(TypeError);
 
 			expect(value).toEqual({
 				hello: true,

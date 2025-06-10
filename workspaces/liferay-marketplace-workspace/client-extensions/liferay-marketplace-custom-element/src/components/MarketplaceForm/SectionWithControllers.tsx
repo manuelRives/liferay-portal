@@ -10,28 +10,30 @@ import './index.scss';
 import ClayDropDown from '@clayui/drop-down';
 import {HTMLAttributes, useState} from 'react';
 
+import {BlockDirections} from '../../context/SolutionContext';
+
 interface SectionWithControllersProps extends HTMLAttributes<HTMLDivElement> {
+	dropdownItems: {
+		disabled?: boolean;
+		name: string;
+		onClick?: () => void;
+	}[];
 	index: number;
 	name: string;
+	onArrowClick: (direction: BlockDirections) => void;
 	position: number;
 }
 
-const dropDownItems = [
-	{name: 'Move to Top'},
-	{name: 'Move Up'},
-	{name: 'Move Down'},
-	{name: 'Move to Bottom'},
-	{name: 'Delete'},
-];
-
 export function SectionWithControllers({
 	children,
+	dropdownItems,
 	index,
 	name,
+	onArrowClick,
 	position,
 	...props
 }: SectionWithControllersProps) {
-	const [collapsed, setCollapsed] = useState(false);
+	const [collapsed, setCollapsed] = useState(true);
 
 	return (
 		<div className="marketplace-form-section mt-4 p-0" {...props}>
@@ -42,6 +44,9 @@ export function SectionWithControllers({
 							aria-label="arrow-up"
 							disabled={index === 0}
 							displayType="unstyled"
+							onClick={() =>
+								onArrowClick(BlockDirections.MOVE_UP)
+							}
 							size="sm"
 							symbol="order-arrow-up"
 						/>
@@ -50,6 +55,9 @@ export function SectionWithControllers({
 							aria-label="arrow-down"
 							disabled={index === position - 1}
 							displayType="unstyled"
+							onClick={() =>
+								onArrowClick(BlockDirections.MOVE_DOWN)
+							}
 							size="sm"
 							symbol="order-arrow-down"
 						/>
@@ -60,6 +68,7 @@ export function SectionWithControllers({
 
 				<div className="align-self-center d-flex justify-content-end">
 					<ClayDropDown
+						closeOnClick
 						trigger={
 							<ClayButtonWithIcon
 								aria-label="Menu"
@@ -70,8 +79,12 @@ export function SectionWithControllers({
 						}
 					>
 						<ClayDropDown.ItemList>
-							{dropDownItems.map((dropDownItem, index) => (
-								<ClayDropDown.Item key={index}>
+							{dropdownItems.map((dropDownItem, index) => (
+								<ClayDropDown.Item
+									disabled={dropDownItem.disabled}
+									key={index}
+									onClick={dropDownItem.onClick}
+								>
 									{dropDownItem.name}
 								</ClayDropDown.Item>
 							))}

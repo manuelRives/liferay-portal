@@ -6,7 +6,6 @@
 package com.liferay.jethr0.event.liferay;
 
 import com.liferay.jethr0.event.BaseEventHandler;
-import com.liferay.jethr0.event.EventHandlerContext;
 import com.liferay.jethr0.util.StringUtil;
 
 import java.util.Date;
@@ -18,19 +17,17 @@ import org.json.JSONObject;
  */
 public abstract class BaseRoutineLiferayEventHandler extends BaseEventHandler {
 
-	protected BaseRoutineLiferayEventHandler(
-		EventHandlerContext eventHandlerContext, JSONObject messageJSONObject) {
-
-		super(eventHandlerContext, messageJSONObject);
+	protected BaseRoutineLiferayEventHandler(JSONObject messageJSONObject) {
+		super(messageJSONObject);
 	}
 
 	protected JSONObject getRoutineJSONObject() {
+		JSONObject routineJSONObject = new JSONObject();
+
 		JSONObject messageJSONObject = getMessageJSONObject();
 
 		JSONObject objectEntryDTORoutineJSONObject =
 			messageJSONObject.getJSONObject("objectEntryDTORoutine");
-
-		JSONObject routineJSONObject = new JSONObject();
 
 		routineJSONObject.put(
 			"dateCreated",

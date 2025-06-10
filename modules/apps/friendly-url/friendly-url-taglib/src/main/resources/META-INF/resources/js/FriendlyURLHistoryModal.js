@@ -7,7 +7,7 @@ import ClayList from '@clayui/list';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClayModal from '@clayui/modal';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
-import {fetch, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
@@ -36,14 +36,14 @@ const FriendlyURLHistoryModal = ({
 }) => {
 	const [languageId, setLanguageId] = useState();
 	const [loading, setLoading] = useState(true);
-	const [
-		friendlyURLEntryLocalizations,
-		setFriendlyURLEntryLocalizations,
-	] = useState({});
+	const [friendlyURLEntryLocalizations, setFriendlyURLEntryLocalizations] =
+		useState({});
 	const [availableLanguages, setAvailableLanguages] = useState([]);
 	const isMounted = useIsMounted();
 
 	const getFriendlyUrlLocalizations = useCallback(() => {
+
+		// eslint-disable-next-line @liferay/portal/no-global-fetch
 		fetch(friendlyURLEntryURL)
 			.then((response) => response.json())
 			.then((response) => {
@@ -117,6 +117,8 @@ const FriendlyURLHistoryModal = ({
 
 	const sendRequest = useCallback(
 		(url, friendlyURLEntryId, method = 'GET') => {
+
+			// eslint-disable-next-line @liferay/portal/no-global-fetch
 			return fetch(`${url}/${friendlyURLEntryId}/${languageId}`, {
 				method,
 			})
@@ -172,8 +174,12 @@ const FriendlyURLHistoryModal = ({
 					getFriendlyUrlLocalizations();
 
 					if (localizable) {
-						const inputLocalizableComponent = Liferay.component(
-							elementId
+						const inputLocalizableComponent =
+							Liferay.component(elementId);
+
+						inputLocalizableComponent.updateInputLanguage(
+							urlTitle,
+							languageId
 						);
 
 						if (
@@ -182,17 +188,10 @@ const FriendlyURLHistoryModal = ({
 						) {
 							inputLocalizableComponent.updateInput(urlTitle);
 						}
-						else {
-							inputLocalizableComponent.updateInputLanguage(
-								urlTitle,
-								languageId
-							);
-						}
 					}
 					else {
-						const urlTitleInput = document.getElementById(
-							elementId
-						);
+						const urlTitleInput =
+							document.getElementById(elementId);
 
 						if (urlTitleInput) {
 							urlTitleInput.value = urlTitle;

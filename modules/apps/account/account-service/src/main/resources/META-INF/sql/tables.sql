@@ -56,7 +56,8 @@ create table AccountGroup (
 	defaultAccountGroup BOOLEAN,
 	description VARCHAR(75) null,
 	name VARCHAR(75) null,
-	type_ VARCHAR(75) null
+	type_ VARCHAR(75) null,
+	status INTEGER
 );
 
 create table AccountGroupRel (
@@ -74,6 +75,7 @@ create table AccountGroupRel (
 
 create table AccountRole (
 	mvccVersion LONG default 0 not null,
+	externalReferenceCode VARCHAR(75) null,
 	accountRoleId LONG not null primary key,
 	companyId LONG,
 	accountEntryId LONG,

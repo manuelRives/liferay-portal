@@ -30,13 +30,13 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
 import java.text.DateFormat;
 import java.text.Format;
 
 import java.util.Collections;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -157,7 +157,7 @@ public class CommerceShipmentContentDisplayContext {
 				_commerceShipmentId,
 				_commerceShipmentItemSearchContainer.getStart(),
 				_commerceShipmentItemSearchContainer.getEnd(),
-				new CommerceShipmentItemCreateDateComparator()),
+				CommerceShipmentItemCreateDateComparator.getInstance(false)),
 			_commerceShipmentItemLocalService.getCommerceShipmentItemsCount(
 				_commerceShipmentId));
 
@@ -241,7 +241,7 @@ public class CommerceShipmentContentDisplayContext {
 				() -> _commerceShipmentLocalService.getCommerceShipments(
 					new long[] {commerceChannel.getGroupId()},
 					_searchContainer.getStart(), _searchContainer.getEnd(),
-					new CommerceShipmentCreateDateComparator()),
+					CommerceShipmentCreateDateComparator.getInstance(false)),
 				_commerceShipmentLocalService.getCommerceShipmentsCount(
 					new long[] {commerceChannel.getGroupId()}));
 		}
@@ -263,12 +263,9 @@ public class CommerceShipmentContentDisplayContext {
 			return StringPool.BLANK;
 		}
 
-		PortletURL portletURL =
-			_commerceOrderHttpHelper.getCommerceCartPortletURL(
-				_commerceShipmentContentRequestHelper.getRequest(),
-				commerceOrderItem.getCommerceOrder());
-
-		return portletURL.toString();
+		return _commerceOrderHttpHelper.getCommerceCartPortletURL(
+			_commerceShipmentContentRequestHelper.getRequest(),
+			commerceOrderItem.getCommerceOrder());
 	}
 
 	private final CommerceChannelLocalService _commerceChannelLocalService;

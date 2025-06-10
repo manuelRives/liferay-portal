@@ -69,12 +69,12 @@ public class FragmentEntryStagingTest {
 
 		FragmentEntry liveFragmentEntry =
 			_fragmentEntryLocalService.addFragmentEntry(
-				TestPropsValues.getUserId(), _liveGroup.getGroupId(),
+				null, TestPropsValues.getUserId(), _liveGroup.getGroupId(),
 				fragmentCollection.getFragmentCollectionId(),
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(), false, StringPool.BLANK, null, 0,
-				false, FragmentConstants.TYPE_INPUT,
+				false, false, FragmentConstants.TYPE_INPUT,
 				JSONUtil.put(
 					"fieldTypes", JSONUtil.put("string")
 				).toString(),

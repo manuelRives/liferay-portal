@@ -1,4 +1,4 @@
-@component-name = "portal-deployment-hypersonic"
+@component-name = "portal-core-infra"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -13,7 +13,6 @@ definition {
 		property custom.properties = "passwords.default.policy.change.required=true${line.separator}setup.wizard.enabled=false";
 		property database.types = "mysql";
 		property test.prepare.bundle.properties = "true";
-		property testray.main.component.name = "Users and Organizations";
 
 		task ("When an admin logs in with Setup Wizard disabled") {
 			Navigator.openURL();
@@ -137,14 +136,14 @@ definition {
 		User.openUsersAdmin();
 
 		User.editEmailAddressCP(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@test.com",
 			userScreenName = "test");
 
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@test.com");
 
 		Portlet.shutdownServer();
@@ -154,7 +153,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@test.com");
 	}
 

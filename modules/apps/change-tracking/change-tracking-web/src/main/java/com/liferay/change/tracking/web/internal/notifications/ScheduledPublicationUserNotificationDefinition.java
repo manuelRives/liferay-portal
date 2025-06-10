@@ -16,7 +16,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Brooke Dalton
  */
 @Component(
-	property = "javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+	property = "jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 	service = UserNotificationDefinition.class
 )
 public class ScheduledPublicationUserNotificationDefinition
@@ -28,6 +28,10 @@ public class ScheduledPublicationUserNotificationDefinition
 			UserNotificationDefinition.NOTIFICATION_TYPE_REVIEW_ENTRY,
 			"receive-a-notification-when-a-scheduled-publication-fails");
 
+		addUserNotificationDeliveryType(
+			new UserNotificationDeliveryType(
+				"email", UserNotificationDeliveryConstants.TYPE_EMAIL, false,
+				false));
 		addUserNotificationDeliveryType(
 			new UserNotificationDeliveryType(
 				"website", UserNotificationDeliveryConstants.TYPE_WEBSITE, true,

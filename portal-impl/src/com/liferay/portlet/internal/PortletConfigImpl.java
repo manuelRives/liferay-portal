@@ -5,7 +5,6 @@
 
 package com.liferay.portlet.internal;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.PortletApp;
 import com.liferay.portal.kernel.model.PortletConstants;
@@ -22,6 +21,10 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.language.LanguageResources;
 import com.liferay.portlet.StrutsResourceBundle;
 
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.WindowState;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -33,10 +36,6 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.portlet.PortletContext;
-import javax.portlet.PortletMode;
-import javax.portlet.WindowState;
 
 import javax.xml.namespace.QName;
 
@@ -237,41 +236,22 @@ public class PortletConfigImpl implements LiferayPortletConfig {
 
 	@Override
 	public ResourceBundle getResourceBundle(Locale locale) {
-		String resourceBundleClassName = _portlet.getResourceBundle();
+		ResourceBundle resourceBundle = _resourceBundles.get(locale);
 
-		if (Validator.isNull(resourceBundleClassName)) {
-			String resourceBundleId = _portlet.getPortletId();
-
-			ResourceBundle resourceBundle = _resourceBundles.get(
-				resourceBundleId);
-
-			if (resourceBundle == null) {
-				resourceBundle = new PortletResourceBundle(
-					LanguageResources.getResourceBundle(locale), _portletInfos);
-
-				_resourceBundles.put(resourceBundleId, resourceBundle);
-			}
-
+		if (resourceBundle != null) {
 			return resourceBundle;
 		}
 
-		ResourceBundle resourceBundle = null;
+		String portletResourceBundle = _portlet.getResourceBundle();
 
-		if (!_portletApp.isWARFile() &&
-			resourceBundleClassName.equals(
-				StrutsResourceBundle.class.getName())) {
+		if (Validator.isNull(portletResourceBundle)) {
+			resourceBundle = LanguageResources.getResourceBundle(locale);
+		}
+		else if (!_portletApp.isWARFile() &&
+				 portletResourceBundle.equals(
+					 StrutsResourceBundle.class.getName())) {
 
-			String resourceBundleId = StringBundler.concat(
-				_portlet.getPortletId(), locale.getLanguage(),
-				locale.getCountry(), locale.getVariant());
-
-			resourceBundle = _resourceBundles.get(resourceBundleId);
-
-			if (resourceBundle == null) {
-				resourceBundle = new StrutsResourceBundle(_portletName, locale);
-			}
-
-			_resourceBundles.put(resourceBundleId, resourceBundle);
+			resourceBundle = new StrutsResourceBundle(_portletName, locale);
 		}
 		else {
 			PortletBag portletBag = PortletBagPool.get(
@@ -282,7 +262,12 @@ public class PortletConfigImpl implements LiferayPortletConfig {
 			}
 		}
 
-		return new PortletResourceBundle(resourceBundle, _portletInfos);
+		resourceBundle = new PortletResourceBundle(
+			resourceBundle, _portletInfos);
+
+		_resourceBundles.put(locale, resourceBundle);
+
+		return resourceBundle;
 	}
 
 	@Override
@@ -351,7 +336,7 @@ public class PortletConfigImpl implements LiferayPortletConfig {
 	private final PortletContext _portletContext;
 	private final Map<String, String> _portletInfos;
 	private final String _portletName;
-	private final Map<String, ResourceBundle> _resourceBundles =
+	private final Map<Locale, ResourceBundle> _resourceBundles =
 		new ConcurrentHashMap<>();
 
 }

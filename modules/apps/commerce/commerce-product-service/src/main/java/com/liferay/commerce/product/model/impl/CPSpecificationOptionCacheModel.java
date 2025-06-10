@@ -69,7 +69,7 @@ public class CPSpecificationOptionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(33);
+		StringBundler sb = new StringBundler(37);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -77,6 +77,8 @@ public class CPSpecificationOptionCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", CPSpecificationOptionId=");
 		sb.append(CPSpecificationOptionId);
 		sb.append(", companyId=");
@@ -101,6 +103,8 @@ public class CPSpecificationOptionCacheModel
 		sb.append(key);
 		sb.append(", priority=");
 		sb.append(priority);
+		sb.append(", visible=");
+		sb.append(visible);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append("}");
@@ -121,6 +125,14 @@ public class CPSpecificationOptionCacheModel
 		}
 		else {
 			cpSpecificationOptionImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			cpSpecificationOptionImpl.setExternalReferenceCode("");
+		}
+		else {
+			cpSpecificationOptionImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		cpSpecificationOptionImpl.setCPSpecificationOptionId(
@@ -175,6 +187,7 @@ public class CPSpecificationOptionCacheModel
 		}
 
 		cpSpecificationOptionImpl.setPriority(priority);
+		cpSpecificationOptionImpl.setVisible(visible);
 
 		if (lastPublishDate == Long.MIN_VALUE) {
 			cpSpecificationOptionImpl.setLastPublishDate(null);
@@ -195,6 +208,7 @@ public class CPSpecificationOptionCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		CPSpecificationOptionId = objectInput.readLong();
 
@@ -213,6 +227,8 @@ public class CPSpecificationOptionCacheModel
 		key = objectInput.readUTF();
 
 		priority = objectInput.readDouble();
+
+		visible = objectInput.readBoolean();
 		lastPublishDate = objectInput.readLong();
 	}
 
@@ -227,6 +243,13 @@ public class CPSpecificationOptionCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(CPSpecificationOptionId);
@@ -271,12 +294,15 @@ public class CPSpecificationOptionCacheModel
 		}
 
 		objectOutput.writeDouble(priority);
+
+		objectOutput.writeBoolean(visible);
 		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long CPSpecificationOptionId;
 	public long companyId;
 	public long userId;
@@ -289,6 +315,7 @@ public class CPSpecificationOptionCacheModel
 	public boolean facetable;
 	public String key;
 	public double priority;
+	public boolean visible;
 	public long lastPublishDate;
 
 }

@@ -11,18 +11,25 @@ import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.account.service.AccountGroupRelService;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.link.service.AssetLinkLocalService;
 import com.liferay.asset.list.service.AssetListEntryLocalService;
 import com.liferay.client.extension.service.ClientExtensionEntryLocalService;
 import com.liferay.client.extension.type.manager.CETManager;
 import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
+import com.liferay.depot.service.DepotEntryGroupRelLocalService;
+import com.liferay.depot.service.DepotEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
 import com.liferay.dynamic.data.mapping.util.DefaultDDMStructureHelper;
 import com.liferay.expando.kernel.service.ExpandoValueLocalService;
 import com.liferay.fragment.importer.FragmentsImporter;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.headless.admin.list.type.resource.v1_0.ListTypeDefinitionResource;
 import com.liferay.headless.admin.list.type.resource.v1_0.ListTypeEntryResource;
+import com.liferay.headless.admin.taxonomy.resource.v1_0.KeywordResource;
 import com.liferay.headless.admin.taxonomy.resource.v1_0.TaxonomyCategoryResource;
 import com.liferay.headless.admin.taxonomy.resource.v1_0.TaxonomyVocabularyResource;
 import com.liferay.headless.admin.user.resource.v1_0.AccountResource;
@@ -30,13 +37,13 @@ import com.liferay.headless.admin.user.resource.v1_0.AccountRoleResource;
 import com.liferay.headless.admin.user.resource.v1_0.OrganizationResource;
 import com.liferay.headless.admin.user.resource.v1_0.UserAccountResource;
 import com.liferay.headless.admin.workflow.resource.v1_0.WorkflowDefinitionResource;
+import com.liferay.headless.delivery.resource.v1_0.BlogPostingResource;
 import com.liferay.headless.delivery.resource.v1_0.DocumentFolderResource;
 import com.liferay.headless.delivery.resource.v1_0.DocumentResource;
 import com.liferay.headless.delivery.resource.v1_0.KnowledgeBaseArticleResource;
 import com.liferay.headless.delivery.resource.v1_0.KnowledgeBaseFolderResource;
 import com.liferay.headless.delivery.resource.v1_0.StructuredContentFolderResource;
 import com.liferay.journal.service.JournalArticleLocalService;
-import com.liferay.layout.helper.LayoutCopyHelper;
 import com.liferay.layout.importer.LayoutsImporter;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
@@ -46,6 +53,7 @@ import com.liferay.list.type.service.ListTypeEntryLocalService;
 import com.liferay.notification.rest.resource.v1_0.NotificationTemplateResource;
 import com.liferay.object.admin.rest.resource.v1_0.ObjectDefinitionResource;
 import com.liferay.object.admin.rest.resource.v1_0.ObjectFieldResource;
+import com.liferay.object.admin.rest.resource.v1_0.ObjectFolderResource;
 import com.liferay.object.admin.rest.resource.v1_0.ObjectRelationshipResource;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManager;
 import com.liferay.object.service.ObjectActionLocalService;
@@ -55,11 +63,11 @@ import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
-import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -76,6 +84,7 @@ import com.liferay.portal.language.override.service.PLOEntryLocalService;
 import com.liferay.portal.security.service.access.policy.service.SAPEntryLocalService;
 import com.liferay.segments.service.SegmentsEntryLocalService;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
+import com.liferay.site.configuration.manager.MenuAccessConfigurationManager;
 import com.liferay.site.initializer.SiteInitializer;
 import com.liferay.site.initializer.SiteInitializerFactory;
 import com.liferay.site.initializer.extender.internal.file.backed.osgi.FileBackedBundleDelegate;
@@ -86,9 +95,9 @@ import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeRegistry;
 import com.liferay.style.book.zip.processor.StyleBookEntryZipProcessor;
 import com.liferay.template.service.TemplateEntryLocalService;
 
-import java.io.File;
+import jakarta.servlet.ServletContext;
 
-import javax.servlet.ServletContext;
+import java.io.File;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -112,7 +121,7 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 			symbolicName = "Liferay Site Initializer - File - " + fileKey;
 		}
 
-		Bundle bundle = ProxyUtil.newDelegateProxyInstance(
+		Bundle siteBundle = ProxyUtil.newDelegateProxyInstance(
 			Bundle.class.getClassLoader(), Bundle.class,
 			new FileBackedBundleDelegate(
 				_bundleContext, file, _jsonFactory, symbolicName),
@@ -122,33 +131,40 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 			_accountEntryLocalService, _accountEntryOrganizationRelLocalService,
 			_accountGroupLocalService, _accountGroupRelService,
 			_accountResourceFactory, _accountRoleLocalService,
-			_accountRoleResourceFactory, _assetCategoryLocalService,
-			_assetListEntryLocalService, bundle, _cetManager,
-			_clientExtensionEntryLocalService, _configurationProvider,
-			_dataDefinitionResourceFactory, _ddmStructureLocalService,
-			_ddmTemplateLocalService, _defaultDDMStructureHelper, _dlURLHelper,
+			_accountRoleResourceFactory, _archivedSettingsFactory,
+			_assetCategoryLocalService, _assetEntryLocalService,
+			_assetLinkLocalService, _assetListEntryLocalService,
+			_blogPostingResourceFactory, _cetManager,
+			_clientExtensionEntryLocalService, _companyLocalService,
+			_configurationProvider, _dataDefinitionResourceFactory,
+			_ddmStructureLocalService, _ddmTemplateLocalService,
+			_defaultDDMStructureHelper, _depotEntryGroupRelLocalService,
+			_depotEntryLocalService, _dlFileEntryTypeLocalService, _dlURLHelper,
 			_documentFolderResourceFactory, _documentResourceFactory,
-			_expandoValueLocalService, _fragmentsImporter, _groupLocalService,
-			_journalArticleLocalService, _jsonFactory,
+			_expandoValueLocalService, _fragmentEntryLinkLocalService,
+			_fragmentsImporter, _groupLocalService, _journalArticleLocalService,
+			_jsonFactory, _keywordResourceFactory,
 			_knowledgeBaseArticleResourceFactory,
-			_knowledgeBaseFolderResourceFactory, _layoutCopyHelper,
-			_layoutLocalService, _layoutPageTemplateEntryLocalService,
-			_layoutsImporter, _layoutPageTemplateStructureLocalService,
+			_knowledgeBaseFolderResourceFactory, _layoutLocalService,
+			_layoutPageTemplateEntryLocalService, _layoutsImporter,
+			_layoutPageTemplateStructureLocalService,
 			_layoutPageTemplateStructureRelLocalService, _layoutSetLocalService,
 			_layoutUtilityPageEntryLocalService, _listTypeDefinitionResource,
 			_listTypeDefinitionResourceFactory, _listTypeEntryLocalService,
 			_listTypeEntryResource, _listTypeEntryResourceFactory,
+			_menuAccessConfigurationManager,
 			_notificationTemplateResourceFactory, _objectActionLocalService,
 			_objectDefinitionLocalService, _objectDefinitionResourceFactory,
 			_objectEntryLocalService, _objectEntryManager,
 			_objectFieldLocalService, _objectFieldResourceFactory,
-			_objectRelationshipLocalService, _objectRelationshipResourceFactory,
-			_organizationLocalService, _organizationResourceFactory,
-			_ploEntryLocalService, _portal, _portletPreferencesLocalService,
+			_objectfolderResourceFactory, _objectRelationshipLocalService,
+			_objectRelationshipResourceFactory, _organizationLocalService,
+			_organizationResourceFactory, _ploEntryLocalService, _portal,
 			_resourceActionLocalService, _resourcePermissionLocalService,
 			_roleLocalService, _sapEntryLocalService,
 			_segmentsEntryLocalService, _segmentsExperienceLocalService,
-			_archivedSettingsFactory, _siteNavigationMenuItemLocalService,
+			siteBundle, _bundleContext.getBundle(),
+			_siteNavigationMenuItemLocalService,
 			_siteNavigationMenuItemTypeRegistry,
 			_siteNavigationMenuLocalService,
 			_structuredContentFolderResourceFactory,
@@ -203,7 +219,16 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 	private AssetCategoryLocalService _assetCategoryLocalService;
 
 	@Reference
+	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
+	private AssetLinkLocalService _assetLinkLocalService;
+
+	@Reference
 	private AssetListEntryLocalService _assetListEntryLocalService;
+
+	@Reference
+	private BlogPostingResource.Factory _blogPostingResourceFactory;
 
 	private BundleContext _bundleContext;
 
@@ -212,6 +237,9 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 
 	@Reference
 	private ClientExtensionEntryLocalService _clientExtensionEntryLocalService;
+
+	@Reference
+	private CompanyLocalService _companyLocalService;
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
@@ -229,6 +257,15 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 	private DefaultDDMStructureHelper _defaultDDMStructureHelper;
 
 	@Reference
+	private DepotEntryGroupRelLocalService _depotEntryGroupRelLocalService;
+
+	@Reference
+	private DepotEntryLocalService _depotEntryLocalService;
+
+	@Reference
+	private DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
+
+	@Reference
 	private DLURLHelper _dlURLHelper;
 
 	@Reference
@@ -239,6 +276,9 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 
 	@Reference
 	private ExpandoValueLocalService _expandoValueLocalService;
+
+	@Reference
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
 
 	@Reference
 	private FragmentsImporter _fragmentsImporter;
@@ -253,15 +293,15 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 	private JSONFactory _jsonFactory;
 
 	@Reference
+	private KeywordResource.Factory _keywordResourceFactory;
+
+	@Reference
 	private KnowledgeBaseArticleResource.Factory
 		_knowledgeBaseArticleResourceFactory;
 
 	@Reference
 	private KnowledgeBaseFolderResource.Factory
 		_knowledgeBaseFolderResourceFactory;
-
-	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
@@ -305,6 +345,9 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 	private ListTypeEntryResource.Factory _listTypeEntryResourceFactory;
 
 	@Reference
+	private MenuAccessConfigurationManager _menuAccessConfigurationManager;
+
+	@Reference
 	private NotificationTemplateResource.Factory
 		_notificationTemplateResourceFactory;
 
@@ -330,6 +373,9 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 	private ObjectFieldResource.Factory _objectFieldResourceFactory;
 
 	@Reference
+	private ObjectFolderResource.Factory _objectfolderResourceFactory;
+
+	@Reference
 	private ObjectRelationshipLocalService _objectRelationshipLocalService;
 
 	@Reference
@@ -347,9 +393,6 @@ public class SiteInitializerFactoryImpl implements SiteInitializerFactory {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortletPreferencesLocalService _portletPreferencesLocalService;
 
 	@Reference
 	private ResourceActionLocalService _resourceActionLocalService;

@@ -29,7 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -60,18 +59,24 @@ public class GroupItemSelectorProviderImpl
 
 		LinkedHashMap<String, Object> groupParams =
 			LinkedHashMapBuilder.<String, Object>put(
+				"actionId", ActionKeys.VIEW
+			).put(
+				"active", Boolean.TRUE
+			).put(
 				"site", Boolean.TRUE
 			).build();
 
 		try {
+			long[] classNameIds = _getClassNameIds();
+
 			List<Group> groups = _groupLocalService.search(
-				companyId, _classNameIds, keywords, groupParams, start, end,
+				companyId, classNameIds, keywords, groupParams, start, end,
 				null);
 
 			return ListUtil.filter(
 				groups,
 				(startIndex, endIndex) -> _groupLocalService.search(
-					companyId, _classNameIds, keywords, groupParams, startIndex,
+					companyId, classNameIds, keywords, groupParams, startIndex,
 					endIndex, null),
 				() -> getGroupsCount(companyId, groupId, keywords),
 				group -> _hasViewPermission(group), start, end);
@@ -86,9 +91,11 @@ public class GroupItemSelectorProviderImpl
 	@Override
 	public int getGroupsCount(long companyId, long groupId, String keywords) {
 		return _groupService.searchCount(
-			companyId, _classNameIds, keywords,
+			companyId, _getClassNameIds(), keywords,
 			LinkedHashMapBuilder.<String, Object>put(
 				"actionId", ActionKeys.VIEW
+			).put(
+				"active", Boolean.TRUE
 			).put(
 				"site", Boolean.TRUE
 			).build());
@@ -109,9 +116,8 @@ public class GroupItemSelectorProviderImpl
 		return _language.get(locale, "site");
 	}
 
-	@Activate
-	protected void activate() {
-		_classNameIds = new long[] {
+	private long[] _getClassNameIds() {
+		return new long[] {
 			_classNameLocalService.getClassNameId(Company.class),
 			_classNameLocalService.getClassNameId(Group.class),
 			_classNameLocalService.getClassNameId(Organization.class)
@@ -142,8 +148,6 @@ public class GroupItemSelectorProviderImpl
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		GroupItemSelectorProviderImpl.class);
-
-	private long[] _classNameIds;
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;

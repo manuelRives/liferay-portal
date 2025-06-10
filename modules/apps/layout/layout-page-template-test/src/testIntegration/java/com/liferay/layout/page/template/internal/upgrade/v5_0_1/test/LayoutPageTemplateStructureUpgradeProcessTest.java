@@ -96,11 +96,11 @@ public class LayoutPageTemplateStructureUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessDisplaPageWithFragments() throws Exception {
+	public void testUpgradeDisplaPageWithFragments() throws Exception {
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0, 0, 0,
-				RandomTestUtil.randomString(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
+				0, 0, RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true, 0,
 				0, 0, WorkflowConstants.STATUS_APPROVED, new ServiceContext());
 
@@ -143,13 +143,11 @@ public class LayoutPageTemplateStructureUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessDisplaPageWithoutFragments()
-		throws Exception {
-
+	public void testUpgradeDisplaPageWithoutFragments() throws Exception {
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0, 0, 0,
-				RandomTestUtil.randomString(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
+				0, 0, RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true, 0,
 				0, 0, WorkflowConstants.STATUS_APPROVED, new ServiceContext());
 
@@ -189,7 +187,7 @@ public class LayoutPageTemplateStructureUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessLayoutWithFragments() throws Exception {
+	public void testUpgradeLayoutWithFragments() throws Exception {
 		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		_deleteLayoutPageTemplateStructure(layout);
@@ -227,7 +225,7 @@ public class LayoutPageTemplateStructureUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessLayoutWithoutFragments() throws Exception {
+	public void testUpgradeLayoutWithoutFragments() throws Exception {
 		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		_deleteLayoutPageTemplateStructure(layout);
@@ -273,14 +271,14 @@ public class LayoutPageTemplateStructureUpgradeProcessTest {
 				!dbInspector.hasColumn(
 					"LayoutPageTemplateStructure", "classPK")) {
 
-				_db.runSQLTemplateString(
+				_db.runSQLTemplate(
 					"alter table LayoutPageTemplateStructure add classNameId " +
 						"LONG;",
 					true);
-				_db.runSQLTemplateString(
+				_db.runSQLTemplate(
 					"alter table LayoutPageTemplateStructure add classPK LONG;",
 					true);
-				_db.runSQLTemplateString(
+				_db.runSQLTemplate(
 					"update LayoutPageTemplateStructure set classPK = plid;",
 					true);
 
@@ -305,11 +303,11 @@ public class LayoutPageTemplateStructureUpgradeProcessTest {
 				dbInspector.hasColumn(
 					"LayoutPageTemplateStructure", "classPK")) {
 
-				_db.runSQLTemplateString(
+				_db.runSQLTemplate(
 					"alter table LayoutPageTemplateStructure drop column " +
 						"classNameId;",
 					true);
-				_db.runSQLTemplateString(
+				_db.runSQLTemplate(
 					"alter table LayoutPageTemplateStructure drop column " +
 						"classPK;",
 					true);
@@ -324,17 +322,17 @@ public class LayoutPageTemplateStructureUpgradeProcessTest {
 	private void _addFragmentEntryLink(long plid) throws Exception {
 		FragmentEntry fragmentEntry =
 			_fragmentEntryLocalService.addFragmentEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
 				StringUtil.randomString(), StringUtil.randomString(),
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(), false, "{fieldSets: []}", null,
-				0, false, FragmentConstants.TYPE_COMPONENT, null,
+				0, false, false, FragmentConstants.TYPE_COMPONENT, null,
 				WorkflowConstants.STATUS_APPROVED,
 				ServiceContextTestUtil.getServiceContext(
 					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		_fragmentEntryLinkLocalService.addFragmentEntryLink(
-			TestPropsValues.getUserId(), _group.getGroupId(), 0,
+			null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
 			fragmentEntry.getFragmentEntryId(),
 			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
 				plid),

@@ -4,10 +4,14 @@
  */
 
 import {UploadedImage} from '../../components/FileList/FileList';
+import {MarketplaceProduct} from '../../entity/MarketplaceProduct';
+import {axios} from '../../utils/axios';
 import fetcher from '../fetcher';
 
-class HeadlessCommerceAdminCatalog {
-	async addOrUpdateProductImageByExternalReferenceCode(
+type Metrics = {[key: string]: {totalCount: number}};
+
+export default class HeadlessCommerceAdminCatalog {
+	static async addOrUpdateProductImageByExternalReferenceCode(
 		externalReferenceCode: string,
 		image: UploadedImage
 	) {
@@ -17,39 +21,98 @@ class HeadlessCommerceAdminCatalog {
 		);
 	}
 
-	async createProduct({
-		appCategories,
-		appDescription,
-		appName,
-		catalogId,
-		productChannels,
-	}: {
-		appCategories: Categories[];
-		appDescription: string;
-		appName: string;
-		catalogId: number;
-		productChannels?: Partial<Channel>[];
-	}) {
-		return fetcher.post(
-			`/o/headless-commerce-admin-catalog/v1.0/products`,
+	static async createProductImageByExternalReferenceCodeAxios(
+		externalReferenceCode: string,
+		body: unknown,
+		onUploadProgressCallback: (progress: number) => void = () => null
+	) {
+		return axios.post(
+			`/o/headless-commerce-admin-catalog/v1.0/products/by-externalReferenceCode/${externalReferenceCode}/images`,
+			body,
 			{
-				active: true,
-				catalogId,
-				categories: appCategories,
-				description: {en_US: appDescription},
-				name: {en_US: appName},
-				productChannels,
-				productConfiguration: {
-					allowBackOrder: true,
-					maxOrderQuantity: 1,
-				},
-				productStatus: 2,
-				productType: 'virtual',
+				onUploadProgress: (event) =>
+					onUploadProgressCallback(
+						Math.round((event.loaded * 100) / Number(event.total))
+					),
 			}
 		);
 	}
 
-	async createProductSpecification(
+	static async createProductOption(body: unknown[], productId: number) {
+		return fetcher.post<APIResponse<ProductOption>>(
+			`/o/headless-commerce-admin-catalog/v1.0/products/${productId}/productOptions?nestedFields=productOptionValues`,
+			body
+		);
+	}
+
+	static async createProductOptionValue(body: unknown, optionId: number) {
+		return fetcher.post(
+			`/o/headless-commerce-admin-catalog/v1.0/productOptions/${optionId}/productOptionValues`,
+			body
+		);
+	}
+
+	static async createVirtualProduct({
+		catalogId,
+		categories,
+		description,
+		name,
+		productSpecifications,
+		productStatus,
+		workflowStatusInfo,
+	}: {
+		catalogId: number;
+		categories: Partial<Categories>[];
+		description: string;
+		name: string;
+		productSpecifications?: any;
+		productStatus?: number;
+		workflowStatusInfo?: number;
+	}) {
+		return fetcher.post(
+			`/o/headless-commerce-admin-catalog/v1.0/products?nestedFields=productVirtualSettings`,
+			{
+				active: true,
+				catalogId,
+				categories,
+				description: {en_US: description},
+				name: {en_US: name},
+				productConfiguration: {
+					allowBackOrder: true,
+					maxOrderQuantity: 1,
+				},
+				productSpecifications,
+				productStatus,
+				productType: 'virtual',
+				productVirtualSettings: {},
+				workflowStatusInfo,
+			}
+		);
+	}
+
+	static async createProductSKU(body: unknown, productId: string | number) {
+		return fetcher.post<SKU>(
+			`/o/headless-commerce-admin-catalog/v1.0/products/${productId}/skus`,
+			body
+		);
+	}
+
+	static async deleteAttachmentByExternalReferenceCode(
+		externalReferenceCode: string
+	) {
+		return fetcher.delete(
+			`/o/headless-commerce-admin-catalog/v1.0/attachment/by-externalReferenceCode/${externalReferenceCode}`
+		);
+	}
+
+	static async updateProduct(productId: number, body: unknown) {
+		return fetcher.patch(
+			`/o/headless-commerce-admin-catalog/v1.0/products/${productId}`,
+			body
+		);
+	}
+
+	static async createProductSpecification(
 		productId: number | string,
 		productSpecification: ProductSpecification
 	) {
@@ -59,13 +122,13 @@ class HeadlessCommerceAdminCatalog {
 		);
 	}
 
-	async deleteProduct(productId: string | number) {
+	static async deleteProduct(productId: string | number) {
 		return fetcher.delete(
 			`/o/headless-commerce-admin-catalog/v1.0/products/${productId}`
 		);
 	}
 
-	async getCatalog(
+	static async getCatalog(
 		catalogId: string | number,
 		searchParams = new URLSearchParams()
 	) {
@@ -74,28 +137,34 @@ class HeadlessCommerceAdminCatalog {
 		);
 	}
 
-	async getCatalogs(searchParams = new URLSearchParams()) {
+	static async getCatalogs(searchParams = new URLSearchParams()) {
 		return fetcher<APIResponse<Catalog>>(
 			`/o/headless-commerce-admin-catalog/v1.0/catalogs?${searchParams.toString()}`
 		);
 	}
 
-	async getSpecifications(searchParams = new URLSearchParams()) {
+	static async getSpecifications(searchParams = new URLSearchParams()) {
 		return fetcher<APIResponse>(
 			`/o/headless-commerce-admin-catalog/v1.0/specifications?${searchParams}`
 		);
 	}
 
-	async getProduct(
+	static async getOptions() {
+		return fetcher<APIResponse<CommerceOption>>(
+			'/o/headless-commerce-admin-catalog/v1.0/options'
+		);
+	}
+
+	static async getProduct(
 		productId: string | number,
 		searchParams = new URLSearchParams()
 	) {
-		return fetcher(
+		return fetcher<Product>(
 			`/o/headless-commerce-admin-catalog/v1.0/products/${productId}?${searchParams.toString()}`
 		);
 	}
 
-	async getProductByExternalReferenceCode(
+	static async getProductByExternalReferenceCode(
 		externalReferenceCode: string,
 		searchParams = new URLSearchParams()
 	): Promise<Product> {
@@ -104,19 +173,78 @@ class HeadlessCommerceAdminCatalog {
 		);
 	}
 
-	async getProducts(searchParams = new URLSearchParams()) {
-		return fetcher(
+	static async getProducts(searchParams = new URLSearchParams()) {
+		const response = await fetcher<APIResponse<Product>>(
 			`/o/headless-commerce-admin-catalog/v1.0/products?${searchParams.toString()}`
+		);
+
+		return {
+			...response,
+			items: response.items.map((item) => ({
+				...item,
+				__marketplaceProduct: new MarketplaceProduct(item),
+			})),
+		};
+	}
+
+	static async getProductsDashboardKPI(filters: Record<string, string>) {
+		const productQueries = Object.entries(filters)
+			.map(
+				([
+					alias,
+					filter,
+				]) => `${alias}: products(filter: "${filter}", pageSize: 1) {
+					totalCount
+			  	}
+			`
+			)
+			.join('\n');
+
+		const query = `
+		  {
+			metrics: headlessCommerceAdminCatalog_v1_0 {
+			  ${productQueries}
+			}
+		  }
+		`;
+
+		try {
+			const response = await fetcher.post<{
+				data: {
+					metrics: Metrics;
+				};
+			}>(`/o/graphql`, {query});
+
+			return response;
+		}
+		catch {
+			const metrics: Metrics = {};
+
+			for (const filterKey in filters) {
+				metrics[filterKey] = {totalCount: 0};
+			}
+
+			return {
+				data: {
+					metrics,
+				},
+			};
+		}
+	}
+
+	static async getProductOptions(productId: number) {
+		return fetcher<APIResponse<ProductOption>>(
+			`/o/headless-commerce-admin-catalog/v1.0/products/${productId}/productOptions?nestedFields=productOptionValues`
 		);
 	}
 
-	async getProductSkus(productId: string | number) {
+	static async getProductSkus(productId: string | number) {
 		return fetcher<APIResponse<SKU>>(
 			`/o/headless-commerce-admin-catalog/v1.0/products/${productId}/skus`
 		);
 	}
 
-	async getProductSpecifications(productId: string | number) {
+	static async getProductSpecifications(productId: string | number) {
 		const response = await fetcher(
 			`/o/headless-commerce-admin-catalog/v1.0/products/${productId}/productSpecifications`
 		);
@@ -124,7 +252,7 @@ class HeadlessCommerceAdminCatalog {
 		return (response?.items ?? []) as ProductSpecification[];
 	}
 
-	async updateProductByExternalReferenceCode(
+	static async updateProductByExternalReferenceCode(
 		externalReferenceCode: string,
 		body: unknown
 	) {
@@ -134,7 +262,7 @@ class HeadlessCommerceAdminCatalog {
 		);
 	}
 
-	async updateProductSpecification(
+	static async updateProductSpecification(
 		id: number | string,
 		productSpecification: ProductSpecification
 	) {
@@ -144,7 +272,3 @@ class HeadlessCommerceAdminCatalog {
 		);
 	}
 }
-
-const HeadlessCommerceAdminCatalogImpl = new HeadlessCommerceAdminCatalog();
-
-export default HeadlessCommerceAdminCatalogImpl;

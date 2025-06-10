@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -51,12 +52,13 @@ public class AccountGroupLocalServiceUtil {
 	}
 
 	public static AccountGroup addAccountGroup(
-			long userId, String description, String name,
+			String externalReferenceCode, long userId, String description,
+			String name,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addAccountGroup(
-			userId, description, name, serviceContext);
+			externalReferenceCode, userId, description, name, serviceContext);
 	}
 
 	public static AccountGroup checkGuestAccountGroup(long companyId)
@@ -372,6 +374,15 @@ public class AccountGroupLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
+	public static AccountGroup getOrAddIncompleteAccountGroup(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws Exception {
+
+		return getService().getOrAddIncompleteAccountGroup(
+			externalReferenceCode, companyId, userId, name);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -428,12 +439,14 @@ public class AccountGroupLocalServiceUtil {
 	}
 
 	public static AccountGroup updateAccountGroup(
-			long accountGroupId, String description, String name,
+			String externalReferenceCode, long accountGroupId,
+			String description, String name,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateAccountGroup(
-			accountGroupId, description, name, serviceContext);
+			externalReferenceCode, accountGroupId, description, name,
+			serviceContext);
 	}
 
 	public static AccountGroup updateExternalReferenceCode(
@@ -453,13 +466,11 @@ public class AccountGroupLocalServiceUtil {
 	}
 
 	public static AccountGroupLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(AccountGroupLocalService service) {
-		_service = service;
-	}
-
-	private static volatile AccountGroupLocalService _service;
+	private static final Snapshot<AccountGroupLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			AccountGroupLocalServiceUtil.class, AccountGroupLocalService.class);
 
 }

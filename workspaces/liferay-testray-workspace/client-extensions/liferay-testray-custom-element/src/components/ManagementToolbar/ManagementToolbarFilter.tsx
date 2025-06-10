@@ -16,46 +16,46 @@ import {
 	useState,
 } from 'react';
 import {useHotkeys} from 'react-hotkeys-hook';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
+import useSWR from 'swr';
 import {ListViewContext, ListViewTypes} from '~/context/ListViewContext';
 import SearchBuilder from '~/core/SearchBuilder';
 import useFormActions from '~/hooks/useFormActions';
-import useQueryParams from '~/hooks/useQueryParams';
+import useUpdateUrlParams from '~/hooks/useUpdateUrlParams';
 import i18n from '~/i18n';
 import {FilterSchema} from '~/schema/filter';
+import fetcher from '~/services/fetcher';
+import {safeJSONParse} from '~/util';
 
 import Form from '../Form';
 import {RendererFields} from '../Form/Renderer';
-import {FieldOptions} from '../Form/Renderer/Renderer';
 
 type ManagementToolbarFilterProps = {
 	applyFilters?: boolean;
-	fieldOptions?: FieldOptions;
+	customFilterFields?: {[key: string]: string};
 	filterSchema?: FilterSchema;
-	isLoading?: boolean;
 };
 
 type Option = {label: string; value: string};
 
 type FilterBodyProps = {
 	applyFilters?: boolean;
-	fieldOptions?: FieldOptions;
+	customFilterFields?: {[key: string]: string};
 	filterSchema: FilterSchema | undefined;
-	isLoading?: boolean;
+
 	isVisible: boolean;
 	setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const FilterBody: React.FC<FilterBodyProps> = ({
 	applyFilters = true,
-	fieldOptions = {},
+	customFilterFields,
 	filterSchema,
-	isLoading = false,
 	isVisible,
 	setIsVisible,
 }) => {
 	const [filter, setFilter] = useState('');
-	const {updateUrlParams} = useQueryParams();
+	const updateUrlParams = useUpdateUrlParams();
 
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -69,9 +69,10 @@ const FilterBody: React.FC<FilterBodyProps> = ({
 		return () => clearTimeout(timeout);
 	}, [isVisible]);
 
-	const fields = useMemo(() => filterSchema?.fields as RendererFields[], [
-		filterSchema?.fields,
-	]);
+	const fields = useMemo(
+		() => filterSchema?.fields as RendererFields[],
+		[filterSchema?.fields]
+	);
 
 	const initialFilters = useMemo(() => {
 		const initialValues: {[key: string]: string} = {};
@@ -87,6 +88,7 @@ const FilterBody: React.FC<FilterBodyProps> = ({
 	const [listViewContext, dispatch] = useContext(ListViewContext);
 	const location = useLocation();
 	const navigate = useNavigate();
+	const params = useParams();
 	const [form, setForm] = useState(() => ({
 		...initialFilters,
 		...listViewContext.filters.filter,
@@ -112,6 +114,57 @@ const FilterBody: React.FC<FilterBodyProps> = ({
 		});
 	}, [location.search, navigate]);
 
+	const paramsMemoized = useMemo(() => {
+		const testrayModalParams = document.getElementById(
+			'testray-modal-params'
+		);
+
+		if (testrayModalParams) {
+			return testrayModalParams.textContent;
+		}
+
+		return JSON.stringify({...params, ...customFilterFields});
+	}, [params, customFilterFields]);
+
+	const fieldsMemoized = useMemo(() => filterSchema?.fields, [filterSchema]);
+
+	const {data: fieldOptions = {}, isLoading} = useSWR(
+		filterSchema?.fields?.length ? `/filter-${filterSchema?.name}` : null,
+		async () => {
+			const parameters = safeJSONParse(paramsMemoized);
+
+			const fieldsWithResource = fieldsMemoized?.filter(
+				({resource}) => resource
+			);
+
+			const _fieldOptions: any = {};
+
+			if (fieldsWithResource) {
+				await Promise.all(
+					fieldsWithResource.map((field) =>
+						fetcher(
+							(typeof field.resource === 'function'
+								? field.resource(parameters)
+								: field.resource) as string
+						)
+					)
+				).then((results) =>
+					results.forEach((result, index) => {
+						const field = fieldsWithResource[index];
+
+						if (field.transformData) {
+							const parsedValue = field.transformData(result);
+
+							_fieldOptions[field.name] = parsedValue;
+						}
+					})
+				);
+			}
+
+			return _fieldOptions;
+		}
+	);
+
 	const onApply = useCallback(() => {
 		const filterCleaned = SearchBuilder.removeEmptyFilter(form);
 
@@ -128,11 +181,17 @@ const FilterBody: React.FC<FilterBodyProps> = ({
 		});
 
 		const filters = Object.keys(filterCleaned).map((key) => {
+			const field = fields?.find(({name}) => name === key);
+
+			const valueOption =
+				field?.name.includes('teamToComponents/name') ||
+				field?.name.includes('componentToCaseResult/name');
+
 			if (Array.isArray(filterCleaned[key])) {
 				return {
 					name: key,
-					value: (filterCleaned as any)[key].map(
-						(options: Option) => options.value || options
+					value: (filterCleaned as any)[key].map((options: Option) =>
+						valueOption ? options?.label : options?.value || options
 					),
 				};
 			}
@@ -233,6 +292,7 @@ const FilterBody: React.FC<FilterBodyProps> = ({
 						filterSchema={filterSchema?.name as string}
 						form={form}
 						isLoading={isLoading}
+						onApply={onApply}
 						onChange={onChange}
 					/>
 				</div>
@@ -257,9 +317,8 @@ const FilterBody: React.FC<FilterBodyProps> = ({
 
 const ManagementToolbarFilter: React.FC<ManagementToolbarFilterProps> = ({
 	applyFilters = true,
-	fieldOptions = {},
+	customFilterFields,
 	filterSchema,
-	isLoading = false,
 }) => {
 	const buttonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -289,26 +348,28 @@ const ManagementToolbarFilter: React.FC<ManagementToolbarFilterProps> = ({
 					/>
 				</span>
 			</ClayButton>
-
-			<ClayDropDown.Menu
-				active={isVisible}
-				alignElementRef={buttonRef}
-				alignmentPosition={3}
-				className={classNames('dropdown-management-toolbar', {
-					'dropdown-management-toolbar-small': hasOneFilter,
-				})}
-				closeOnClickOutside
-				onActiveChange={() => setIsVisible((isVisible) => !isVisible)}
-			>
-				<FilterBody
-					applyFilters={applyFilters}
-					fieldOptions={fieldOptions}
-					filterSchema={filterSchema}
-					isLoading={isLoading}
-					isVisible={isVisible}
-					setIsVisible={setIsVisible}
-				/>
-			</ClayDropDown.Menu>
+			{isVisible && (
+				<ClayDropDown.Menu
+					active={isVisible}
+					alignElementRef={buttonRef}
+					alignmentPosition={3}
+					className={classNames('dropdown-management-toolbar', {
+						'dropdown-management-toolbar-small': hasOneFilter,
+					})}
+					closeOnClickOutside
+					onActiveChange={() =>
+						setIsVisible((isVisible) => !isVisible)
+					}
+				>
+					<FilterBody
+						applyFilters={applyFilters}
+						customFilterFields={customFilterFields}
+						filterSchema={filterSchema}
+						isVisible={isVisible}
+						setIsVisible={setIsVisible}
+					/>
+				</ClayDropDown.Menu>
+			)}
 		</>
 	);
 };

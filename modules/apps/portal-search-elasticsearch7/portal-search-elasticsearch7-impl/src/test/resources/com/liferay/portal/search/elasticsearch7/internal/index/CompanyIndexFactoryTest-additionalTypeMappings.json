@@ -1,22 +1,8 @@
 {
 	"dynamic_templates": [
 		{
-			"template_ja": {
-				"mapping": {
-					"analyzer": "kuromoji_liferay_custom",
-					"store": true,
-					"term_vector": "with_positions_offsets",
-					"type": "text"
-				},
-				"match": "\\w+_ja\\b|\\w+_ja_[A-Z]{2}\\b",
-				"match_mapping_type": "string",
-				"match_pattern": "regex"
-			}
-		},
-		{
 			"template_additional_mapping": {
 				"mapping": {
-					"store": true,
 					"type": "keyword"
 				},
 				"match": "*_additional_mapping",
@@ -25,12 +11,10 @@
 		}
 	],
 	"properties": {
-		"orderStatus": {
-			"store": true,
+		"additionalKeyword": {
 			"type": "keyword"
 		},
-		"productDescription": {
-			"store": true,
+		"additionalText": {
 			"type": "text"
 		}
 	}

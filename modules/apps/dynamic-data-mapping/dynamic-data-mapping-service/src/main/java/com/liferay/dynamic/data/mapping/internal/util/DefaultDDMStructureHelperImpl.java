@@ -245,8 +245,9 @@ public class DefaultDDMStructureHelperImpl
 			"status", WorkflowConstants.STATUS_APPROVED);
 
 		DDMStructure ddmStructure = _ddmStructureLocalService.addStructure(
-			userId, groupId, DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
-			classNameId, name, nameMap, descriptionMap, ddmForm, ddmFormLayout,
+			null, userId, groupId,
+			DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID, classNameId,
+			name, nameMap, descriptionMap, ddmForm, ddmFormLayout,
 			StorageType.DEFAULT.toString(), DDMStructureConstants.TYPE_DEFAULT,
 			serviceContext);
 
@@ -264,7 +265,8 @@ public class DefaultDDMStructureHelperImpl
 				templateElement.elementText("cacheable"));
 
 			_ddmTemplateLocalService.addTemplate(
-				userId, groupId, _portal.getClassNameId(DDMStructure.class),
+				null, userId, groupId,
+				_portal.getClassNameId(DDMStructure.class),
 				ddmStructure.getStructureId(), ddmStructure.getClassNameId(),
 				name, nameMap, null, DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY,
 				DDMTemplateConstants.TEMPLATE_MODE_CREATE,

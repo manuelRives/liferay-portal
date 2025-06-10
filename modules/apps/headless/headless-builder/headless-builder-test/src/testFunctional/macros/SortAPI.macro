@@ -14,10 +14,11 @@ definition {
 		}
 
 		var api = "headless-builder/sorts";
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/${api} \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-H Content-Type: application/json
 		''';
 
@@ -31,7 +32,7 @@ definition {
 		var curl = SortAPI._curlAPISort(virtualHost = ${virtualHost});
 		var body = '''
 			"oDataSort": "${sortValue}",
-			"r_apiEndpointToAPISorts_c_apiEndpointERC": ${endpointERC}
+			"r_apiEndpointToAPISorts_l_apiEndpointERC": ${endpointERC}
 		''';
 
 		var curl = StringUtil.add(${curl}, " -d { ${body} }", "");

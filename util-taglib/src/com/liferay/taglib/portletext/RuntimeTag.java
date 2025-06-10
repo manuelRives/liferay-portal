@@ -45,6 +45,17 @@ import com.liferay.taglib.servlet.PipingServletResponseFactory;
 import com.liferay.taglib.util.PortalIncludeUtil;
 import com.liferay.taglib.util.ThreadLocalUtil;
 
+import jakarta.portlet.GenericPortlet;
+import jakarta.portlet.HeaderRequest;
+import jakarta.portlet.HeaderResponse;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+import jakarta.servlet.jsp.tagext.TagSupport;
+
 import java.lang.reflect.Method;
 
 import java.util.HashMap;
@@ -52,17 +63,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
-
-import javax.portlet.GenericPortlet;
-import javax.portlet.HeaderRequest;
-import javax.portlet.HeaderResponse;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
-import javax.servlet.jsp.tagext.TagSupport;
 
 /**
  * @author Brian Wing Shun Chan
@@ -303,10 +303,6 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 			httpServletRequest.setAttribute(
 				WebKeys.SETTINGS_SCOPE, settingsScope);
 
-			PortletRenderParts portletRenderParts = null;
-
-			boolean writeObject = false;
-
 			String layoutMode = ParamUtil.getString(
 				httpServletRequest, "p_l_mode", Constants.VIEW);
 
@@ -321,8 +317,6 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 						PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
 						PortletKeys.PREFS_PLID_SHARED, portletInstanceKey,
 						defaultPreferences);
-
-					writeObject = true;
 				}
 
 				if (persistSettings) {
@@ -347,21 +341,16 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 							portletLayoutListener.onAddToLayout(
 								portletInstanceKey, themeDisplay.getPlid());
 						}
-
-						writeObject = true;
 					}
 				}
 			}
 
-			if (writeObject) {
-				portletRenderParts = PortletRenderUtil.getPortletRenderParts(
+			PortletRenderParts portletRenderParts =
+				PortletRenderUtil.getPortletRenderParts(
 					httpServletRequest, StringPool.BLANK, portlet);
-			}
 
-			if (portletRenderParts != null) {
-				PortletRenderUtil.writeHeaderPaths(
-					httpServletResponse, portletRenderParts);
-			}
+			PortletRenderUtil.writeHeaderPaths(
+				httpServletResponse, portletRenderParts);
 
 			embeddedPortletIds.push(embeddedPortletId);
 
@@ -388,10 +377,8 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 
 			embeddedPortletIds.pop();
 
-			if (portletRenderParts != null) {
-				PortletRenderUtil.writeFooterPaths(
-					httpServletResponse, portletRenderParts);
-			}
+			PortletRenderUtil.writeFooterPaths(
+				httpServletResponse, portletRenderParts);
 		}
 		finally {
 			restrictPortletServletRequest.mergeSharedAttributes();
@@ -528,7 +515,8 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 		String portletClassName = portlet.getPortletClass();
 
 		if (Objects.equals(
-				portletClassName, "javax.portlet.faces.GenericFacesPortlet")) {
+				portletClassName,
+				"jakarta.portlet.faces.GenericFacesPortlet")) {
 
 			return true;
 		}
@@ -549,7 +537,8 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 			Class<?> portletClass = classLoader.loadClass(portletClassName);
 
 			if (ClassUtil.isSubclass(
-					portletClass, "javax.portlet.faces.GenericFacesPortlet")) {
+					portletClass,
+					"jakarta.portlet.faces.GenericFacesPortlet")) {
 
 				return true;
 			}
@@ -571,7 +560,9 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 			}
 		}
 		catch (NoSuchMethodException noSuchMethodException) {
-			_log.error(noSuchMethodException);
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchMethodException);
+			}
 		}
 
 		return false;

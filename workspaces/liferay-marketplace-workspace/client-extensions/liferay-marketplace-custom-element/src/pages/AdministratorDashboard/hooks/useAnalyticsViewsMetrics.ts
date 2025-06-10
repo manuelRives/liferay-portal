@@ -5,24 +5,21 @@
 
 import useSWR from 'swr';
 
-import useMarketplaceSpringBootOAuth2 from '../../../hooks/useMarketplaceSpringBootOAuth2';
-import {colors} from '../mock';
+import analyticsOAuth2 from '../../../services/oauth/Analytics';
 
 const useAnalyticsViewsMetrics = () => {
-	const marketplaceSpringBootOAuth2 = useMarketplaceSpringBootOAuth2();
-
 	const {data: analyticsViewsResponse = [], ...swr} = useSWR<
 		AnalyticsViews[]
 	>('administrator-dashboard/metrics/analytics', () =>
 		Promise.all([
-			marketplaceSpringBootOAuth2.getAnalyticsPages(
+			analyticsOAuth2.getPages(
 				new URLSearchParams({
 					rangeKey: '90',
 					sortMetric: 'viewsMetric',
 					sortOrder: 'desc',
 				})
 			),
-			marketplaceSpringBootOAuth2.getAnalyticsPages(
+			analyticsOAuth2.getPages(
 				new URLSearchParams({
 					keywords: '/p/',
 					rangeKey: '90',
@@ -46,24 +43,10 @@ const useAnalyticsViewsMetrics = () => {
 
 	return {
 		...swr,
-		data: {
-			colors: {
-				'Total Views': colors.color1,
-				'Unique Visitors': colors.color2,
-			},
-			columns: [
-				['x', ...viewsMetrics?.map((page) => page.title)],
-				['Total Views', ...viewsMetrics?.map((page) => page.views)],
-				[
-					'Unique Visitors',
-					...viewsMetrics?.map((page) => page.visitor),
-				],
-			],
-			viewsMetrics,
-		},
+
 		visitorsMetric:
 			viewsMetricResult?.results
-				.map(
+				?.map(
 					({
 						metrics: {
 							viewsMetric: {value},

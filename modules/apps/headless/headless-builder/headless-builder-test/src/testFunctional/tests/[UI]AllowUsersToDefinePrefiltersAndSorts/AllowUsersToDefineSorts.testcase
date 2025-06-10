@@ -2,10 +2,10 @@
 definition {
 
 	property custom.properties = "feature.flag.LPS-178642=true";
+	property portal.acceptance = "quarantine";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Object";
-	property testray.main.component.name = "Headless Builder";
+	property testray.main.component.name = "API Builder";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -73,8 +73,6 @@ definition {
 
 	@priority = 4
 	test CanApplySortingAndSortParameter {
-		property portal.acceptance = "true";
-
 		task ("And Given setting the Sorting to 'age:asc'") {
 			APIBuilderUI.addAndPublishEndpointConfiguration(
 				editValue = "age:asc",
@@ -82,6 +80,10 @@ definition {
 				fieldName = "sort",
 				name = "testendpoint",
 				title = "My-app");
+
+			Alert.viewSuccessMessage();
+
+			WaitForElementNotPresent(locator1 = "Message#SUCCESS");
 		}
 
 		task ("When I call endpoint with '?sort=age:desc' in API Explorer") {
@@ -102,10 +104,10 @@ definition {
 		}
 	}
 
+	@description = "Ignored because of bug LPD-31798"
+	@ignore = "true"
 	@priority = 4
 	test CanResetSorting {
-		property portal.acceptance = "true";
-
 		task ("And Given setting the Sorting to 'age:desc'") {
 			APIBuilderUI.addAndPublishEndpointConfiguration(
 				editValue = "age:desc",
@@ -151,8 +153,6 @@ definition {
 
 	@priority = 5
 	test SortingAndSortParameterReturnTheSameData {
-		property portal.acceptance = "true";
-
 		task ("And Given setting the Sorting to 'age:asc'") {
 			APIBuilderUI.addAndPublishEndpointConfiguration(
 				editValue = "age:asc",
@@ -201,7 +201,6 @@ definition {
 		}
 	}
 
-	@ignore = "true"
 	@priority = 3
 	test SortingIsLimitedByODataCharacterLimit {
 		task ("When setting the Sorting with 10001 characters") {
@@ -222,8 +221,6 @@ definition {
 
 	@priority = 5
 	test SortingIsPresentInEndpointConfiguration {
-		property portal.acceptance = "true";
-
 		task ("When navigating to the endpoint Configuration tab") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Endpoints",
@@ -239,10 +236,10 @@ definition {
 		}
 	}
 
+	@description = "Ignored because of bug LPD-31798"
+	@ignore = "true"
 	@priority = 4
 	test SortingWorksWithMainObjectFieldsThatAreNotPartOfSchemaProperties {
-		property portal.acceptance = "true";
-
 		task ("When setting the Sorting to 'dateCreated:asc'") {
 			APIBuilderUI.addAndPublishEndpointConfiguration(
 				editValue = "dateCreated:asc",
@@ -265,10 +262,10 @@ definition {
 		}
 	}
 
+	@description = "Ignored because of bug LPD-31798"
+	@ignore = "true"
 	@priority = 4
 	test SortingWorksWithSchemaPropertiesMadeOfMainObjectFields {
-		property portal.acceptance = "true";
-
 		task ("When setting the Sorting to 'age:asc'") {
 			APIBuilderUI.addAndPublishEndpointConfiguration(
 				editValue = "age:asc",

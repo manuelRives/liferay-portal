@@ -8,8 +8,8 @@ package com.liferay.commerce.product.definitions.web.internal.option;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
+import com.liferay.commerce.frontend.helper.ProductHelper;
 import com.liferay.commerce.frontend.model.ProductSettingsModel;
-import com.liferay.commerce.frontend.util.ProductHelper;
 import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.model.CPDefinition;
@@ -18,12 +18,10 @@ import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.option.CommerceOptionType;
 import com.liferay.commerce.product.service.CPDefinitionOptionValueRelLocalService;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.ProductOption;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Sku;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.converter.SkuDTOConverterContext;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -37,14 +35,14 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.PrintWriter;
 
 import java.math.BigDecimal;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -74,11 +72,6 @@ public class SelectDateCommerceOptionTypeImpl implements CommerceOptionType {
 	@Override
 	public boolean hasValues() {
 		return true;
-	}
-
-	@Override
-	public boolean isActive() {
-		return FeatureFlagManagerUtil.isEnabled("LPD-10887");
 	}
 
 	@Override
@@ -129,7 +122,7 @@ public class SelectDateCommerceOptionTypeImpl implements CommerceOptionType {
 		else {
 			ProductSettingsModel productSettingsModel =
 				_productHelper.getProductSettingsModel(
-					cpDefinition.getCPDefinitionId());
+					cpDefinition.getCPDefinitionId(), commerceContext);
 
 			minQuantity = productSettingsModel.getMinQuantity();
 
@@ -152,15 +145,14 @@ public class SelectDateCommerceOptionTypeImpl implements CommerceOptionType {
 						commerceContext,
 						_portal.getCompanyId(httpServletRequest), cpDefinition,
 						_portal.getLocale(httpServletRequest), minQuantity,
-						defaultCPInstanceId, StringPool.BLANK, null,
+						defaultCPInstanceId, null, StringPool.BLANK, null,
 						_portal.getUser(httpServletRequest)));
 			}
 		}
 
 		_reactRenderer.renderReact(
 			new ComponentDescriptor(
-				_npmResolver.resolveModuleName("commerce-frontend-js") +
-					"/components/product_options/ProductOptionSelect"),
+				"{ProductOptionSelect} from commerce-frontend-js"),
 			HashMapBuilder.<String, Object>put(
 				"accountId",
 				() -> {
@@ -241,9 +233,6 @@ public class SelectDateCommerceOptionTypeImpl implements CommerceOptionType {
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private Portal _portal;

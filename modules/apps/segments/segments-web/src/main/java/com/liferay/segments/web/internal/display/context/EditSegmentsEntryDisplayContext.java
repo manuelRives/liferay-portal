@@ -43,16 +43,16 @@ import com.liferay.segments.provider.SegmentsEntryProviderRegistry;
 import com.liferay.segments.service.SegmentsEntryService;
 import com.liferay.segments.web.internal.security.permission.resource.SegmentsEntryPermission;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eduardo García
@@ -109,16 +109,29 @@ public class EditSegmentsEntryDisplayContext {
 		return LanguageUtil.get(_httpServletRequest, "segments");
 	}
 
-	public Map<String, Object> getData() throws Exception {
+	public Map<String, Object> getData() {
 		if (_data != null) {
 			return _data;
 		}
 
-		_data = HashMapBuilder.<String, Object>put(
-			"context", _getContext()
-		).put(
-			"props", _getProps()
-		).build();
+		HashMapBuilder.HashMapWrapper<String, Object> hashMapWrapper =
+			HashMapBuilder.<String, Object>put("context", _getContext());
+
+		try {
+			hashMapWrapper.put("props", _getProps());
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
+			hashMapWrapper.put(
+				"error",
+				LanguageUtil.get(
+					_httpServletRequest, "the-segment-is-no-longer-available"));
+		}
+
+		_data = hashMapWrapper.build();
 
 		return _data;
 	}

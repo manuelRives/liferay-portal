@@ -9,7 +9,6 @@ import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
 import {debounce} from 'frontend-js-web';
-import imagePromise from 'image-promise';
 import React, {useEffect, useRef, useState} from 'react';
 
 const KEY_CODE_ENTER = 13;
@@ -22,23 +21,7 @@ const KEY_CODE_ESC = 27;
  * @type {Array<number>}
  */
 const VALID_KEY_CODES = [
-	8,
-	9,
-	37,
-	38,
-	39,
-	40,
-	46,
-	48,
-	49,
-	50,
-	51,
-	52,
-	53,
-	54,
-	55,
-	56,
-	57,
+	8, 9, 37, 38, 39, 40, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
 ];
 
 /**
@@ -88,7 +71,10 @@ const DocumentPreviewer = ({baseImageURL, initialPage, totalPages}) => {
 		let pagePromise = loadedPages[page] && loadedPages[page].pagePromise;
 
 		if (!pagePromise) {
-			pagePromise = imagePromise(`${baseImageURL}${page}`).then(() => {
+			const image = new Image();
+			image.src = `${baseImageURL}${page}`;
+
+			pagePromise = image.decode().then(() => {
 				loadedPages[page].loaded = true;
 			});
 
@@ -227,7 +213,7 @@ const DocumentPreviewer = ({baseImageURL, initialPage, totalPages}) => {
 								totalPages > 1
 									? Liferay.Language.get(
 											'click-to-jump-to-a-page'
-									  )
+										)
 									: undefined
 							}
 						>

@@ -48,7 +48,7 @@ public abstract class BaseGlobJobProperty
 
 		String relativePath = getRelativePath();
 
-		for (String glob : value.split(",")) {
+		for (String glob : value.split(",(?![^{}]*})")) {
 			String relativeGlob = relativePath + "/" + glob;
 
 			relativeGlob = relativeGlob.replaceAll("/+", "/");
@@ -93,6 +93,16 @@ public abstract class BaseGlobJobProperty
 		super(
 			job, type, testBaseDir, basePropertyName, useBasePropertyName,
 			testSuiteName, testBatchName);
+	}
+
+	protected BaseGlobJobProperty(
+		Job job, Type type, File testBaseDir, String basePropertyName,
+		boolean useBasePropertyName, String testSuiteName, String testBatchName,
+		String ruleName) {
+
+		super(
+			job, type, testBaseDir, basePropertyName, useBasePropertyName,
+			testSuiteName, testBatchName, ruleName);
 	}
 
 	protected String getRelativePath() {

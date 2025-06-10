@@ -13,7 +13,6 @@ import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutFriendlyURL;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.LayoutFriendlyURLLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -69,16 +68,15 @@ public class LayoutUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcess() throws Exception {
+	public void testUpgrade() throws Exception {
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
 				RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 				WorkflowConstants.STATUS_DRAFT, _serviceContext);
 
-		Layout draftLayout = _layoutLocalService.fetchLayout(
-			_classNameLocalService.getClassNameId(Layout.class),
+		Layout draftLayout = _layoutLocalService.fetchDraftLayout(
 			layoutPageTemplateEntry.getPlid());
 
 		Layout layout = _layoutLocalService.getLayout(draftLayout.getClassPK());
@@ -135,6 +133,71 @@ public class LayoutUpgradeProcessTest {
 		Assert.assertTrue(updatedLayoutFriendlyURL.isPrivateLayout());
 	}
 
+	@Test
+	public void testUpgradeWhenPrivateLayoutAlreadyExists() throws Exception {
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
+				RandomTestUtil.randomString(),
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
+				WorkflowConstants.STATUS_DRAFT, _serviceContext);
+
+		Layout draftLayout = _layoutLocalService.fetchDraftLayout(
+			layoutPageTemplateEntry.getPlid());
+
+		Layout layout = _layoutLocalService.getLayout(draftLayout.getClassPK());
+
+		Assert.assertTrue(layout.isPrivateLayout());
+
+		LayoutPageTemplateEntry duplicateLayoutPageTemplateEntry =
+			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
+				RandomTestUtil.randomString(),
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
+				WorkflowConstants.STATUS_DRAFT, _serviceContext);
+
+		Layout duplicateDraftLayout = _layoutLocalService.fetchDraftLayout(
+			duplicateLayoutPageTemplateEntry.getPlid());
+
+		Layout duplicateLayout = _layoutLocalService.getLayout(
+			duplicateDraftLayout.getClassPK());
+
+		duplicateLayout.setUuid(layout.getUuid());
+		duplicateLayout.setPrivateLayout(false);
+		duplicateLayout.setFriendlyURL(layout.getFriendlyURL());
+
+		duplicateLayout = _layoutLocalService.updateLayout(duplicateLayout);
+
+		LayoutFriendlyURL layoutFriendlyURL =
+			_layoutFriendlyURLLocalService.fetchLayoutFriendlyURL(
+				layout.getPlid(), layout.getDefaultLanguageId());
+
+		LayoutFriendlyURL duplicateLayoutFriendlyURL =
+			_layoutFriendlyURLLocalService.fetchLayoutFriendlyURL(
+				duplicateLayout.getPlid(),
+				duplicateDraftLayout.getDefaultLanguageId());
+
+		duplicateLayoutFriendlyURL.setPrivateLayout(false);
+		duplicateLayoutFriendlyURL.setFriendlyURL(
+			layoutFriendlyURL.getFriendlyURL());
+
+		_layoutFriendlyURLLocalService.updateLayoutFriendlyURL(
+			duplicateLayoutFriendlyURL);
+
+		_runUpgrade();
+
+		Layout updatedLayout = _layoutLocalService.getLayout(
+			duplicateLayout.getPlid());
+
+		Assert.assertTrue(updatedLayout.isPrivateLayout());
+
+		LayoutFriendlyURL updatedLayoutFriendlyURL =
+			_layoutFriendlyURLLocalService.fetchLayoutFriendlyURL(
+				updatedLayout.getPlid(), updatedLayout.getDefaultLanguageId());
+
+		Assert.assertTrue(updatedLayoutFriendlyURL.isPrivateLayout());
+	}
+
 	private void _runUpgrade() throws Exception {
 		UpgradeProcess upgradeProcess = UpgradeTestUtil.getUpgradeStep(
 			_upgradeStepRegistrator, _CLASS_NAME);
@@ -151,9 +214,6 @@ public class LayoutUpgradeProcessTest {
 		filter = "(&(component.name=com.liferay.layout.internal.upgrade.registry.LayoutServiceUpgradeStepRegistrator))"
 	)
 	private static UpgradeStepRegistrator _upgradeStepRegistrator;
-
-	@Inject
-	private ClassNameLocalService _classNameLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;

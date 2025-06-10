@@ -671,10 +671,8 @@ public class UserLocalServiceUtil {
 	 * the confirmation email.
 	 *
 	 * @param user the user
-	 * @param serviceContext the service context to be applied. You can specify
-	 an unencrypted custom password for the user via attribute
-	 <code>passwordUnencrypted</code>. You automatically generate a
-	 password for the user by setting attribute
+	 * @param serviceContext the service context to be applied. You
+	 automatically generate a password for the user by setting attribute
 	 <code>autoPassword</code> to <code>true</code>. You can send a
 	 confirmation email to the user by setting attribute
 	 <code>sendEmail</code> to <code>true</code>.
@@ -704,23 +702,6 @@ public class UserLocalServiceUtil {
 	 */
 	public static User createUser(long userId) {
 		return getService().createUser(userId);
-	}
-
-	/**
-	 * Decrypts the user's primary key and password from their encrypted forms.
-	 * Used for decrypting a user's credentials from the values stored in an
-	 * automatic login cookie.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param name the encrypted primary key of the user
-	 * @param password the encrypted password of the user
-	 * @return the user's primary key and password
-	 */
-	public static com.liferay.portal.kernel.util.KeyValuePair decryptUserId(
-			long companyId, String name, String password)
-		throws PortalException {
-
-		return getService().decryptUserId(companyId, name, password);
 	}
 
 	public static void deleteGroupUser(long groupId, long userId) {
@@ -1030,25 +1011,9 @@ public class UserLocalServiceUtil {
 	 * @param facebookId the user's Facebook ID
 	 * @return the user with the Facebook ID, or <code>null</code> if a user
 	 with the Facebook ID could not be found
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
-	@Deprecated
 	public static User fetchUserByFacebookId(long companyId, long facebookId) {
 		return getService().fetchUserByFacebookId(companyId, facebookId);
-	}
-
-	/**
-	 * Returns the user with the Google user ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param googleUserId the user's Google user ID
-	 * @return the user with the Google user ID, or <code>null</code> if a user
-	 with the Google user ID could not be found
-	 */
-	public static User fetchUserByGoogleUserId(
-		long companyId, String googleUserId) {
-
-		return getService().fetchUserByGoogleUserId(companyId, googleUserId);
 	}
 
 	/**
@@ -1060,20 +1025,6 @@ public class UserLocalServiceUtil {
 	 */
 	public static User fetchUserById(long userId) {
 		return getService().fetchUserById(userId);
-	}
-
-	/**
-	 * Returns the user with the OpenID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param openId the user's OpenID
-	 * @return the user with the OpenID, or <code>null</code> if a user with
-	 the OpenID could not be found
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User fetchUserByOpenId(long companyId, String openId) {
-		return getService().fetchUserByOpenId(companyId, openId);
 	}
 
 	/**
@@ -1710,35 +1661,6 @@ public class UserLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the user with the Facebook ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param facebookId the user's Facebook ID
-	 * @return the user with the Facebook ID
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User getUserByFacebookId(long companyId, long facebookId)
-		throws PortalException {
-
-		return getService().getUserByFacebookId(companyId, facebookId);
-	}
-
-	/**
-	 * Returns the user with the Google user ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param googleUserId the user's Google user ID
-	 * @return the user with the Google user ID
-	 */
-	public static User getUserByGoogleUserId(
-			long companyId, String googleUserId)
-		throws PortalException {
-
-		return getService().getUserByGoogleUserId(companyId, googleUserId);
-	}
-
-	/**
 	 * Returns the user with the primary key.
 	 *
 	 * @param userId the primary key of the user
@@ -1759,33 +1681,6 @@ public class UserLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getUserById(companyId, userId);
-	}
-
-	/**
-	 * Returns the user with the OpenID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param openId the user's OpenID
-	 * @return the user with the OpenID
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User getUserByOpenId(long companyId, String openId)
-		throws PortalException {
-
-		return getService().getUserByOpenId(companyId, openId);
-	}
-
-	/**
-	 * Returns the user with the portrait ID.
-	 *
-	 * @param portraitId the user's portrait ID
-	 * @return the user with the portrait ID
-	 */
-	public static User getUserByPortraitId(long portraitId)
-		throws PortalException {
-
-		return getService().getUserByPortraitId(portraitId);
 	}
 
 	/**
@@ -1908,6 +1803,19 @@ public class UserLocalServiceUtil {
 
 		return getService().getUsers(
 			companyId, status, start, end, orderByComparator);
+	}
+
+	public static List<User> getUsersByRoleId(long roleId, int start, int end)
+		throws PortalException {
+
+		return getService().getUsersByRoleId(roleId, start, end);
+	}
+
+	public static List<User> getUsersByRoleName(
+			long companyId, String roleName, int start, int end)
+		throws PortalException {
+
+		return getService().getUsersByRoleName(companyId, roleName, start, end);
 	}
 
 	/**
@@ -2728,34 +2636,6 @@ public class UserLocalServiceUtil {
 	}
 
 	/**
-	 * Updates the user's Facebook ID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param facebookId the user's new Facebook ID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User updateFacebookId(long userId, long facebookId)
-		throws PortalException {
-
-		return getService().updateFacebookId(userId, facebookId);
-	}
-
-	/**
-	 * Updates the user's Google user ID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param googleUserId the new Google user ID
-	 * @return the user
-	 */
-	public static User updateGoogleUserId(long userId, String googleUserId)
-		throws PortalException {
-
-		return getService().updateGoogleUserId(userId, googleUserId);
-	}
-
-	/**
 	 * Sets the groups the user is in, removing and adding groups as necessary.
 	 *
 	 * @param userId the primary key of the user
@@ -2856,6 +2736,12 @@ public class UserLocalServiceUtil {
 		return getService().updateLastLogin(userId, loginIP);
 	}
 
+	public static User updateLastLogin(User user, String loginIP)
+		throws PortalException {
+
+		return getService().updateLastLogin(user, loginIP);
+	}
+
 	/**
 	 * Updates whether the user is locked out from logging in.
 	 *
@@ -2926,21 +2812,6 @@ public class UserLocalServiceUtil {
 		throws PortalException {
 
 		return getService().updateModifiedDate(userId, modifiedDate);
-	}
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param openId the new OpenID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User updateOpenId(long userId, String openId)
-		throws PortalException {
-
-		return getService().updateOpenId(userId, openId);
 	}
 
 	/**
@@ -3095,6 +2966,13 @@ public class UserLocalServiceUtil {
 		throws PortalException {
 
 		return getService().updateStatus(userId, status, serviceContext);
+	}
+
+	public static User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateStatus(user, status, serviceContext);
 	}
 
 	/**

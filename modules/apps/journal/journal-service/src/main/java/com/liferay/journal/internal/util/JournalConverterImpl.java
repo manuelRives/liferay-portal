@@ -82,6 +82,10 @@ public class JournalConverterImpl implements JournalConverter {
 		throws PortalException {
 
 		try {
+			if (Validator.isNull(content)) {
+				return new Fields();
+			}
+
 			Document document = SAXReaderUtil.read(content);
 
 			Fields ddmFields = new Fields();
@@ -294,11 +298,11 @@ public class JournalConverterImpl implements JournalConverter {
 
 		if (options.size() == 1) {
 			if (GetterUtil.getBoolean(dynamicContentElement.getText())) {
-				Set<Map.Entry<String, LocalizedValue>> entrySet =
+				Set<Map.Entry<String, LocalizedValue>> entries =
 					options.entrySet();
 
 				Iterator<Map.Entry<String, LocalizedValue>> iterator =
-					entrySet.iterator();
+					entries.iterator();
 
 				Map.Entry<String, LocalizedValue> entry = iterator.next();
 

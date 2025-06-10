@@ -29,8 +29,15 @@
 			},
 			"FileEntry": {
 				"properties": {
+					"externalReferenceCode": {
+						"type": "string"
+					},
 					"fileBase64": {
 						"description": "optional field with the content of the document in Base64, can be embedded with nestedFields (the format of the nested field must be `<attachment field name>.fileBase64`)",
+						"type": "string"
+					},
+					"fileURL": {
+						"description": "optional field that specifies the source of the file to be downloaded, can be embedded with nestedFields (the format of the nested field must be `<attachment field name>.fileURL`)",
 						"type": "string"
 					},
 					"folder": {
@@ -44,6 +51,19 @@
 						"$ref": "#/components/schemas/Link"
 					},
 					"name": {
+						"type": "string"
+					},
+					"previewURL": {
+						"description": "optional field that specifies the preview URL of the file to be used, can be embedded with nestedFields (the format of the nested field must be `<attachment field name>.previewURL`)",
+						"readOnly": true,
+						"type": "string"
+					},
+					"scope": {
+						"$ref": "#/components/schemas/Scope"
+					},
+					"thumbnailURL": {
+						"description": "optional field that specifies the thumbnail of the file to be used, can be embedded with nestedFields (the format of the nested field must be `<attachment field name>.thumbnailURL`)",
+						"readOnly": true,
 						"type": "string"
 					},
 					"x-class-name": {
@@ -91,7 +111,6 @@
 						"type": "string"
 					}
 				},
-				"readOnly": true,
 				"type": "object",
 				"xml": {
 					"name": "Link"
@@ -255,8 +274,7 @@
 						"type": "string"
 					},
 					"attachmentProperty": {
-						"$ref": "#/components/schemas/FileEntry",
-						"description": "attachmentProperty description"
+						"$ref": "#/components/schemas/FileEntry"
 					},
 					"booleanProperty": {
 						"description": "booleanProperty description",
@@ -299,8 +317,7 @@
 						"type": "array"
 					},
 					"picklistProperty": {
-						"$ref": "#/components/schemas/ListEntry",
-						"description": "picklistProperty description"
+						"$ref": "#/components/schemas/ListEntry"
 					},
 					"precisionDecimalProperty": {
 						"description": "precisionDecimalProperty description",
@@ -317,6 +334,29 @@
 					}
 				},
 				"type": "object"
+			},
+			"Scope": {
+				"properties": {
+					"externalReferenceCode": {
+						"type": "string"
+					},
+					"type": {
+						"enum": [
+							"AssetLibrary",
+							"Site"
+						],
+						"type": "string"
+					},
+					"x-class-name": {
+						"default": "com.liferay.object.rest.dto.v1_0.Scope",
+						"readOnly": true,
+						"type": "string"
+					}
+				},
+				"type": "object",
+				"xml": {
+					"name": "Scope"
+				}
 			},
 			"SingleElementSchemaName": {
 				"description": "description",
@@ -370,6 +410,7 @@
 						"name": "type",
 						"required": true,
 						"schema": {
+							"pattern": "json|yaml",
 							"type": "string"
 						}
 					}
@@ -440,11 +481,9 @@
 				"tags": [
 					"SchemaName"
 				]
-			}
-		},
-		"/post-path": {
+			},
 			"post": {
-				"operationId": "postPostPath",
+				"operationId": "postPath",
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -622,11 +661,9 @@
 				"tags": [
 					"SiteScopedSchemaName"
 				]
-			}
-		},
-		"/scopes/{scopeKey}/site-scoped-post-path": {
+			},
 			"post": {
-				"operationId": "postScopeScopeKeySiteScopedPostPath",
+				"operationId": "postScopeScopeKeySiteScopedPath",
 				"parameters": [
 					{
 						"in": "path",

@@ -51,11 +51,12 @@ export default function SelectObjectDefinition({
 	const objectDefinitionsItems = useMemo(() => {
 		return objectDefinitions.map(
 			({externalReferenceCode, label, name, system}) => ({
-				label: stringUtils.getLocalizableLabel(
-					creationLanguageId as Liferay.Language.Locale,
-					label,
-					name
-				),
+				label: stringUtils.getLocalizableLabel({
+					fallbackLabel: name,
+					fallbackLanguageId:
+						creationLanguageId as Liferay.Language.Locale,
+					labels: label,
+				}),
 				system,
 				value: externalReferenceCode,
 			})
@@ -65,11 +66,10 @@ export default function SelectObjectDefinition({
 	useEffect(() => {
 		if (readOnly && !objectDefinition) {
 			const fetchObjectDefinition = async () => {
-				const {
-					externalReferenceCode,
-				} = await API.getObjectDefinitionByExternalReferenceCode(
-					objectDefinitionExternalReferenceCode as string
-				);
+				const {externalReferenceCode} =
+					await API.getObjectDefinitionByExternalReferenceCode(
+						objectDefinitionExternalReferenceCode as string
+					);
 
 				setSelectedObjectDefinitionExternalReferenceCode(
 					externalReferenceCode
@@ -78,6 +78,7 @@ export default function SelectObjectDefinition({
 
 			fetchObjectDefinition();
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 

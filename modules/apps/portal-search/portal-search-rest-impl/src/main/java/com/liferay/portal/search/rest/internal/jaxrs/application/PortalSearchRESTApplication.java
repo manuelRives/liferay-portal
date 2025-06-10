@@ -5,9 +5,9 @@
 
 package com.liferay.portal.search.rest.internal.jaxrs.application;
 
-import javax.annotation.Generated;
+import jakarta.annotation.Generated;
 
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.core.Application;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -17,8 +17,7 @@ import org.osgi.service.component.annotations.Component;
  */
 @Component(
 	property = {
-		"liferay.jackson=false",
-		"osgi.jaxrs.application.base=/portal-search-rest",
+		"liferay.jackson=false", "osgi.jaxrs.application.base=/search",
 		"osgi.jaxrs.extension.select=(osgi.jaxrs.name=Liferay.Vulcan)",
 		"osgi.jaxrs.name=Liferay.Portal.Search.REST"
 	},

@@ -48,6 +48,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.model.impl.ResourceImpl;
 import com.liferay.portal.service.permission.LayoutPrototypePermissionUtil;
 
 import java.util.ArrayList;
@@ -663,7 +664,7 @@ public class AdvancedPermissionChecker extends BasePermissionChecker {
 
 		List<Resource> resources = new ArrayList<>(4);
 
-		Resource individualResource = ResourceLocalServiceUtil.getResource(
+		Resource individualResource = _getResource(
 			companyId, name, ResourceConstants.SCOPE_INDIVIDUAL, primKey);
 
 		resources.add(individualResource);
@@ -671,7 +672,7 @@ public class AdvancedPermissionChecker extends BasePermissionChecker {
 		// Group
 
 		if (groupId > 0) {
-			Resource groupResource = ResourceLocalServiceUtil.getResource(
+			Resource groupResource = _getResource(
 				companyId, name, ResourceConstants.SCOPE_GROUP,
 				String.valueOf(groupId));
 
@@ -681,17 +682,16 @@ public class AdvancedPermissionChecker extends BasePermissionChecker {
 		// Group template
 
 		if (signedIn && (groupId > 0)) {
-			Resource groupTemplateResource =
-				ResourceLocalServiceUtil.getResource(
-					companyId, name, ResourceConstants.SCOPE_GROUP_TEMPLATE,
-					String.valueOf(GroupConstants.DEFAULT_PARENT_GROUP_ID));
+			Resource groupTemplateResource = _getResource(
+				companyId, name, ResourceConstants.SCOPE_GROUP_TEMPLATE,
+				String.valueOf(GroupConstants.DEFAULT_PARENT_GROUP_ID));
 
 			resources.add(groupTemplateResource);
 		}
 
 		// Company
 
-		Resource companyResource = ResourceLocalServiceUtil.getResource(
+		Resource companyResource = _getResource(
 			companyId, name, ResourceConstants.SCOPE_COMPANY,
 			String.valueOf(companyId));
 
@@ -823,29 +823,15 @@ public class AdvancedPermissionChecker extends BasePermissionChecker {
 		}
 
 		if (group.isCompany()) {
-			if (isCompanyAdmin()) {
-				return true;
-			}
-
-			return false;
+			return isCompanyAdmin();
 		}
 		else if (group.isLayoutPrototype()) {
-			if (LayoutPrototypePermissionUtil.contains(
-					this, group.getClassPK(), ActionKeys.UPDATE)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutPrototypePermissionUtil.contains(
+				this, group.getClassPK(), ActionKeys.UPDATE);
 		}
 		else if (group.isLayoutSetPrototype()) {
-			if (LayoutSetPrototypePermissionUtil.contains(
-					this, group.getClassPK(), ActionKeys.UPDATE)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutSetPrototypePermissionUtil.contains(
+				this, group.getClassPK(), ActionKeys.UPDATE);
 		}
 		else if (group.isOrganization()) {
 			long organizationId = group.getOrganizationId();
@@ -891,7 +877,13 @@ public class AdvancedPermissionChecker extends BasePermissionChecker {
 						Organization.class.getName(),
 						String.valueOf(parentOrganization.getOrganizationId()),
 						getRoleIds(getUserId(), parentGroup.getGroupId()),
-						ActionKeys.MANAGE_SUBORGANIZATIONS, stopWatch)) {
+						ActionKeys.MANAGE_SUBORGANIZATIONS, stopWatch) ||
+					doCheckPermission(
+						parentGroup.getCompanyId(), parentGroup.getGroupId(),
+						Organization.class.getName(),
+						String.valueOf(parentOrganization.getOrganizationId()),
+						getRoleIds(getUserId(), parentGroup.getGroupId()),
+						ActionKeys.UPDATE_SUBORGANIZATIONS, stopWatch)) {
 
 					return true;
 				}
@@ -935,22 +927,12 @@ public class AdvancedPermissionChecker extends BasePermissionChecker {
 		}
 
 		if (group.isLayoutPrototype()) {
-			if (LayoutPrototypePermissionUtil.contains(
-					this, group.getClassPK(), ActionKeys.UPDATE)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutPrototypePermissionUtil.contains(
+				this, group.getClassPK(), ActionKeys.UPDATE);
 		}
 		else if (group.isLayoutSetPrototype()) {
-			if (LayoutSetPrototypePermissionUtil.contains(
-					this, group.getClassPK(), ActionKeys.UPDATE)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutSetPrototypePermissionUtil.contains(
+				this, group.getClassPK(), ActionKeys.UPDATE);
 		}
 		else if (group.isOrganization()) {
 			long organizationId = group.getOrganizationId();
@@ -1185,6 +1167,19 @@ public class AdvancedPermissionChecker extends BasePermissionChecker {
 					return ReflectionUtil.throwException(portalException);
 				}
 			});
+	}
+
+	private Resource _getResource(
+		long companyId, String name, int scope, String primKey) {
+
+		Resource resource = new ResourceImpl();
+
+		resource.setCompanyId(companyId);
+		resource.setName(name);
+		resource.setScope(scope);
+		resource.setPrimKey(primKey);
+
+		return resource;
 	}
 
 	private boolean _hasGuestPermission(

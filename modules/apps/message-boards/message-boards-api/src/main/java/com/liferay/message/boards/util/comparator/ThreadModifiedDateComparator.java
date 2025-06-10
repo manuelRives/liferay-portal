@@ -23,12 +23,12 @@ public class ThreadModifiedDateComparator<T> extends OrderByComparator<T> {
 
 	public static final String[] ORDER_BY_FIELDS = {"priority", "modifiedDate"};
 
-	public ThreadModifiedDateComparator() {
-		this(false);
-	}
+	public static ThreadModifiedDateComparator getInstance(boolean ascending) {
+		if (ascending) {
+			return _INSTANCE_ASCENDING;
+		}
 
-	public ThreadModifiedDateComparator(boolean ascending) {
-		_ascending = ascending;
+		return _INSTANCE_DESCENDING;
 	}
 
 	@Override
@@ -65,14 +65,24 @@ public class ThreadModifiedDateComparator<T> extends OrderByComparator<T> {
 	}
 
 	protected Date getModifiedDate(Object object) {
-		if (object instanceof MBThread) {
-			MBThread mbThread = (MBThread)object;
-
-			return mbThread.getModifiedDate();
+		if (!(object instanceof MBThread)) {
+			return null;
 		}
 
-		return null;
+		MBThread mbThread = (MBThread)object;
+
+		return mbThread.getModifiedDate();
 	}
+
+	private ThreadModifiedDateComparator(boolean ascending) {
+		_ascending = ascending;
+	}
+
+	private static final ThreadModifiedDateComparator _INSTANCE_ASCENDING =
+		new ThreadModifiedDateComparator(true);
+
+	private static final ThreadModifiedDateComparator _INSTANCE_DESCENDING =
+		new ThreadModifiedDateComparator(false);
 
 	private final boolean _ascending;
 

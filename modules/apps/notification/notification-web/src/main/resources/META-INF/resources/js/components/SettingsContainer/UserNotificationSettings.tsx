@@ -12,12 +12,8 @@ import {
 import {fetch} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
-interface Role {
-	description: string;
-	id: number;
-	name: string;
-	roleType: string;
-}
+import {HEADERS} from '../../util/constants';
+import {getRoles, getUserNotificationRoles} from './rolesUtil';
 
 interface User {
 	alternateName: string;
@@ -28,11 +24,6 @@ interface UserNotificationSettingsProps {
 	setValues: (values: Partial<NotificationTemplate>) => void;
 	values: NotificationTemplate;
 }
-
-const HEADERS = new Headers({
-	'Accept': 'application/json',
-	'Content-Type': 'application/json',
-});
 
 const RECIPIENT_OPTIONS = [
 	{
@@ -57,33 +48,11 @@ export function UserNotificationSettings({
 	const [toTerms, setToTerms] = useState<string>('');
 	const [userList, setUserList] = useState<MultiSelectItem[]>([]);
 
-	const getUserNotificationRoles = async () => {
-		const query = `/o/headless-admin-user/v1.0/roles?page=-1&restrictFields=rolePermissions`;
-
-		const response = await fetch(query, {
-			headers: HEADERS,
-			method: 'GET',
-		});
-
-		const {items} = (await response.json()) as {items: Role[]};
-
-		const roles = {
-			children: items
-				.filter(({name}) => name !== 'Guest')
-				.map(({name}) => {
-					const selectedRole = !!(values.recipients as Partial<
-						UserNotificationRecipients
-					>[]).find((recipient) => recipient.roleName === name);
-
-					return {
-						checked: selectedRole,
-						label: name,
-						value: name,
-					};
-				}),
-			label: '',
-			value: 'rolesList',
-		} as MultiSelectItem;
+	const getUserRoles = async () => {
+		const roles = getUserNotificationRoles(
+			await getRoles(),
+			values.recipients as {['roleName']: string}[]
+		);
 
 		setRolesList([roles]);
 		setUserList([]);
@@ -108,9 +77,9 @@ export function UserNotificationSettings({
 
 		const users = {
 			children: items.map(({alternateName, givenName}) => {
-				const selectedUser = !!(values.recipients as Partial<
-					UserNotificationRecipients
-				>[]).find(
+				const selectedUser = !!(
+					values.recipients as Partial<UserNotificationRecipients>[]
+				).find(
 					(recipient) => recipient['userScreenName'] === alternateName
 				);
 
@@ -153,7 +122,7 @@ export function UserNotificationSettings({
 	useEffect(() => {
 		const makeFetch = async () => {
 			if (values.recipientType === 'role') {
-				await getUserNotificationRoles();
+				await getUserRoles();
 
 				return;
 			}
@@ -172,6 +141,7 @@ export function UserNotificationSettings({
 		};
 
 		makeFetch();
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [values.recipientType]);
 
@@ -196,6 +166,7 @@ export function UserNotificationSettings({
 				recipients: toRecipients,
 			});
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [toTerms]);
 
@@ -213,7 +184,7 @@ export function UserNotificationSettings({
 					});
 
 					if (value === 'role') {
-						getUserNotificationRoles();
+						getUserRoles();
 					}
 				}}
 				selectedKey={values.recipientType}

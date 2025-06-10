@@ -23,19 +23,21 @@ import com.liferay.commerce.frontend.internal.account.model.Order;
 import com.liferay.commerce.frontend.internal.account.model.OrderList;
 import com.liferay.commerce.frontend.internal.order.CommerceOrderResource;
 import com.liferay.commerce.frontend.internal.search.model.SearchItemModel;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.catalog.CPQuery;
+import com.liferay.commerce.product.constants.CPField;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.data.source.CPDataSourceResult;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
 import com.liferay.commerce.service.CommerceOrderService;
-import com.liferay.commerce.util.CommerceAccountHelper;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -57,25 +59,25 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -104,14 +106,22 @@ public class CommerceSearchResource {
 
 			List<SearchItemModel> searchItemModels = new ArrayList<>();
 
+			CommerceContext commerceContext = _commerceContextFactory.create(
+				0,
+				_commerceChannelLocalService.
+					getCommerceChannelGroupIdBySiteGroupId(
+						themeDisplay.getScopeGroupId()),
+				null, 0, themeDisplay.getCompanyId());
+
 			searchItemModels.addAll(
 				_searchProducts(
 					themeDisplay.getCompanyId(), layout.getGroupId(),
-					queryString, themeDisplay));
+					commerceContext, queryString, themeDisplay));
 
 			if (themeDisplay.isSignedIn()) {
 				searchItemModels.addAll(
-					_searchAccounts(queryString, themeDisplay));
+					_searchAccounts(
+						commerceContext, queryString, themeDisplay));
 
 				searchItemModels.addAll(
 					_searchOrders(queryString, themeDisplay));
@@ -339,16 +349,11 @@ public class CommerceSearchResource {
 	}
 
 	private List<SearchItemModel> _searchAccounts(
-			String queryString, ThemeDisplay themeDisplay)
+			CommerceContext commerceContext, String queryString,
+			ThemeDisplay themeDisplay)
 		throws PortalException {
 
 		List<SearchItemModel> searchItemModels = new ArrayList<>();
-
-		CommerceContext commerceContext = _commerceContextFactory.create(
-			themeDisplay.getCompanyId(),
-			_commerceChannelLocalService.getCommerceChannelGroupIdBySiteGroupId(
-				themeDisplay.getScopeGroupId()),
-			themeDisplay.getUserId(), 0, 0);
 
 		AccountList accountList = _commerceAccountResource.getAccountList(
 			themeDisplay.getUserId(),
@@ -416,11 +421,9 @@ public class CommerceSearchResource {
 			searchItemModel.setIcon("document");
 			searchItemModel.setSubtitle(order.getAccountName());
 			searchItemModel.setUrl(
-				String.valueOf(
-					_commerceOrderHttpHelper.getCommerceCartPortletURL(
-						themeDisplay.getScopeGroupId(),
-						themeDisplay.getRequest(),
-						_getCommerceOrder(order.getId()))));
+				_commerceOrderHttpHelper.getCommerceCartPortletURL(
+					themeDisplay.getScopeGroupId(), themeDisplay.getRequest(),
+					_getCommerceOrder(order.getId())));
 
 			searchItemModels.add(searchItemModel);
 		}
@@ -442,8 +445,8 @@ public class CommerceSearchResource {
 	}
 
 	private List<SearchItemModel> _searchProducts(
-			long companyId, long groupId, String queryString,
-			ThemeDisplay themeDisplay)
+			long companyId, long groupId, CommerceContext commerceContext,
+			String queryString, ThemeDisplay themeDisplay)
 		throws PortalException {
 
 		List<SearchItemModel> searchItemModels = new ArrayList<>();
@@ -462,11 +465,6 @@ public class CommerceSearchResource {
 			_commerceChannelLocalService.fetchCommerceChannelBySiteGroupId(
 				themeDisplay.getScopeGroupId());
 
-		if (commerceChannel != null) {
-			attributes.put(
-				"commerceChannelGroupId", commerceChannel.getGroupId());
-		}
-
 		long accountEntryId = 0;
 
 		AccountEntry accountEntry =
@@ -475,10 +473,25 @@ public class CommerceSearchResource {
 
 		if (accountEntry != null) {
 			accountEntryId = accountEntry.getAccountEntryId();
+		}
 
+		if (FeatureFlagManagerUtil.isEnabled("LPD-10889")) {
 			attributes.put(
-				"commerceAccountGroupIds",
-				_accountGroupLocalService.getAccountGroupIds(accountEntryId));
+				CPField.CP_CONFIGURATION_LIST_IDS,
+				commerceContext.getCPConfigurationListIds());
+		}
+		else {
+			if (commerceChannel != null) {
+				attributes.put(
+					"commerceChannelGroupId", commerceChannel.getGroupId());
+			}
+
+			if (accountEntry != null) {
+				attributes.put(
+					"commerceAccountGroupIds",
+					_accountGroupLocalService.getAccountGroupIds(
+						accountEntryId));
+			}
 		}
 
 		searchContext.setAttributes(attributes);

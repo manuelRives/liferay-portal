@@ -1,0 +1,328 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {expect, mergeTests} from '@playwright/test';
+
+import {apiHelpersTest} from '../../../fixtures/apiHelpersTest';
+import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
+import {isolatedSiteTest} from '../../../fixtures/isolatedSiteTest';
+import {loginTest} from '../../../fixtures/loginTest';
+import {pageSelectorPagesTest} from '../../../fixtures/pageSelectorPagesTest';
+import {pagesAdminPagesTest} from '../../../fixtures/pagesAdminPagesTest';
+import {clickAndExpectToBeVisible} from '../../../utils/clickAndExpectToBeVisible';
+import getRandomString from '../../../utils/getRandomString';
+import {PORTLET_URLS} from '../../../utils/portletUrls';
+import {pagesPagesTest} from '../../layout-admin-web/main/fixtures/pagesPagesTest';
+import {navigationMenusPagesTest} from './fixtures/navigationMenusPagesTest';
+
+const test = mergeTests(
+	apiHelpersTest,
+	featureFlagsTest({
+		'LPS-178052': {enabled: true},
+	}),
+	isolatedSiteTest,
+	loginTest(),
+	navigationMenusPagesTest,
+	pagesAdminPagesTest,
+	pagesPagesTest,
+	pageSelectorPagesTest
+);
+
+test(
+	'Drag and drop navigation menu item allows for non-nested placement',
+	{
+		tag: '@LPS-125802',
+	},
+	async ({apiHelpers, navigationMenusPage, page, site}) => {
+		for (let i = 1; i <= 3; i++) {
+			const parentPage = await apiHelpers.headlessDelivery.createSitePage(
+				{
+					siteId: site.id,
+					title: `Parent ${i}`,
+				}
+			);
+
+			await apiHelpers.headlessDelivery.createSitePage({
+				parentSitePage: {
+					friendlyUrlPath: parentPage.friendlyUrlPath,
+				},
+				siteId: site.id,
+				title: `Child ${i}`,
+			});
+		}
+
+		await navigationMenusPage.goto(site.friendlyUrlPath);
+
+		await navigationMenusPage.createNavigationMenu(getRandomString());
+
+		await navigationMenusPage.addPageItem([
+			'Parent 1',
+			'Parent 2',
+			'Parent 3',
+			'Child 1',
+			'Child 2',
+			'Child 3',
+		]);
+
+		const source = page.getByRole('button', {name: 'Move Parent 3'});
+		const target = page
+			.locator('.site_navigation_menu_editor_MenuItem')
+			.nth(1);
+
+		const targetRect = await target.evaluate((element) =>
+			element.getBoundingClientRect()
+		);
+
+		await source.hover();
+		await page.mouse.down();
+		await page.mouse.move(targetRect.x, targetRect.y + 1);
+		await page.mouse.up();
+
+		await page.waitForTimeout(300);
+
+		const cardTitles = await page.locator('.card-title').allTextContents();
+
+		await expect(cardTitles[2]).toBe('Parent 3');
+		await expect(cardTitles[3]).toBe('Child 3');
+	}
+);
+
+test.describe('Add pages to Navigation Menu', () => {
+	test('Load more works properly in search results', async ({
+		apiHelpers,
+		navigationMenusPage,
+		pageSelectorPage,
+		site,
+	}) => {
+
+		// Create 15 Lemon pages
+
+		for (let i = 1; i <= 15; i++) {
+			await apiHelpers.headlessDelivery.createSitePage({
+				siteId: site.id,
+				title: `Lemon ${i}`,
+			});
+		}
+
+		// Create 30 Apple pages
+
+		for (let i = 1; i <= 30; i++) {
+			await apiHelpers.headlessDelivery.createSitePage({
+				siteId: site.id,
+				title: `Apple ${i}`,
+			});
+		}
+
+		// Create a navigation menu and open pages selector
+
+		await navigationMenusPage.goto(site.friendlyUrlPath);
+
+		await navigationMenusPage.createNavigationMenu(getRandomString());
+
+		await navigationMenusPage.openAddPageModal();
+
+		// Store modal instance in variable so we can search for things inside it
+
+		const modal = await pageSelectorPage.getModal();
+
+		// Search for another string and check empty state
+
+		await pageSelectorPage.search('Orange');
+
+		await expect(modal.getByText('No Results Found')).toBeVisible();
+
+		// Search for Lemon pages, check it shows all results and does not show Load More button
+
+		await pageSelectorPage.search('Lem');
+
+		await expect(modal.locator('.search-result')).toHaveCount(15);
+
+		await expect(modal.getByText('Load More Results')).not.toBeVisible();
+
+		// Check only Lem substring is marked
+
+		const firstResult = modal.locator('.search-result').first();
+
+		await expect(firstResult.locator('mark')).toHaveText('Lem');
+
+		// Search for Apple pages, check it initially shows 20 items
+
+		await pageSelectorPage.search('App');
+
+		await expect(modal.locator('.search-result')).toHaveCount(20);
+
+		// Load more items and check it loads all results and button disappears
+
+		await pageSelectorPage.loadMore();
+
+		await expect(modal.locator('.search-result')).toHaveCount(30);
+
+		await expect(modal.getByText('Load More Results')).not.toBeVisible();
+	});
+
+	test('Checks the correct label for restricted page in the layout tree', async ({
+		apiHelpers,
+		navigationMenusPage,
+		pageSelectorPage,
+		site,
+	}) => {
+
+		// Create a page with only one permission
+
+		const pageName = getRandomString();
+
+		await apiHelpers.headlessDelivery.createSitePage({
+			pagePermissions: [
+				{
+					actionKeys: ['VIEW'],
+					roleKey: 'Owner',
+				},
+			],
+			siteId: site.id,
+			title: pageName,
+		});
+
+		// Create a navigation menu and open pages selector
+
+		await navigationMenusPage.goto(site.friendlyUrlPath);
+
+		await navigationMenusPage.createNavigationMenu(getRandomString());
+
+		await navigationMenusPage.openAddPageModal();
+
+		const modal = await pageSelectorPage.getModal();
+
+		// Check the correct label for restricted page
+
+		await expect(
+			modal
+				.locator('div', {
+					hasText: pageName,
+				})
+				.getByLabel('Restricted Page')
+		).toBeVisible();
+	});
+});
+
+test(
+	'User can provide translations for Navigation Menu items',
+	{
+		tag: '@LPS-85566',
+	},
+	async ({apiHelpers, navigationMenusPage, page, site}) => {
+		const pageName = getRandomString();
+
+		await apiHelpers.headlessDelivery.createSitePage({
+			siteId: site.id,
+			title: pageName,
+		});
+
+		await navigationMenusPage.goto(site.friendlyUrlPath);
+
+		const navigationMenuName = getRandomString();
+
+		await navigationMenusPage.createNavigationMenu(navigationMenuName);
+
+		await navigationMenusPage.addPageItem([pageName]);
+
+		const submenuItemName = getRandomString();
+
+		await navigationMenusPage.addSubmenuItem(submenuItemName);
+
+		const urlName = getRandomString();
+
+		await navigationMenusPage.addURLItem(urlName);
+
+		await navigationMenusPage.translateName(pageName, true);
+		await navigationMenusPage.translateName(submenuItemName);
+		await navigationMenusPage.translateName(urlName);
+
+		await page.goto(
+			`/es/group${site.friendlyUrlPath}${PORTLET_URLS.navigationMenus}`
+		);
+
+		await page.getByText(navigationMenuName).click();
+
+		await expect(page.getByText(`${pageName} Spanish`)).toBeVisible();
+
+		await page.getByText(`${pageName} Spanish`).click();
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: page.locator("a[data-languageId='es_ES']"),
+			trigger: page.getByText('en-US', {exact: true}),
+		});
+
+		await expect(
+			page.locator(
+				'input[id="_com_liferay_site_navigation_admin_web_portlet_SiteNavigationAdminPortlet_name"]'
+			)
+		).toHaveValue(`${pageName} Spanish`);
+
+		await page.goto('/en');
+	}
+);
+
+test(
+	'Navigation Menu item is prepopulated with existing translation',
+	{
+		tag: '@LPS-85566',
+	},
+	async ({
+		apiHelpers,
+		navigationMenusPage,
+		page,
+		pageConfigurationPage,
+		pagesAdminPage,
+		site,
+	}) => {
+		const pageName = getRandomString();
+
+		await apiHelpers.headlessDelivery.createSitePage({
+			siteId: site.id,
+			title: pageName,
+		});
+
+		await pagesAdminPage.goto(site.friendlyUrlPath);
+
+		await pageConfigurationPage.goToSection(pageName, 'General');
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: page.getByRole('menuitem', {
+				name: 'Not translated into Spanish.',
+			}),
+			trigger: page.locator(
+				'[id="_com_liferay_layout_admin_web_portlet_GroupPagesPortlet__com_liferay_layout_admin_web_portlet_GroupPagesPortlet_nameMapAsXMLMenu"]'
+			),
+		});
+
+		await page.getByLabel('Name').fill(`${pageName} Spanish`);
+
+		await page.getByRole('button', {name: 'Save'}).click();
+
+		await navigationMenusPage.goto(site.friendlyUrlPath);
+
+		const navigationMenuName = getRandomString();
+
+		await navigationMenusPage.createNavigationMenu(navigationMenuName);
+
+		await navigationMenusPage.addPageItem([pageName]);
+
+		await page.getByText(pageName).click();
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: page.locator("a[data-languageId='es_ES']"),
+			trigger: page.getByText('en-US', {exact: true}),
+		});
+
+		await expect(
+			page.locator(
+				'input[id="_com_liferay_site_navigation_admin_web_portlet_SiteNavigationAdminPortlet_name"]'
+			)
+		).toHaveValue(`${pageName} Spanish`);
+	}
+);

@@ -43,6 +43,7 @@ import {LeftSidebarItem, ObjectRelationshipEdgeData} from './types';
 import {updatePreviousURLParam} from './utils';
 
 import './EditObjectFolder.scss';
+import ModalDeletionNotAllowed from '../ModalDeletionNotAllowed';
 import {ModalMoveObjectDefinition} from '../ViewObjectDefinitions/ModalMoveObjectDefinition';
 
 interface EditObjectFolder {
@@ -89,9 +90,9 @@ export default function EditObjectFolder({
 		ObjectRelationshipEdgeData[]
 	>[];
 
-	const nodes = elements.filter((element) => isNode(element)) as Node<
-		ObjectDefinitionNodeData
-	>[];
+	const nodes = elements.filter((element) =>
+		isNode(element)
+	) as Node<ObjectDefinitionNodeData>[];
 
 	const handleDeleteObjectDefinition = (
 		deletedObjectDefinition: DeletedObjectDefinition
@@ -246,7 +247,10 @@ export default function EditObjectFolder({
 	}, [selectedObjectFolder.objectFolderItems?.length]);
 
 	Liferay.on('beforeNavigate', (event) => {
-		if (event.path.includes('objectFolderName')) {
+		const URLparams = new URL(event.path).searchParams;
+		const objectFolderNameURLParam = URLparams.get('objectFolderName');
+
+		if (objectFolderNameURLParam) {
 			updatePreviousURLParam({
 				paramType: 'objectFolderName',
 				paramURL: viewObjectDefinitionsURL,
@@ -320,8 +324,9 @@ export default function EditObjectFolder({
 							dispatch({
 								payload: {
 									newObjectField,
-									objectDefinitionExternalReferenceCode: selectedObjectDefinitionNode
-										?.data?.externalReferenceCode as string,
+									objectDefinitionExternalReferenceCode:
+										selectedObjectDefinitionNode?.data
+											?.externalReferenceCode as string,
 									objectDefinitionNodes: nodes,
 									objectRelationshipEdges: edges,
 									selectedObjectDefinitionNode,
@@ -342,29 +347,29 @@ export default function EditObjectFolder({
 										addObjectField: false,
 									},
 								},
-								type:
-									TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
 							});
 
 							dispatch({
 								payload: {
-									objectDefinitionExternalReferenceCode: selectedObjectDefinitionNode
-										.data?.externalReferenceCode as string,
-									showAllObjectFields: selectedObjectDefinitionNode
-										.data?.showAllObjectFields as boolean,
+									objectDefinitionExternalReferenceCode:
+										selectedObjectDefinitionNode.data
+											?.externalReferenceCode as string,
+									showAllObjectFields:
+										selectedObjectDefinitionNode.data
+											?.showAllObjectFields as boolean,
 								},
 								type: TYPES.SET_SHOW_ALL_OBJECT_FIELDS,
 							});
 						}}
-						setVisibility={() =>
+						setVisible={() =>
 							dispatch({
 								payload: {
 									updatedModelBuilderModals: {
 										addObjectField: false,
 									},
 								},
-								type:
-									TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
 							})
 						}
 					/>
@@ -381,10 +386,10 @@ export default function EditObjectFolder({
 										addObjectRelationship: false,
 									},
 								},
-								type:
-									TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
 							});
 						}}
+						learnResources={learnResourceContext}
 						objectDefinitionExternalReferenceCode1={
 							selectedObjectDefinitionNode.data
 								.externalReferenceCode
@@ -412,8 +417,7 @@ export default function EditObjectFolder({
 										deleteObjectDefinition: false,
 									},
 								},
-								type:
-									TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
 							});
 						}}
 						objectDefinition={deletedObjectDefinition}
@@ -427,11 +431,11 @@ export default function EditObjectFolder({
 							dispatch({
 								payload: {
 									updatedModelBuilderModals: {
-										editObjectDefinitionExternalReferenceCode: false,
+										editObjectDefinitionExternalReferenceCode:
+											false,
 									},
 								},
-								type:
-									TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
 							});
 						}}
 						helpMessage={Liferay.Language.get(
@@ -468,6 +472,36 @@ export default function EditObjectFolder({
 								return element;
 							}) as Elements<ObjectDefinitionNodeData>;
 
+							const updatedSelectedObjectFolderItems =
+								selectedObjectFolder.objectFolderItems.map(
+									(objectFolderItem) => {
+										if (
+											objectFolderItem.objectDefinitionExternalReferenceCode ===
+											selectedObjectDefinitionNode.data
+												?.externalReferenceCode
+										) {
+											return {
+												...objectFolderItem,
+												objectDefinitionExternalReferenceCode:
+													externalReferenceCode,
+											};
+										}
+
+										return objectFolderItem;
+									}
+								);
+
+							dispatch({
+								payload: {
+									updatedSelectedObjectFolder: {
+										...selectedObjectFolder,
+										objectFolderItems:
+											updatedSelectedObjectFolderItems,
+									},
+								},
+								type: TYPES.SET_SELECTED_OBJECT_FOLDER_DETAILS,
+							});
+
 							dispatch({
 								payload: {
 									newElements: updatedElements,
@@ -497,6 +531,14 @@ export default function EditObjectFolder({
 					id={selectedObjectFolder.id}
 					initialLabel={selectedObjectFolder.label}
 					name={selectedObjectFolder.name}
+					onAfterSubmit={(editedObjectFolder) => {
+						dispatch({
+							payload: {
+								updatedSelectedObjectFolder: editedObjectFolder,
+							},
+							type: TYPES.SET_SELECTED_OBJECT_FOLDER_DETAILS,
+						});
+					}}
 				/>
 			)}
 
@@ -510,18 +552,18 @@ export default function EditObjectFolder({
 										moveObjectDefinition: false,
 									},
 								},
-								type:
-									TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
 							});
 						}}
 						objectDefinitionId={movedObjectDefinitionId}
 						objectFolders={objectFolders}
 						onAfterMoveObjectDefinition={() => {
 							setTimeout(async () => {
-								const payload = await getUpdatedModelBuilderStructurePayload(
-									baseResourceURL,
-									selectedObjectFolder.name
-								);
+								const payload =
+									await getUpdatedModelBuilderStructurePayload(
+										baseResourceURL,
+										selectedObjectFolder.name
+									);
 
 								dispatch({
 									payload: {...payload, dispatch},
@@ -535,6 +577,32 @@ export default function EditObjectFolder({
 								type: TYPES.SET_MOVED_OBJECT_DEFINITION,
 							});
 						}}
+					/>
+				)}
+
+			{modelBuilderModals.objectDefinitionOnRootModelDeletionNotAllowed &&
+				Liferay.FeatureFlags['LPD-34594'] && (
+					<ModalDeletionNotAllowed
+						content={
+							<span
+								dangerouslySetInnerHTML={{
+									__html: Liferay.Language.get(
+										'to-delete-this-object-you-must-first-disable-inheritance-and-delete-its-relationships'
+									),
+								}}
+							/>
+						}
+						onModalClose={() =>
+							dispatch({
+								payload: {
+									updatedModelBuilderModals: {
+										objectDefinitionOnRootModelDeletionNotAllowed:
+											false,
+									},
+								},
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+							})
+						}
 					/>
 				)}
 
@@ -563,11 +631,11 @@ export default function EditObjectFolder({
 							dispatch({
 								payload: {
 									updatedModelBuilderModals: {
-										redirectToEditObjectDefinitionDetails: false,
+										redirectToEditObjectDefinitionDetails:
+											false,
 									},
 								},
-								type:
-									TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
 							});
 						}}
 						viewObjectDetailsURL={formatActionURL(

@@ -7,7 +7,6 @@ package com.liferay.saml.opensaml.integration.internal.servlet.profile;
 
 import com.liferay.petra.concurrent.DCLSingleton;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -35,14 +34,14 @@ import com.liferay.saml.runtime.configuration.SamlProviderConfiguration;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.runtime.metadata.LocalEntityManager;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
 import net.shibboleth.utilities.java.support.resolver.CriteriaSet;
@@ -520,13 +519,6 @@ public abstract class BaseProfile {
 		Cookie cookie = new Cookie(cookieName, cookieValue);
 
 		cookie.setMaxAge(-1);
-
-		if (Validator.isNull(portal.getPathContext())) {
-			cookie.setPath(StringPool.SLASH);
-		}
-		else {
-			cookie.setPath(portal.getPathContext());
-		}
 
 		CookiesManagerUtil.addCookie(
 			CookiesConstants.CONSENT_TYPE_FUNCTIONAL, cookie,

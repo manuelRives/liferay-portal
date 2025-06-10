@@ -58,18 +58,15 @@ export default function ModalImport({
 	const [existingObjectDefinitions, setExistingObjectDefinitions] = useState<
 		ObjectDefinition[]
 	>([]);
-	const [externalReferenceCode, setExternalReferenceCode] = useState<string>(
-		''
-	);
-	const [importedObjectDefinitions, setImportedObjectDefinitions] = useState<
-		ObjectDefinition[]
-	>();
+	const [externalReferenceCode, setExternalReferenceCode] =
+		useState<string>('');
+	const [importedObjectDefinitions, setImportedObjectDefinitions] =
+		useState<ObjectDefinition[]>();
 	const [{fileName, inputFile}, setFile] = useState<TFile>({});
 	const [importFormData, setImportFormData] = useState<FormData>();
 	const importModalComponentId = `${portletNamespace}importModal`;
-	const [modalImportKeyState, setModalImportKeyState] = useState(
-		modalImportKey
-	);
+	const [modalImportKeyState, setModalImportKeyState] =
+		useState(modalImportKey);
 	const [name, setName] = useState('');
 	const [visible, setVisible] = useState(showModal ?? false);
 	const [warningModalVisible, setWarningModalVisible] = useState(false);
@@ -106,11 +103,12 @@ export default function ModalImport({
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		if (Liferay.FeatureFlags['LPS-187142'] && importedObjectDefinitions) {
+		if (Liferay.FeatureFlags['LPD-34594'] && importedObjectDefinitions) {
 			handleImportMultiplesObjectDefinitions({
 				importURL,
 				importedObjectDefinitions,
-				objectFolderExternalReferenceCode: objectFolderExternalReferenceCode as string,
+				objectFolderExternalReferenceCode:
+					objectFolderExternalReferenceCode as string,
 				onClose,
 				setError,
 				setExistingObjectDefinitions,
@@ -190,7 +188,7 @@ export default function ModalImport({
 				/>
 			)}
 
-			{Liferay.FeatureFlags['LPS-187142'] &&
+			{Liferay.FeatureFlags['LPD-34594'] &&
 				failedModalVisible &&
 				importedObjectDefinitions &&
 				error?.type === 'importMultipleObjectDefinitions' && (

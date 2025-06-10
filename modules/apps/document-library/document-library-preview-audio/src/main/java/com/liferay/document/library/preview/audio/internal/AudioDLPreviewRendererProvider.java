@@ -26,13 +26,13 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -113,6 +113,8 @@ public class AudioDLPreviewRendererProvider
 			FileVersion fileVersion, HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		List<String> previewFileURLs = new ArrayList<>();
+
 		int status = ParamUtil.getInteger(
 			httpServletRequest, "status", WorkflowConstants.STATUS_ANY);
 
@@ -125,8 +127,6 @@ public class AudioDLPreviewRendererProvider
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
-
-		List<String> previewFileURLs = new ArrayList<>();
 
 		try {
 			AudioProcessor audioProcessor = (AudioProcessor)_dlProcessor;

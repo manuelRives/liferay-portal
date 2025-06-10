@@ -16,6 +16,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Ticket;
 import com.liferay.portal.kernel.model.TicketConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.TicketLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -25,15 +26,15 @@ import com.liferay.portal.kernel.util.SubscriptionSender;
 import com.liferay.subscription.model.Subscription;
 import com.liferay.subscription.web.internal.configuration.SubscriptionConfiguration;
 
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.InternetHeaders;
+
 import java.io.IOException;
 
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.InternetHeaders;
 
 /**
  * @author Alejandro Tardín
@@ -66,7 +67,7 @@ public class UnsubscribeHooks {
 		InternetAddress toAddress = toAddresses[0];
 
 		User user = _userLocalService.fetchUserByEmailAddress(
-			_subscriptionSender.getCompanyId(), toAddress.getAddress());
+			CompanyThreadLocal.getNonsystemCompanyId(), toAddress.getAddress());
 
 		if (user == null) {
 			return;

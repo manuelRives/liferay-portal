@@ -39,7 +39,6 @@
 		<Logger level="ERROR" name="com.ecyrd.jspwiki" />
 		<Logger level="ERROR" name="com.liferay" />
 		<Logger level="INFO" name="com.liferay.bean.portlet" />
-		<Logger level="WARN" name="com.liferay.mail.messaging" />
 		<Logger level="ERROR" name="com.liferay.mail.service.impl.MailServiceImpl" />
 		<Logger level="INFO" name="com.liferay.portal.action.JSONServiceAction" />
 		<Logger level="WARN" name="com.liferay.portal.action.LayoutAction" />
@@ -81,6 +80,7 @@
 		<Logger level="WARN" name="com.liferay.portal.json.jabsorb.serializer.LiferayJSONDeserializationWhitelist" />
 		<Logger level="ERROR" name="com.liferay.portal.kernel.bean.PortalBeanLocatorUtil" />
 		<Logger level="WARN" name="com.liferay.portal.kernel.cluster" />
+		<Logger level="WARN" name="com.liferay.portal.kernel.dao.db.BaseDBProcess" />
 		<Logger level="WARN" name="com.liferay.portal.kernel.dao.orm.QueryUtil" />
 		<Logger level="INFO" name="com.liferay.portal.kernel.dependency.manager.DependencyManagerSyncUtil" />
 		<Logger level="INFO" name="com.liferay.portal.kernel.deploy" />
@@ -102,6 +102,7 @@
 		<Logger level="ERROR" name="com.liferay.portal.kernel.servlet.SessionErrors" />
 		<Logger level="FATAL" name="com.liferay.portal.kernel.servlet.filters.invoker.InvokerFilter" />
 		<Logger level="FATAL" name="com.liferay.portal.kernel.servlet.filters.invoker.InvokerFilterHelper" />
+		<Logger level="INFO" name="com.liferay.portal.kernel.test.performance.PerformanceTimer" />
 		<Logger level="INFO" name="com.liferay.portal.kernel.upgrade" />
 		<Logger level="ERROR" name="com.liferay.portal.kernel.util.ClassUtil" />
 		<Logger level="ERROR" name="com.liferay.portal.kernel.util.JavaDetector" />
@@ -134,11 +135,8 @@
 		<Logger level="WARN" name="com.liferay.portal.service.persistence.impl" />
 		<Logger level="ERROR" name="com.liferay.portal.servlet" />
 		<Logger level="WARN" name="com.liferay.portal.servlet.LanguageServlet" />
-		<Logger level="ERROR" name="com.liferay.portal.servlet.PortalSessionCreator" />
-		<Logger level="ERROR" name="com.liferay.portal.servlet.PortalSessionDestroyer" />
 		<Logger level="ERROR" name="com.liferay.portal.servlet.filters" />
 		<Logger level="ERROR" name="com.liferay.portal.servlet.filters.autologin.AutoLoginFilter" />
-		<Logger level="ERROR" name="com.liferay.portal.servlet.filters.cache" />
 		<Logger level="ERROR" name="com.liferay.portal.servlet.filters.dynamiccss" />
 		<Logger level="ERROR" name="com.liferay.portal.servlet.filters.dynamiccss.DynamicCSSFilter" />
 		<Logger level="ERROR" name="com.liferay.portal.servlet.filters.dynamiccss.DynamicCSSUtil" />

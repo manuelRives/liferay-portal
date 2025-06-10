@@ -4,25 +4,35 @@
  */
 
 import {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import useSWR from 'swr';
 
+import AppToolbar from '../../../../../components/AppPublish/Navbar';
+import Loading from '../../../../../components/Loading';
 import {AppFlowList} from '../../../../../components/NewAppFlowList/AppFlowList';
-import {ChoosePricingModelPage} from '../../../../ChoosePricingModelPage/ChoosePricingModelPage';
-import {CreateNewAppPage} from '../../../../CreateNewAppPage/CreateNewAppPage';
-import {InformLicensingTermsPage} from '../../../../InformLicensingTermsPage/InformLicensingTermsPage';
-import {InformLicensingTermsPricePage} from '../../../../InformLicensingTermsPage/InformLicensingTermsPricePage';
-import {ProvideAppBuildPage} from '../../../../ProvideAppBuildPage/ProvideAppBuildPage';
-import {ProvideAppSupportAndHelpPage} from '../../../../ProvideAppSupportAndHelpPage/ProvideAppSupportAndHelpPage';
-import {ProvideVersionDetailsPage} from '../../../../ProvideVersionDetailsPage/ProvideVersionDetailsPage';
-import {ReviewAndSubmitAppPage} from '../../../../ReviewAndSubmitAppPage/ReviewAndSubmitAppPage';
-import {CustomizeAppStorefrontPage} from '../../../../StorefrontPage/CustomizeAppStorefrontPage';
-import {initialFLowListItems} from './AppCreationFlowUtil';
-
-import './AppCreationFlow.scss';
-import {AppToolBar} from '../../../../../components/AppToolBar/AppToolBar';
+import {useMarketplaceContext} from '../../../../../context/MarketplaceContext';
+import {MarketplaceTaxonomyVocabularies} from '../../../../../entity/MarketplaceTaxonomyVocabulary';
+import {
+	ProductTypeVocabulary,
+	ProductVocabulary,
+} from '../../../../../enums/Product';
 import {useAccount} from '../../../../../hooks/data/useAccounts';
 import {Liferay} from '../../../../../liferay/liferay';
-import {useAppContext} from '../../../../../manage-app-state/AppManageState';
-import {DefineAppProfilePage} from '../../../../DefineAppProfilePage/DefineAppProfilePage';
+import HeadlessAdminTaxonomy from '../../../../../services/rest/HeadlessAdminTaxonomy';
+import {useAppContext} from './AppContext/AppManageState';
+import {initialFLowListItems} from './AppCreationFlowUtil';
+import {ChoosePricingModelPage} from './ChoosePricingModelPage/ChoosePricingModelPage';
+import {CreateNewAppPage} from './CreateNewAppPage/CreateNewAppPage';
+import {DefineAppProfilePage} from './DefineAppProfilePage/DefineAppProfilePage';
+import {InformLicensingTermsPage} from './InformLicensingTermsPage/InformLicensingTermsPage';
+import {InformLicensingTermsPricePage} from './InformLicensingTermsPage/InformLicensingTermsPricePage';
+import {ProvideAppBuildPage} from './ProvideAppBuildPage/ProvideAppBuildPage';
+import {ProvideAppSupportAndHelpPage} from './ProvideAppSupportAndHelpPage/ProvideAppSupportAndHelpPage';
+import {ProvideVersionDetailsPage} from './ProvideVersionDetailsPage/ProvideVersionDetailsPage';
+import {ReviewAndSubmitAppPage} from './ReviewAndSubmitAppPage/ReviewAndSubmitAppPage';
+import {CustomizeAppStorefrontPage} from './StorefrontPage/CustomizeAppStorefrontPage';
+
+import './AppCreationFlow.scss';
 
 type SetAppFlowListStateProps = {
 	checkedItems?: string[];
@@ -34,14 +44,56 @@ type AppCreationFlowProps = {
 };
 
 export function AppCreationFlow({catalogId}: AppCreationFlowProps) {
-	const [
-		{appERC, appLogo, appName, appProductId, priceModel},
-	] = useAppContext();
-	const [appFlowListItems, setAppFlowListItems] = useState(
-		initialFLowListItems
-	);
+	const [{appERC, appLogo, appName, appProductId, priceModel}] =
+		useAppContext();
+	const {properties} = useMarketplaceContext();
+	const [appFlowListItems, setAppFlowListItems] =
+		useState(initialFLowListItems);
 	const [currentFlow, setCurrentFlow] = useState('create');
+	const [isLoading, setLoading] = useState(false);
+
 	const {data: account} = useAccount();
+	const navigate = useNavigate();
+
+	const {data: {areas = [], categories = [], productType, tags = []} = {}} =
+		useSWR('/taxonomy-vocabularies', async () => {
+			const fn = properties.useSiteTaxonomyVocabularyQuery
+				? HeadlessAdminTaxonomy.getSiteTaxonomyVocabulariesWithCategories
+				: HeadlessAdminTaxonomy.getTaxonomyVocabulariesWithCategories;
+
+			const data = await fn();
+
+			const marketplaceTaxonomyVocabularies =
+				new MarketplaceTaxonomyVocabularies(data.items);
+
+			return {
+				areas: marketplaceTaxonomyVocabularies
+					.getVocabularyCategories(ProductVocabulary.APP_AREA)
+					.map((taxonomyCategory) => ({
+						...taxonomyCategory,
+						label: taxonomyCategory.name,
+						value: taxonomyCategory.name,
+						vocabulary: ProductVocabulary.APP_AREA,
+					})),
+				categories:
+					marketplaceTaxonomyVocabularies.getVocabularyCategories(
+						ProductVocabulary.APP_CATEGORY
+					),
+				productType:
+					marketplaceTaxonomyVocabularies.getVocabularyCategory(
+						ProductVocabulary.PRODUCT_TYPE,
+						ProductTypeVocabulary.APP
+					),
+				tags: marketplaceTaxonomyVocabularies
+					.getVocabularyCategories(ProductVocabulary.APP_TAGS)
+					.map((taxonomyCategory) => ({
+						...taxonomyCategory,
+						label: taxonomyCategory.name,
+						value: taxonomyCategory.name,
+						vocabulary: ProductVocabulary.APP_TAGS,
+					})),
+			};
+		});
 
 	const setAppFlowListState = ({
 		checkedItems,
@@ -76,341 +128,366 @@ export function AppCreationFlow({catalogId}: AppCreationFlowProps) {
 
 	return (
 		<div className="app-creation-flow-container">
-			<AppToolBar
+			<AppToolbar
 				accountImage={account?.logoURL}
 				accountName={account?.name as string}
 				appImage={appLogo?.preview}
 				appName={appName}
+				exitProps={{
+					onClick: () => navigate('../'),
+				}}
 			/>
 
 			<div className="app-creation-flow-body">
-				<AppFlowList appFlowListItems={appFlowListItems} />
+				{isLoading ? (
+					<Loading />
+				) : (
+					<>
+						<AppFlowList appFlowListItems={appFlowListItems} />
 
-				{currentFlow === 'create' && (
-					<CreateNewAppPage
-						catalogId={catalogId}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: ['create'],
-								selectedItem: 'profile',
-							});
+						{currentFlow === 'create' && (
+							<CreateNewAppPage
+								catalogId={catalogId}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: ['create'],
+										selectedItem: 'profile',
+									});
 
-							setCurrentFlow('profile');
-						}}
-					/>
-				)}
+									setCurrentFlow('profile');
+								}}
+							/>
+						)}
 
-				{currentFlow === 'profile' && (
-					<DefineAppProfilePage
-						onClickBack={() => {
-							setAppFlowListState({
-								selectedItem: 'create',
-							});
-							setCurrentFlow('create');
-						}}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: ['create', 'profile'],
-								selectedItem: 'build',
-							});
+						{currentFlow === 'profile' && (
+							<DefineAppProfilePage
+								areas={areas as unknown as Categories[]}
+								categories={categories}
+								isLoading={isLoading}
+								onClickBack={() => {
+									setAppFlowListState({
+										selectedItem: 'create',
+									});
+									setCurrentFlow('create');
+								}}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: ['create', 'profile'],
+										selectedItem: 'build',
+									});
 
-							setCurrentFlow('build');
-						}}
-					/>
-				)}
+									setCurrentFlow('build');
+								}}
+								productType={
+									productType as unknown as Categories
+								}
+								setLoading={setLoading}
+								tags={tags as unknown as Categories[]}
+							/>
+						)}
 
-				{currentFlow === 'build' && (
-					<ProvideAppBuildPage
-						onClickBack={() => {
-							setAppFlowListState({
-								checkedItems: ['create'],
-								selectedItem: 'profile',
-							});
+						{currentFlow === 'build' && (
+							<ProvideAppBuildPage
+								onClickBack={() => {
+									setAppFlowListState({
+										checkedItems: ['create'],
+										selectedItem: 'profile',
+									});
 
-							setCurrentFlow('profile');
-						}}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: ['create', 'profile', 'build'],
-								selectedItem: 'storefront',
-							});
+									setCurrentFlow('profile');
+								}}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+										],
+										selectedItem: 'storefront',
+									});
 
-							setCurrentFlow('storefront');
-						}}
-					/>
-				)}
+									setCurrentFlow('storefront');
+								}}
+							/>
+						)}
 
-				{currentFlow === 'storefront' && (
-					<CustomizeAppStorefrontPage
-						onClickBack={() => {
-							setAppFlowListState({
-								checkedItems: ['create', 'profile'],
-								selectedItem: 'build',
-							});
+						{currentFlow === 'storefront' && (
+							<CustomizeAppStorefrontPage
+								onClickBack={() => {
+									setAppFlowListState({
+										checkedItems: ['create', 'profile'],
+										selectedItem: 'build',
+									});
 
-							setCurrentFlow('build');
-						}}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-								],
-								selectedItem: 'version',
-							});
+									setCurrentFlow('build');
+								}}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+										],
+										selectedItem: 'version',
+									});
 
-							setCurrentFlow('version');
-						}}
-					/>
-				)}
+									setCurrentFlow('version');
+								}}
+							/>
+						)}
 
-				{currentFlow === 'version' && (
-					<ProvideVersionDetailsPage
-						onClickBack={() => {
-							setAppFlowListState({
-								checkedItems: ['create', 'profile', 'build'],
-								selectedItem: 'storefront',
-							});
+						{currentFlow === 'version' && (
+							<ProvideVersionDetailsPage
+								onClickBack={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+										],
+										selectedItem: 'storefront',
+									});
 
-							setCurrentFlow('storefront');
-						}}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-									'version',
-								],
-								selectedItem: 'pricing',
-							});
+									setCurrentFlow('storefront');
+								}}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+											'version',
+										],
+										selectedItem: 'pricing',
+									});
 
-							setCurrentFlow('pricing');
-						}}
-					/>
-				)}
+									setCurrentFlow('pricing');
+								}}
+							/>
+						)}
 
-				{currentFlow === 'pricing' && (
-					<ChoosePricingModelPage
-						onClickBack={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-								],
-								selectedItem: 'version',
-							});
+						{currentFlow === 'pricing' && (
+							<ChoosePricingModelPage
+								onClickBack={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+										],
+										selectedItem: 'version',
+									});
 
-							setCurrentFlow('version');
-						}}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-									'version',
-									'pricing',
-								],
-								selectedItem: 'licensing',
-							});
+									setCurrentFlow('version');
+								}}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+											'version',
+											'pricing',
+										],
+										selectedItem: 'licensing',
+									});
 
-							setCurrentFlow('licensing');
-						}}
-					/>
-				)}
+									setCurrentFlow('licensing');
+								}}
+							/>
+						)}
 
-				{currentFlow === 'licensing' && (
-					<InformLicensingTermsPage
-						onClickBack={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-									'version',
-								],
-								selectedItem: 'pricing',
-							});
+						{currentFlow === 'licensing' && (
+							<InformLicensingTermsPage
+								onClickBack={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+											'version',
+										],
+										selectedItem: 'pricing',
+									});
 
-							setCurrentFlow('pricing');
-						}}
-						onClickContinue={() => {
-							if (priceModel.value !== 'Free') {
-								setAppFlowListState({
-									checkedItems: [
-										'create',
-										'profile',
-										'build',
-										'storefront',
-										'version',
-										'pricing',
-									],
-									selectedItem: 'licensing',
-								});
+									setCurrentFlow('pricing');
+								}}
+								onClickContinue={() => {
+									if (priceModel.value !== 'Free') {
+										setAppFlowListState({
+											checkedItems: [
+												'create',
+												'profile',
+												'build',
+												'storefront',
+												'version',
+												'pricing',
+											],
+											selectedItem: 'licensing',
+										});
 
-								setCurrentFlow('licensingPrice');
-							}
-							else {
-								setAppFlowListState({
-									checkedItems: [
-										'create',
-										'profile',
-										'build',
-										'storefront',
-										'version',
-										'pricing',
-										'licensing',
-									],
-									selectedItem: 'support',
-								});
+										setCurrentFlow('licensingPrice');
+									}
+									else {
+										setAppFlowListState({
+											checkedItems: [
+												'create',
+												'profile',
+												'build',
+												'storefront',
+												'version',
+												'pricing',
+												'licensing',
+											],
+											selectedItem: 'support',
+										});
 
-								setCurrentFlow('support');
-							}
-						}}
-					/>
-				)}
+										setCurrentFlow('support');
+									}
+								}}
+							/>
+						)}
 
-				{currentFlow === 'licensingPrice' && (
-					<InformLicensingTermsPricePage
-						onClickBack={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-									'version',
-									'pricing',
-								],
-								selectedItem: 'licensing',
-							});
+						{currentFlow === 'licensingPrice' && (
+							<InformLicensingTermsPricePage
+								onClickBack={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+											'version',
+											'pricing',
+										],
+										selectedItem: 'licensing',
+									});
 
-							setCurrentFlow('licensing');
-						}}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-									'version',
-									'pricing',
-									'licensing',
-								],
-								selectedItem: 'support',
-							});
+									setCurrentFlow('licensing');
+								}}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+											'version',
+											'pricing',
+											'licensing',
+										],
+										selectedItem: 'support',
+									});
 
-							setCurrentFlow('support');
-						}}
-					/>
-				)}
+									setCurrentFlow('support');
+								}}
+							/>
+						)}
 
-				{currentFlow === 'support' && (
-					<ProvideAppSupportAndHelpPage
-						onClickBack={() => {
-							if (priceModel.value !== 'Free') {
-								setAppFlowListState({
-									checkedItems: [
-										'create',
-										'profile',
-										'build',
-										'storefront',
-										'version',
-										'pricing',
-									],
-									selectedItem: 'licensing',
-								});
+						{currentFlow === 'support' && (
+							<ProvideAppSupportAndHelpPage
+								onClickBack={() => {
+									if (priceModel.value !== 'Free') {
+										setAppFlowListState({
+											checkedItems: [
+												'create',
+												'profile',
+												'build',
+												'storefront',
+												'version',
+												'pricing',
+											],
+											selectedItem: 'licensing',
+										});
 
-								setCurrentFlow('licensingPrice');
-							}
-							else {
-								setAppFlowListState({
-									checkedItems: [
-										'create',
-										'profile',
-										'build',
-										'storefront',
-										'version',
-										'pricing',
-									],
-									selectedItem: 'licensing',
-								});
+										setCurrentFlow('licensingPrice');
+									}
+									else {
+										setAppFlowListState({
+											checkedItems: [
+												'create',
+												'profile',
+												'build',
+												'storefront',
+												'version',
+												'pricing',
+											],
+											selectedItem: 'licensing',
+										});
 
-								setCurrentFlow('licensing');
-							}
-						}}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-									'version',
-									'pricing',
-									'licensing',
-									'support',
-								],
-								selectedItem: 'submit',
-							});
+										setCurrentFlow('licensing');
+									}
+								}}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+											'version',
+											'pricing',
+											'licensing',
+											'support',
+										],
+										selectedItem: 'submit',
+									});
 
-							setCurrentFlow('submit');
-						}}
-					/>
-				)}
+									setCurrentFlow('submit');
+								}}
+							/>
+						)}
 
-				{currentFlow === 'submit' && (
-					<ReviewAndSubmitAppPage
-						onClickBack={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-									'version',
-									'pricing',
-									'licensing',
-									'support',
-								],
-								selectedItem: 'support',
-							});
+						{currentFlow === 'submit' && (
+							<ReviewAndSubmitAppPage
+								onClickBack={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+											'version',
+											'pricing',
+											'licensing',
+											'support',
+										],
+										selectedItem: 'support',
+									});
 
-							setCurrentFlow('support');
-						}}
-						onClickContinue={() => {
-							setAppFlowListState({
-								checkedItems: [
-									'create',
-									'profile',
-									'build',
-									'storefront',
-									'version',
-									'pricing',
-									'licensing',
-									'support',
-									'submit',
-								],
-								selectedItem: '',
-							});
+									setCurrentFlow('support');
+								}}
+								onClickContinue={() => {
+									setAppFlowListState({
+										checkedItems: [
+											'create',
+											'profile',
+											'build',
+											'storefront',
+											'version',
+											'pricing',
+											'licensing',
+											'support',
+											'submit',
+										],
+										selectedItem: '',
+									});
 
-							location.href = `${Liferay.ThemeDisplay.getCanonicalURL().replace(
-								'/create-new-app',
-								'/publisher-dashboard'
-							)}`;
-						}}
-						productERC={appERC}
-						productId={appProductId}
-					/>
+									location.href = `${Liferay.ThemeDisplay.getLayoutURL().replace(
+										'/create-new-app',
+										'/publisher-dashboard'
+									)}`;
+								}}
+								productERC={appERC}
+								productId={appProductId}
+							/>
+						)}
+					</>
 				)}
 			</div>
 		</div>

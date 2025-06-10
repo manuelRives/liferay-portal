@@ -34,13 +34,16 @@ import com.liferay.osb.faro.web.internal.exception.FaroException;
 import com.liferay.osb.faro.web.internal.exception.FaroValidationException;
 import com.liferay.osb.faro.web.internal.model.display.contacts.JoinableProjectDisplay;
 import com.liferay.osb.faro.web.internal.model.display.contacts.ProjectDisplay;
+import com.liferay.osb.faro.web.internal.model.display.contacts.ProjectUsageDisplay;
 import com.liferay.osb.faro.web.internal.model.display.contacts.TimeZoneDisplay;
 import com.liferay.osb.faro.web.internal.model.display.main.FaroSubscriptionDisplay;
 import com.liferay.osb.faro.web.internal.param.FaroParam;
 import com.liferay.osb.faro.web.internal.util.JSONUtil;
 import com.liferay.osb.faro.web.internal.util.TimeZoneUtil;
+import com.liferay.petra.executor.PortalExecutorManager;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.GroupFriendlyURLException;
 import com.liferay.portal.kernel.exception.LayoutFriendlyURLException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -52,14 +55,36 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.annotation.security.RolesAllowed;
+
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,22 +96,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.CopyOnWriteArraySet;
-
-import javax.annotation.security.RolesAllowed;
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.PATCH;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import java.util.concurrent.ExecutorService;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -369,9 +379,62 @@ public class ProjectController extends BaseFaroController {
 	}
 
 	@GET
+	@Path("/{groupId}/email_address_domains")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public List<String> getEmailAddressDomains(
+		@PathParam("groupId") long groupId) {
+
+		return TransformUtil.transform(
+			_faroProjectEmailDomainLocalService.
+				getFaroProjectEmailDomainsByGroupId(groupId),
+			FaroProjectEmailDomain::getEmailDomain);
+	}
+
+	@GET
+	@Path("/{projectId}/endpoints")
+	@Unauthenticated
+	public Map<String, Object> getEndpoints(
+			@PathParam("projectId") String projectId)
+		throws Exception {
+
+		Map<String, Object> properties = new HashMap<>();
+
+		FaroProject faroProject =
+			faroProjectLocalService.fetchFaroProjectByWeDeployKey(
+				projectId + ".lfr.cloud");
+
+		if (faroProject == null) {
+			return properties;
+		}
+
+		properties.put(
+			"liferayAnalyticsEndpointURL",
+			EngineServiceURLUtil.getPublisherExternalURL(faroProject));
+		properties.put(
+			"liferayAnalyticsFaroBackendURL",
+			EngineServiceURLUtil.getBackendExternalURL(faroProject));
+
+		return properties;
+	}
+
+	@GET
+	@Path("/joinable")
+	public List<JoinableProjectDisplay> getJoinableProjectDisplays()
+		throws PortalException {
+
+		return TransformUtil.transform(
+			_faroProjectLocalService.getJoinableFaroProjects(getUser()),
+			faroProject -> new JoinableProjectDisplay(
+				faroProject.getGroupId(), faroProject.getName(),
+				Objects.nonNull(
+					_faroUserLocalService.fetchFaroUser(
+						faroProject.getGroupId(), getUserId()))));
+	}
+
+	@GET
 	@Path("/{groupId}")
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public ProjectDisplay get(
+	public ProjectDisplay getProjectDisplay(
 			@PathParam("groupId") long groupId,
 			@QueryParam("forceUpdate") boolean forceUpdate,
 			@DefaultValue("true") @QueryParam("updateLastAccess") boolean
@@ -437,7 +500,7 @@ public class ProjectController extends BaseFaroController {
 
 	@GET
 	@Path("/corpProjectUuid/{corpProjectUuid}")
-	public ProjectDisplay get(
+	public ProjectDisplay getProjectDisplay(
 			@PathParam("corpProjectUuid") String corpProjectUuid)
 		throws Exception {
 
@@ -455,60 +518,7 @@ public class ProjectController extends BaseFaroController {
 	}
 
 	@GET
-	@Path("/{groupId}/email_address_domains")
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public List<String> getEmailAddressDomains(
-		@PathParam("groupId") long groupId) {
-
-		return TransformUtil.transform(
-			_faroProjectEmailDomainLocalService.
-				getFaroProjectEmailDomainsByGroupId(groupId),
-			FaroProjectEmailDomain::getEmailDomain);
-	}
-
-	@GET
-	@Path("/{projectId}/endpoints")
-	@Unauthenticated
-	public Map<String, Object> getEndpoints(
-			@PathParam("projectId") String projectId)
-		throws Exception {
-
-		Map<String, Object> properties = new HashMap<>();
-
-		FaroProject faroProject =
-			faroProjectLocalService.fetchFaroProjectByWeDeployKey(
-				projectId + ".lfr.cloud");
-
-		if (faroProject == null) {
-			return properties;
-		}
-
-		properties.put(
-			"liferayAnalyticsEndpointURL",
-			EngineServiceURLUtil.getPublisherExternalURL(faroProject));
-		properties.put(
-			"liferayAnalyticsFaroBackendURL",
-			EngineServiceURLUtil.getBackendExternalURL(faroProject));
-
-		return properties;
-	}
-
-	@GET
-	@Path("/joinable")
-	public List<JoinableProjectDisplay> getJoinableProjects()
-		throws PortalException {
-
-		return TransformUtil.transform(
-			_faroProjectLocalService.getJoinableFaroProjects(getUser()),
-			faroProject -> new JoinableProjectDisplay(
-				faroProject.getGroupId(), faroProject.getName(),
-				Objects.nonNull(
-					_faroUserLocalService.fetchFaroUser(
-						faroProject.getGroupId(), getUserId()))));
-	}
-
-	@GET
-	public List<ProjectDisplay> getProjects() {
+	public List<ProjectDisplay> getProjectDisplays() {
 		return TransformUtil.transform(
 			_faroUserLocalService.getFaroUsersByLiveUserId(
 				getUserId(), FaroUserConstants.STATUS_APPROVED),
@@ -538,6 +548,36 @@ public class ProjectController extends BaseFaroController {
 	}
 
 	@GET
+	@Path("/usage")
+	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
+	public List<ProjectUsageDisplay> getProjectUsageDisplays(
+		@QueryParam("groupId") Long groupId,
+		@DefaultValue("true") @QueryParam("includeIndividualsCounts") boolean
+			includeIndividualsCounts,
+		@DefaultValue("true") @QueryParam("includeMonthlyValues") boolean
+			includeMonthlyValues,
+		@DefaultValue("true") @QueryParam("includePageViewsCounts") boolean
+			includePageViewsCounts) {
+
+		List<FaroProject> faroProjects = new ArrayList<>();
+
+		if (Validator.isNotNull(groupId)) {
+			faroProjects.add(
+				_faroProjectLocalService.fetchFaroProjectByGroupId(groupId));
+		}
+		else {
+			faroProjects = _faroProjectLocalService.getFaroProjects(
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+		}
+
+		return TransformUtil.transform(
+			faroProjects,
+			faroProject -> new ProjectUsageDisplay(
+				faroProject, includeIndividualsCounts, includeMonthlyValues,
+				includePageViewsCounts));
+	}
+
+	@GET
 	@Path("/time_zones")
 	public List<TimeZoneDisplay> getTimeZones() {
 		return TimeZoneUtil.getTimeZoneDisplays();
@@ -547,6 +587,8 @@ public class ProjectController extends BaseFaroController {
 	@Path("/{groupId}")
 	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
 	public void patch(
+			@DefaultValue(StringPool.BLANK) @FormParam("corpProjectName") String
+				corpProjectName,
 			@DefaultValue(StringPool.BLANK) @FormParam("corpProjectUuid") String
 				corpProjectUuid,
 			@PathParam("groupId") long groupId,
@@ -556,6 +598,10 @@ public class ProjectController extends BaseFaroController {
 
 		FaroProject faroProject =
 			faroProjectLocalService.getFaroProjectByGroupId(groupId);
+
+		if (!Validator.isBlank(corpProjectName)) {
+			faroProject.setCorpProjectName(corpProjectName);
+		}
 
 		if (!Validator.isBlank(corpProjectUuid)) {
 			faroProject.setCorpProjectUuid(corpProjectUuid);
@@ -576,8 +622,83 @@ public class ProjectController extends BaseFaroController {
 		faroProjectLocalService.updateFaroProject(faroProject);
 
 		if (!Validator.isBlank(corpProjectUuid)) {
-			get(groupId, true, true);
+			getProjectDisplay(groupId, true, true);
 		}
+	}
+
+	@GET
+	@Path("/usage/reset/preview")
+	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
+	public List<FaroSubscriptionDisplay> previewResetProjectUsageDisplays(
+			@QueryParam("groupId") Long groupId,
+			@QueryParam("startDateString") String startDateString)
+		throws Exception {
+
+		List<FaroProject> faroProjects = new ArrayList<>();
+
+		if (groupId != null) {
+			faroProjects.add(
+				_faroProjectLocalService.fetchFaroProjectByGroupId(groupId));
+		}
+		else {
+			faroProjects = _faroProjectLocalService.getFaroProjects(
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+		}
+
+		return TransformUtil.transform(
+			faroProjects,
+			faroProject -> _resetProjectUsageDisplays(
+				faroProject.getGroupId(), startDateString));
+	}
+
+	@DELETE
+	@Path("/usage/reset")
+	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
+	public void resetProjectUsageDisplays(
+			@QueryParam("groupId") Long groupId,
+			@QueryParam("startDateString") String startDateString)
+		throws Exception {
+
+		ExecutorService executorService =
+			_portalExecutorManager.getPortalExecutor(
+				ProjectController.class.getName());
+
+		executorService.submit(
+			new CompanyInheritableThreadLocalCallable<>(
+				() -> {
+					try {
+						List<FaroProject> faroProjects = new ArrayList<>();
+
+						if (Validator.isNotNull(groupId)) {
+							faroProjects.add(
+								_faroProjectLocalService.
+									fetchFaroProjectByGroupId(groupId));
+						}
+						else {
+							faroProjects =
+								_faroProjectLocalService.getFaroProjects(
+									QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+						}
+
+						for (FaroProject faroProject : faroProjects) {
+							_faroProjectLocalService.updateSubscription(
+								faroProject.getFaroProjectId(),
+								JSONUtil.writeValueAsString(
+									_resetProjectUsageDisplays(
+										faroProject.getGroupId(),
+										startDateString)));
+						}
+
+						if (_log.isInfoEnabled()) {
+							_log.info("Finished resetting project usage");
+						}
+					}
+					catch (Exception exception) {
+						_log.error(exception);
+					}
+
+					return null;
+				}));
 	}
 
 	@Path("/{groupId}/send-created-workspace-email")
@@ -854,9 +975,14 @@ public class ProjectController extends BaseFaroController {
 		faroProject.setWeDeployKey(
 			contactsEngineClient.addProject(faroProject) + ".lfr.cloud");
 
-		return new ProjectDisplay(
-			_faroProjectLocalService.updateFaroProject(faroProject),
-			friendlyURL);
+		faroProject = _faroProjectLocalService.updateFaroProject(faroProject);
+
+		if (_shouldSendCreatedWorkspaceEmail(faroProject)) {
+			_faroProjectLocalService.sendCreatedWorkspaceEmail(
+				faroProject.getWeDeployKey());
+		}
+
+		return new ProjectDisplay(faroProject, friendlyURL);
 	}
 
 	private String _getDeletionFailedErrorMessage(User user) {
@@ -1080,13 +1206,12 @@ public class ProjectController extends BaseFaroController {
 		JSONObject subscriptionJSONObject = _jsonFactory.createJSONObject(
 			faroProject.getSubscription());
 
-		if (!Objects.equals(
-				subscriptionJSONObject.get("name"), subscriptionName)) {
+		String oldSubscriptionName = subscriptionJSONObject.getString("name");
 
-			return true;
-		}
+		oldSubscriptionName = StringUtil.replace(
+			oldSubscriptionName, "LXC ", "Liferay SaaS ");
 
-		return false;
+		return !Objects.equals(oldSubscriptionName, subscriptionName);
 	}
 
 	private boolean _isWorkspaceHealthy(FaroProject faroProject) {
@@ -1121,6 +1246,83 @@ public class ProjectController extends BaseFaroController {
 		if (workspace.isReady()) {
 			_initializeFaroProject(faroProject);
 		}
+	}
+
+	private FaroSubscriptionDisplay _resetProjectUsageDisplays(
+			long groupId, String startDateString)
+		throws Exception {
+
+		FaroProject faroProject =
+			_faroProjectLocalService.fetchFaroProjectByGroupId(groupId);
+
+		FaroSubscriptionDisplay faroSubscriptionDisplay = JSONUtil.readValue(
+			faroProject.getSubscription(), FaroSubscriptionDisplay.class);
+
+		faroSubscriptionDisplay.setIndividualsCounts(null);
+		faroSubscriptionDisplay.setPageViewsCounts(null);
+
+		faroProject.setSubscription(
+			JSONUtil.writeValueAsString(faroSubscriptionDisplay));
+
+		Date date = new Date();
+
+		date = new Date(date.getTime() / Time.DAY * Time.DAY);
+
+		Calendar calendar1 = Calendar.getInstance();
+
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		Date startDate = dateFormat.parse(startDateString);
+
+		calendar1.setTime(startDate);
+
+		calendar1.set(Calendar.DATE, 1);
+
+		Date lastAnniversaryDate =
+			faroSubscriptionDisplay.getLastAnniversaryDate();
+
+		if (DateUtil.compareTo(startDate, lastAnniversaryDate) < 0) {
+			startDate = lastAnniversaryDate;
+
+			calendar1.setTime(lastAnniversaryDate);
+		}
+
+		while (DateUtil.compareTo(date, startDate) > 0) {
+			calendar1.add(Calendar.MONTH, 1);
+			calendar1.set(Calendar.DATE, 1);
+
+			Date endDate = calendar1.getTime();
+
+			if (DateUtil.compareTo(endDate, date) > 0) {
+				endDate = date;
+			}
+
+			JSONObject jsonObject = _jsonFactory.createJSONObject(
+				faroProject.getSubscription());
+
+			jsonObject.put(
+				"individualsCountSinceLastAnniversary",
+				contactsEngineClient.getIndividualsCreatedBetweenCount(
+					faroProject, endDate, lastAnniversaryDate)
+			).put(
+				"pageViewsCountSinceLastAnniversary",
+				cerebroEngineClient.getPageViews(
+					faroProject, lastAnniversaryDate, endDate)
+			);
+
+			faroProject.setSubscription(jsonObject.toString());
+
+			faroSubscriptionDisplay.setUsageCounts(
+				cerebroEngineClient, contactsEngineClient, endDate, faroProject,
+				startDate);
+
+			faroProject.setSubscription(
+				JSONUtil.writeValueAsString(faroSubscriptionDisplay));
+
+			startDate = calendar1.getTime();
+		}
+
+		return faroSubscriptionDisplay;
 	}
 
 	private void _sendTimeZoneNotification(long groupId) {
@@ -1272,6 +1474,9 @@ public class ProjectController extends BaseFaroController {
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private PortalExecutorManager _portalExecutorManager;
 
 	@Reference(
 		policy = ReferencePolicy.DYNAMIC,

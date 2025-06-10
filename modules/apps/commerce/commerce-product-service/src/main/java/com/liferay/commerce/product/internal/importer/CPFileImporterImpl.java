@@ -75,6 +75,8 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.impl.ThemeSettingImpl;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -89,8 +91,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -429,7 +429,7 @@ public class CPFileImporterImpl implements CPFileImporter {
 		friendlyURL = CharPool.SLASH + friendlyURL;
 
 		Layout layout = _layoutLocalService.addLayout(
-			serviceContext.getUserId(), serviceContext.getScopeGroupId(),
+			null, serviceContext.getUserId(), serviceContext.getScopeGroupId(),
 			privateLayout, parentLayoutId, name, name, StringPool.BLANK,
 			layoutType, hidden, friendlyURL, serviceContext);
 
@@ -549,9 +549,10 @@ public class CPFileImporterImpl implements CPFileImporter {
 		DDMFormLayout ddmFormLayout = _ddm.getDefaultDDMFormLayout(ddmForm);
 
 		return _ddmStructureLocalService.addStructure(
-			serviceContext.getUserId(), serviceContext.getScopeGroupId(), 0,
-			classNameId, ddmStructureKey, nameMap, null, ddmForm, ddmFormLayout,
-			"json", DDMStructureConstants.TYPE_DEFAULT, serviceContext);
+			null, serviceContext.getUserId(), serviceContext.getScopeGroupId(),
+			0, classNameId, ddmStructureKey, nameMap, null, ddmForm,
+			ddmFormLayout, "json", DDMStructureConstants.TYPE_DEFAULT,
+			serviceContext);
 	}
 
 	private DDMTemplate _fetchOrAddDDMTemplate(
@@ -569,10 +570,11 @@ public class CPFileImporterImpl implements CPFileImporter {
 
 		if (ddmTemplate == null) {
 			ddmTemplate = _ddmTemplateLocalService.addTemplate(
-				serviceContext.getUserId(), serviceContext.getScopeGroupId(),
-				classNameId, classPK, resourceClassNameId, _getKey(name),
-				nameMap, null, type, mode, language, script, cacheable, false,
-				StringPool.BLANK, null, serviceContext);
+				null, serviceContext.getUserId(),
+				serviceContext.getScopeGroupId(), classNameId, classPK,
+				resourceClassNameId, _getKey(name), nameMap, null, type, mode,
+				language, script, cacheable, false, StringPool.BLANK, null,
+				serviceContext);
 		}
 		else {
 			ddmTemplate = _ddmTemplateLocalService.updateTemplate(
@@ -721,7 +723,7 @@ public class CPFileImporterImpl implements CPFileImporter {
 
 		if (role == null) {
 			role = _roleLocalService.addRole(
-				serviceContext.getUserId(), null, 0, name,
+				null, serviceContext.getUserId(), null, 0, name,
 				HashMapBuilder.put(
 					serviceContext.getLocale(), name
 				).build(),

@@ -19,6 +19,7 @@ import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.storage.Field;
 import com.liferay.dynamic.data.mapping.storage.Fields;
+import com.liferay.dynamic.data.mapping.test.util.DDMFormTestUtil;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormValuesTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -203,7 +204,7 @@ public class DDMFormValuesToFieldsConverterTest extends BaseDDMTestCase {
 		ddmFormValues.addDDMFormFieldValue(paulDDMFormFieldValue);
 
 		DDMFormFieldValue joeDDMFormFieldValue = createDDMFormFieldValue(
-			"rght", "Name", createLocalizedValue("Joe", "Joao", LocaleUtil.US));
+			"rght", "Name", createLocalizedValue("Joe", "João", LocaleUtil.US));
 
 		List<DDMFormFieldValue> joeNestedDDMFormFieldValues =
 			joeDDMFormFieldValue.getNestedDDMFormFieldValues();
@@ -212,19 +213,19 @@ public class DDMFormValuesToFieldsConverterTest extends BaseDDMTestCase {
 			createDDMFormFieldValue(
 				"latb", "Phone",
 				createLocalizedValue(
-					"Joe's Phone 1", "Telefone de Joao 1", LocaleUtil.US)));
+					"Joe's Phone 1", "Telefone de João 1", LocaleUtil.US)));
 
 		joeNestedDDMFormFieldValues.add(
 			createDDMFormFieldValue(
 				"jewp", "Phone",
 				createLocalizedValue(
-					"Joe's Phone 2", "Telefone de Joao 2", LocaleUtil.US)));
+					"Joe's Phone 2", "Telefone de João 2", LocaleUtil.US)));
 
 		joeNestedDDMFormFieldValues.add(
 			createDDMFormFieldValue(
 				"mkar", "Phone",
 				createLocalizedValue(
-					"Joe's Phone 3", "Telefone de Joao 3", LocaleUtil.US)));
+					"Joe's Phone 3", "Telefone de João 3", LocaleUtil.US)));
 
 		ddmFormValues.addDDMFormFieldValue(joeDDMFormFieldValue);
 
@@ -237,7 +238,7 @@ public class DDMFormValuesToFieldsConverterTest extends BaseDDMTestCase {
 
 		testField(
 			nameField, createValuesList("Paul", "Joe"),
-			createValuesList("Paulo", "Joao"), _availableLocales,
+			createValuesList("Paulo", "João"), _availableLocales,
 			LocaleUtil.US);
 
 		Field phoneField = fields.get("Phone");
@@ -249,8 +250,8 @@ public class DDMFormValuesToFieldsConverterTest extends BaseDDMTestCase {
 				"Joe's Phone 2", "Joe's Phone 3"),
 			createValuesList(
 				"Telefone de Paulo 1", "Telefone de Paulo 2",
-				"Telefone de Joao 1", "Telefone de Joao 2",
-				"Telefone de Joao 3"),
+				"Telefone de João 1", "Telefone de João 2",
+				"Telefone de João 3"),
 			_availableLocales, LocaleUtil.US);
 
 		Field fieldsDisplayField = fields.get(DDMImpl.FIELDS_DISPLAY_NAME);
@@ -312,6 +313,39 @@ public class DDMFormValuesToFieldsConverterTest extends BaseDDMTestCase {
 		Assert.assertEquals(
 			"Name_INSTANCE_rztm,Name_INSTANCE_uayd,Name_INSTANCE_pamh",
 			fieldsDisplayField.getValue());
+	}
+
+	@Test
+	public void testConversionWithRepeatableFieldSet() throws Exception {
+		DDMForm ddmForm = createDDMForm();
+
+		DDMFormField ddmFormField = DDMFormTestUtil.createDDMFormField(
+			"fieldSet", RandomTestUtil.randomString(),
+			DDMFormFieldTypeConstants.FIELDSET, null, false, true, false);
+
+		ddmFormField.addNestedDDMFormField(
+			DDMFormTestUtil.createTextDDMFormField("text", true, false, false));
+
+		ddmForm.addDDMFormField(ddmFormField);
+
+		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
+			ddmForm);
+
+		_addFieldSetDDMFormFieldValue(ddmFormValues, null);
+
+		String value = RandomTestUtil.randomString();
+
+		_addFieldSetDDMFormFieldValue(ddmFormValues, value);
+
+		Fields fields = _ddmFormValuesToFieldsConverter.convert(
+			createStructure(RandomTestUtil.randomString(), ddmForm),
+			ddmFormValues);
+
+		Field field = fields.get("text");
+
+		Assert.assertEquals(
+			createValuesList(StringPool.BLANK, value),
+			field.getValues(LocaleUtil.US));
 	}
 
 	@Test
@@ -513,6 +547,27 @@ public class DDMFormValuesToFieldsConverterTest extends BaseDDMTestCase {
 			fieldsDisplayField.getValue());
 	}
 
+	@Test
+	public void testConversionWithUndefinedField() throws Exception {
+		DDMForm ddmForm = createDDMForm();
+
+		addDDMFormFields(ddmForm, createTextDDMFormField("Title"));
+
+		DDMStructure ddmStructure = createStructure("Test Structure", ddmForm);
+
+		DDMFormValues ddmFormValues = createDDMFormValues(
+			ddmForm, _availableLocales, LocaleUtil.US);
+
+		Fields fields = _ddmFormValuesToFieldsConverter.convert(
+			ddmStructure, ddmFormValues);
+
+		Assert.assertNotNull(fields);
+
+		Field titleField = fields.get("Title");
+
+		Assert.assertEquals(StringPool.BLANK, titleField.getValue());
+	}
+
 	@Override
 	protected List<Serializable> createValuesList(String... valuesString) {
 		List<Serializable> values = new ArrayList<>();
@@ -542,6 +597,33 @@ public class DDMFormValuesToFieldsConverterTest extends BaseDDMTestCase {
 		Assert.assertEquals(expectedEnValues, field.getValues(LocaleUtil.US));
 		Assert.assertEquals(
 			expectedPtValues, field.getValues(LocaleUtil.BRAZIL));
+	}
+
+	private void _addFieldSetDDMFormFieldValue(
+		DDMFormValues ddmFormValues, String value) {
+
+		DDMFormFieldValue ddmFormFieldValue =
+			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
+				"fieldSet", null);
+
+		DDMFormFieldValue nestedDDMFormFieldValue = new DDMFormFieldValue();
+
+		nestedDDMFormFieldValue.setFieldReference("text");
+		nestedDDMFormFieldValue.setInstanceId(RandomTestUtil.randomString());
+		nestedDDMFormFieldValue.setName("text");
+
+		if (value == null) {
+			nestedDDMFormFieldValue.setValue(new LocalizedValue(LocaleUtil.US));
+		}
+		else {
+			nestedDDMFormFieldValue.setValue(
+				DDMFormValuesTestUtil.createLocalizedValue(
+					value, LocaleUtil.US));
+		}
+
+		ddmFormFieldValue.addNestedDDMFormFieldValue(nestedDDMFormFieldValue);
+
+		ddmFormValues.addDDMFormFieldValue(ddmFormFieldValue);
 	}
 
 	private void _assertBooleanFieldValue(

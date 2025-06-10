@@ -45,9 +45,9 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.documentlibrary.constants.DLConstants;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -62,7 +62,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Gergely Mathe
  */
 @Component(
-	property = "javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+	property = "jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
 	service = PortletDataHandler.class
 )
 public class DLAdminPortletDataHandler extends BasePortletDataHandler {
@@ -190,9 +190,12 @@ public class DLAdminPortletDataHandler extends BasePortletDataHandler {
 		portletPreferences.setValue("fileEntryColumns", StringPool.BLANK);
 		portletPreferences.setValue("folderColumns", StringPool.BLANK);
 		portletPreferences.setValue("foldersPerPage", StringPool.BLANK);
-		portletPreferences.setValue("repositoryId", StringPool.BLANK);
-		portletPreferences.setValue("rootFolderId", StringPool.BLANK);
-		portletPreferences.setValue("selectedRepositoryId", StringPool.BLANK);
+		portletPreferences.setValue(
+			"rootFolderExternalReferenceCode", StringPool.BLANK);
+		portletPreferences.setValue(
+			"selectedGroupExternalReferenceCode", StringPool.BLANK);
+		portletPreferences.setValue(
+			"selectedRepositoryExternalReferenceCode", StringPool.BLANK);
 		portletPreferences.setValue("showFoldersSearch", StringPool.BLANK);
 		portletPreferences.setValue("showSubfolders", StringPool.BLANK);
 

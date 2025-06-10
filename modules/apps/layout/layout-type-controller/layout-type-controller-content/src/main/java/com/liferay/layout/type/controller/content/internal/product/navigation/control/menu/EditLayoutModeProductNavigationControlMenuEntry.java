@@ -7,7 +7,6 @@ package com.liferay.layout.type.controller.content.internal.product.navigation.c
 
 import com.liferay.exportimport.kernel.staging.LayoutStaging;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorWebKeys;
-import com.liferay.layout.helper.LayoutCopyHelper;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.security.permission.resource.LayoutContentModelResourcePermission;
 import com.liferay.petra.string.StringPool;
@@ -40,11 +39,11 @@ import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.staging.StagingGroupHelper;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -106,7 +105,7 @@ public class EditLayoutModeProductNavigationControlMenuEntry
 					ServiceContextFactory.getInstance(httpServletRequest);
 
 				draftLayout = _layoutLocalService.addLayout(
-					layout.getUserId(), layout.getGroupId(),
+					null, layout.getUserId(), layout.getGroupId(),
 					layout.isPrivateLayout(), layout.getParentLayoutId(),
 					_portal.getClassNameId(Layout.class), layout.getPlid(),
 					layout.getNameMap(), layout.getTitleMap(),
@@ -116,7 +115,7 @@ public class EditLayoutModeProductNavigationControlMenuEntry
 					Collections.emptyMap(), layout.getMasterLayoutPlid(),
 					serviceContext);
 
-				draftLayout = _layoutCopyHelper.copyLayoutContent(
+				draftLayout = _layoutLocalService.copyLayoutContent(
 					layout, draftLayout);
 
 				_layoutLocalService.updateStatus(
@@ -214,16 +213,24 @@ public class EditLayoutModeProductNavigationControlMenuEntry
 			httpServletRequest, "segmentsExperienceId", -1);
 
 		if (segmentsExperienceId != -1) {
-			SegmentsExperience segmentsExperience =
+			SegmentsExperience publishedSegmentsExperience =
 				_segmentsExperienceLocalService.fetchSegmentsExperience(
 					segmentsExperienceId);
 
-			if ((segmentsExperience != null) &&
-				((layout.getPlid() == segmentsExperience.getPlid()) ||
-				 (layout.getClassPK() == segmentsExperience.getPlid()))) {
+			Layout draftLayout = layout.fetchDraftLayout();
+
+			SegmentsExperience draftSegmentsExperience =
+				_segmentsExperienceLocalService.fetchSegmentsExperience(
+					draftLayout.getGroupId(),
+					publishedSegmentsExperience.getSegmentsExperienceKey(),
+					draftLayout.getPlid());
+
+			if ((draftSegmentsExperience != null) &&
+				(draftLayout.getPlid() == draftSegmentsExperience.getPlid())) {
 
 				return HttpComponentsUtil.setParameter(
-					url, "segmentsExperienceId", segmentsExperienceId);
+					url, "segmentsExperienceId",
+					draftSegmentsExperience.getSegmentsExperienceId());
 			}
 		}
 
@@ -251,9 +258,6 @@ public class EditLayoutModeProductNavigationControlMenuEntry
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

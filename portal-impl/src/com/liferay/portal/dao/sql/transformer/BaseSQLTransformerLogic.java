@@ -31,6 +31,18 @@ public abstract class BaseSQLTransformerLogic implements SQLTransformerLogic {
 		return _functions;
 	}
 
+	protected Function<String, String> getAggregationFunction() {
+		Pattern pattern = getAggregationPattern();
+
+		return (String sql) -> replaceAggregation(pattern.matcher(sql));
+	}
+
+	protected Pattern getAggregationPattern() {
+		return Pattern.compile(
+			"AGGREGATION_(.+?)_(.+?)\\(\\s*(.+?)\\s*\\)",
+			Pattern.CASE_INSENSITIVE);
+	}
+
 	protected Function<String, String> getBitwiseCheckFunction() {
 		Pattern pattern = getBitwiseCheckPattern();
 
@@ -56,6 +68,17 @@ public abstract class BaseSQLTransformerLogic implements SQLTransformerLogic {
 	protected Pattern getCastClobTextPattern() {
 		return Pattern.compile(
 			"CAST_CLOB_TEXT\\((.*)\\)", Pattern.CASE_INSENSITIVE);
+	}
+
+	protected Function<String, String> getCastFloatFunction() {
+		return _getCastFunction(
+			matcher -> replaceCastFloat(matcher), "CAST_FLOAT",
+			getCastFloatPattern());
+	}
+
+	protected Pattern getCastFloatPattern() {
+		return Pattern.compile(
+			"CAST_FLOAT\\((.*)\\)", Pattern.CASE_INSENSITIVE);
 	}
 
 	protected Function<String, String> getCastLongFunction() {
@@ -192,12 +215,20 @@ public abstract class BaseSQLTransformerLogic implements SQLTransformerLogic {
 			Pattern.CASE_INSENSITIVE);
 	}
 
+	protected String replaceAggregation(Matcher matcher) {
+		return matcher.replaceAll("$2($3)");
+	}
+
 	protected String replaceBitwiseCheck(Matcher matcher) {
 		return matcher.replaceAll("($1 & $2)");
 	}
 
 	protected String replaceCastClobText(Matcher matcher) {
 		return replaceCastText(matcher);
+	}
+
+	protected String replaceCastFloat(Matcher matcher) {
+		return matcher.replaceAll("CAST($1 AS FLOAT)");
 	}
 
 	protected String replaceCastLong(Matcher matcher) {

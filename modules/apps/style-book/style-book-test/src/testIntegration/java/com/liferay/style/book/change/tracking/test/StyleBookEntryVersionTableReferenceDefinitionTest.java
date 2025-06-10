@@ -44,9 +44,9 @@ public class StyleBookEntryVersionTableReferenceDefinitionTest
 		super.setUp();
 
 		_styleBookEntry = _styleBookEntryLocalService.addStyleBookEntry(
-			TestPropsValues.getUserId(), TestPropsValues.getGroupId(), false,
-			StringPool.BLANK, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(),
+			null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			false, StringPool.BLANK, RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext());
 	}
 

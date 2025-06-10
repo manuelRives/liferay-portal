@@ -8,14 +8,10 @@ package com.liferay.portal.search.rest.internal.resource.v1_0;
 import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
-import com.liferay.object.model.ObjectDefinition;
-import com.liferay.object.model.ObjectEntry;
-import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
@@ -31,9 +27,9 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.search.generic.MatchAllQuery;
-import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -51,17 +47,25 @@ import com.liferay.portal.search.rest.dto.v1_0.SearchResult;
 import com.liferay.portal.search.rest.internal.facet.FacetRequestContributor;
 import com.liferay.portal.search.rest.internal.facet.FacetResponseProcessor;
 import com.liferay.portal.search.rest.internal.odata.entity.v1_0.SearchResultEntityModel;
+import com.liferay.portal.search.rest.internal.util.FilterUtil;
+import com.liferay.portal.search.rest.internal.util.ScopeUtil;
+import com.liferay.portal.search.rest.internal.util.ValueUtil;
 import com.liferay.portal.search.rest.pagination.SearchPage;
 import com.liferay.portal.search.rest.resource.v1_0.SearchResultResource;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilder;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
-import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
+
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import java.io.Serializable;
 
@@ -75,9 +79,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -98,116 +99,69 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 	}
 
 	@Override
-	public Page<SearchResult> postSearchPage(
-			String entryClassNames, String search, Filter filter,
-			Pagination pagination, Sort[] sorts,
-			SearchRequestBody searchRequestBody)
+	public Page<SearchResult> getSearchPage(
+			String blueprintExternalReferenceCode, Boolean emptySearch,
+			String entryClassNames, String scope, String search, Filter filter,
+			Pagination pagination, Sort[] sorts)
 		throws Exception {
+
+		if (!FeatureFlagManagerUtil.isEnabled("LPD-11232")) {
+			throw new NotFoundException();
+		}
+
+		SearchRequestBody searchRequestBody = new SearchRequestBody();
+
+		searchRequestBody.setAttributes(
+			() -> HashMapBuilder.<String, Object>put(
+				"search.empty.search", emptySearch
+			).put(
+				"search.experiences.blueprint.external.reference.code",
+				blueprintExternalReferenceCode
+			).put(
+				"status",
+				() -> {
+					int[] statuses = FilterUtil.getStatuses(filter);
+
+					if (ArrayUtil.isNotEmpty(statuses)) {
+						return statuses;
+					}
+
+					return null;
+				}
+			).build());
+
+		return _postSearchPage(
+			entryClassNames, scope, search, filter, pagination, sorts,
+			searchRequestBody);
+	}
+
+	@Override
+	public Page<SearchResult> postSearchPage(
+		String entryClassNames, String scope, String search, Filter filter,
+		Pagination pagination, Sort[] sorts,
+		SearchRequestBody searchRequestBody) {
 
 		if (!FeatureFlagManagerUtil.isEnabled("LPS-179669")) {
 			throw new NotFoundException();
 		}
 
-		SearchRequestBuilder searchRequestBuilder =
-			_searchRequestBuilderFactory.builder(
-			).companyId(
-				contextCompany.getCompanyId()
-			).fetchSourceIncludes(
-				new String[] {
-					_localization.getLocalizedName(
-						com.liferay.portal.kernel.search.Field.CONTENT,
-						contextAcceptLanguage.getPreferredLanguageId()),
-					_localization.getLocalizedName(
-						com.liferay.portal.kernel.search.Field.DESCRIPTION,
-						contextAcceptLanguage.getPreferredLanguageId()),
-					com.liferay.portal.kernel.search.Field.MODIFIED_DATE
+		Map<String, Object> attributes = GetterUtil.getObject(
+			searchRequestBody.getAttributes(), HashMap::new);
+
+		searchRequestBody.setAttributes(
+			() -> {
+				int[] statuses = FilterUtil.getStatuses(filter);
+
+				if (ArrayUtil.isNotEmpty(statuses)) {
+					attributes.put("status", statuses);
 				}
-			).from(
-				pagination.getStartPosition()
-			).size(
-				pagination.getPageSize()
-			).withSearchContext(
-				searchContext -> _addSearchContextAttributes(
-					searchRequestBody.getAttributes(), filter, search,
-					searchContext, sorts)
-			);
 
-		String[] entryClassNamesArray = _toArray(entryClassNames);
-
-		if (!ArrayUtil.isEmpty(entryClassNamesArray)) {
-			searchRequestBuilder.entryClassNames(entryClassNamesArray);
-			searchRequestBuilder.modelIndexerClassNames(entryClassNamesArray);
-		}
-
-		if (!Validator.isBlank(search)) {
-			searchRequestBuilder.queryString(search);
-		}
-
-		if (ArrayUtil.isNotEmpty(searchRequestBody.getFacetConfigurations())) {
-			_facetRequestContributor.contribute(
-				searchRequestBody.getFacetConfigurations(),
-				searchRequestBuilder);
-		}
-
-		return _toSearchPage(
-			searchRequestBody.getFacetConfigurations(),
-			Arrays.asList(
-				ParamUtil.getStringValues(contextHttpServletRequest, "fields")),
-			pagination, _searcher.search(searchRequestBuilder.build()));
-	}
-
-	private void _addSearchContextAttributes(
-		Map<String, Object> attributes, Filter filter, String search,
-		SearchContext searchContext, Sort[] sorts) {
-
-		MapUtil.isNotEmptyForEach(
-			attributes,
-			(key, value) -> {
-				if (_isAllowedSearchContextAttribute(key) && (value != null) &&
-					(value instanceof Serializable)) {
-
-					searchContext.setAttribute(key, (Serializable)value);
-				}
+				return attributes;
 			});
 
-		if (searchContext.getAttribute("search.experiences.ip.address") ==
-				null) {
-
-			searchContext.setAttribute(
-				"search.experiences.ip.address",
-				contextHttpServletRequest.getRemoteAddr());
-		}
-
-		if (filter != null) {
-			searchContext.setBooleanClauses(
-				new BooleanClause[] {
-					_getBooleanClause(
-						booleanQuery -> {
-						},
-						filter)
-				});
-		}
-
-		searchContext.setKeywords(search);
-		searchContext.setLocale(contextAcceptLanguage.getPreferredLocale());
-
-		if (!ArrayUtil.isEmpty(sorts)) {
-			searchContext.setSorts(sorts);
-		}
-
-		searchContext.setTimeZone(contextUser.getTimeZone());
-		searchContext.setUserId(contextUser.getUserId());
-	}
-
-	private Object _fetchObject(String entryClassName, Long entryClassPK) {
-		if (entryClassName.equals(Layout.class.getName())) {
-			return _layoutLocalService.fetchLayout(entryClassPK);
-		}
-		else if (entryClassName.startsWith(ObjectDefinition.class.getName())) {
-			return _objectEntryLocalService.fetchObjectEntry(entryClassPK);
-		}
-
-		return null;
+		return _postSearchPage(
+			entryClassNames, scope, search, filter, pagination, sorts,
+			searchRequestBody);
 	}
 
 	private AssetRenderer<?> _getAssetRenderer(
@@ -262,14 +216,6 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 		catch (Exception exception) {
 			throw new RuntimeException(exception);
 		}
-	}
-
-	private String _getDTOClassName(String entryClassName) {
-		if (entryClassName.startsWith(ObjectDefinition.class.getName())) {
-			return ObjectEntry.class.getName();
-		}
-
-		return entryClassName;
 	}
 
 	private String _getEntryClassName(Document document) {
@@ -337,7 +283,7 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 
 	private boolean _isAllowedSearchContextAttribute(String key) {
 		if (key.startsWith("search.experiences.") ||
-			key.equals("search.empty.search")) {
+			key.equals("search.empty.search") || key.equals("status")) {
 
 			return true;
 		}
@@ -346,14 +292,9 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 	}
 
 	private boolean _isEmbedded() {
-		if (StringUtil.contains(
-				ParamUtil.getString(contextHttpServletRequest, "nestedFields"),
-				"embedded")) {
-
-			return true;
-		}
-
-		return false;
+		return StringUtil.contains(
+			ParamUtil.getString(contextHttpServletRequest, "nestedFields"),
+			"embedded");
 	}
 
 	private boolean _isEmptyOrContains(List<String> list, String... strings) {
@@ -365,16 +306,6 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 			if (list.contains(s)) {
 				return true;
 			}
-		}
-
-		return false;
-	}
-
-	private boolean _isObjectToDTOEntryClassName(String entryClassName) {
-		if (entryClassName.equals(Layout.class.getName()) ||
-			entryClassName.startsWith(ObjectDefinition.class.getName())) {
-
-			return true;
 		}
 
 		return false;
@@ -393,6 +324,121 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 		}
 	}
 
+	private void _populateSearchContext(
+		Map<String, Object> attributes, Filter filter, String scope,
+		String search, SearchContext searchContext, Sort[] sorts) {
+
+		MapUtil.isNotEmptyForEach(
+			attributes,
+			(key, value) -> {
+				if (_isAllowedSearchContextAttribute(key) && (value != null) &&
+					(value instanceof Serializable)) {
+
+					searchContext.setAttribute(key, (Serializable)value);
+				}
+			});
+
+		if (searchContext.getAttribute("search.experiences.ip.address") ==
+				null) {
+
+			searchContext.setAttribute(
+				"search.experiences.ip.address",
+				contextHttpServletRequest.getRemoteAddr());
+		}
+
+		if (filter != null) {
+			searchContext.setBooleanClauses(
+				new BooleanClause[] {
+					_getBooleanClause(
+						booleanQuery -> {
+						},
+						filter)
+				});
+		}
+
+		searchContext.setGroupIds(
+			ScopeUtil.toGroupIds(contextCompany.getCompanyId(), scope));
+		searchContext.setKeywords(search);
+		searchContext.setLocale(contextAcceptLanguage.getPreferredLocale());
+
+		if (ArrayUtil.isNotEmpty(sorts)) {
+			searchContext.setSorts(sorts);
+		}
+
+		searchContext.setTimeZone(contextUser.getTimeZone());
+		searchContext.setUserId(contextUser.getUserId());
+	}
+
+	private Page<SearchResult> _postSearchPage(
+		String entryClassNames, String scope, String search, Filter filter,
+		Pagination pagination, Sort[] sorts,
+		SearchRequestBody searchRequestBody) {
+
+		SearchRequestBuilder searchRequestBuilder =
+			_searchRequestBuilderFactory.builder(
+			).companyId(
+				contextCompany.getCompanyId()
+			).fetchSourceIncludes(
+				new String[] {
+					_localization.getLocalizedName(
+						com.liferay.portal.kernel.search.Field.CONTENT,
+						contextAcceptLanguage.getPreferredLanguageId()),
+					com.liferay.portal.kernel.search.Field.CREATE_DATE,
+					_localization.getLocalizedName(
+						com.liferay.portal.kernel.search.Field.DESCRIPTION,
+						contextAcceptLanguage.getPreferredLanguageId()),
+					com.liferay.portal.kernel.search.Field.MODIFIED_DATE
+				}
+			).from(
+				pagination.getStartPosition()
+			).size(
+				pagination.getPageSize()
+			).withSearchContext(
+				searchContext -> _populateSearchContext(
+					searchRequestBody.getAttributes(), filter, scope, search,
+					searchContext, sorts)
+			);
+
+		String[] entryClassNamesArray = ValueUtil.toArray(entryClassNames);
+
+		if (ArrayUtil.isNotEmpty(entryClassNamesArray)) {
+			searchRequestBuilder.entryClassNames(entryClassNamesArray);
+			searchRequestBuilder.modelIndexerClassNames(entryClassNamesArray);
+		}
+
+		if (!Validator.isBlank(search)) {
+			searchRequestBuilder.queryString(search);
+		}
+
+		if (ArrayUtil.isNotEmpty(searchRequestBody.getFacetConfigurations())) {
+			_facetRequestContributor.contribute(
+				searchRequestBody.getFacetConfigurations(),
+				searchRequestBuilder);
+		}
+
+		return _toSearchPage(
+			searchRequestBody.getFacetConfigurations(),
+			Arrays.asList(
+				ParamUtil.getStringValues(contextHttpServletRequest, "fields")),
+			pagination, _searcher.search(searchRequestBuilder.build()));
+	}
+
+	private void _setDateCreated(
+		Document document, List<String> fields, SearchResult searchResult) {
+
+		if (!_isEmptyOrContains(fields, "dateCreated")) {
+			return;
+		}
+
+		String createDate = document.getString(
+			com.liferay.portal.kernel.search.Field.CREATE_DATE);
+
+		if (createDate != null) {
+			searchResult.setDateCreated(
+				() -> _parseDateStringFieldValue(createDate));
+		}
+	}
+
 	private void _setDateModified(
 		Document document, List<String> fields, SearchResult searchResult) {
 
@@ -405,9 +451,7 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 
 		if (modifiedDate != null) {
 			searchResult.setDateModified(
-				() -> _parseDateStringFieldValue(
-					document.getString(
-						com.liferay.portal.kernel.search.Field.MODIFIED_DATE)));
+				() -> _parseDateStringFieldValue(modifiedDate));
 		}
 	}
 
@@ -438,7 +482,7 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 
 		if (embedded || _isEmptyOrContains(fields, "itemURL")) {
 			dtoConverter = _dtoConverterRegistry.getDTOConverter(
-				_getDTOClassName(entryClassName));
+				entryClassName);
 		}
 
 		if (dtoConverter == null) {
@@ -447,7 +491,8 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 
 		if (embedded) {
 			_setEmbedded(
-				dtoConverter, entryClassPK, entryClassName, searchResult);
+				dtoConverter.getExternalDTOClassName(), entryClassPK,
+				searchResult);
 		}
 
 		_setItemURL(dtoConverter, entryClassPK, fields, searchResult);
@@ -455,43 +500,40 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 
 	@SuppressWarnings("rawtypes")
 	private void _setEmbedded(
-		DTOConverter dtoConverter, Long entryClassPK, String entryClassName,
-		SearchResult searchResult) {
+		String entityClassName, Long entryClassPK, SearchResult searchResult) {
 
-		try {
-			if (_isObjectToDTOEntryClassName(entryClassName)) {
-				Object object = _fetchObject(entryClassName, entryClassPK);
+		VulcanCRUDItemDelegateBuilder vulcanCRUDItemDelegateBuilder =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				contextCompany, entityClassName);
 
-				if (object == null) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"No DTO converter found for " + entryClassName);
-					}
-				}
+		if (vulcanCRUDItemDelegateBuilder != null) {
+			searchResult.setEmbedded(
+				() -> {
+					VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+						vulcanCRUDItemDelegateBuilder.acceptLanguage(
+							contextAcceptLanguage
+						).groupLocalService(
+							groupLocalService
+						).httpServletRequest(
+							contextHttpServletRequest
+						).httpServletResponse(
+							contextHttpServletResponse
+						).resourceActionLocalService(
+							resourceActionLocalService
+						).resourcePermissionLocalService(
+							resourcePermissionLocalService
+						).roleLocalService(
+							roleLocalService
+						).scopeChecker(
+							contextScopeChecker
+						).uriInfo(
+							contextUriInfo
+						).user(
+							contextUser
+						).build();
 
-				searchResult.setEmbedded(
-					() -> dtoConverter.toDTO(
-						new DefaultDTOConverterContext(
-							contextAcceptLanguage.isAcceptAllLanguages(),
-							new HashMap<>(), _dtoConverterRegistry,
-							contextHttpServletRequest, entryClassPK,
-							contextAcceptLanguage.getPreferredLocale(),
-							contextUriInfo, contextUser),
-						object));
-			}
-			else {
-				searchResult.setEmbedded(
-					() -> dtoConverter.toDTO(
-						new DefaultDTOConverterContext(
-							contextAcceptLanguage.isAcceptAllLanguages(),
-							new HashMap<>(), _dtoConverterRegistry,
-							contextHttpServletRequest, entryClassPK,
-							contextAcceptLanguage.getPreferredLocale(),
-							contextUriInfo, contextUser)));
-			}
-		}
-		catch (Exception exception) {
-			_log.error(exception);
+					return vulcanCRUDItemDelegate.getItem(entryClassPK);
+				});
 		}
 	}
 
@@ -558,16 +600,6 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 		return aggregations;
 	}
 
-	private String[] _toArray(String csvString) {
-		if (Validator.isBlank(csvString)) {
-			return new String[0];
-		}
-
-		csvString = StringUtil.trim(csvString);
-
-		return csvString.split("\\s*,\\s*");
-	}
-
 	private SearchPage<SearchResult> _toSearchPage(
 		FacetConfiguration[] facetConfigurations, List<String> fields,
 		Pagination pagination, SearchResponse searchResponse) {
@@ -612,13 +644,14 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 				Summary summary = _getSummary(entryClassName, legacyDocument);
 
 				_setDescription(assetRenderer, fields, searchResult, summary);
-
-				_setDTOFields(
-					embedded, entryClassName, entryClassPK, fields,
-					searchResult);
 				_setTitle(assetRenderer, fields, searchResult, summary);
 			}
 
+			searchResult.setEntryClassName(() -> entryClassName);
+
+			_setDTOFields(
+				embedded, entryClassName, entryClassPK, fields, searchResult);
+			_setDateCreated(document, fields, searchResult);
 			_setDateModified(document, fields, searchResult);
 			_setScore(fields, searchHit, searchResult);
 
@@ -650,13 +683,7 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 	private IndexerRegistry _indexerRegistry;
 
 	@Reference
-	private LayoutLocalService _layoutLocalService;
-
-	@Reference
 	private Localization _localization;
-
-	@Reference
-	private ObjectEntryLocalService _objectEntryLocalService;
 
 	@Reference
 	private Searcher _searcher;
@@ -666,5 +693,9 @@ public class SearchResultResourceImpl extends BaseSearchResultResourceImpl {
 
 	private final SearchResultEntityModel _searchResultEntityModel =
 		new SearchResultEntityModel();
+
+	@Reference
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

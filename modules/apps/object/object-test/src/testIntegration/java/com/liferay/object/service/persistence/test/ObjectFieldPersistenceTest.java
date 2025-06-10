@@ -262,6 +262,13 @@ public class ObjectFieldPersistenceTest {
 	}
 
 	@Test
+	public void testCountByCompanyId() throws Exception {
+		_persistence.countByCompanyId(RandomTestUtil.nextLong());
+
+		_persistence.countByCompanyId(0L);
+	}
+
+	@Test
 	public void testCountByListTypeDefinitionId() throws Exception {
 		_persistence.countByListTypeDefinitionId(RandomTestUtil.nextLong());
 
@@ -276,11 +283,28 @@ public class ObjectFieldPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_U() throws Exception {
+		_persistence.countByC_U(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_U(0L, 0L);
+	}
+
+	@Test
 	public void testCountByLTDI_S() throws Exception {
 		_persistence.countByLTDI_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByLTDI_S(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByODI_BT() throws Exception {
+		_persistence.countByODI_BT(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByODI_BT(0L, "null");
+
+		_persistence.countByODI_BT(0L, (String)null);
 	}
 
 	@Test

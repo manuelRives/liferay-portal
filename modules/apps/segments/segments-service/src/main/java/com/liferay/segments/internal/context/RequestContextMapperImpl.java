@@ -7,13 +7,8 @@ package com.liferay.segments.internal.context;
 
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.mobile.device.Device;
-import com.liferay.portal.kernel.mobile.device.DeviceDetectionUtil;
-import com.liferay.portal.kernel.mobile.device.Dimensions;
-import com.liferay.portal.kernel.mobile.device.UnknownDevice;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
@@ -37,6 +32,9 @@ import com.liferay.segments.context.RequestContextMapper;
 import com.liferay.segments.context.contributor.RequestContextContributor;
 import com.liferay.segments.internal.odata.entity.ContextEntityModel;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -48,10 +46,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -77,33 +71,6 @@ public class RequestContextMapperImpl implements RequestContextMapper {
 			Context.BROWSER,
 			BrowserSnifferUtil.getBrowserId(httpServletRequest));
 		context.put(Context.COOKIES, _getCookies(httpServletRequest));
-
-		Device device = DeviceDetectionUtil.detectDevice(httpServletRequest);
-
-		Dimensions screenResolutionDimensions = null;
-
-		if ((device != null) &&
-			!Objects.equals(device, UnknownDevice.getInstance())) {
-
-			context.put(Context.DEVICE_BRAND, device.getBrand());
-			context.put(Context.DEVICE_MODEL, device.getModel());
-
-			screenResolutionDimensions = device.getScreenResolution();
-		}
-		else {
-			context.put(Context.DEVICE_BRAND, StringPool.BLANK);
-			context.put(Context.DEVICE_MODEL, StringPool.BLANK);
-
-			screenResolutionDimensions = Dimensions.UNKNOWN;
-		}
-
-		context.put(
-			Context.DEVICE_SCREEN_RESOLUTION_HEIGHT,
-			(double)screenResolutionDimensions.getHeight());
-		context.put(
-			Context.DEVICE_SCREEN_RESOLUTION_WIDTH,
-			(double)screenResolutionDimensions.getWidth());
-
 		context.put(Context.HOSTNAME, httpServletRequest.getServerName());
 		context.put(
 			Context.LANGUAGE_ID,

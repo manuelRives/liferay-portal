@@ -1,12 +1,12 @@
-@component-name = "portal-upgrades"
+@component-name = "portal-commerce"
 definition {
 
-	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+	property custom.properties = "passwords.encryption.algorithm.legacy=PBKDF2WithHmacSHA1/160/128000";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property test.liferay.virtual.instance = "false";
 	property test.run.type = "single";
-	property testray.component.names = "Users and Organizations";
 	property testray.main.component.name = "Upgrades User and System Management";
 
 	setUp {
@@ -125,7 +125,7 @@ definition {
 	@priority = 5
 	test AddOrganizationAfterUpgrade621015 {
 		property data.archive.type = "data-archive-portal";
-		property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql";
 		property portal.version = "6.2.10.15";
 
 		ValidateOrganizationsUpgrade.addOrganization();
@@ -134,12 +134,14 @@ definition {
 	@priority = 5
 	test AddOrganizationAfterUpgrade621021 {
 		property data.archive.type = "data-archive-portal";
-		property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql";
 		property portal.version = "6.2.10.21";
 
 		ValidateOrganizationsUpgrade.addOrganization();
 	}
 
+	@description = "Ignored due to LRCI-5643"
+	@ignore = "true"
 	@priority = 5
 	test AddUserandSuborganizationAfterUpgrade625 {
 		property data.archive.type = "data-archive-admin-org-with-user";
@@ -222,7 +224,7 @@ definition {
 	@priority = 5
 	test AddUserandSuborganizationAfterUpgrade7413 {
 		property data.archive.type = "data-archive-admin-org-with-user";
-		property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver";
 		property portal.version = "7.4.13";
 
 		ValidateOrganizationsUpgrade.addUserAndSuborganization();
@@ -244,10 +246,12 @@ definition {
 		ValidateOrganizationsUpgrade.addUserAndSuborganization();
 	}
 
+	@description = "Ignored due to LRCI-5643"
+	@ignore = "true"
 	@priority = 5
 	test AddUserandSuborganizationAfterUpgrade621015 {
 		property data.archive.type = "data-archive-admin-org-with-user";
-		property database.types = "db2,mysql,oracle,sybase";
+		property database.types = "db2,mysql,oracle";
 		property portal.version = "6.2.10.15";
 
 		ValidateOrganizationsUpgrade.addUserAndSuborganization();
@@ -256,7 +260,7 @@ definition {
 	@priority = 5
 	test AddUserandSuborganizationAfterUpgrade621021 {
 		property data.archive.type = "data-archive-admin-org-with-user";
-		property database.types = "db2,mysql,oracle,postgresql,sybase";
+		property database.types = "db2,mysql,oracle,postgresql";
 		property portal.version = "6.2.10.21";
 
 		ValidateOrganizationsUpgrade.addUserAndSuborganization();

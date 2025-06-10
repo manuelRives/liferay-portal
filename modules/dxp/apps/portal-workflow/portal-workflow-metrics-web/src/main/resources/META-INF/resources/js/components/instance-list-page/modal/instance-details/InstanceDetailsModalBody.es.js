@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+
 /**
  * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
@@ -11,12 +12,13 @@ import ClayLink from '@clayui/link';
 import ClayModal, {useModal} from '@clayui/modal';
 import {ClayTooltipProvider} from '@clayui/tooltip';
 import {WorkflowInstanceTracker} from '@liferay/portal-workflow-instance-tracker-web';
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 
 import ContentView from '../../../../shared/components/content-view/ContentView.es';
 import RetryButton from '../../../../shared/components/list/RetryButton.es';
 import {remainingTimeFormat} from '../../../../shared/util/duration.es';
 import moment from '../../../../shared/util/moment.es';
+import {AppContext} from '../../../AppContext.es';
 
 function Body({
 	assetTitle,
@@ -31,6 +33,7 @@ function Body({
 	slaResults = [],
 	taskNames = [],
 }) {
+	const {baseResourceURL} = useContext(AppContext);
 	const SLAs = {notStarted: [], open: [], resolved: []};
 
 	slaResults.forEach((result) => {
@@ -66,9 +69,8 @@ function Body({
 		loadingProps: {className: 'py-8'},
 	};
 
-	const [showInstanceTrackerModal, setShowInstanceTrackerModal] = useState(
-		false
-	);
+	const [showInstanceTrackerModal, setShowInstanceTrackerModal] =
+		useState(false);
 
 	const {observer} = useModal({
 		onClose: () => {
@@ -241,7 +243,10 @@ function Body({
 					</ClayModal.Header>
 
 					<ClayModal.Body>
-						<WorkflowInstanceTracker workflowInstanceId={id} />
+						<WorkflowInstanceTracker
+							baseResourceURL={baseResourceURL}
+							workflowInstanceId={id}
+						/>
 					</ClayModal.Body>
 				</ClayModal>
 			)}
@@ -250,16 +255,16 @@ function Body({
 }
 
 function SectionTitle({children, className = ''}) {
-	const classNames = `${className} font-weight-medium mb-4`;
+	const classNames = `${className} font-weight-medium h4 mb-4`;
 
-	return <h4 className={classNames}>{children}</h4>;
+	return <div className={classNames}>{children}</div>;
 }
 
 function SectionSubTitle({children}) {
 	return (
-		<h5 className="font-weight-medium mb-4 mt-4 text-secondary">
+		<div className="font-weight-medium h5 mb-4 mt-4 text-secondary">
 			{children}
-		</h5>
+		</div>
 	);
 }
 

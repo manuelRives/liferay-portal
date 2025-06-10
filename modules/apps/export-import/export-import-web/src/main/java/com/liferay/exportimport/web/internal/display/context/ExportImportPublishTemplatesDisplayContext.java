@@ -18,10 +18,10 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Mariano Álvaro Sáiz
@@ -104,7 +104,7 @@ public class ExportImportPublishTemplatesDisplayContext {
 
 		_searchContainer.setOrderByCol("name");
 		_searchContainer.setOrderByComparator(
-			new ExportImportConfigurationNameComparator(true));
+			ExportImportConfigurationNameComparator.getInstance(true));
 		_searchContainer.setOrderByType("asc");
 
 		int exportImportConfigurationType = isLocalPublishing() ?

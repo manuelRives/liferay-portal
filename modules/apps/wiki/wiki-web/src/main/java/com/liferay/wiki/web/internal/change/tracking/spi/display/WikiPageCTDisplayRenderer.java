@@ -27,14 +27,14 @@ import com.liferay.wiki.service.WikiPageLocalService;
 import com.liferay.wiki.web.internal.frontend.taglib.clay.servlet.taglib.WikiPageAttachmentHorizontalCard;
 import com.liferay.wiki.web.internal.util.WikiUtil;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -111,9 +111,9 @@ public class WikiPageCTDisplayRenderer extends BaseCTDisplayRenderer<WikiPage> {
 
 		StringBundler sb = new StringBundler(content);
 
-		sb.append("<div class=\"page-attachments\"><h5>");
+		sb.append("<div class=\"page-attachments\"><div class=\"h5\">");
 		sb.append(_language.get(httpServletRequest, "attachments"));
-		sb.append("</h5><div class=\"row\">");
+		sb.append("</div><div class=\"row\">");
 
 		for (FileEntry fileEntry : fileEntries) {
 			sb.append("<div class=\"col-md-4\">");

@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.segments.model.SegmentsExperimentRel;
 
@@ -236,10 +237,10 @@ public class SegmentsExperimentRelLocalServiceUtil {
 	}
 
 	public static SegmentsExperimentRel fetchSegmentsExperimentRel(
-		long segmentsExperimentId, long segmentsExperienceId) {
+		long segmentsExperimentId, String segmentsExperienceKey) {
 
 		return getService().fetchSegmentsExperimentRel(
-			segmentsExperimentId, segmentsExperienceId);
+			segmentsExperimentId, segmentsExperienceKey);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
@@ -288,11 +289,11 @@ public class SegmentsExperimentRelLocalServiceUtil {
 	}
 
 	public static SegmentsExperimentRel getSegmentsExperimentRel(
-			long segmentsExperimentId, long segmentsExperienceId)
+			long segmentsExperimentId, String segmentsExperienceKey)
 		throws PortalException {
 
 		return getService().getSegmentsExperimentRel(
-			segmentsExperimentId, segmentsExperienceId);
+			segmentsExperimentId, segmentsExperienceKey);
 	}
 
 	/**
@@ -319,11 +320,11 @@ public class SegmentsExperimentRelLocalServiceUtil {
 	}
 
 	public static List<SegmentsExperimentRel>
-		getSegmentsExperimentRelsBySegmentsExperienceId(
-			long segmentsExperienceId) {
+		getSegmentsExperimentRelsBySegmentsExperienceKey(
+			String segmentsExperienceKey, long plid) {
 
-		return getService().getSegmentsExperimentRelsBySegmentsExperienceId(
-			segmentsExperienceId);
+		return getService().getSegmentsExperimentRelsBySegmentsExperienceKey(
+			segmentsExperienceKey, plid);
 	}
 
 	/**
@@ -377,13 +378,12 @@ public class SegmentsExperimentRelLocalServiceUtil {
 	}
 
 	public static SegmentsExperimentRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SegmentsExperimentRelLocalService service) {
-		_service = service;
-	}
-
-	private static volatile SegmentsExperimentRelLocalService _service;
+	private static final Snapshot<SegmentsExperimentRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			SegmentsExperimentRelLocalServiceUtil.class,
+			SegmentsExperimentRelLocalService.class);
 
 }

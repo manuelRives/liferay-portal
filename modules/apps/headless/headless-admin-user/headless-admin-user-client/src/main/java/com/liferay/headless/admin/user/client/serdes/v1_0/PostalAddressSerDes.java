@@ -8,13 +8,13 @@ package com.liferay.headless.admin.user.client.serdes.v1_0;
 import com.liferay.headless.admin.user.client.dto.v1_0.PostalAddress;
 import com.liferay.headless.admin.user.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -98,6 +98,20 @@ public class PostalAddressSerDes {
 			sb.append("\"");
 		}
 
+		if (postalAddress.getAddressSubtype() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"addressSubtype\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(postalAddress.getAddressSubtype()));
+
+			sb.append("\"");
+		}
+
 		if (postalAddress.getAddressType() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -108,6 +122,20 @@ public class PostalAddressSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(postalAddress.getAddressType()));
+
+			sb.append("\"");
+		}
+
+		if (postalAddress.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(postalAddress.getExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -271,12 +299,30 @@ public class PostalAddressSerDes {
 				String.valueOf(postalAddress.getAddressRegion()));
 		}
 
+		if (postalAddress.getAddressSubtype() == null) {
+			map.put("addressSubtype", null);
+		}
+		else {
+			map.put(
+				"addressSubtype",
+				String.valueOf(postalAddress.getAddressSubtype()));
+		}
+
 		if (postalAddress.getAddressType() == null) {
 			map.put("addressType", null);
 		}
 		else {
 			map.put(
 				"addressType", String.valueOf(postalAddress.getAddressType()));
+		}
+
+		if (postalAddress.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(postalAddress.getExternalReferenceCode()));
 		}
 
 		if (postalAddress.getId() == null) {
@@ -360,6 +406,67 @@ public class PostalAddressSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "addressCountry")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "addressCountry_i18n")) {
+
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "addressLocality")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "addressRegion")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "addressSubtype")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "addressType")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "phoneNumber")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "postalCode")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "primary")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "streetAddressLine1")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "streetAddressLine2")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "streetAddressLine3")) {
+
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			PostalAddress postalAddress, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -375,8 +482,7 @@ public class PostalAddressSerDes {
 
 				if (jsonParserFieldValue != null) {
 					postalAddress.setAddressCountry_i18n(
-						(Map)PostalAddressSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "addressLocality")) {
@@ -391,9 +497,23 @@ public class PostalAddressSerDes {
 						(String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "addressSubtype")) {
+				if (jsonParserFieldValue != null) {
+					postalAddress.setAddressSubtype(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "addressType")) {
 				if (jsonParserFieldValue != null) {
 					postalAddress.setAddressType((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					postalAddress.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
@@ -478,36 +598,7 @@ public class PostalAddressSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -517,6 +608,42 @@ public class PostalAddressSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

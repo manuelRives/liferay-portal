@@ -5,12 +5,12 @@
 
 import useSWR from 'swr';
 
-import HeadlessCommerceAdminCatalogImpl from '../../services/rest/HeadlessCommerceAdminCatalog';
+import HeadlessCommerceAdminCatalog from '../../services/rest/HeadlessCommerceAdminCatalog';
 
 const useCatalogs = () => {
 	return useSWR('/catalogs', async () => {
-		const catalogResponse = await HeadlessCommerceAdminCatalogImpl.getCatalogs(
-			new URLSearchParams({fields: 'accountId,id', pageSize: '-1'})
+		const catalogResponse = await HeadlessCommerceAdminCatalog.getCatalogs(
+			new URLSearchParams({fields: 'accountId,id,name', pageSize: '-1'})
 		);
 
 		return catalogResponse.items;

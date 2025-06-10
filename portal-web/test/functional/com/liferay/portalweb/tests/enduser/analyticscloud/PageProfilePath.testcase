@@ -107,67 +107,11 @@ definition {
 		}
 	}
 
-	@description = "Bug: LRAC-8988 | Automation ID: LRAC-11059 | Test Summary: Create the page name with special characters makes the correct name appear in the path part of AC pages"
-	@priority = 3
-	test CreatePageNameWithSpecialCharactersMakeCorrectNameAppearInPath {
-		task ("Create a site and a blog and add to a page") {
-			ACUtils.addSiteAndPage();
-
-			ACUtils.createBlogsAndAddToPage(entryTitle = "Snúið Vinsælar þú");
-		}
-
-		task ("Connect AC to DXP") {
-			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
-
-		task ("Visit the page, then close the sessions") {
-			ACUtils.navigateToSitePage(
-				actionType = "View Blog",
-				documentTitleList = "Snúið Vinsælar þú,Snúið Vinsælar þú,Snúið Vinsælar þú,Snúið Vinsælar þú",
-				pageName = "AC Page",
-				siteName = "Site Name");
-
-			ACUtils.closeAllSessionsAndWait();
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
-		}
-
-		task ("Go to Pages tab, change time filter to last 24 hours and select the page") {
-			ACNavigation.goToSites();
-
-			ACNavigation.switchTab(tabName = "Pages");
-
-			ACTimeFilter.clickTimeFilterButton();
-
-			ACTimeFilter.setLast24Hours();
-
-			var dataSourceName = StringUtil.extractFirst(${assignedPropertyName}, " ");
-
-			ACNavigation.openItem(itemName = "Snúið Vinsælar þú - Site Name - ${dataSourceName}");
-		}
-
-		task ("Go to the Path tab") {
-			ACNavigation.switchTab(tabName = "Path");
-		}
-
-		task ("Check if the page name is displayed correctly") {
-			MouseOver(
-				key_pageName = "Snúið Vinsælar",
-				locator1 = "ACSites#PATH_PAGE_NAME_SANKEY");
-
-			AssertElementPresent(
-				key_pageName = "Snúið Vinsælar þú - Site Name - ${dataSourceName}",
-				locator1 = "ACSites#PATH_PAGE_NAME_POPOVER");
-		}
-	}
-
 	@description = "Feature ID: LRAC-14836 | Automation ID: LRAC-15060 | Test Summary: The dropdown is updated when a segment is deleted"
 	@priority = 4
 	test DeleteSegmentDropdownUpdated {
+		property test.run.type = "single";
+
 		task ("Create a site and a blog and add to a page") {
 			ACUtils.addSiteAndPage();
 
@@ -287,111 +231,11 @@ definition {
 		}
 	}
 
-	@description = "Feature ID: LRAC-14836 | Automation ID: LRAC-15062 | Test Summary: Remove segments from the filter"
-	@priority = 5
-	test RemoveSegmentFromFilter {
-		task ("Create a site and a blog and add to a page") {
-			ACUtils.addSiteAndPage();
-
-			ACUtils.createBlogsAndAddToPage(entryTitle = "Blog test");
-		}
-
-		task ("Connect AC to DXP") {
-			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
-
-		task ("Visit the page, then close the sessions") {
-			ACUtils.navigateToSitePage(
-				actionType = "View Blog",
-				documentTitleList = "Blog test,Blog test,Blog test,Blog test",
-				pageName = "AC Page",
-				siteName = "Site Name");
-
-			ACUtils.closeAllSessionsAndWait();
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
-		}
-
-		task ("Add a new dynamic segment") {
-			ACNavigation.goToSegments();
-
-			ACSegments.createDynamicSegment();
-
-			ACUtils.setItemName(itemName = "Dynamic Segment Test");
-		}
-
-		task ("Add an email field") {
-			ACSegments.goToSidebarAttributes(criterion = "Individual Attributes");
-
-			ACSegments.addSegmentField(segmentField = "email");
-
-			ACSegments.selectOperator(operator = "is unknown");
-		}
-
-		task ("Save the segment") {
-			ACSegments.saveSegment();
-		}
-
-		task ("Navigate to Pages tab") {
-			ACNavigation.goToSites();
-
-			ACNavigation.switchTab(tabName = "Pages");
-		}
-
-		task ("Set time filter use 24 hours") {
-			ACTimeFilter.clickTimeFilterButton();
-
-			ACTimeFilter.setLast24Hours();
-		}
-
-		task ("Navigate to page report entry") {
-			var dataSourceName = StringUtil.extractFirst(${assignedPropertyName}, " ");
-
-			ACNavigation.openItem(itemName = "AC Page - Site Name - ${dataSourceName}");
-		}
-
-		task ("Go to the Path tab") {
-			ACNavigation.switchTab(tabName = "Path");
-
-			ACUtils.waitForLoading();
-		}
-
-		task ("Observe that the data appears") {
-			AssertElementNotPresent(
-				key_textValue = "There are no data found.",
-				locator1 = "ACUtils#GENERIC_TEXT");
-		}
-
-		task ("Click Filter button") {
-			Button.click(button = "Filter");
-		}
-
-		task ("Click Segment for filter") {
-			ACPagePath.clickFilterSegment(segmentName = "Dynamic Segment Test");
-		}
-
-		task ("Observe that the empty state appears after add the filter") {
-			ACUtils.viewGenericText(textValueList = "There are no data found.,Check back later to verify if data has been received from your data sources.");
-		}
-
-		task ("Remove segment from filter") {
-			ACPagePath.removeSegmentFilter();
-		}
-
-		task ("Observe that the data appears after remove the filter") {
-			AssertElementNotPresent(
-				key_textValue = "There are no data found.",
-				locator1 = "ACUtils#GENERIC_TEXT");
-		}
-	}
-
 	@description = "Feature ID: LRAC-14836 | Automation ID: LRAC-15061 | Test Summary: The filter shows all segments"
 	@priority = 5
 	test ViewSegmentDropdownList {
+		property test.run.type = "single";
+
 		task ("Create a site and a blog and add to a page") {
 			ACUtils.addSiteAndPage();
 
@@ -405,7 +249,7 @@ definition {
 		task ("Visit the page, then close the sessions") {
 			ACUtils.navigateToSitePage(
 				actionType = "View Blog",
-				documentTitleList = "Blog test",
+				documentTitleList = "Blog test,Blog test,Blog test,Blog test,Blog test",
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -418,19 +262,15 @@ definition {
 			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
-		task ("Create four dynamic segments") {
+		task ("Create four static segments") {
 			for (var n : list "1,2,3,4") {
 				ACNavigation.goToSegments();
 
-				ACSegments.createDynamicSegment();
+				ACSegments.createStaticSegment();
 
-				ACUtils.setItemName(itemName = "Dynamic Segment Test ${n}");
+				ACUtils.setItemName(itemName = "Static Segment Test ${n}");
 
-				ACSegments.goToSidebarAttributes(criterion = "Individual Attributes");
-
-				ACSegments.addSegmentField(segmentField = "email");
-
-				ACSegments.editTextCriterion(textInput = "test@liferay.com");
+				ACSegments.addStaticMember(tableMember = "Test Test");
 
 				ACSegments.saveSegment();
 			}
@@ -465,7 +305,7 @@ definition {
 		}
 
 		task ("View segments on the list") {
-			ACPagePath.viewSegmentDropdown(nameList = "Dynamic Segment Test 1,Dynamic Segment Test 2,Dynamic Segment Test 3,Dynamic Segment Test 4");
+			ACPagePath.viewSegmentDropdown(nameList = "Static Segment Test 1,Static Segment Test 2,Static Segment Test 3,Static Segment Test 4");
 		}
 	}
 

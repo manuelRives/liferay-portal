@@ -29,6 +29,8 @@ import freemarker.ext.beans.BeansWrapper;
 import freemarker.template.Configuration;
 import freemarker.template.SimpleNumber;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -41,8 +43,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -61,7 +61,7 @@ public class FreeMarkerTemplateTest {
 		LiferayUnitTestRule.INSTANCE;
 
 	@BeforeClass
-	public static void setUpClass() throws Exception {
+	public static void setUpClass() {
 		_freeMarkerManager = new FreeMarkerManager();
 
 		FreeMarkerEngineConfiguration freeMarkerEngineConfiguration =
@@ -73,8 +73,7 @@ public class FreeMarkerTemplateTest {
 			freeMarkerEngineConfiguration);
 
 		_templateResourceCache =
-			_freeMarkerManager.new FreeMarkerTemplateResourceCache(
-				freeMarkerEngineConfiguration) {
+			_freeMarkerManager.new FreeMarkerTemplateResourceCache() {
 
 				@Override
 				public boolean isEnabled() {

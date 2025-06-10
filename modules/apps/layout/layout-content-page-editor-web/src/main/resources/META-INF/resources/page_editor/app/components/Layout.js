@@ -17,6 +17,8 @@ import {useSelectItem} from '../contexts/ControlsContext';
 import {useSelector} from '../contexts/StoreContext';
 import {deepEqual} from '../utils/checkDeepEqual';
 import useDropContainerId from '../utils/useDropContainerId';
+import {FormStepWithControls} from './layout_data_items/FormStep';
+import {FormStepContainerWithControls} from './layout_data_items/FormStepContainer';
 import FragmentWithControls from './layout_data_items/FragmentWithControls';
 import {
 	CollectionItemWithControls,
@@ -36,13 +38,15 @@ const LAYOUT_DATA_ITEMS = {
 	[LAYOUT_DATA_ITEM_TYPES.container]: ContainerWithControls,
 	[LAYOUT_DATA_ITEM_TYPES.dropZone]: DropZoneWithControls,
 	[LAYOUT_DATA_ITEM_TYPES.form]: FormWithControls,
+	[LAYOUT_DATA_ITEM_TYPES.formStep]: FormStepWithControls,
+	[LAYOUT_DATA_ITEM_TYPES.formStepContainer]: FormStepContainerWithControls,
 	[LAYOUT_DATA_ITEM_TYPES.fragment]: FragmentWithControls,
 	[LAYOUT_DATA_ITEM_TYPES.fragmentDropZone]: Root,
 	[LAYOUT_DATA_ITEM_TYPES.root]: Root,
 	[LAYOUT_DATA_ITEM_TYPES.row]: RowWithControls,
 };
 
-export default function Layout({mainItemId}) {
+const Layout = React.memo(({mainItemId}) => {
 	const layoutData = useSelector((state) => state.layoutData);
 	const layoutRef = useRef(null);
 	const selectItem = useSelectItem();
@@ -131,11 +135,15 @@ export default function Layout({mainItemId}) {
 			)}
 		</>
 	);
-}
+});
+
+Layout.displayName = 'Layout';
 
 Layout.propTypes = {
 	mainItemId: PropTypes.string.isRequired,
 };
+
+export default Layout;
 
 class LayoutDataItem extends React.Component {
 	static getDerivedStateFromError(error) {

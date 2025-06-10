@@ -16,9 +16,10 @@ import com.liferay.commerce.discount.CommerceDiscountValue;
 import com.liferay.commerce.exception.CommerceOrderShippingAddressException;
 import com.liferay.commerce.exception.CommerceShipmentInactiveWarehouseException;
 import com.liferay.commerce.exception.CommerceShipmentItemQuantityException;
-import com.liferay.commerce.exception.DuplicateCommerceShipmentException;
+import com.liferay.commerce.exception.DuplicateCommerceShipmentExternalReferenceCodeException;
 import com.liferay.commerce.exception.NoSuchOrderException;
 import com.liferay.commerce.exception.NoSuchShipmentItemException;
+import com.liferay.commerce.helper.CommerceShippingHelper;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
@@ -45,10 +46,10 @@ import com.liferay.commerce.test.util.CommerceInventoryTestUtil;
 import com.liferay.commerce.test.util.CommerceTaxTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.commerce.test.util.context.TestCommerceContext;
-import com.liferay.commerce.util.CommerceShippingHelper;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
@@ -64,6 +65,9 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -867,7 +871,51 @@ public class CommerceShipmentTest {
 		modifiableSettings.store();
 	}
 
-	@Test(expected = DuplicateCommerceShipmentException.class)
+	@Test
+	public void testTranslateShippingMethods() throws Exception {
+		frutillaRule.scenario(
+			"Flat Rate shipping method name and description are translated"
+		).given(
+			"A shipping method name and description"
+		).when(
+			"I set the language"
+		).then(
+			"Shipping method name and description are translated"
+		);
+
+		String translatedShippingMethodName = LanguageUtil.get(
+			LocaleUtil.JAPANESE, "flat-rate");
+		String translatedShippingMethodDescription = LanguageUtil.get(
+			LocaleUtil.JAPANESE, "fixed-shipping-description");
+
+		CommerceShippingMethod commerceShippingMethod =
+			CommerceTestUtil.addCommerceShippingMethod(
+				_user.getUserId(), _commerceChannel.getGroupId(),
+				HashMapBuilder.put(
+					LocaleUtil.JAPAN, translatedShippingMethodName
+				).put(
+					PortalUtil.getSiteDefaultLocale(_group),
+					RandomTestUtil.randomString()
+				).build(),
+				HashMapBuilder.put(
+					LocaleUtil.JAPAN, translatedShippingMethodDescription
+				).put(
+					PortalUtil.getSiteDefaultLocale(_group),
+					RandomTestUtil.randomString()
+				).build(),
+				true, "fixed");
+
+		Assert.assertEquals(
+			translatedShippingMethodDescription,
+			commerceShippingMethod.getDescription(LocaleUtil.JAPAN));
+		Assert.assertEquals(
+			translatedShippingMethodName,
+			commerceShippingMethod.getName(LocaleUtil.JAPAN));
+	}
+
+	@Test(
+		expected = DuplicateCommerceShipmentExternalReferenceCodeException.class
+	)
 	public void testUpdateOrderShipment() throws Exception {
 		frutillaRule.scenario(
 			"It should not be possible to update the ERC field with a value " +

@@ -12,7 +12,9 @@ import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
 import com.liferay.application.list.display.context.logic.PersonalMenuEntryHelper;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.item.selector.ItemSelector;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.DataLimitExceededException;
 import com.liferay.portal.kernel.exception.DuplicateRoleException;
 import com.liferay.portal.kernel.exception.ModelListenerException;
@@ -63,6 +65,16 @@ import com.liferay.roles.admin.role.type.contributor.RoleTypeContributor;
 import com.liferay.roles.admin.role.type.contributor.provider.RoleTypeContributorProvider;
 import com.liferay.segments.service.SegmentsEntryRoleLocalService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.IOException;
 
 import java.util.Collections;
@@ -73,16 +85,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -105,14 +107,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Roles Admin",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + RolesAdminPortletKeys.ROLES_ADMIN,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Roles Admin",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + RolesAdminPortletKeys.ROLES_ADMIN,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -222,7 +224,7 @@ public class RolesAdminPortlet extends MVCPortlet {
 				_roleTypeContributorProvider.getRoleTypeContributor(type);
 
 			Role role = _roleService.addRole(
-				roleTypeContributor.getClassName(), 0, name, titleMap,
+				null, roleTypeContributor.getClassName(), 0, name, titleMap,
 				descriptionMap, type, subtype, serviceContext);
 
 			String redirect = _portal.escapeRedirect(
@@ -245,6 +247,8 @@ public class RolesAdminPortlet extends MVCPortlet {
 
 		// Update role
 
+		Role role = _roleLocalService.getRole(roleId);
+
 		if (name.equals(RoleConstants.SITE_ADMINISTRATOR)) {
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
@@ -253,14 +257,14 @@ public class RolesAdminPortlet extends MVCPortlet {
 				actionRequest, "manageSubgroups");
 
 			_updateAction(
-				_roleLocalService.getRole(roleId),
-				themeDisplay.getScopeGroupId(), Group.class.getName(),
+				role, themeDisplay.getScopeGroupId(), Group.class.getName(),
 				ActionKeys.MANAGE_SUBGROUPS, manageSubgroups,
 				ResourceConstants.SCOPE_GROUP_TEMPLATE, new String[0]);
 		}
 
 		return _roleService.updateRole(
-			roleId, name, titleMap, descriptionMap, subtype, serviceContext);
+			role.getExternalReferenceCode(), roleId, name, titleMap,
+			descriptionMap, subtype, serviceContext);
 	}
 
 	public void editRoleAssignments(
@@ -282,10 +286,13 @@ public class RolesAdminPortlet extends MVCPortlet {
 		long[] removeUserIds = StringUtil.split(
 			ParamUtil.getString(actionRequest, "removeUserIds"), 0L);
 
-		if (!ArrayUtil.isEmpty(addUserIds) ||
-			!ArrayUtil.isEmpty(removeUserIds)) {
+		if (ArrayUtil.isNotEmpty(addUserIds) ||
+			ArrayUtil.isNotEmpty(removeUserIds)) {
 
-			try {
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
 				_userService.addRoleUsers(roleId, addUserIds);
 				_userService.unsetRoleUsers(roleId, removeUserIds);
 			}
@@ -301,22 +308,32 @@ public class RolesAdminPortlet extends MVCPortlet {
 		long[] removeGroupIds = StringUtil.split(
 			ParamUtil.getString(actionRequest, "removeGroupIds"), 0L);
 
-		if (!ArrayUtil.isEmpty(addGroupIds) ||
-			!ArrayUtil.isEmpty(removeGroupIds)) {
+		if (ArrayUtil.isNotEmpty(addGroupIds) ||
+			ArrayUtil.isNotEmpty(removeGroupIds)) {
 
-			_groupService.addRoleGroups(roleId, addGroupIds);
-			_groupService.unsetRoleGroups(roleId, removeGroupIds);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				_groupService.addRoleGroups(roleId, addGroupIds);
+				_groupService.unsetRoleGroups(roleId, removeGroupIds);
+			}
 		}
 
 		long[] addSegmentsEntryIds = StringUtil.split(
 			ParamUtil.getString(actionRequest, "addSegmentsEntryIds"), 0L);
 
 		if (ArrayUtil.isNotEmpty(addSegmentsEntryIds)) {
-			for (long segmentsEntryId : addSegmentsEntryIds) {
-				_segmentsEntryRoleLocalService.addSegmentsEntryRole(
-					segmentsEntryId, roleId,
-					ServiceContextFactory.getInstance(
-						Role.class.getName(), actionRequest));
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				for (long segmentsEntryId : addSegmentsEntryIds) {
+					_segmentsEntryRoleLocalService.addSegmentsEntryRole(
+						segmentsEntryId, roleId,
+						ServiceContextFactory.getInstance(
+							Role.class.getName(), actionRequest));
+				}
 			}
 		}
 
@@ -324,9 +341,14 @@ public class RolesAdminPortlet extends MVCPortlet {
 			ParamUtil.getString(actionRequest, "removeSegmentsEntryIds"), 0L);
 
 		if (ArrayUtil.isNotEmpty(removeSegmentsEntryIds)) {
-			for (long segmentsEntryId : removeSegmentsEntryIds) {
-				_segmentsEntryRoleLocalService.deleteSegmentsEntryRole(
-					segmentsEntryId, roleId);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				for (long segmentsEntryId : removeSegmentsEntryIds) {
+					_segmentsEntryRoleLocalService.deleteSegmentsEntryRole(
+						segmentsEntryId, roleId);
+				}
 			}
 		}
 	}
@@ -603,11 +625,7 @@ public class RolesAdminPortlet extends MVCPortlet {
 		try {
 			Group group = _groupService.getGroup(groupId);
 
-			if (group.isDepot()) {
-				return true;
-			}
-
-			return false;
+			return group.isDepot();
 		}
 		catch (PortalException portalException) {
 			return ReflectionUtil.throwException(portalException);

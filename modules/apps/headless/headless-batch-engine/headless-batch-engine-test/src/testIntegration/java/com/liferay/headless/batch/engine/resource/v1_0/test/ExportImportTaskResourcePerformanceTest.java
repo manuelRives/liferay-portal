@@ -7,12 +7,10 @@ package com.liferay.headless.batch.engine.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.batch.engine.BatchEngineTaskItemDelegateRegistry;
+import com.liferay.headless.batch.engine.batch.engine.TestEntityBatchEngineTaskItemDelegate;
 import com.liferay.headless.batch.engine.client.dto.v1_0.ExportTask;
 import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
-import com.liferay.headless.batch.engine.client.http.HttpInvoker;
-import com.liferay.headless.batch.engine.client.serdes.v1_0.ExportTaskSerDes;
-import com.liferay.headless.batch.engine.client.serdes.v1_0.ImportTaskSerDes;
-import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.headless.batch.engine.util.ExportImportTaskUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -20,15 +18,16 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.UserService;
-import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.test.performance.PerformanceTimer;
 import com.liferay.portal.kernel.test.randomizerbumpers.UniqueStringRandomizerBumper;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.AssumeTestRule;
+import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -37,7 +36,6 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 
 import java.nio.file.Path;
@@ -45,7 +43,6 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.zip.ZipInputStream;
 
@@ -150,7 +147,7 @@ public class ExportImportTaskResourcePerformanceTest {
 				)
 			).toString()
 		).put(
-			"com.liferay.headless.batch.engine.resource.v1_0.test.TestEntity",
+			"com.liferay.headless.batch.engine.entity.TestEntity",
 			JSONUtil.put(
 				"intValue", "[$INT_VALUE$]"
 			).put(
@@ -179,7 +176,7 @@ public class ExportImportTaskResourcePerformanceTest {
 		testEntityBatchEngineTaskItemDelegate.generate(count);
 
 		_testPostExportTask(
-			"com.liferay.headless.batch.engine.resource.v1_0.test.TestEntity#" +
+			"com.liferay.headless.batch.engine.entity.TestEntity#" +
 				"export-import-task-resource-performance-test-entities",
 			count,
 			GetterUtil.getLong(
@@ -208,7 +205,7 @@ public class ExportImportTaskResourcePerformanceTest {
 	@Test
 	public void testPostImportTaskWithTestEntity() throws Exception {
 		_testPostImportTask(
-			"com.liferay.headless.batch.engine.resource.v1_0.test.TestEntity#" +
+			"com.liferay.headless.batch.engine.entity.TestEntity#" +
 				"export-import-task-resource-performance-test-entities",
 			GetterUtil.getInteger(
 				_properties.getProperty("test.entities.count")),
@@ -281,24 +278,8 @@ public class ExportImportTaskResourcePerformanceTest {
 
 		return (TestEntityBatchEngineTaskItemDelegate)
 			_batchEngineTaskItemDelegateRegistry.getBatchEngineTaskItemDelegate(
-				0,
-				"com.liferay.headless.batch.engine.resource.v1_0.test." +
-					"TestEntity",
+				0, "com.liferay.headless.batch.engine.entity.TestEntity",
 				"export-import-task-resource-performance-test-entities");
-	}
-
-	private String _invoke(String url) throws IOException {
-		HttpInvoker httpInvoker = HttpInvoker.newHttpInvoker();
-
-		httpInvoker.httpMethod(HttpInvoker.HttpMethod.GET);
-		httpInvoker.path(url);
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
-
-		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
-
-		Assert.assertEquals(200, httpResponse.getStatusCode());
-
-		return httpResponse.getContent();
 	}
 
 	private Map<String, String> _splitClassName(String className) {
@@ -332,78 +313,39 @@ public class ExportImportTaskResourcePerformanceTest {
 
 		try (TestEntityPerformanceTimer itemCountPerformanceTimer =
 				new TestEntityPerformanceTimer(
-					count, className + "#export", maxExportTime)) {
+					count, maxExportTime, className + "#export")) {
 
-			HttpInvoker httpInvoker = HttpInvoker.newHttpInvoker();
+			ExportTask exportTask = ExportImportTaskUtil.postExportTask(
+				classNamePartsMap.get("className"), "COMPLETED",
+				HashMapBuilder.put(
+					"createStrategy", "INSERT"
+				).put(
+					"taskItemDelegateName",
+					() -> {
+						if (!classNamePartsMap.containsKey(
+								"taskItemDelegateName")) {
 
-			httpInvoker.header(
-				HttpHeaders.ACCEPT, ContentTypes.APPLICATION_JSON);
-			httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
+							return null;
+						}
 
-			StringBundler sb = new StringBundler(
-				classNamePartsMap.containsKey("taskItemDelegateName") ? 6 : 4);
-
-			sb.append("http://localhost:8080/o/headless-batch-engine/v1.0");
-			sb.append("/export-task/");
-			sb.append(classNamePartsMap.get("className"));
-			sb.append("/JSON");
-
-			if (classNamePartsMap.containsKey("taskItemDelegateName")) {
-				sb.append("?taskItemDelegateName=");
-				sb.append(classNamePartsMap.get("taskItemDelegateName"));
-			}
-
-			httpInvoker.path(sb.toString());
-
-			httpInvoker.userNameAndPassword("test@liferay.com:test");
-
-			HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
-
-			ExportTask exportTask = ExportTaskSerDes.toDTO(
-				httpResponse.getContent());
+						return classNamePartsMap.get("taskItemDelegateName");
+					}
+				).build());
 
 			externalReferenceCode = exportTask.getExternalReferenceCode();
-
-			while (true) {
-				exportTask = ExportTaskSerDes.toDTO(
-					_invoke(
-						"http://localhost:8080/o/headless-batch-engine/v1.0" +
-							"/export-task/by-external-reference-code/" +
-								externalReferenceCode));
-
-				if (Objects.equals(
-						exportTask.getExecuteStatusAsString(), "COMPLETED")) {
-
-					break;
-				}
-				else if (Objects.equals(
-							exportTask.getExecuteStatusAsString(), "FAILED")) {
-
-					throw new AssertionError(exportTask.getErrorMessage());
-				}
-			}
 		}
 
 		try (TestEntityPerformanceTimer itemCountPerformanceTimer =
 				new TestEntityPerformanceTimer(
-					count, className + "#download", maxDownloadTime)) {
+					count, maxDownloadTime, className + "#download")) {
 
-			HttpInvoker httpInvoker = HttpInvoker.newHttpInvoker();
-
-			httpInvoker.header(
-				HttpHeaders.ACCEPT, ContentTypes.APPLICATION_OCTET_STREAM);
-			httpInvoker.httpMethod(HttpInvoker.HttpMethod.GET);
-			httpInvoker.path(
-				StringBundler.concat(
-					"http://localhost:8080/o/headless-batch-engine/v1.0",
-					"/export-task/by-external-reference-code/",
-					externalReferenceCode, "/content"));
-			httpInvoker.userNameAndPassword("test@liferay.com:test");
-
-			HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
-
-			try (InputStream inputStream = new UnsyncByteArrayInputStream(
-					httpResponse.getBinaryContent())) {
+			try (InputStream inputStream = HTTPTestUtil.invokeToInputStream(
+					null,
+					StringBundler.concat(
+						"headless-batch-engine/v1.0/export-task",
+						"/by-external-reference-code/", externalReferenceCode,
+						"/content"),
+					Http.Method.GET)) {
 
 				ZipInputStream zipInputStream = new ZipInputStream(inputStream);
 
@@ -427,56 +369,24 @@ public class ExportImportTaskResourcePerformanceTest {
 			classNamePartsMap.get("className"), count);
 
 		try (Closeable closeable = new TestEntityPerformanceTimer(
-				count, className, maxTime)) {
+				count, maxTime, className)) {
 
-			HttpInvoker httpInvoker = HttpInvoker.newHttpInvoker();
+			ImportTask importTask = ExportImportTaskUtil.postImportTask(
+				json, classNamePartsMap.get("className"), "COMPLETED",
+				HashMapBuilder.put(
+					"createStrategy", "INSERT"
+				).put(
+					"taskItemDelegateName",
+					() -> {
+						if (!classNamePartsMap.containsKey(
+								"taskItemDelegateName")) {
 
-			httpInvoker.body(json, "application/json");
-			httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
+							return null;
+						}
 
-			StringBundler sb = new StringBundler(
-				classNamePartsMap.containsKey("taskItemDelegateName") ? 6 : 4);
-
-			sb.append("http://localhost:8080/o/headless-batch-engine/v1.0");
-			sb.append("/import-task/");
-			sb.append(classNamePartsMap.get("className"));
-			sb.append("?createStrategy=INSERT");
-
-			if (classNamePartsMap.containsKey("taskItemDelegateName")) {
-				sb.append("&taskItemDelegateName=");
-				sb.append(classNamePartsMap.get("taskItemDelegateName"));
-			}
-
-			httpInvoker.path(sb.toString());
-
-			httpInvoker.userNameAndPassword("test@liferay.com:test");
-
-			HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
-
-			ImportTask importTask = ImportTaskSerDes.toDTO(
-				httpResponse.getContent());
-
-			String externalReferenceCode =
-				importTask.getExternalReferenceCode();
-
-			while (true) {
-				importTask = ImportTaskSerDes.toDTO(
-					_invoke(
-						"http://localhost:8080/o/headless-batch-engine/v1.0" +
-							"/import-task/by-external-reference-code/" +
-								externalReferenceCode));
-
-				if (Objects.equals(
-						importTask.getExecuteStatusAsString(), "COMPLETED")) {
-
-					break;
-				}
-				else if (Objects.equals(
-							importTask.getExecuteStatusAsString(), "FAILED")) {
-
-					throw new AssertionError(importTask.getErrorMessage());
-				}
-			}
+						return classNamePartsMap.get("taskItemDelegateName");
+					}
+				).build());
 
 			Date endDate = importTask.getEndTime();
 			Date startDate = importTask.getStartTime();
@@ -503,19 +413,19 @@ public class ExportImportTaskResourcePerformanceTest {
 	private class TestEntityPerformanceTimer extends PerformanceTimer {
 
 		public TestEntityPerformanceTimer(
-			int count, String name, long maxTime) {
+			int count, long maxTime, String name) {
 
 			this(
-				count, getInvokerName(null, name), System.currentTimeMillis(),
-				maxTime, null);
+				count, null, maxTime, getInvokerName(null, name),
+				System.currentTimeMillis());
 		}
 
 		public TestEntityPerformanceTimer(
-			int count, String name, long maxTime, Path logFilePath) {
+			int count, Path logFilePath, long maxTime, String name) {
 
 			this(
-				count, getInvokerName(null, name), System.currentTimeMillis(),
-				maxTime, logFilePath);
+				count, logFilePath, maxTime, getInvokerName(null, name),
+				System.currentTimeMillis());
 		}
 
 		@Override
@@ -540,10 +450,10 @@ public class ExportImportTaskResourcePerformanceTest {
 		}
 
 		protected TestEntityPerformanceTimer(
-			int count, String name, long startTime, long maxTime,
-			Path logFilePath) {
+			int count, Path logFilePath, long maxTime, String name,
+			long startTime) {
 
-			super(name, startTime, maxTime, logFilePath);
+			super(logFilePath, maxTime, name, startTime);
 
 			_count = count;
 		}

@@ -16,7 +16,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -26,11 +26,10 @@ public class ActionUtil {
 	public static BlogsEntry getEntry(PortletRequest portletRequest)
 		throws Exception {
 
-		long entryId = ParamUtil.getLong(portletRequest, "entryId");
-
-		String urlTitle = ParamUtil.getString(portletRequest, "urlTitle");
-
 		BlogsEntry entry = null;
+
+		long entryId = ParamUtil.getLong(portletRequest, "entryId");
+		String urlTitle = ParamUtil.getString(portletRequest, "urlTitle");
 
 		if (entryId > 0) {
 			entry = BlogsEntryServiceUtil.getEntry(entryId);

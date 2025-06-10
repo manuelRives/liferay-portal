@@ -12,7 +12,6 @@ import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -200,7 +199,8 @@ public class SitemapManagerImpl implements SitemapManager {
 		throws PortalException {
 
 		if (Validator.isNull(layoutUuid) &&
-			PropsValues.XML_SITEMAP_INDEX_ENABLED) {
+			_sitemapConfigurationManager.xmlSitemapIndexCompanyEnabled(
+				themeDisplay.getCompanyId())) {
 
 			return _getIndexSitemap(groupId, privateLayout, themeDisplay);
 		}
@@ -259,8 +259,7 @@ public class SitemapManagerImpl implements SitemapManager {
 		LayoutSet layoutSet = _layoutSetLocalService.getLayoutSet(
 			groupId, privateLayout);
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-187793") ||
-			Validator.isNotNull(layoutUuid) ||
+		if (Validator.isNotNull(layoutUuid) ||
 			!_isCompanyVirtualHostname(themeDisplay)) {
 
 			return ListUtil.fromArray(layoutSet);
@@ -351,16 +350,9 @@ public class SitemapManagerImpl implements SitemapManager {
 	}
 
 	private List<SitemapURLProvider> _getSitemapURLProviders() {
-		Set<String> classNames = _serviceTrackerMap.keySet();
-
-		List<SitemapURLProvider> sitemapURLProviders = new ArrayList<>(
-			classNames.size());
-
-		for (String className : classNames) {
-			sitemapURLProviders.add(_serviceTrackerMap.getService(className));
-		}
-
-		return sitemapURLProviders;
+		return TransformUtil.transform(
+			_serviceTrackerMap.keySet(),
+			className -> _serviceTrackerMap.getService(className));
 	}
 
 	private int _getSize(Element element) {
@@ -402,11 +394,7 @@ public class SitemapManagerImpl implements SitemapManager {
 			virtualHostname = "localhost";
 		}
 
-		if (Objects.equals(virtualHostname, themeDisplay.getServerName())) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(virtualHostname, themeDisplay.getServerName());
 	}
 
 	private void _removeEntriesAndSize(Element rootElement) {
@@ -544,8 +532,7 @@ public class SitemapManagerImpl implements SitemapManager {
 		for (SitemapURLProvider sitemapURLProvider :
 				_getSitemapURLProviders()) {
 
-			if (FeatureFlagManagerUtil.isEnabled("LPS-187793") &&
-				!sitemapURLProvider.isInclude(
+			if (!sitemapURLProvider.isInclude(
 					themeDisplay.getCompanyId(),
 					themeDisplay.getScopeGroupId())) {
 

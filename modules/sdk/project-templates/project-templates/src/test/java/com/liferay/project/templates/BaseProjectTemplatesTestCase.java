@@ -149,7 +149,7 @@ public interface BaseProjectTemplatesTestCase {
 		"gradle/wrapper/gradle-wrapper.properties"
 	};
 
-	public static final String GRADLE_WRAPPER_VERSION = "7.3.3";
+	public static final String GRADLE_WRAPPER_VERSION = "8.5";
 
 	public static final String MAVEN_GOAL_BUILD_REST = "rest-builder:build";
 
@@ -227,11 +227,7 @@ public interface BaseProjectTemplatesTestCase {
 
 		osName = osName.toLowerCase();
 
-		if (osName.contains("win")) {
-			return true;
-		}
-
-		return false;
+		return osName.contains("win");
 	}
 
 	public default void addCssBuilderConfigurationElement(
@@ -708,14 +704,9 @@ public interface BaseProjectTemplatesTestCase {
 		Collection<? extends Diff> diffs = diff.getChildren();
 
 		if (diffs.isEmpty()) {
-			String diffNewer = diff.getNewer(
-			).toString();
-			String diffOlder = diff.getOlder(
-			).toString();
-
 			Assert.assertEquals(
-				"Bundle " + bundleFile1 + " " + diffNewer + " and " +
-					bundleFile2 + " " + diffOlder + " do not match",
+				"Bundle " + bundleFile1 + " " + diff.getNewer() + " and " +
+					bundleFile2 + " " + diff.getOlder() + " do not match",
 				aQute.bnd.service.diff.Delta.UNCHANGED.toString(),
 				String.valueOf(diff.getDelta()));
 
@@ -1084,7 +1075,7 @@ public interface BaseProjectTemplatesTestCase {
 			String... args)
 		throws Exception {
 
-		String[] completeArgs = new String[args.length + 3];
+		String[] completeArgs = new String[args.length + 5];
 
 		System.arraycopy(args, 0, completeArgs, 0, args.length);
 
@@ -1095,6 +1086,21 @@ public interface BaseProjectTemplatesTestCase {
 		completeArgs[args.length + 2] =
 			"-Drepository.private.password=" +
 				System.getProperty("repository.private.password");
+
+		String javaVersion = System.getProperty("java.version");
+
+		if (javaVersion.startsWith("17")) {
+			javaVersion = "17";
+		}
+
+		if (javaVersion.startsWith("21")) {
+			javaVersion = "21";
+		}
+
+		completeArgs[args.length + 3] =
+			"-Djava.compiler.source.version=" + javaVersion;
+		completeArgs[args.length + 4] =
+			"-Djava.compiler.target.version=" + javaVersion;
 
 		MavenExecutor.Result result = mavenExecutor.execute(
 			projectDir, completeArgs);
@@ -1125,7 +1131,10 @@ public interface BaseProjectTemplatesTestCase {
 	}
 
 	public default String getLiferayWorkspaceProduct(String liferayVersion) {
-		if (liferayVersion.startsWith("7.0")) {
+		if (liferayVersion.startsWith("20")) {
+			return "dxp-2024.q1.1";
+		}
+		else if (liferayVersion.startsWith("7.0")) {
 			return "dxp-7.0-sp17";
 		}
 		else if (liferayVersion.startsWith("7.1")) {
@@ -1312,8 +1321,8 @@ public interface BaseProjectTemplatesTestCase {
 
 		testContains(
 			gradleProjectDir, "package.json",
-			"build/resources/main/META-INF/resources",
-			"liferay-npm-bundler\": \"2.30.0", "\"main\": \"lib/index.es.js\"");
+			"build/resources/main/META-INF/resources", "esbuild\": \"^0.20.2",
+			"\"main\": \"js/index.js\"");
 
 		testNotContains(
 			gradleProjectDir, "package.json",
@@ -1426,7 +1435,9 @@ public interface BaseProjectTemplatesTestCase {
 			testExists(gradleProjectDir, "src/main/" + resourceFileName);
 		}
 
-		if (VersionUtil.getMinorVersion(liferayVersion) < 3) {
+		if ((VersionUtil.getMinorVersion(liferayVersion) < 3) ||
+			(VersionUtil.getMajorVersion(liferayVersion) > 7)) {
+
 			testContains(
 				gradleProjectDir, "build.gradle", DEPENDENCY_RELEASE_DXP_API);
 		}
@@ -1479,7 +1490,14 @@ public interface BaseProjectTemplatesTestCase {
 
 		String liferayProduct = "portal";
 
-		if (liferayVersion.startsWith("7.0")) {
+		if (liferayVersion.startsWith("20")) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.target.platform.version=2024.q1.1");
+
+			liferayProduct = "dxp";
+		}
+		else if (liferayVersion.startsWith("7.0")) {
 			writeGradlePropertiesInWorkspace(
 				gradleWorkspaceDir,
 				"liferay.workspace.target.platform.version=7.0.10.17");
@@ -1914,7 +1932,18 @@ public interface BaseProjectTemplatesTestCase {
 			File gradleProjectDir, String liferayVersion)
 		throws Exception {
 
-		if (liferayVersion.startsWith("7.0")) {
+		if (liferayVersion.startsWith("20") ||
+			liferayVersion.startsWith("7.4")) {
+
+			testContains(
+				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-display.xml",
+				"liferay-display_7_4_0.dtd");
+
+			testContains(
+				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-portlet.xml",
+				"liferay-portlet-app_7_4_0.dtd");
+		}
+		else if (liferayVersion.startsWith("7.0")) {
 			testContains(
 				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-display.xml",
 				"liferay-display_7_0_0.dtd");
@@ -1949,15 +1978,6 @@ public interface BaseProjectTemplatesTestCase {
 			testContains(
 				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-portlet.xml",
 				"liferay-portlet-app_7_3_0.dtd");
-		}
-		else if (liferayVersion.startsWith("7.4")) {
-			testContains(
-				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-display.xml",
-				"liferay-display_7_4_0.dtd");
-
-			testContains(
-				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-portlet.xml",
-				"liferay-portlet-app_7_4_0.dtd");
 		}
 	}
 
@@ -2202,8 +2222,7 @@ public interface BaseProjectTemplatesTestCase {
 	public default void writeM2TmpForMavenWorkspace(File projectDir)
 		throws Exception {
 
-		File gettingStartedFile = new File(
-			projectDir, "GETTING_STARTED.markdown");
+		File gettingStartedFile = new File(projectDir, "GETTING_STARTED.md");
 		File pomXmlFile = new File(projectDir, "pom.xml");
 
 		if (gettingStartedFile.exists() && pomXmlFile.exists()) {

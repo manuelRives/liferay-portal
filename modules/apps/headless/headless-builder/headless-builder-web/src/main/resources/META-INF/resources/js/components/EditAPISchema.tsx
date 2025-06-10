@@ -6,7 +6,7 @@
 import ClayBreadcrumb from '@clayui/breadcrumb';
 import ClayCard from '@clayui/card';
 import ClayTabs from '@clayui/tabs';
-import {openModal, openToast} from 'frontend-js-web';
+import {openModal, openToast} from 'frontend-js-components-web';
 import React, {
 	Dispatch,
 	SetStateAction,
@@ -69,9 +69,8 @@ export default function EditAPISchema({
 		name: false,
 	});
 
-	const [fetchedSchemaData, setFetchedSchemaData] = useState<
-		FetchedSchemaData
-	>({});
+	const [fetchedSchemaData, setFetchedSchemaData] =
+		useState<FetchedSchemaData>({});
 
 	const [localUIData, setLocalUIData] = useState<APISchemaUIData>({
 		description: '',
@@ -230,6 +229,7 @@ export default function EditAPISchema({
 		else {
 			setMainSchemaNav('list');
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [fetchedSchemaData, isDataUnsaved, localUIData, resetLocalUIData]);
 
@@ -247,21 +247,26 @@ export default function EditAPISchema({
 						description: localUIData.description,
 						name: localUIData.name,
 						...(localUIData.schemaProperties.length && {
-							apiSchemaToAPIProperties: localUIData.schemaProperties.map(
-								(property) => ({
-									...(!!property.description && {
-										description: property.description,
-									}),
-									name: property.name,
-									objectFieldERC: property.objectFieldERC,
-									r_apiSchemaToAPIProperties_c_apiSchemaId:
-										property.r_apiSchemaToAPIProperties_c_apiSchemaId,
-									...(property.objectRelationshipNames && {
-										objectRelationshipNames:
-											property.objectRelationshipNames,
-									}),
-								})
-							),
+							apiSchemaToAPIProperties:
+								localUIData.schemaProperties.map(
+									(property) => ({
+										...(!!property.description && {
+											description: property.description,
+										}),
+										externalReferenceCode:
+											property.externalReferenceCode,
+										name: property.name,
+										objectFieldERC: property.objectFieldERC,
+										r_apiPropertyToAPIProperties_l_apiPropertyId:
+											property.r_apiPropertyToAPIProperties_l_apiPropertyId,
+										r_apiSchemaToAPIProperties_l_apiSchemaId:
+											property.r_apiSchemaToAPIProperties_l_apiSchemaId,
+										...(property.objectRelationshipNames && {
+											objectRelationshipNames:
+												property.objectRelationshipNames,
+										}),
+									})
+								),
 						}),
 						...(!localUIData.schemaProperties.length && {
 							apiSchemaToAPIProperties: [],
@@ -269,9 +274,7 @@ export default function EditAPISchema({
 						mainObjectDefinitionERC:
 							localUIData.mainObjectDefinitionERC,
 					},
-					method: localUIData.schemaProperties.length
-						? 'PATCH'
-						: 'PUT',
+					method: 'PATCH',
 					onError: (error: string) => {
 						openToast({
 							message: error,
@@ -368,6 +371,7 @@ export default function EditAPISchema({
 						})))
 			)
 		);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [fetchedSchemaData, localUIData]);
 

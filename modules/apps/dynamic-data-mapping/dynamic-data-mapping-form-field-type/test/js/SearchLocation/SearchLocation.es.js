@@ -8,7 +8,7 @@ import {cleanup, fireEvent, render} from '@testing-library/react';
 import {FormProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import SearchLocation from '../../../src/main/resources/META-INF/resources/SearchLocation/SearchLocation.es';
+import SearchLocation from '../../../src/main/resources/META-INF/resources/js/SearchLocation/SearchLocation.es';
 
 const globalLanguageDirection = Liferay.Language.direction;
 
@@ -202,9 +202,8 @@ describe('Field Search Location', () => {
 			<SearchLocationWithProvider {...defaultConfig} />
 		);
 
-		const fieldsWithLayoutBehavior = container.getElementsByClassName(
-			'col-md-12'
-		);
+		const fieldsWithLayoutBehavior =
+			container.getElementsByClassName('col-md-12');
 
 		expect(fieldsWithLayoutBehavior.length).toBe(
 			defaultConfig.visibleFields.length
@@ -217,9 +216,8 @@ describe('Field Search Location', () => {
 			<SearchLocationWithProvider {...defaultConfig} />
 		);
 
-		const fieldsWithLayoutBehavior = container.getElementsByClassName(
-			'col-md-6'
-		);
+		const fieldsWithLayoutBehavior =
+			container.getElementsByClassName('col-md-6');
 
 		expect(fieldsWithLayoutBehavior.length).toBe(
 			defaultConfig.visibleFields.length - 1
@@ -300,9 +298,8 @@ describe('Field Search Location', () => {
 
 		const searchLocationField = getAllByLabelText('Search Location');
 		expect(searchLocationField).toHaveLength(1);
-		const searchLocationFieldTagName = searchLocationField[0].getElementsByTagName(
-			'script'
-		);
+		const searchLocationFieldTagName =
+			searchLocationField[0].getElementsByTagName('script');
 		expect(searchLocationFieldTagName).toHaveLength(1);
 		const googlePlacesScriptElement = searchLocationFieldTagName.item(0);
 

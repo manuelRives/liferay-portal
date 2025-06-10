@@ -12,6 +12,7 @@ import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -43,7 +44,16 @@ public class ConfigurationTestUtil {
 			String factoryPid, Dictionary<String, Object> properties)
 		throws Exception {
 
-		Configuration configuration = _createFactoryConfiguration(factoryPid);
+		return createFactoryConfiguration(factoryPid, null, properties);
+	}
+
+	public static String createFactoryConfiguration(
+			String factoryPid, String name,
+			Dictionary<String, Object> properties)
+		throws Exception {
+
+		Configuration configuration = _createFactoryConfiguration(
+			factoryPid, name);
 
 		_updateProperties(configuration, properties);
 
@@ -110,7 +120,7 @@ public class ConfigurationTestUtil {
 				StringBundler.concat(
 					"(", Constants.SERVICE_PID, "=", pid, ")")));
 
-		if ((configurations == null) || (configurations.length == 0)) {
+		if (ArrayUtil.isEmpty(configurations)) {
 			return null;
 		}
 
@@ -150,7 +160,7 @@ public class ConfigurationTestUtil {
 				StringBundler.concat(
 					"(", Constants.SERVICE_PID, "=", pid, ")")));
 
-		if ((configurations == null) || (configurations.length == 0)) {
+		if (ArrayUtil.isEmpty(configurations)) {
 			return null;
 		}
 
@@ -193,8 +203,17 @@ public class ConfigurationTestUtil {
 
 	}
 
-	private static Configuration _createFactoryConfiguration(String factoryPid)
+	private static Configuration _createFactoryConfiguration(
+			String factoryPid, String name)
 		throws Exception {
+
+		if (name != null) {
+			return OSGiServiceUtil.callService(
+				_bundleContext, ConfigurationAdmin.class,
+				(ConfigurationAdmin configurationAdmin) ->
+					configurationAdmin.getFactoryConfiguration(
+						factoryPid, name, StringPool.QUESTION));
+		}
 
 		return OSGiServiceUtil.callService(
 			_bundleContext, ConfigurationAdmin.class,

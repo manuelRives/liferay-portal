@@ -5,8 +5,6 @@
 
 package com.liferay.object.internal.action.executor;
 
-import com.liferay.list.type.model.ListTypeEntry;
-import com.liferay.list.type.service.ListTypeEntryLocalService;
 import com.liferay.notification.context.NotificationContextBuilder;
 import com.liferay.notification.model.NotificationTemplate;
 import com.liferay.notification.service.NotificationTemplateLocalService;
@@ -14,28 +12,21 @@ import com.liferay.notification.type.NotificationType;
 import com.liferay.notification.type.NotificationTypeServiceTracker;
 import com.liferay.object.action.executor.ObjectActionExecutor;
 import com.liferay.object.constants.ObjectActionExecutorConstants;
-import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.internal.action.util.ObjectEntryVariablesUtil;
+import com.liferay.object.internal.notification.term.evaluator.util.ObjectDefinitionNotificationTermEvaluatorUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
-import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 
-import java.sql.Timestamp;
-
-import java.text.SimpleDateFormat;
-
-import java.util.Date;
 import java.util.Map;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -92,6 +83,12 @@ public class NotificationTemplateObjectActionExecutorImpl
 			).portletId(
 				objectDefinition.isUnmodifiableSystemObject() ?
 					StringPool.BLANK : objectDefinition.getPortletId()
+			).preferredLanguageId(
+				payloadJSONObject.getString("preferredLanguageId")
+			).usePreferredLanguageForGuests(
+				GetterUtil.getBoolean(
+					parametersUnicodeProperties.get(
+						"usePreferredLanguageForGuests"))
 			).build());
 	}
 
@@ -117,73 +114,26 @@ public class NotificationTemplateObjectActionExecutorImpl
 				continue;
 			}
 
-			if (Objects.equals(
-					objectField.getBusinessType(),
-					ObjectFieldConstants.BUSINESS_TYPE_DATE) &&
-				!Objects.equals(objectField.getName(), "createDate") &&
-				!Objects.equals(objectField.getName(), "modifiedDate")) {
+			Object termValue = termValues.get(objectField.getName());
 
-				SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
-					"yyyy-MM-dd");
+			if (Validator.isNull(termValue) && objectField.isLocalized() &&
+				termValues.containsKey("entryDTO")) {
 
-				Object object = termValues.get(objectField.getName());
+				Map<String, Object> entryDTO =
+					(Map<String, Object>)termValues.get("entryDTO");
 
-				if (object instanceof Timestamp) {
-					Timestamp timestamp = (Timestamp)object;
+				if (entryDTO.containsKey("properties")) {
+					Map<String, Object> properties =
+						(Map<String, Object>)entryDTO.get("properties");
 
-					termValues.put(
-						objectField.getName(),
-						simpleDateFormat.format(new Date(timestamp.getTime())));
-				}
-				else {
-					Timestamp timestamp = new Timestamp((Long)object);
-
-					termValues.put(
-						objectField.getName(),
-						simpleDateFormat.format(new Date(timestamp.getTime())));
+					termValue = properties.get(objectField.getName());
 				}
 			}
-			else if (Objects.equals(
-						objectField.getBusinessType(),
-						ObjectFieldConstants.
-							BUSINESS_TYPE_MULTISELECT_PICKLIST)) {
 
-				termValues.put(
-					objectField.getName(),
-					StringUtil.merge(
-						TransformUtil.transform(
-							StringUtil.split(
-								String.valueOf(
-									termValues.get(objectField.getName())),
-								StringPool.COMMA_AND_SPACE),
-							listTypeEntryKey -> {
-								ListTypeEntry listTypeEntry =
-									_listTypeEntryLocalService.
-										fetchListTypeEntry(
-											objectField.
-												getListTypeDefinitionId(),
-											listTypeEntryKey);
-
-								return listTypeEntry.getNameCurrentValue();
-							},
-							String.class),
-						StringPool.COMMA_AND_SPACE));
-			}
-			else if (Objects.equals(
-						objectField.getBusinessType(),
-						ObjectFieldConstants.BUSINESS_TYPE_PICKLIST)) {
-
-				ListTypeEntry listTypeEntry =
-					_listTypeEntryLocalService.fetchListTypeEntry(
-						objectField.getListTypeDefinitionId(),
-						(String)termValues.get(objectField.getName()));
-
-				if (listTypeEntry != null) {
-					termValues.put(
-						objectField.getName(),
-						listTypeEntry.getNameCurrentValue());
-				}
-			}
+			termValues.put(
+				objectField.getName(),
+				ObjectDefinitionNotificationTermEvaluatorUtil.getTermValue(
+					objectField, termValue));
 		}
 
 		return termValues;
@@ -191,9 +141,6 @@ public class NotificationTemplateObjectActionExecutorImpl
 
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
-
-	@Reference
-	private ListTypeEntryLocalService _listTypeEntryLocalService;
 
 	@Reference
 	private NotificationTemplateLocalService _notificationTemplateLocalService;

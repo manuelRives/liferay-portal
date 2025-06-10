@@ -10,7 +10,7 @@ import {ClayInput, ClaySelect} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import getCN from 'classnames';
-import {addParams, fetch, navigate} from 'frontend-js-web';
+import {addParams, fetch, navigate, sub} from 'frontend-js-web';
 import React, {useCallback, useRef, useState} from 'react';
 
 import {FacetUtil} from '../FacetUtil';
@@ -64,15 +64,16 @@ export default function SearchBar({
 	 */
 
 	const _getLowestSuggestionsDisplayThreshold = useCallback(() => {
-		const characterThresholdArray = cleanSuggestionsContributorConfiguration(
-			suggestionsContributorConfiguration,
-			isDXP,
-			isSearchExperiencesSupported
-		).map((config) =>
-			config.attributes?.characterThreshold
-				? parseInt(config.attributes.characterThreshold, 10)
-				: parseInt(suggestionsDisplayThreshold, 10)
-		);
+		const characterThresholdArray =
+			cleanSuggestionsContributorConfiguration(
+				suggestionsContributorConfiguration,
+				isDXP,
+				isSearchExperiencesSupported
+			).map((config) =>
+				config.attributes?.characterThreshold
+					? parseInt(config.attributes.characterThreshold, 10)
+					: parseInt(suggestionsDisplayThreshold, 10)
+			);
 
 		return Math.min(...characterThresholdArray);
 	}, [
@@ -122,7 +123,8 @@ export default function SearchBar({
 				body: _getSuggestionsContributorConfiguration(),
 				headers: new Headers({
 					'Accept': 'application/json',
-					'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),
+					'Accept-Language':
+						Liferay.ThemeDisplay.getBCP47LanguageId(),
 					'Content-Type': 'application/json',
 				}),
 				method: 'POST',
@@ -354,6 +356,27 @@ export default function SearchBar({
 
 	return (
 		<ClayAutocomplete className="search-bar-suggestions">
+			<span className="sr-only" role="status">
+				{loading
+					? Liferay.Language.get('loading')
+					: active
+						? suggestionsResponseItems.length
+							? sub(Liferay.Language.get('showing-x-x'), [
+									suggestionsResponseItems.reduce(
+										(accumulator, currentValue) =>
+											accumulator +
+											(currentValue?.suggestions
+												?.length || 0),
+										0
+									),
+									Liferay.Language.get('suggestions'),
+								])
+							: sub(Liferay.Language.get('no-x-were-found'), [
+									Liferay.Language.get('suggestions'),
+								])
+						: ''}
+			</span>
+
 			<ClayInput.Group ref={alignElementRef}>
 				{letUserChooseScope
 					? _renderSearchBarWithScope()

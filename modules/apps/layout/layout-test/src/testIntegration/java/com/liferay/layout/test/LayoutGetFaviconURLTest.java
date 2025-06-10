@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
@@ -45,17 +44,15 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.InputStream;
 
 import java.net.URL;
 import java.net.URLConnection;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,18 +72,6 @@ public class LayoutGetFaviconURLTest {
 		new AggregateTestRule(
 			new LiferayIntegrationTestRule(),
 			PermissionCheckerMethodTestRule.INSTANCE);
-
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-		_originalName = PrincipalThreadLocal.getName();
-
-		PrincipalThreadLocal.setName(TestPropsValues.getUserId());
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws Exception {
-		PrincipalThreadLocal.setName(_originalName);
-	}
 
 	@Before
 	public void setUp() throws Exception {
@@ -152,10 +137,10 @@ public class LayoutGetFaviconURLTest {
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
 			_layoutPageTemplateCollectionLocalService.
 				addLayoutPageTemplateCollection(
-					TestPropsValues.getUserId(), _group.getGroupId(),
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
 					LayoutPageTemplateConstants.
 						PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
-					RandomTestUtil.randomString(), null,
+					null, RandomTestUtil.randomString(), null,
 					LayoutPageTemplateCollectionTypeConstants.BASIC,
 					_serviceContext);
 
@@ -184,14 +169,14 @@ public class LayoutGetFaviconURLTest {
 		LayoutSet layoutSet = _layout.getLayoutSet();
 
 		FileEntry layoutSetFaviconFileEntry = _addFileEntry(
-			_getExpectedBytes("classic.ico"));
+			_getExpectedBytes("classic_logo.png"));
 
 		layoutSet.setFaviconFileEntryId(
 			layoutSetFaviconFileEntry.getFileEntryId());
 
 		_layoutSetLocalService.updateLayoutSet(layoutSet);
 
-		byte[] layoutFaviconBytes = _getExpectedBytes("dxp.ico");
+		byte[] layoutFaviconBytes = _getExpectedBytes("dxp_logo.png");
 
 		FileEntry layoutFaviconFileEntry = _addFileEntry(layoutFaviconBytes);
 
@@ -205,7 +190,7 @@ public class LayoutGetFaviconURLTest {
 	public void testLayoutWhenSetToLayoutAndMasterLayout() throws Exception {
 		LayoutPageTemplateEntry masterLayoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
 				RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 				WorkflowConstants.STATUS_APPROVED,
@@ -215,7 +200,7 @@ public class LayoutGetFaviconURLTest {
 			masterLayoutPageTemplateEntry.getPlid());
 
 		FileEntry masterLayoutFaviconFileEntry = _addFileEntry(
-			_getExpectedBytes("classic.ico"));
+			_getExpectedBytes("classic_logo.png"));
 
 		masterLayout.setFaviconFileEntryId(
 			masterLayoutFaviconFileEntry.getFileEntryId());
@@ -224,7 +209,7 @@ public class LayoutGetFaviconURLTest {
 
 		_layout.setMasterLayoutPlid(masterLayoutPageTemplateEntry.getPlid());
 
-		byte[] layoutFaviconBytes = _getExpectedBytes("dxp.ico");
+		byte[] layoutFaviconBytes = _getExpectedBytes("dxp_logo.png");
 
 		FileEntry layoutFaviconFileEntry = _addFileEntry(layoutFaviconBytes);
 
@@ -238,16 +223,16 @@ public class LayoutGetFaviconURLTest {
 		return _dlAppLocalService.addFileEntry(
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			StringUtil.randomString(), ContentTypes.IMAGE_JPEG, bytes, null,
+			StringUtil.randomString(), ContentTypes.IMAGE_PNG, bytes, null,
 			null, null, _serviceContext);
 	}
 
 	private byte[] _getBytes(String favicon) throws Exception {
+		byte[] bytes = null;
+
 		URL url = new URL(_getPortalURL() + favicon);
 
 		URLConnection urlConnection = url.openConnection();
-
-		byte[] bytes;
 
 		try (InputStream inputStream = urlConnection.getInputStream()) {
 			bytes = FileUtil.getBytes(inputStream);
@@ -257,7 +242,7 @@ public class LayoutGetFaviconURLTest {
 	}
 
 	private byte[] _getExpectedBytes() throws Exception {
-		return _getExpectedBytes("dxp.ico");
+		return _getExpectedBytes("dxp_logo.png");
 	}
 
 	private byte[] _getExpectedBytes(String fileName) throws Exception {
@@ -285,8 +270,6 @@ public class LayoutGetFaviconURLTest {
 			_company.getVirtualHostname(), _portal.getPortalServerPort(false),
 			false);
 	}
-
-	private static String _originalName;
 
 	private Company _company;
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
 
 export function openItemSelector({
 	callback,
@@ -11,6 +11,7 @@ export function openItemSelector({
 	itemSelectorURL,
 	destroyedCallback = null,
 	modalProps = {},
+	selectedItem,
 	transformValueCallback,
 }) {
 	openSelectionModal({
@@ -50,6 +51,13 @@ export function openItemSelector({
 			infoItem = callback(infoItem);
 		},
 		selectEventName: eventName,
+		selectedData: selectedItem && [
+			{
+				externalReferenceCode: selectedItem.externalReferenceCode,
+				id: selectedItem.classPK,
+				label: selectedItem.title,
+			},
+		],
 		title: Liferay.Language.get('select'),
 		url: itemSelectorURL,
 		...modalProps,

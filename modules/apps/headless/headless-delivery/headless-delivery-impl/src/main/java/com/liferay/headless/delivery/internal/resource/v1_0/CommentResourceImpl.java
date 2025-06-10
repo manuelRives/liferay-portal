@@ -22,7 +22,6 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.comment.Discussion;
 import com.liferay.portal.kernel.comment.DiscussionComment;
@@ -49,12 +48,12 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
+import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.Map;
 import java.util.function.Function;
-
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,7 +66,6 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/comment.properties",
 	scope = ServiceScope.PROTOTYPE, service = CommentResource.class
 )
-@CTAware
 public class CommentResourceImpl extends BaseCommentResourceImpl {
 
 	@Override
@@ -115,7 +113,7 @@ public class CommentResourceImpl extends BaseCommentResourceImpl {
 
 		DLFileEntry dlFileEntry =
 			_dlFileEntryService.getFileEntryByExternalReferenceCode(
-				siteId, documentExternalReferenceCode);
+				documentExternalReferenceCode, siteId);
 
 		com.liferay.portal.kernel.comment.Comment comment = _getComment(
 			externalReferenceCode, siteId, DLFileEntry.class.getName(),
@@ -316,7 +314,7 @@ public class CommentResourceImpl extends BaseCommentResourceImpl {
 
 		DLFileEntry dlFileEntry =
 			_dlFileEntryService.getFileEntryByExternalReferenceCode(
-				siteId, documentExternalReferenceCode);
+				documentExternalReferenceCode, siteId);
 
 		com.liferay.portal.kernel.comment.Comment comment = _getComment(
 			externalReferenceCode, siteId, DLFileEntry.class.getName(),
@@ -525,7 +523,7 @@ public class CommentResourceImpl extends BaseCommentResourceImpl {
 
 		DLFileEntry dlFileEntry =
 			_dlFileEntryService.getFileEntryByExternalReferenceCode(
-				siteId, documentExternalReferenceCode);
+				documentExternalReferenceCode, siteId);
 
 		com.liferay.portal.kernel.comment.Comment existingComment =
 			_fetchComment(

@@ -25,13 +25,13 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -203,8 +203,8 @@ public class CountryResourceImpl extends BaseCountryResourceImpl {
 
 	private static final EntityModel _entityModel =
 		() -> EntityModel.toEntityFieldsMap(
-			new StringEntityField("name", locale -> "name"),
-			new DoubleEntityField("position", locale -> "position"));
+			new DoubleEntityField("position", locale -> "position"),
+			new StringEntityField("name", locale -> "name"));
 
 	@Reference
 	private CountryLocalService _countryLocalService;

@@ -95,7 +95,17 @@ public class CETManagerImpl implements CETManager {
 
 		Map<String, CET> cetsMap = _getCETsMap(companyId);
 
-		return cetsMap.get(externalReferenceCode);
+		CET cet = cetsMap.get(externalReferenceCode);
+
+		if (cet == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"No CET found for external reference code " +
+						externalReferenceCode);
+			}
+		}
+
+		return cet;
 	}
 
 	@Override
@@ -225,7 +235,9 @@ public class CETManagerImpl implements CETManager {
 
 		String key = CETFactory.FEATURE_FLAG_KEYS.get(cet.getType());
 
-		if ((key != null) && !FeatureFlagManagerUtil.isEnabled(key)) {
+		if ((key != null) &&
+			!FeatureFlagManagerUtil.isEnabled(cet.getCompanyId(), key)) {
+
 			return false;
 		}
 

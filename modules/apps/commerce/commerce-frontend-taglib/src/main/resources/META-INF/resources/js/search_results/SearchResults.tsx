@@ -21,7 +21,7 @@ const RESULT_TYPES = {
 	label: 'label',
 } as const;
 
-type ResultType = typeof RESULT_TYPES[keyof typeof RESULT_TYPES];
+type ResultType = (typeof RESULT_TYPES)[keyof typeof RESULT_TYPES];
 
 interface Result {
 	icon?: string;
@@ -85,10 +85,12 @@ export default function SearchResults({
 
 	const updateQuery = useCallback(
 		(event: {term: string}) => {
-			setLoading(true);
-			setQuery(event.term);
+			if (event.term === '' || event.term.length > 1) {
+				setLoading(true);
+				setQuery(event.term);
 
-			debounce(() => search(event.term), 500)();
+				debounce(() => search(event.term), 500)();
+			}
 		},
 		[search]
 	);

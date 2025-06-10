@@ -209,12 +209,6 @@ public class PortalPreferencesLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static PortalPreferences fetchCompanyPortalPreferences(
-		long companyId) {
-
-		return getService().fetchCompanyPortalPreferences(companyId);
-	}
-
 	public static PortalPreferences fetchPortalPreferences(
 		long portalPreferencesId) {
 
@@ -298,13 +292,13 @@ public class PortalPreferencesLocalServiceUtil {
 		return getService().getPortalPreferencesesCount();
 	}
 
-	public static javax.portlet.PortletPreferences getPreferences(
+	public static jakarta.portlet.PortletPreferences getPreferences(
 		long ownerId, int ownerType) {
 
 		return getService().getPreferences(ownerId, ownerType);
 	}
 
-	public static javax.portlet.PortletPreferences getPreferences(
+	public static jakarta.portlet.PortletPreferences getPreferences(
 		long ownerId, int ownerType, String defaultPreferences) {
 
 		return getService().getPreferences(

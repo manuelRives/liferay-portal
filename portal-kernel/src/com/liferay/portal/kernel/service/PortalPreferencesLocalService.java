@@ -22,11 +22,11 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.Serializable;
 
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -197,9 +197,6 @@ public interface PortalPreferencesLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long dynamicQueryCount(
 		DynamicQuery dynamicQuery, Projection projection);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public PortalPreferences fetchCompanyPortalPreferences(long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PortalPreferences fetchPortalPreferences(long portalPreferencesId);

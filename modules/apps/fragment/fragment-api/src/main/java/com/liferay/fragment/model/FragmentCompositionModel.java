@@ -7,6 +7,7 @@ package com.liferay.fragment.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedGroupedModel;
@@ -31,7 +32,8 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface FragmentCompositionModel
 	extends BaseModel<FragmentComposition>, CTModel<FragmentComposition>,
-			MVCCModel, ShardedModel, StagedGroupedModel, WorkflowedModel {
+			ExternalReferenceCodeModel, MVCCModel, ShardedModel,
+			StagedGroupedModel, WorkflowedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -103,6 +105,23 @@ public interface FragmentCompositionModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this fragment composition.
+	 *
+	 * @return the external reference code of this fragment composition
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this fragment composition.
+	 *
+	 * @param externalReferenceCode the external reference code of this fragment composition
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the fragment composition ID of this fragment composition.
@@ -318,6 +337,27 @@ public interface FragmentCompositionModel
 	 * @param previewFileEntryId the preview file entry ID of this fragment composition
 	 */
 	public void setPreviewFileEntryId(long previewFileEntryId);
+
+	/**
+	 * Returns the marketplace of this fragment composition.
+	 *
+	 * @return the marketplace of this fragment composition
+	 */
+	public boolean getMarketplace();
+
+	/**
+	 * Returns <code>true</code> if this fragment composition is marketplace.
+	 *
+	 * @return <code>true</code> if this fragment composition is marketplace; <code>false</code> otherwise
+	 */
+	public boolean isMarketplace();
+
+	/**
+	 * Sets whether this fragment composition is marketplace.
+	 *
+	 * @param marketplace the marketplace of this fragment composition
+	 */
+	public void setMarketplace(boolean marketplace);
 
 	/**
 	 * Returns the last publish date of this fragment composition.

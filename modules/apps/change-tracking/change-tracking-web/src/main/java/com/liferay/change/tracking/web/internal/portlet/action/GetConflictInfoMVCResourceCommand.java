@@ -14,9 +14,8 @@ import com.liferay.change.tracking.model.CTEntryTable;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.change.tracking.spi.history.CTCollectionHistoryProvider;
-import com.liferay.change.tracking.web.internal.timeline.DefaultCTCollectionHistoryProvider;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.change.tracking.spi.history.CTCollectionHistoryProviderRegistry;
+import com.liferay.change.tracking.spi.history.DefaultCTCollectionHistoryProvider;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -26,21 +25,18 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.List;
 import java.util.Map;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -49,34 +45,12 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+		"jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 		"mvc.command.name=/change_tracking/get_conflict_info"
 	},
 	service = MVCResourceCommand.class
 )
 public class GetConflictInfoMVCResourceCommand extends BaseMVCResourceCommand {
-
-	@Activate
-	protected void activate(BundleContext bundleContext) {
-		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			bundleContext,
-			(Class<CTCollectionHistoryProvider<?>>)
-				(Class<?>)CTCollectionHistoryProvider.class,
-			null,
-			(serviceReference, emitter) -> {
-				CTCollectionHistoryProvider<?> ctCollectionHistoryProvider =
-					bundleContext.getService(serviceReference);
-
-				try {
-					emitter.emit(
-						_classNameLocalService.getClassNameId(
-							ctCollectionHistoryProvider.getModelClass()));
-				}
-				finally {
-					bundleContext.ungetService(serviceReference);
-				}
-			});
-	}
 
 	@Override
 	protected void doServeResource(
@@ -102,8 +76,13 @@ public class GetConflictInfoMVCResourceCommand extends BaseMVCResourceCommand {
 			return _jsonFactory.createJSONObject();
 		}
 
-		long classNameId = ParamUtil.getLong(resourceRequest, "classNameId");
 		long classPK = ParamUtil.getLong(resourceRequest, "classPK");
+
+		if (classPK == 0) {
+			return _jsonFactory.createJSONObject();
+		}
+
+		long classNameId = ParamUtil.getLong(resourceRequest, "classNameId");
 
 		List<CTEntry> ctEntries = _ctEntryLocalService.dslQuery(
 			DSLQueryFactoryUtil.select(
@@ -125,16 +104,7 @@ public class GetConflictInfoMVCResourceCommand extends BaseMVCResourceCommand {
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		if (ListUtil.isEmpty(ctEntries)) {
-			return JSONUtil.put(
-				"conflictIconClass", "change-tracking-conflict-icon"
-			).put(
-				"conflictIconLabel",
-				_language.get(themeDisplay.getLocale(), "no-modifications-help")
-			).put(
-				"conflictIconName", "check"
-			);
-		}
+		JSONObject conflictInfoJSONObject = _jsonFactory.createJSONObject();
 
 		Map<Long, List<ConflictInfo>> conflictInfoMap =
 			_ctCollectionLocalService.checkConflicts(
@@ -145,19 +115,22 @@ public class GetConflictInfoMVCResourceCommand extends BaseMVCResourceCommand {
 				_language.get(themeDisplay.getLocale(), "production"));
 
 		if (!conflictInfoMap.isEmpty()) {
-			return JSONUtil.put(
-				"conflictIconClass", "change-tracking-conflict-icon-danger"
-			).put(
-				"conflictIconLabel",
-				_language.get(
-					themeDisplay.getLocale(), "conflict-detected-help")
-			).put(
-				"conflictIconName", "warning-full"
-			);
+			conflictInfoJSONObject.put(
+				"danger",
+				JSONUtil.put(
+					"conflictIconClass", "change-tracking-conflict-icon-danger"
+				).put(
+					"conflictIconLabel",
+					_language.get(
+						themeDisplay.getLocale(), "conflict-detected-help")
+				).put(
+					"conflictIconName", "warning-full"
+				));
 		}
 
 		CTCollectionHistoryProvider<?> ctCollectionHistoryProvider =
-			_serviceTrackerMap.getService(classNameId);
+			_ctCollectionHistoryProviderRegistry.getCTCollectionHistoryProvider(
+				classNameId);
 
 		if (ctCollectionHistoryProvider == null) {
 			ctCollectionHistoryProvider =
@@ -185,30 +158,32 @@ public class GetConflictInfoMVCResourceCommand extends BaseMVCResourceCommand {
 		}
 
 		if (possibleConflictCollection != null) {
-			return JSONUtil.put(
-				"conflictIconClass", "change-tracking-conflict-icon-warning"
-			).put(
-				"conflictIconLabel",
-				_language.format(
-					themeDisplay.getLocale(), "concurrent-modification-help-x",
-					possibleConflictCollection.getName())
-			).put(
-				"conflictIconName", "warning-full"
-			);
+			conflictInfoJSONObject.put(
+				"warning",
+				JSONUtil.put(
+					"conflictIconClass", "change-tracking-conflict-icon-warning"
+				).put(
+					"conflictIconLabel",
+					_language.get(
+						themeDisplay.getLocale(),
+						"concurrent-modification-help")
+				).put(
+					"conflictIconName", "warning-full"
+				));
 		}
 
-		return JSONUtil.put(
-			"conflictIconClass", "change-tracking-conflict-icon"
-		).put(
-			"conflictIconLabel",
-			_language.get(themeDisplay.getLocale(), "no-modifications-help")
-		).put(
-			"conflictIconName", "check"
-		);
+		if (ListUtil.isEmpty(ctEntries) &&
+			(possibleConflictCollection == null)) {
+
+			return _jsonFactory.createJSONObject();
+		}
+
+		return conflictInfoJSONObject;
 	}
 
 	@Reference
-	private ClassNameLocalService _classNameLocalService;
+	private CTCollectionHistoryProviderRegistry
+		_ctCollectionHistoryProviderRegistry;
 
 	@Reference
 	private CTCollectionLocalService _ctCollectionLocalService;
@@ -221,8 +196,5 @@ public class GetConflictInfoMVCResourceCommand extends BaseMVCResourceCommand {
 
 	@Reference
 	private Language _language;
-
-	private ServiceTrackerMap<Long, CTCollectionHistoryProvider<?>>
-		_serviceTrackerMap;
 
 }

@@ -1,11 +1,13 @@
 Bundle-Name: Liferay Portal Vulcan API
 Bundle-SymbolicName: com.liferay.portal.vulcan.api
-Bundle-Version: 42.0.5
+Bundle-Version: 47.0.1
 Export-Package:\
 	com.liferay.portal.vulcan.accept.language,\
 	com.liferay.portal.vulcan.aggregation,\
 	com.liferay.portal.vulcan.batch.engine,\
 	com.liferay.portal.vulcan.batch.engine.resource,\
+	com.liferay.portal.vulcan.crud,\
+	com.liferay.portal.vulcan.custom.field,\
 	com.liferay.portal.vulcan.dto.action,\
 	com.liferay.portal.vulcan.dto.converter,\
 	com.liferay.portal.vulcan.dto.converter.util,\
@@ -20,10 +22,13 @@ Export-Package:\
 	com.liferay.portal.vulcan.graphql.servlet,\
 	com.liferay.portal.vulcan.graphql.util,\
 	com.liferay.portal.vulcan.graphql.validation,\
+	com.liferay.portal.vulcan.jackson.databind,\
 	com.liferay.portal.vulcan.jackson.databind.deser,\
 	com.liferay.portal.vulcan.jackson.databind.ser,\
+	com.liferay.portal.vulcan.jaxrs.context,\
 	com.liferay.portal.vulcan.jaxrs.exception.mapper,\
 	com.liferay.portal.vulcan.jaxrs.extension,\
+	com.liferay.portal.vulcan.jaxrs.serializer,\
 	com.liferay.portal.vulcan.list.type,\
 	com.liferay.portal.vulcan.multipart,\
 	com.liferay.portal.vulcan.openapi,\
@@ -31,6 +36,7 @@ Export-Package:\
 	com.liferay.portal.vulcan.pagination,\
 	com.liferay.portal.vulcan.pagination.provider,\
 	com.liferay.portal.vulcan.permission,\
+	com.liferay.portal.vulcan.problem,\
 	com.liferay.portal.vulcan.resource,\
 	com.liferay.portal.vulcan.resource.locator,\
 	com.liferay.portal.vulcan.status,\

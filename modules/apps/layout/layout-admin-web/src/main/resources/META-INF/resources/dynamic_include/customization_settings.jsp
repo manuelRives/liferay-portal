@@ -13,7 +13,7 @@ String portletNamespace = PortalUtil.getPortletNamespace(LayoutAdminPortletKeys.
 boolean hasUpdateLayoutPermission = GetterUtil.getBoolean(request.getAttribute(CustomizationSettingsControlMenuJSPDynamicInclude.CUSTOMIZATION_SETTINGS_LAYOUT_UPDATE_PERMISSION));
 %>
 
-<link href="<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/customization_settings.css") %>" rel="stylesheet" type="text/css" />
+<aui:link href='<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/customization_settings.css") %>' rel="stylesheet" type="text/css" />
 
 <liferay-ui:success key='<%= LayoutAdminPortletKeys.GROUP_PAGES + "requestProcessed" %>' message="your-request-completed-successfully" />
 
@@ -29,9 +29,9 @@ boolean hasUpdateLayoutPermission = GetterUtil.getBoolean(request.getAttribute(C
 							"portletNamespace", portletNamespace
 						).build()
 					%>'
+					aria-label='<%= LanguageUtil.get(request, "close") %>'
 					cssClass="close"
 					displayType="unstyled"
-					aria-label="<%= LanguageUtil.get(request, "close") %>"
 					icon="times"
 					propsTransformer="{CustomizationButtonPropsTransformer} from layout-admin-web"
 					small="<%= true %>"
@@ -97,12 +97,12 @@ boolean hasUpdateLayoutPermission = GetterUtil.getBoolean(request.getAttribute(C
 				</li>
 				<li class="c-ml-2 control-menu-nav-item d-block d-md-none flex-shrink-0">
 					<clay:dropdown-menu
-						icon="caret-bottom"
-						swapIconSide="<%= true %>"
-						label="show-actions"
 						aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 						dropdownItems="<%= customizationSettingsActionDropdownItemsProvider.getActionDropdownItems() %>"
+						icon="caret-bottom"
+						label="show-actions"
 						propsTransformer="{CustomizationSettingsActionDropdownPropsTransformer} from layout-admin-web"
+						swapIconSide="<%= true %>"
 					/>
 				</li>
 			</ul>

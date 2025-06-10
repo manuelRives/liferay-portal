@@ -27,12 +27,12 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -83,6 +83,11 @@ public class MBMessageCTDisplayRenderer
 	}
 
 	@Override
+	public boolean isHideable(MBMessage mbMessage) {
+		return mbMessage.isDiscussion();
+	}
+
+	@Override
 	public String renderPreview(DisplayContext<MBMessage> displayContext) {
 		MBMessage mbMessage = displayContext.getModel();
 
@@ -130,7 +135,7 @@ public class MBMessageCTDisplayRenderer
 		).display(
 			"last-modified", mbMessage.getModifiedDate()
 		).display(
-			"answer", mbMessage.isAnswer()
+			"answer[noun]", mbMessage.isAnswer()
 		).display(
 			"number-of-attachments", mbMessage.getAttachmentsFileEntriesCount()
 		).display(

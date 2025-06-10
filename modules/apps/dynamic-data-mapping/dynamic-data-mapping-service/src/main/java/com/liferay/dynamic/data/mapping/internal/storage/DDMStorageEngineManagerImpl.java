@@ -88,7 +88,12 @@ public class DDMStorageEngineManagerImpl implements DDMStorageEngineManager {
 
 		DDMStructure ddmStructure = ddmStorageLink.getStructure();
 
-		DDMForm ddmForm = ddmStructure.getDDMForm();
+		return getDDMFormValues(classPK, ddmStructure.getDDMForm());
+	}
+
+	@Override
+	public DDMFormValues getDDMFormValues(long classPK, DDMForm ddmForm)
+		throws PortalException {
 
 		DDMStorageAdapter ddmStorageAdapter = _getDDMStorageAdapter();
 
@@ -101,7 +106,9 @@ public class DDMStorageEngineManagerImpl implements DDMStorageEngineManager {
 		DDMFormValues ddmFormValues =
 			ddmStorageAdapterGetResponse.getDDMFormValues();
 
-		ddmFormValues.setDefaultLocale(ddmForm.getDefaultLocale());
+		if (ddmFormValues != null) {
+			ddmFormValues.setDefaultLocale(ddmForm.getDefaultLocale());
+		}
 
 		return ddmFormValues;
 	}

@@ -35,6 +35,10 @@ import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 
 import java.sql.Connection;
@@ -46,10 +50,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import javax.sql.DataSource;
 
@@ -371,8 +371,6 @@ public class SetupWizardUtil {
 
 		String companyDefaultWebId = emailAddress.substring(index + 1);
 
-		PropsUtil.set(PropsKeys.COMPANY_DEFAULT_WEB_ID, companyDefaultWebId);
-
 		unicodeProperties.put(
 			PropsKeys.COMPANY_DEFAULT_WEB_ID, companyDefaultWebId);
 
@@ -466,6 +464,8 @@ public class SetupWizardUtil {
 		company.setMx(companyDefaultWebId);
 
 		company = CompanyLocalServiceUtil.updateCompany(company);
+
+		PropsUtil.set(PropsKeys.COMPANY_DEFAULT_WEB_ID, companyDefaultWebId);
 
 		PortalInstances.initCompany(company);
 

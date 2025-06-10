@@ -52,16 +52,18 @@ public class CPSpecificationOptionLocalServiceWrapper
 
 	@Override
 	public CPSpecificationOption addCPSpecificationOption(
-			long userId, long cpOptionCategoryId,
+			String externalReferenceCode, long userId, long cpOptionCategoryId,
+			long[] listTypeDefinitionIds,
 			java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
-			boolean facetable, String key, double priority,
+			boolean facetable, String key, double priority, boolean visible,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionLocalService.addCPSpecificationOption(
-			userId, cpOptionCategoryId, titleMap, descriptionMap, facetable,
-			key, priority, serviceContext);
+			externalReferenceCode, userId, cpOptionCategoryId,
+			listTypeDefinitionIds, titleMap, descriptionMap, facetable, key,
+			priority, visible, serviceContext);
 	}
 
 	/**
@@ -270,6 +272,16 @@ public class CPSpecificationOptionLocalServiceWrapper
 			companyId, key);
 	}
 
+	@Override
+	public CPSpecificationOption
+		fetchCPSpecificationOptionByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _cpSpecificationOptionLocalService.
+			fetchCPSpecificationOptionByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the cp specification option with the matching UUID and company.
 	 *
@@ -315,6 +327,17 @@ public class CPSpecificationOptionLocalServiceWrapper
 
 		return _cpSpecificationOptionLocalService.getCPSpecificationOption(
 			companyId, key);
+	}
+
+	@Override
+	public CPSpecificationOption
+			getCPSpecificationOptionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpSpecificationOptionLocalService.
+			getCPSpecificationOptionByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	/**
@@ -407,12 +430,13 @@ public class CPSpecificationOptionLocalServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.search.BaseModelSearchResult
 		<CPSpecificationOption> searchCPSpecificationOptions(
-				long companyId, Boolean facetable, String keywords, int start,
-				int end, com.liferay.portal.kernel.search.Sort sort)
+				long companyId, Boolean facetable, Boolean visible,
+				String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionLocalService.searchCPSpecificationOptions(
-			companyId, facetable, keywords, start, end, sort);
+			companyId, facetable, visible, keywords, start, end, sort);
 	}
 
 	@Override
@@ -444,16 +468,18 @@ public class CPSpecificationOptionLocalServiceWrapper
 
 	@Override
 	public CPSpecificationOption updateCPSpecificationOption(
-			long cpSpecificationOptionId, long cpOptionCategoryId,
+			String externalReferenceCode, long cpSpecificationOptionId,
+			long cpOptionCategoryId, long[] listTypeDefinitionIds,
 			java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
-			boolean facetable, String key, double priority,
+			boolean facetable, String key, double priority, boolean visible,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionLocalService.updateCPSpecificationOption(
-			cpSpecificationOptionId, cpOptionCategoryId, titleMap,
-			descriptionMap, facetable, key, priority, serviceContext);
+			externalReferenceCode, cpSpecificationOptionId, cpOptionCategoryId,
+			listTypeDefinitionIds, titleMap, descriptionMap, facetable, key,
+			priority, visible, serviceContext);
 	}
 
 	@Override

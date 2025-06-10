@@ -1,4 +1,4 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 @ignore = "true"
 definition {
 
@@ -7,7 +7,7 @@ definition {
 	property portal.upstream = "true";
 	property test.liferay.virtual.instance = "false";
 	property test.run.type = "single";
-	property testray.main.component.name = "Online Editing";
+	property testray.main.component.name = "External Document Repositories";
 
 	var pageName = "Documents and Media Page";
 	var portletName = "Documents and Media";
@@ -832,10 +832,10 @@ definition {
 
 		WaitForElementPresent(locator1 = "UserBar#USER_SIGN_IN");
 
-		AssertConsoleTextNotPresent(value1 = "javax.portlet.PortletException:");
+		AssertConsoleTextNotPresent(value1 = "jakarta.portlet.PortletException:");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
@@ -862,7 +862,7 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		JSONRole.addRegularRole(roleTitle = "Regular Role");
+		JSONRole.addRegularRole(roleKey = "Regular Role");
 
 		JSONRole.assignRoleToUser(
 			roleTitle = "Regular Role",
@@ -900,7 +900,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
@@ -966,7 +966,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");

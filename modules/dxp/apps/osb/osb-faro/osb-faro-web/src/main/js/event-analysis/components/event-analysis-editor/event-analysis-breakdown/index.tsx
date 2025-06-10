@@ -357,7 +357,7 @@ const getColumns = ({
 	value
 }) => {
 	const columns = order.map((breakdownId: string, i: number) => {
-		const {attributeId, sortType} = breakdowns[breakdownId];
+		const {attributeId, attributeType, sortType} = breakdowns[breakdownId];
 
 		const accessor = `breakdown${i}`;
 
@@ -395,11 +395,12 @@ const getColumns = ({
 							'align-top',
 							className
 						)}
+						data-testid={decodeURIComponent(dataValue.name)}
 						rowSpan={dataValue.rowSpan}
 					>
 						<TextTruncate
 							maxCharLength={maxBreakdownLength}
-							title={dataValue.name}
+							title={decodeURIComponent(dataValue.name)}
 						/>
 					</td>
 				);
@@ -409,7 +410,7 @@ const getColumns = ({
 			},
 			label: (
 				<div>
-					{/* TODO: Enable when multiple types available <span className='breakdown-category'>{attributeType}</span>*/}
+					<span className='breakdown-category'>{attributeType}</span>
 
 					{attributes[attributeId].displayName}
 				</div>

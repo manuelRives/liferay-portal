@@ -6,7 +6,11 @@
 package com.liferay.portal.workflow.kaleo.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
+
+import java.util.List;
 
 /**
  * Provides the remote service utility for KaleoDefinition. This utility wraps
@@ -28,13 +32,36 @@ public class KaleoDefinitionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.workflow.kaleo.service.impl.KaleoDefinitionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static KaleoDefinition addKaleoDefinition(
-			String name, String title, String description, String content,
-			String scope, int version,
+			String externalReferenceCode, String name, String title,
+			String description, String content, String scope, int version,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addKaleoDefinition(
-			name, title, description, content, scope, version, serviceContext);
+			externalReferenceCode, name, title, description, content, scope,
+			version, serviceContext);
+	}
+
+	public static KaleoDefinition getKaleoDefinition(long kaleoDefinitionId)
+		throws PortalException {
+
+		return getService().getKaleoDefinition(kaleoDefinitionId);
+	}
+
+	public static KaleoDefinition getKaleoDefinition(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getKaleoDefinition(
+			externalReferenceCode, companyId);
+	}
+
+	public static KaleoDefinition getKaleoDefinition(
+			String name,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().getKaleoDefinition(name, serviceContext);
 	}
 
 	/**
@@ -46,24 +73,43 @@ public class KaleoDefinitionServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
+	public static List<KaleoDefinition> getScopeKaleoDefinitions(
+			String scope, boolean active, int start, int end,
+			OrderByComparator<KaleoDefinition> orderByComparator,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().getScopeKaleoDefinitions(
+			scope, active, start, end, orderByComparator, serviceContext);
+	}
+
+	public static List<KaleoDefinition> getScopeKaleoDefinitions(
+			String scope, int start, int end,
+			OrderByComparator<KaleoDefinition> orderByComparator,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().getScopeKaleoDefinitions(
+			scope, start, end, orderByComparator, serviceContext);
+	}
+
 	public static KaleoDefinition updateKaleoDefinition(
-			long kaleoDefinitionId, String title, String description,
-			String content,
+			String externalReferenceCode, long kaleoDefinitionId, String title,
+			String description, String content,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateKaleoDefinition(
-			kaleoDefinitionId, title, description, content, serviceContext);
+			externalReferenceCode, kaleoDefinitionId, title, description,
+			content, serviceContext);
 	}
 
 	public static KaleoDefinitionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(KaleoDefinitionService service) {
-		_service = service;
-	}
-
-	private static volatile KaleoDefinitionService _service;
+	private static final Snapshot<KaleoDefinitionService> _serviceSnapshot =
+		new Snapshot<>(
+			KaleoDefinitionServiceUtil.class, KaleoDefinitionService.class);
 
 }

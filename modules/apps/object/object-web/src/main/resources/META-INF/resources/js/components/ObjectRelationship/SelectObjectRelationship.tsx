@@ -10,33 +10,32 @@ import {
 } from '@liferay/object-js-components-web';
 import React, {useEffect, useMemo, useState} from 'react';
 
-interface IProps {
+interface SelectObjectRelationshipProps {
 	error?: string;
 	objectDefinitionExternalReferenceCode1: string;
 	onChange: (objectFieldName: string) => void;
 	value?: string;
 }
 
-export default function SelectRelationship({
+export function SelectObjectRelationship({
 	error,
 	objectDefinitionExternalReferenceCode1,
 	onChange,
 	value,
-	...otherProps
-}: IProps) {
-	const [creationLanguageId, setCreationLanguageId] = useState<
-		Liferay.Language.Locale
-	>();
+}: SelectObjectRelationshipProps) {
+	const [creationLanguageId, setCreationLanguageId] =
+		useState<Liferay.Language.Locale>();
 	const [objectFields, setObjectFields] = useState<ObjectField[]>([]);
 	const objectFieldItems = useMemo(
 		() =>
 			objectFields.map(({label, name}) => {
 				return {
-					label: stringUtils.getLocalizableLabel(
-						creationLanguageId as Liferay.Language.Locale,
-						label,
-						name
-					),
+					label: stringUtils.getLocalizableLabel({
+						fallbackLabel: name,
+						fallbackLanguageId:
+							creationLanguageId as Liferay.Language.Locale,
+						labels: label,
+					}),
 					value: name,
 				};
 			}),
@@ -50,21 +49,25 @@ export default function SelectRelationship({
 	useEffect(() => {
 		if (objectDefinitionExternalReferenceCode1) {
 			const makeFetch = async () => {
-				const objectFields = await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
-					objectDefinitionExternalReferenceCode1
-				);
+				const objectFields =
+					await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
+						objectDefinitionExternalReferenceCode1
+					);
 
-				const objectDefinition = await API.getObjectDefinitionByExternalReferenceCode(
-					objectDefinitionExternalReferenceCode1
-				);
+				const objectDefinition =
+					await API.getObjectDefinitionByExternalReferenceCode(
+						objectDefinitionExternalReferenceCode1
+					);
 
 				setCreationLanguageId(objectDefinition.defaultLanguageId);
 
 				const objectFieldOptions = objectFields.filter(
 					({objectFieldSettings}) => {
-						const objectDefinition1ShortName = objectFieldSettings?.find(
-							({name}) => name === 'objectDefinition1ShortName'
-						);
+						const objectDefinition1ShortName =
+							objectFieldSettings?.find(
+								({name}) =>
+									name === 'objectDefinition1ShortName'
+							);
 
 						return (
 							objectDefinition1ShortName &&
@@ -103,7 +106,6 @@ export default function SelectRelationship({
 			tooltip={Liferay.Language.get(
 				'choose-a-relationship-field-from-the-selected-object'
 			)}
-			{...otherProps}
 		/>
 	);
 }

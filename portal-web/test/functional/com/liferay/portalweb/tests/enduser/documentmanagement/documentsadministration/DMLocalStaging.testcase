@@ -4,12 +4,16 @@ definition {
 	property custom.properties = "default.layout.template.id=1_column${line.separator}dl.actions.visible=true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Document Management";
+	property testray.main.component.name = "Documents and Media";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
@@ -308,7 +312,6 @@ definition {
 	@refactordone
 	test CanOnlyCommentOnLiveSite {
 		property portal.acceptance = "true";
-		property testray.component.names = "Comment";
 
 		JSONLayout.addWidgetToPublicLayout(
 			column = 1,
@@ -928,7 +931,6 @@ definition {
 			dmDocumentTitle = "DM Document Title",
 			groupName = "Site Name-staging",
 			mimeType = "image/jpeg",
-			site = "false",
 			sourceFileName = "Document_1.jpeg");
 
 		DMNavigator.openToEditEntryInSite(
@@ -1376,7 +1378,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Notifications.viewBadgeCount(notificationCount = 1);
@@ -1392,6 +1394,14 @@ definition {
 	@description = "This test covers LPS-154415. It checks that an external video displays properly in the Media Gallery widget after the friendlyURL has been edited and published on a site."
 	@priority = 4
 	test CanViewExternalVideoInMGAfterFriendlyURLIsUpdated {
+		PortalSettings.openToConfigInInstanceSettings(portletId = "com.liferay.portal.security.iframe.sanitizer.configuration.IFrameConfiguration");
+
+		SystemSettings.configureSystemSetting(
+			enableSetting = "false",
+			settingFieldName = "Enabled");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name-staging");
+
 		JSONDepot.addDepot(
 			depotDescription = "This is the description of a depot",
 			depotName = "Test Depot Name");
@@ -1481,6 +1491,14 @@ definition {
 	@description = "This test covers LPS-154396."
 	@priority = 4
 	test CanViewExternalVideoInMGAfterPublish {
+		PortalSettings.openToConfigInInstanceSettings(portletId = "com.liferay.portal.security.iframe.sanitizer.configuration.IFrameConfiguration");
+
+		SystemSettings.configureSystemSetting(
+			enableSetting = "false",
+			settingFieldName = "Enabled");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name-staging");
+
 		VideoShortcut.addCP(
 			videoShortcutTitle = "Test YouTube Video",
 			videoURL = "https://www.youtube.com/watch?v=HOdbzGCI5ME");
@@ -1522,6 +1540,14 @@ definition {
 	@description = "This test covers LPS-154417. It checks that an external video with a custom friendlyURL added to the Web content field displays properly after its friendlyURL is edited and published on a site"
 	@priority = 4
 	test CanViewExternalVideotInWCAfterFriendlyURLIsUpdated {
+		PortalSettings.openToConfigInInstanceSettings(portletId = "com.liferay.portal.security.iframe.sanitizer.configuration.IFrameConfiguration");
+
+		SystemSettings.configureSystemSetting(
+			enableSetting = "false",
+			settingFieldName = "Enabled");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name-staging");
+
 		VideoShortcut.addCP(
 			videoShortcutTitle = "Test YouTube Video",
 			videoURL = "https://www.youtube.com/watch?v=HOdbzGCI5ME");
@@ -1551,7 +1577,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Staging DM Page",
@@ -1899,7 +1925,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Staging DM Page",
@@ -2059,10 +2085,6 @@ definition {
 		DMDocument.viewWebDAVURL(
 			dmDocumentFileName = "Document_3Edit.png",
 			siteName = "site-name");
-
-		DMDocument.viewDocumentMetadataCP(
-			metadataData = "image/png",
-			metadataLabel = "Content Type");
 	}
 
 	@description = "This test covers LPS-155794. It ensures that an image that was published on a site can still be accessed after local staging is disabled."
@@ -2257,7 +2279,7 @@ definition {
 				webContentImage = "Document_2.jpg",
 				webContentTitle = "Web Content Title");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		Navigator.gotoStagedSitePage(
@@ -2357,7 +2379,7 @@ definition {
 				webContentImage = "Document_2.jpg",
 				webContentTitle = "Web Content Title");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		Navigator.gotoStagedSitePage(

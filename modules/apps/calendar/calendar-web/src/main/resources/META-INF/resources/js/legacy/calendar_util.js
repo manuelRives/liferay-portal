@@ -17,7 +17,8 @@ AUI.add(
 			return Lang.toInt(value, 10, 0);
 		};
 
-		const REGEX_UNFILLED_PARAMETER = /\{\s*([^|}]+?)\s*(?:\|([^}]*))?\s*\}/g;
+		const REGEX_UNFILLED_PARAMETER =
+			/\{\s*([^|}]+?)\s*(?:\|([^}]*))?\s*\}/g;
 
 		const STR_DASH = '-';
 
@@ -119,10 +120,22 @@ AUI.add(
 				scheduler.syncEventsUI();
 			},
 
-			fillURLParameters(url, data) {
-				url = Lang.sub(url, data);
+			fillURLParameters(urlString, data) {
+				const url = new URL(
+					Lang.sub(urlString, data).replace(
+						REGEX_UNFILLED_PARAMETER,
+						''
+					)
+				);
 
-				return url.replace(REGEX_UNFILLED_PARAMETER, '');
+				if (url.searchParams.has('doAsUserId')) {
+					url.searchParams.set(
+						'doAsUserId',
+						Liferay.ThemeDisplay.getDoAsUserIdEncoded()
+					);
+				}
+
+				return url.toString();
 			},
 
 			getCalendarName(name, calendarResourceName) {
@@ -159,6 +172,27 @@ AUI.add(
 				return output;
 			},
 
+			getInitialScroll(date, timeZone) {
+				const languageId = Liferay.ThemeDisplay.getBCP47LanguageId();
+
+				const timeZoneDateString = date.toLocaleString(languageId, {
+					timeZone,
+				});
+
+				const timeZoneDate = new Date(timeZoneDateString);
+
+				const timeZoneHour = timeZoneDate.getHours();
+
+				timeZoneDate.setHours(
+					timeZoneHour >= 0 && timeZoneHour <= 2
+						? 0
+						: timeZoneHour - 2
+				);
+				timeZoneDate.setMinutes(0);
+
+				return timeZoneDate;
+			},
+
 			getLocalizationMap(value) {
 				const map = {};
 
@@ -175,16 +209,13 @@ AUI.add(
 				const oldCalendarId = schedulerEvent.get('calendarId');
 
 				if (scheduler) {
-					const calendarContainer = scheduler.get(
-						'calendarContainer'
-					);
+					const calendarContainer =
+						scheduler.get('calendarContainer');
 
-					const newCalendar = calendarContainer.getCalendar(
-						newCalendarId
-					);
-					const oldCalendar = calendarContainer.getCalendar(
-						oldCalendarId
-					);
+					const newCalendar =
+						calendarContainer.getCalendar(newCalendarId);
+					const oldCalendar =
+						calendarContainer.getCalendar(oldCalendarId);
 
 					if (oldCalendar !== newCalendar) {
 						oldCalendar.remove(schedulerEvent);

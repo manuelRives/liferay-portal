@@ -7,6 +7,7 @@ package com.liferay.asset.publisher.web.internal.display.context;
 
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
 import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCriterion;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
@@ -21,14 +22,14 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.search.GroupSearch;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -58,7 +59,11 @@ public class ChildSitesItemSelectorViewDisplayContext
 		groupSearch.setResultsAndTotal(
 			_filterGroups(
 				GroupLocalServiceUtil.search(
-					themeDisplay.getCompanyId(), _CLASS_NAME_IDS,
+					themeDisplay.getCompanyId(),
+					new long[] {
+						PortalUtil.getClassNameId(Group.class),
+						PortalUtil.getClassNameId(Organization.class)
+					},
 					ParamUtil.getString(httpServletRequest, "keywords"),
 					_getGroupParams(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 					groupSearch.getOrderByComparator()),
@@ -70,15 +75,15 @@ public class ChildSitesItemSelectorViewDisplayContext
 	private List<Group> _filterGroups(
 		List<Group> groups, PermissionChecker permissionChecker) {
 
-		List<Group> filteredGroups = new ArrayList<>();
+		return TransformUtil.transform(
+			groups,
+			group -> {
+				if (permissionChecker.isGroupAdmin(group.getGroupId())) {
+					return group;
+				}
 
-		for (Group group : groups) {
-			if (permissionChecker.isGroupAdmin(group.getGroupId())) {
-				filteredGroups.add(group);
-			}
-		}
-
-		return filteredGroups;
+				return null;
+			});
 	}
 
 	private LinkedHashMap<String, Object> _getGroupParams() {
@@ -123,11 +128,6 @@ public class ChildSitesItemSelectorViewDisplayContext
 
 		return _groupParams;
 	}
-
-	private static final long[] _CLASS_NAME_IDS = {
-		PortalUtil.getClassNameId(Group.class),
-		PortalUtil.getClassNameId(Organization.class)
-	};
 
 	private final GroupItemSelectorCriterion _groupItemSelectorCriterion;
 	private LinkedHashMap<String, Object> _groupParams;

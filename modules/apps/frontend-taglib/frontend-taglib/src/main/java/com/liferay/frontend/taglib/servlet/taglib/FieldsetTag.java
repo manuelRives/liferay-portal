@@ -14,11 +14,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.aui.AUIUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Eudaldo Alonso
@@ -60,6 +60,10 @@ public class FieldsetTag extends IncludeTag {
 		return _column;
 	}
 
+	public boolean isDeprecated() {
+		return _deprecated;
+	}
+
 	public boolean isDisabled() {
 		return _disabled;
 	}
@@ -82,6 +86,10 @@ public class FieldsetTag extends IncludeTag {
 
 	public void setCssClass(String cssClass) {
 		_cssClass = cssClass;
+	}
+
+	public void setDeprecated(boolean deprecated) {
+		_deprecated = deprecated;
 	}
 
 	public void setDisabled(boolean disabled) {
@@ -119,6 +127,7 @@ public class FieldsetTag extends IncludeTag {
 		_collapsible = false;
 		_column = false;
 		_cssClass = null;
+		_deprecated = false;
 		_disabled = false;
 		_helpMessage = null;
 		_id = null;
@@ -168,6 +177,9 @@ public class FieldsetTag extends IncludeTag {
 		httpServletRequest.setAttribute(
 			"liferay-frontend:fieldset:cssClass", _cssClass);
 		httpServletRequest.setAttribute(
+			"liferay-frontend:fieldset:deprecated",
+			String.valueOf(_deprecated));
+		httpServletRequest.setAttribute(
 			"liferay-frontend:fieldset:disabled", String.valueOf(_disabled));
 		httpServletRequest.setAttribute(
 			"liferay-frontend:fieldset:helpMessage", _helpMessage);
@@ -207,6 +219,7 @@ public class FieldsetTag extends IncludeTag {
 	private boolean _collapsible;
 	private boolean _column;
 	private String _cssClass;
+	private boolean _deprecated;
 	private boolean _disabled;
 	private String _helpMessage;
 	private String _id;

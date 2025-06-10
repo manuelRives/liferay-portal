@@ -41,16 +41,18 @@ public class PostgreSQLDB extends BaseDB {
 		String tableName, String columnName) {
 
 		return StringBundler.concat(
-			"create or replace rule delete_", tableName, StringPool.UNDERLINE,
+			"create or replace rule delete_",
+			StringUtil.replace(tableName, '.', '_'), StringPool.UNDERLINE,
 			columnName, " as on delete to ", tableName,
 			" do also select case when exists(select 1 from ",
 			"pg_catalog.pg_largeobject_metadata where (oid = old.", columnName,
 			")) then lo_unlink(old.", columnName, ") end from ", tableName,
 			" where ", tableName, StringPool.PERIOD, columnName, " = old.",
-			columnName, ";\ncreate or replace rule update_", tableName,
-			StringPool.UNDERLINE, columnName, " as on update to ", tableName,
-			" where old.", columnName, " is distinct from new.", columnName,
-			" and old.", columnName,
+			columnName, ";\ncreate or replace rule update_",
+			StringUtil.replace(tableName, '.', '_'), StringPool.UNDERLINE,
+			columnName, " as on update to ", tableName, " where old.",
+			columnName, " is distinct from new.", columnName, " and old.",
+			columnName,
 			" is not null do also select case when exists(select 1 from ",
 			"pg_catalog.pg_largeobject_metadata where (oid = old.", columnName,
 			")) then lo_unlink(old.", columnName, ") end from ", tableName,
@@ -76,6 +78,21 @@ public class PostgreSQLDB extends BaseDB {
 		template = reword(template);
 
 		return template;
+	}
+
+	@Override
+	public String getCharacterSet(Connection connection) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"show server_encoding")) {
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getString(1);
+				}
+			}
+		}
+
+		return StringPool.BLANK;
 	}
 
 	@Override
@@ -126,6 +143,13 @@ public class PostgreSQLDB extends BaseDB {
 		return StringBundler.concat(
 			"drop database ", databaseName, ";\n", "create database ",
 			databaseName, " encoding = 'UNICODE';\n");
+	}
+
+	@Override
+	public boolean isSupportsCharacterSet(Connection connection)
+		throws SQLException {
+
+		return Objects.equals(getCharacterSet(connection), "UTF8");
 	}
 
 	@Override
@@ -301,6 +325,11 @@ public class PostgreSQLDB extends BaseDB {
 	}
 
 	@Override
+	protected String getIndexColumnName(String indexColumnName) {
+		return StringUtil.replaceFirst(indexColumnName, "left\"(", "left(");
+	}
+
+	@Override
 	protected int[] getSQLTypes() {
 		return _SQL_TYPES;
 	}
@@ -331,6 +360,10 @@ public class PostgreSQLDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException {
+		if (Validator.isNull(data)) {
+			return null;
+		}
+
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
@@ -428,6 +461,7 @@ public class PostgreSQLDB extends BaseDB {
 						createRulesSQLSB.append(StringPool.NEW_LINE);
 						createRulesSQLSB.append(
 							getCreateRulesSQL(tableName, tokens[0]));
+						createRulesSQLSB.append(StringPool.NEW_LINE);
 					}
 				}
 				else if (line.contains("\\\'")) {

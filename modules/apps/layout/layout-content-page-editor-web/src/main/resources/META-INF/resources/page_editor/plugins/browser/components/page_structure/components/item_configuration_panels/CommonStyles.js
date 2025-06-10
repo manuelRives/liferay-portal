@@ -45,7 +45,7 @@ export function CommonStyles({
 	const handleValueSelect = (name, value) => {
 		updateItemStyle({
 			dispatch,
-			itemId: item.itemId,
+			itemIds: [item.itemId],
 			selectedViewportSize,
 			styleName: name,
 			styleValue: value,
@@ -146,6 +146,17 @@ function filterCommonStyles({item, permissions, role, styles}) {
 					),
 				};
 			});
+	}
+
+	if (item.type === LAYOUT_DATA_ITEM_TYPES.formStepContainer) {
+		nextStyles = nextStyles.map((fieldSet) => {
+			return {
+				...fieldSet,
+				styles: fieldSet.styles.filter(
+					(field) => field.name !== 'display'
+				),
+			};
+		});
 	}
 
 	// Filter styles based on permissions

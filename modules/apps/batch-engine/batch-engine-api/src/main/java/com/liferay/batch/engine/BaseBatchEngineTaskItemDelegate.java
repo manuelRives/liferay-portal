@@ -11,6 +11,8 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.odata.entity.EntityModel;
 
+import jakarta.ws.rs.core.UriInfo;
+
 import java.io.Serializable;
 
 import java.util.Collection;
@@ -18,8 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.ws.rs.core.UriInfo;
 
 /**
  * @author Ivica Cardic
@@ -34,7 +34,7 @@ public abstract class BaseBatchEngineTaskItemDelegate<T>
 		throws Exception {
 
 		batchEngineImportStrategy.apply(
-			items, item -> createItem(item, parameters));
+			this, items, item -> createItem(item, parameters));
 	}
 
 	public T createItem(T item, Map<String, Serializable> parameters)
@@ -48,9 +48,13 @@ public abstract class BaseBatchEngineTaskItemDelegate<T>
 			Collection<T> items, Map<String, Serializable> parameters)
 		throws Exception {
 
-		for (T item : items) {
-			deleteItem(item, parameters);
-		}
+		batchEngineImportStrategy.apply(
+			this, items,
+			item -> {
+				deleteItem(item, parameters);
+
+				return item;
+			});
 	}
 
 	public void deleteItem(T item, Map<String, Serializable> parameters)
@@ -76,20 +80,12 @@ public abstract class BaseBatchEngineTaskItemDelegate<T>
 
 	@Override
 	public boolean hasCreateStrategy(String createStrategy) {
-		if (_availableCreateStrategies.contains(createStrategy)) {
-			return true;
-		}
-
-		return false;
+		return _availableCreateStrategies.contains(createStrategy);
 	}
 
 	@Override
 	public boolean hasUpdateStrategy(String updateStrategy) {
-		if (_availableUpdateStrategies.contains(updateStrategy)) {
-			return true;
-		}
-
-		return false;
+		return _availableUpdateStrategies.contains(updateStrategy);
 	}
 
 	@Override

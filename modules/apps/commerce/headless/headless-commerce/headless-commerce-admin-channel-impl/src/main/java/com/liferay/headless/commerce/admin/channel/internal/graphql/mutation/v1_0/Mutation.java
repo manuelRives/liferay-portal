@@ -6,25 +6,31 @@
 package com.liferay.headless.commerce.admin.channel.internal.graphql.mutation.v1_0;
 
 import com.liferay.headless.commerce.admin.channel.dto.v1_0.AccountAddressChannel;
+import com.liferay.headless.commerce.admin.channel.dto.v1_0.CategoryDisplayPage;
 import com.liferay.headless.commerce.admin.channel.dto.v1_0.Channel;
 import com.liferay.headless.commerce.admin.channel.dto.v1_0.ChannelAccount;
+import com.liferay.headless.commerce.admin.channel.dto.v1_0.DefaultCategoryDisplayPage;
+import com.liferay.headless.commerce.admin.channel.dto.v1_0.DefaultProductDisplayPage;
 import com.liferay.headless.commerce.admin.channel.dto.v1_0.PaymentMethodGroupRelOrderType;
 import com.liferay.headless.commerce.admin.channel.dto.v1_0.PaymentMethodGroupRelTerm;
+import com.liferay.headless.commerce.admin.channel.dto.v1_0.ProductDisplayPage;
 import com.liferay.headless.commerce.admin.channel.dto.v1_0.ShippingFixedOptionOrderType;
 import com.liferay.headless.commerce.admin.channel.dto.v1_0.ShippingFixedOptionTerm;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.AccountAddressChannelResource;
+import com.liferay.headless.commerce.admin.channel.resource.v1_0.CategoryDisplayPageResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ChannelAccountResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ChannelResource;
+import com.liferay.headless.commerce.admin.channel.resource.v1_0.DefaultCategoryDisplayPageResource;
+import com.liferay.headless.commerce.admin.channel.resource.v1_0.DefaultProductDisplayPageResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.PaymentMethodGroupRelOrderTypeResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.PaymentMethodGroupRelTermResource;
+import com.liferay.headless.commerce.admin.channel.resource.v1_0.ProductDisplayPageResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ShippingFixedOptionOrderTypeResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ShippingFixedOptionTermResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ShippingMethodResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.TaxCategoryResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
@@ -33,15 +39,15 @@ import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTa
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -58,6 +64,14 @@ public class Mutation {
 
 		_accountAddressChannelResourceComponentServiceObjects =
 			accountAddressChannelResourceComponentServiceObjects;
+	}
+
+	public static void setCategoryDisplayPageResourceComponentServiceObjects(
+		ComponentServiceObjects<CategoryDisplayPageResource>
+			categoryDisplayPageResourceComponentServiceObjects) {
+
+		_categoryDisplayPageResourceComponentServiceObjects =
+			categoryDisplayPageResourceComponentServiceObjects;
 	}
 
 	public static void setChannelResourceComponentServiceObjects(
@@ -77,6 +91,24 @@ public class Mutation {
 	}
 
 	public static void
+		setDefaultCategoryDisplayPageResourceComponentServiceObjects(
+			ComponentServiceObjects<DefaultCategoryDisplayPageResource>
+				defaultCategoryDisplayPageResourceComponentServiceObjects) {
+
+		_defaultCategoryDisplayPageResourceComponentServiceObjects =
+			defaultCategoryDisplayPageResourceComponentServiceObjects;
+	}
+
+	public static void
+		setDefaultProductDisplayPageResourceComponentServiceObjects(
+			ComponentServiceObjects<DefaultProductDisplayPageResource>
+				defaultProductDisplayPageResourceComponentServiceObjects) {
+
+		_defaultProductDisplayPageResourceComponentServiceObjects =
+			defaultProductDisplayPageResourceComponentServiceObjects;
+	}
+
+	public static void
 		setPaymentMethodGroupRelOrderTypeResourceComponentServiceObjects(
 			ComponentServiceObjects<PaymentMethodGroupRelOrderTypeResource>
 				paymentMethodGroupRelOrderTypeResourceComponentServiceObjects) {
@@ -92,6 +124,14 @@ public class Mutation {
 
 		_paymentMethodGroupRelTermResourceComponentServiceObjects =
 			paymentMethodGroupRelTermResourceComponentServiceObjects;
+	}
+
+	public static void setProductDisplayPageResourceComponentServiceObjects(
+		ComponentServiceObjects<ProductDisplayPageResource>
+			productDisplayPageResourceComponentServiceObjects) {
+
+		_productDisplayPageResourceComponentServiceObjects =
+			productDisplayPageResourceComponentServiceObjects;
 	}
 
 	public static void
@@ -193,88 +233,78 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public Response createChannelsPageExportBatch(
-			@GraphQLName("search") String search,
-			@GraphQLName("filter") String filterString,
-			@GraphQLName("sort") String sortsString,
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("contentType") String contentType,
-			@GraphQLName("fieldNames") String fieldNames)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_channelResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			channelResource -> channelResource.postChannelsPageExportBatch(
-				search, _filterBiFunction.apply(channelResource, filterString),
-				_sortsBiFunction.apply(channelResource, sortsString),
-				callbackURL, contentType, fieldNames));
-	}
-
-	@GraphQLField
-	public Channel createChannel(@GraphQLName("channel") Channel channel)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_channelResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			channelResource -> channelResource.postChannel(channel));
-	}
-
-	@GraphQLField
-	public Response createChannelBatch(
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_channelResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			channelResource -> channelResource.postChannelBatch(
-				callbackURL, object));
-	}
-
-	@GraphQLField
-	public boolean deleteChannelByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+	public boolean deleteCategoryDisplayPage(@GraphQLName("id") Long id)
 		throws Exception {
 
 		_applyVoidComponentServiceObjects(
-			_channelResourceComponentServiceObjects,
+			_categoryDisplayPageResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			channelResource ->
-				channelResource.deleteChannelByExternalReferenceCode(
-					externalReferenceCode));
+			categoryDisplayPageResource ->
+				categoryDisplayPageResource.deleteCategoryDisplayPage(id));
 
 		return true;
 	}
 
 	@GraphQLField
-	public Channel patchChannelByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("channel") Channel channel)
+	public Response deleteCategoryDisplayPageBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_channelResourceComponentServiceObjects,
+			_categoryDisplayPageResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			channelResource ->
-				channelResource.patchChannelByExternalReferenceCode(
-					externalReferenceCode, channel));
+			categoryDisplayPageResource ->
+				categoryDisplayPageResource.deleteCategoryDisplayPageBatch(
+					callbackURL, object));
 	}
 
 	@GraphQLField
-	public Channel updateChannelByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("channel") Channel channel)
+	public CategoryDisplayPage patchCategoryDisplayPage(
+			@GraphQLName("id") Long id,
+			@GraphQLName("categoryDisplayPage") CategoryDisplayPage
+				categoryDisplayPage)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_channelResourceComponentServiceObjects,
+			_categoryDisplayPageResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			channelResource ->
-				channelResource.putChannelByExternalReferenceCode(
-					externalReferenceCode, channel));
+			categoryDisplayPageResource ->
+				categoryDisplayPageResource.patchCategoryDisplayPage(
+					id, categoryDisplayPage));
+	}
+
+	@GraphQLField
+	public CategoryDisplayPage
+			createChannelByExternalReferenceCodeCategoryDisplayPage(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode,
+				@GraphQLName("categoryDisplayPage") CategoryDisplayPage
+					categoryDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_categoryDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			categoryDisplayPageResource ->
+				categoryDisplayPageResource.
+					postChannelByExternalReferenceCodeCategoryDisplayPage(
+						externalReferenceCode, categoryDisplayPage));
+	}
+
+	@GraphQLField
+	public CategoryDisplayPage createChannelIdCategoryDisplayPage(
+			@GraphQLName("id") Long id,
+			@GraphQLName("categoryDisplayPage") CategoryDisplayPage
+				categoryDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_categoryDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			categoryDisplayPageResource ->
+				categoryDisplayPageResource.postChannelIdCategoryDisplayPage(
+					id, categoryDisplayPage));
 	}
 
 	@GraphQLField
@@ -303,6 +333,21 @@ public class Mutation {
 	}
 
 	@GraphQLField
+	public boolean deleteChannelByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_channelResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			channelResource ->
+				channelResource.deleteChannelByExternalReferenceCode(
+					externalReferenceCode));
+
+		return true;
+	}
+
+	@GraphQLField
 	public Channel patchChannel(
 			@GraphQLName("channelId") Long channelId,
 			@GraphQLName("channel") Channel channel)
@@ -313,6 +358,62 @@ public class Mutation {
 			this::_populateResourceContext,
 			channelResource -> channelResource.patchChannel(
 				channelId, channel));
+	}
+
+	@GraphQLField
+	public Channel patchChannelByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("channel") Channel channel)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_channelResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			channelResource ->
+				channelResource.patchChannelByExternalReferenceCode(
+					externalReferenceCode, channel));
+	}
+
+	@GraphQLField
+	public Channel createChannel(@GraphQLName("channel") Channel channel)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_channelResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			channelResource -> channelResource.postChannel(channel));
+	}
+
+	@GraphQLField
+	public Response createChannelBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_channelResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			channelResource -> channelResource.postChannelBatch(
+				callbackURL, object));
+	}
+
+	@GraphQLField
+	public Response createChannelsPageExportBatch(
+			@GraphQLName("search") String search,
+			@GraphQLName("filter") String filterString,
+			@GraphQLName("sort") String sortsString,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_channelResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			channelResource -> channelResource.postChannelsPageExportBatch(
+				search, _filterBiFunction.apply(channelResource, filterString),
+				_sortsBiFunction.apply(channelResource, sortsString),
+				callbackURL, contentType, fieldNames));
 	}
 
 	@GraphQLField
@@ -338,6 +439,20 @@ public class Mutation {
 			this::_populateResourceContext,
 			channelResource -> channelResource.putChannelBatch(
 				callbackURL, object));
+	}
+
+	@GraphQLField
+	public Channel updateChannelByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("channel") Channel channel)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_channelResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			channelResource ->
+				channelResource.putChannelByExternalReferenceCode(
+					externalReferenceCode, channel));
 	}
 
 	@GraphQLField
@@ -395,6 +510,140 @@ public class Mutation {
 			channelAccountResource ->
 				channelAccountResource.postChannelIdChannelAccount(
 					id, channelAccount));
+	}
+
+	@GraphQLField
+	public boolean
+			deleteChannelByExternalReferenceCodeDefaultCategoryDisplayPage(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_defaultCategoryDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			defaultCategoryDisplayPageResource ->
+				defaultCategoryDisplayPageResource.
+					deleteChannelByExternalReferenceCodeDefaultCategoryDisplayPage(
+						externalReferenceCode));
+
+		return true;
+	}
+
+	@GraphQLField
+	public boolean deleteChannelIdDefaultCategoryDisplayPage(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_defaultCategoryDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			defaultCategoryDisplayPageResource ->
+				defaultCategoryDisplayPageResource.
+					deleteChannelIdDefaultCategoryDisplayPage(id));
+
+		return true;
+	}
+
+	@GraphQLField
+	public DefaultCategoryDisplayPage
+			createChannelByExternalReferenceCodeDefaultCategoryDisplayPage(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode,
+				@GraphQLName("defaultCategoryDisplayPage")
+					DefaultCategoryDisplayPage defaultCategoryDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_defaultCategoryDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			defaultCategoryDisplayPageResource ->
+				defaultCategoryDisplayPageResource.
+					postChannelByExternalReferenceCodeDefaultCategoryDisplayPage(
+						externalReferenceCode, defaultCategoryDisplayPage));
+	}
+
+	@GraphQLField
+	public DefaultCategoryDisplayPage createChannelIdDefaultCategoryDisplayPage(
+			@GraphQLName("id") Long id,
+			@GraphQLName("defaultCategoryDisplayPage")
+				DefaultCategoryDisplayPage defaultCategoryDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_defaultCategoryDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			defaultCategoryDisplayPageResource ->
+				defaultCategoryDisplayPageResource.
+					postChannelIdDefaultCategoryDisplayPage(
+						id, defaultCategoryDisplayPage));
+	}
+
+	@GraphQLField
+	public boolean
+			deleteChannelByExternalReferenceCodeDefaultProductDisplayPage(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_defaultProductDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			defaultProductDisplayPageResource ->
+				defaultProductDisplayPageResource.
+					deleteChannelByExternalReferenceCodeDefaultProductDisplayPage(
+						externalReferenceCode));
+
+		return true;
+	}
+
+	@GraphQLField
+	public boolean deleteChannelIdDefaultProductDisplayPage(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_defaultProductDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			defaultProductDisplayPageResource ->
+				defaultProductDisplayPageResource.
+					deleteChannelIdDefaultProductDisplayPage(id));
+
+		return true;
+	}
+
+	@GraphQLField
+	public DefaultProductDisplayPage
+			createChannelByExternalReferenceCodeDefaultProductDisplayPage(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode,
+				@GraphQLName("defaultProductDisplayPage")
+					DefaultProductDisplayPage defaultProductDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_defaultProductDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			defaultProductDisplayPageResource ->
+				defaultProductDisplayPageResource.
+					postChannelByExternalReferenceCodeDefaultProductDisplayPage(
+						externalReferenceCode, defaultProductDisplayPage));
+	}
+
+	@GraphQLField
+	public DefaultProductDisplayPage createChannelIdDefaultProductDisplayPage(
+			@GraphQLName("id") Long id,
+			@GraphQLName("defaultProductDisplayPage") DefaultProductDisplayPage
+				defaultProductDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_defaultProductDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			defaultProductDisplayPageResource ->
+				defaultProductDisplayPageResource.
+					postChannelIdDefaultProductDisplayPage(
+						id, defaultProductDisplayPage));
 	}
 
 	@GraphQLField
@@ -493,6 +742,81 @@ public class Mutation {
 				paymentMethodGroupRelTermResource.
 					postPaymentMethodGroupRelIdPaymentMethodGroupRelTerm(
 						id, paymentMethodGroupRelTerm));
+	}
+
+	@GraphQLField
+	public boolean deleteProductDisplayPage(@GraphQLName("id") Long id)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_productDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			productDisplayPageResource ->
+				productDisplayPageResource.deleteProductDisplayPage(id));
+
+		return true;
+	}
+
+	@GraphQLField
+	public Response deleteProductDisplayPageBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_productDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			productDisplayPageResource ->
+				productDisplayPageResource.deleteProductDisplayPageBatch(
+					callbackURL, object));
+	}
+
+	@GraphQLField
+	public ProductDisplayPage patchProductDisplayPage(
+			@GraphQLName("id") Long id,
+			@GraphQLName("productDisplayPage") ProductDisplayPage
+				productDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_productDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			productDisplayPageResource ->
+				productDisplayPageResource.patchProductDisplayPage(
+					id, productDisplayPage));
+	}
+
+	@GraphQLField
+	public ProductDisplayPage
+			createChannelByExternalReferenceCodeProductDisplayPage(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode,
+				@GraphQLName("productDisplayPage") ProductDisplayPage
+					productDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_productDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			productDisplayPageResource ->
+				productDisplayPageResource.
+					postChannelByExternalReferenceCodeProductDisplayPage(
+						externalReferenceCode, productDisplayPage));
+	}
+
+	@GraphQLField
+	public ProductDisplayPage createChannelIdProductDisplayPage(
+			@GraphQLName("id") Long id,
+			@GraphQLName("productDisplayPage") ProductDisplayPage
+				productDisplayPage)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_productDisplayPageResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			productDisplayPageResource ->
+				productDisplayPageResource.postChannelIdProductDisplayPage(
+					id, productDisplayPage));
 	}
 
 	@GraphQLField
@@ -684,6 +1008,28 @@ public class Mutation {
 			_vulcanBatchEngineImportTaskResource);
 	}
 
+	private void _populateResourceContext(
+			CategoryDisplayPageResource categoryDisplayPageResource)
+		throws Exception {
+
+		categoryDisplayPageResource.setContextAcceptLanguage(_acceptLanguage);
+		categoryDisplayPageResource.setContextCompany(_company);
+		categoryDisplayPageResource.setContextHttpServletRequest(
+			_httpServletRequest);
+		categoryDisplayPageResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		categoryDisplayPageResource.setContextUriInfo(_uriInfo);
+		categoryDisplayPageResource.setContextUser(_user);
+		categoryDisplayPageResource.setGroupLocalService(_groupLocalService);
+		categoryDisplayPageResource.setRoleLocalService(_roleLocalService);
+
+		categoryDisplayPageResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		categoryDisplayPageResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
+	}
+
 	private void _populateResourceContext(ChannelResource channelResource)
 		throws Exception {
 
@@ -723,6 +1069,45 @@ public class Mutation {
 
 		channelAccountResource.setVulcanBatchEngineImportTaskResource(
 			_vulcanBatchEngineImportTaskResource);
+	}
+
+	private void _populateResourceContext(
+			DefaultCategoryDisplayPageResource
+				defaultCategoryDisplayPageResource)
+		throws Exception {
+
+		defaultCategoryDisplayPageResource.setContextAcceptLanguage(
+			_acceptLanguage);
+		defaultCategoryDisplayPageResource.setContextCompany(_company);
+		defaultCategoryDisplayPageResource.setContextHttpServletRequest(
+			_httpServletRequest);
+		defaultCategoryDisplayPageResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		defaultCategoryDisplayPageResource.setContextUriInfo(_uriInfo);
+		defaultCategoryDisplayPageResource.setContextUser(_user);
+		defaultCategoryDisplayPageResource.setGroupLocalService(
+			_groupLocalService);
+		defaultCategoryDisplayPageResource.setRoleLocalService(
+			_roleLocalService);
+	}
+
+	private void _populateResourceContext(
+			DefaultProductDisplayPageResource defaultProductDisplayPageResource)
+		throws Exception {
+
+		defaultProductDisplayPageResource.setContextAcceptLanguage(
+			_acceptLanguage);
+		defaultProductDisplayPageResource.setContextCompany(_company);
+		defaultProductDisplayPageResource.setContextHttpServletRequest(
+			_httpServletRequest);
+		defaultProductDisplayPageResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		defaultProductDisplayPageResource.setContextUriInfo(_uriInfo);
+		defaultProductDisplayPageResource.setContextUser(_user);
+		defaultProductDisplayPageResource.setGroupLocalService(
+			_groupLocalService);
+		defaultProductDisplayPageResource.setRoleLocalService(
+			_roleLocalService);
 	}
 
 	private void _populateResourceContext(
@@ -778,6 +1163,28 @@ public class Mutation {
 		paymentMethodGroupRelTermResource.
 			setVulcanBatchEngineImportTaskResource(
 				_vulcanBatchEngineImportTaskResource);
+	}
+
+	private void _populateResourceContext(
+			ProductDisplayPageResource productDisplayPageResource)
+		throws Exception {
+
+		productDisplayPageResource.setContextAcceptLanguage(_acceptLanguage);
+		productDisplayPageResource.setContextCompany(_company);
+		productDisplayPageResource.setContextHttpServletRequest(
+			_httpServletRequest);
+		productDisplayPageResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		productDisplayPageResource.setContextUriInfo(_uriInfo);
+		productDisplayPageResource.setContextUser(_user);
+		productDisplayPageResource.setGroupLocalService(_groupLocalService);
+		productDisplayPageResource.setRoleLocalService(_roleLocalService);
+
+		productDisplayPageResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		productDisplayPageResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private void _populateResourceContext(
@@ -876,15 +1283,23 @@ public class Mutation {
 
 	private static ComponentServiceObjects<AccountAddressChannelResource>
 		_accountAddressChannelResourceComponentServiceObjects;
+	private static ComponentServiceObjects<CategoryDisplayPageResource>
+		_categoryDisplayPageResourceComponentServiceObjects;
 	private static ComponentServiceObjects<ChannelResource>
 		_channelResourceComponentServiceObjects;
 	private static ComponentServiceObjects<ChannelAccountResource>
 		_channelAccountResourceComponentServiceObjects;
+	private static ComponentServiceObjects<DefaultCategoryDisplayPageResource>
+		_defaultCategoryDisplayPageResourceComponentServiceObjects;
+	private static ComponentServiceObjects<DefaultProductDisplayPageResource>
+		_defaultProductDisplayPageResourceComponentServiceObjects;
 	private static ComponentServiceObjects
 		<PaymentMethodGroupRelOrderTypeResource>
 			_paymentMethodGroupRelOrderTypeResourceComponentServiceObjects;
 	private static ComponentServiceObjects<PaymentMethodGroupRelTermResource>
 		_paymentMethodGroupRelTermResourceComponentServiceObjects;
+	private static ComponentServiceObjects<ProductDisplayPageResource>
+		_productDisplayPageResourceComponentServiceObjects;
 	private static ComponentServiceObjects<ShippingFixedOptionOrderTypeResource>
 		_shippingFixedOptionOrderTypeResourceComponentServiceObjects;
 	private static ComponentServiceObjects<ShippingFixedOptionTermResource>
@@ -896,12 +1311,15 @@ public class Mutation {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 	private VulcanBatchEngineExportTaskResource

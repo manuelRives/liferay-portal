@@ -77,7 +77,7 @@ function OrganizationChart({
 				ids[0] === configRootOrganizationId
 					? getOrganization(configRootOrganizationId).then((item) =>
 							Promise.resolve({items: [item]})
-					  )
+						)
 					: getOrganizations(pageSize, ids);
 
 			return get().then(({items}) => {
@@ -119,7 +119,7 @@ function OrganizationChart({
 			isTooManyOrganizations
 				? Liferay.Language.get(
 						'you-have-too-many-organizations-to-display'
-				  )
+					)
 				: ''
 		);
 	}, [maxDisplayedOrganizations, organizations]);
@@ -212,7 +212,7 @@ function OrganizationChart({
 								configRootOrganizationId
 									? Promise.resolve([
 											configRootOrganizationId,
-									  ])
+										])
 									: findRoot(id, type);
 
 							willFindRoot()
@@ -303,14 +303,12 @@ function OrganizationChart({
 					</div>
 				)}
 
-				{Liferay.FeatureFlags['COMMERCE-12192'] && (
-					<InfoPanelProvider
-						namespace={namespace}
-						pathImage={pathImage}
-						selectLogoURL={selectLogoURL}
-						spritemap={spritemap}
-					/>
-				)}
+				<InfoPanelProvider
+					namespace={namespace}
+					pathImage={pathImage}
+					selectLogoURL={selectLogoURL}
+					spritemap={spritemap}
+				/>
 
 				<MenuProvider
 					alignElementRef={clickedMenuButtonRef}

@@ -5,18 +5,16 @@
 
 import {Page} from '@playwright/test';
 
-import {ApplicationsMenuPage} from '../product-navigation-applications-menu/ApplicationsMenuPage';
+import {PORTLET_URLS} from '../../utils/portletUrls';
 import {DiagramViewPage} from './DiagramViewPage';
 import {SourceViewPage} from './SourceViewPage';
 
 export class ProcessBuilderPage {
-	readonly applicationsMenuPage: ApplicationsMenuPage;
 	readonly diagramViewPage: DiagramViewPage;
 	readonly page: Page;
 	readonly sourceViewPage: SourceViewPage;
 
 	constructor(page: Page) {
-		this.applicationsMenuPage = new ApplicationsMenuPage(page);
 		this.diagramViewPage = new DiagramViewPage(page);
 		this.page = page;
 		this.sourceViewPage = new SourceViewPage(page);
@@ -31,19 +29,18 @@ export class ProcessBuilderPage {
 			.click();
 	}
 
+	async goto(siteUrl?: Site['friendlyUrlPath']) {
+		await this.page.goto(
+			`/group${siteUrl || '/guest'}${PORTLET_URLS.processBuilder}`
+		);
+		await this.page.waitForLoadState('networkidle');
+	}
+
 	async switchToSourceViewAndBackToDiagram() {
 		await this.diagramViewPage.clickSourceViewButton();
 
-		await this.page.waitForTimeout(3000);
-
-		await this.page
-			.getByText('SourceWrite your definition or import a file.')
-			.click();
+		await this.sourceViewPage.xmlFirstLine.waitFor({state: 'visible'});
 
 		await this.sourceViewPage.clickDiagramViewButton();
-	}
-
-	async goto() {
-		await this.applicationsMenuPage.goToProcessBuilder();
 	}
 }

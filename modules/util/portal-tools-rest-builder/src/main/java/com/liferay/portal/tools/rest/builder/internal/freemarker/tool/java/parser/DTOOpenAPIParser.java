@@ -5,6 +5,7 @@
 
 package com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parser;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parser.util.OpenAPIParserUtil;
@@ -13,7 +14,6 @@ import com.liferay.portal.tools.rest.builder.internal.yaml.config.ConfigYAML;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Items;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.OpenAPIYAML;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Schema;
-import com.liferay.portal.vulcan.permission.Permission;
 
 import java.util.Collections;
 import java.util.List;
@@ -59,9 +59,10 @@ public class DTOOpenAPIParser {
 		ConfigYAML configYAML, boolean excludeReadOnly, OpenAPIYAML openAPIYAML,
 		Schema schema, Map<String, Schema> schemas) {
 
+		Map<String, String> properties = new TreeMap<>();
+
 		Map<String, String> javaDataTypeMap =
 			OpenAPIParserUtil.getJavaDataTypeMap(configYAML, openAPIYAML);
-		Map<String, String> properties = new TreeMap<>();
 
 		Map<String, Schema> propertySchemas = _getPropertySchemas(
 			configYAML, schema, schemas);
@@ -76,7 +77,8 @@ public class DTOOpenAPIParser {
 			String propertySchemaName = entry.getKey();
 
 			properties.put(
-				_getPropertyName(propertySchema, propertySchemaName),
+				_getPropertyName(
+					configYAML, propertySchema, propertySchemaName),
 				_getPropertyType(
 					configYAML, javaDataTypeMap, openAPIYAML, propertySchema,
 					propertySchemaName));
@@ -105,7 +107,7 @@ public class DTOOpenAPIParser {
 			Schema propertySchema = entry.getValue();
 
 			String curPropertyName = _getPropertyName(
-				propertySchema, propertySchemaName);
+				configYAML, propertySchema, propertySchemaName);
 
 			if (StringUtil.equalsIgnoreCase(curPropertyName, propertyName)) {
 				return propertySchema;
@@ -126,11 +128,7 @@ public class DTOOpenAPIParser {
 			String propertySchemaName = entry.getKey();
 
 			if (propertySchemaName.equals(propertyName)) {
-				if (_isSchema(entry.getValue())) {
-					return true;
-				}
-
-				return false;
+				return _isSchema(entry.getValue());
 			}
 		}
 
@@ -166,14 +164,18 @@ public class DTOOpenAPIParser {
 	}
 
 	private static String _getPropertyName(
-		Schema propertySchema, String propertySchemaName) {
+		ConfigYAML configYAML, Schema propertySchema,
+		String propertySchemaName) {
 
-		String name = CamelCaseUtil.toCamelCase(propertySchemaName);
+		String name = StringUtil.replace(
+			CamelCaseUtil.toCamelCase(propertySchemaName),
+			new char[] {CharPool.COLON, CharPool.PERIOD},
+			new char[] {CharPool.UNDERLINE, CharPool.UNDERLINE});
 
 		if (StringUtil.equalsIgnoreCase(propertySchema.getType(), "object") &&
 			(propertySchema.getItems() != null)) {
 
-			return OpenAPIUtil.formatSingular(name);
+			return OpenAPIUtil.formatSingular(configYAML, name);
 		}
 
 		return name;
@@ -231,6 +233,7 @@ public class DTOOpenAPIParser {
 			StringUtil.equalsIgnoreCase(items.getType(), "object")) {
 
 			String name = OpenAPIUtil.formatSingular(
+				configYAML,
 				StringUtil.upperCaseFirstLetter(propertySchemaName));
 
 			if (javaDataTypeMap.containsKey(name)) {
@@ -245,7 +248,7 @@ public class DTOOpenAPIParser {
 			String name = StringUtil.upperCaseFirstLetter(propertySchemaName);
 
 			if (items != null) {
-				name = OpenAPIUtil.formatSingular(name);
+				name = OpenAPIUtil.formatSingular(configYAML, name);
 			}
 
 			if (javaDataTypeMap.containsKey(name)) {
@@ -260,7 +263,11 @@ public class DTOOpenAPIParser {
 			String name = OpenAPIParserUtil.getElementClassName(javaDataType);
 
 			if ((name.lastIndexOf('.') != -1) &&
-				!StringUtil.equals(name, Permission.class.getName())) {
+				!StringUtil.equals(
+					name,
+					"com.liferay.portal.vulcan.custom.field.CustomField") &&
+				!StringUtil.equals(
+					name, "com.liferay.portal.vulcan.permission.Permission")) {
 
 				name = name.substring(name.lastIndexOf(".") + 1);
 			}
@@ -284,7 +291,12 @@ public class DTOOpenAPIParser {
 		String propertyType = javaDataType;
 
 		if ((propertyType.lastIndexOf('.') != -1) &&
-			!StringUtil.equals(propertyType, Permission.class.getName())) {
+			!StringUtil.equals(
+				propertyType,
+				"com.liferay.portal.vulcan.custom.field.CustomField") &&
+			!StringUtil.equals(
+				propertyType,
+				"com.liferay.portal.vulcan.permission.Permission")) {
 
 			propertyType = propertyType.substring(
 				propertyType.lastIndexOf(".") + 1);

@@ -15,11 +15,11 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+		"jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 		"mvc.command.name=/journal/info_panel"
 	},
 	service = MVCResourceCommand.class
@@ -52,15 +52,15 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 	private List<JournalArticle> _getArticles(ResourceRequest request)
 		throws Exception {
 
-		long groupId = ParamUtil.getLong(request, "groupId");
+		List<JournalArticle> articles = new ArrayList<>();
 
 		String[] articleIds = ParamUtil.getStringValues(
 			request, "rowIdsJournalArticle");
 
-		List<JournalArticle> articles = new ArrayList<>();
-
 		for (String articleId : articleIds) {
-			articles.add(_journalArticleService.getArticle(groupId, articleId));
+			articles.add(
+				_journalArticleService.getArticle(
+					ParamUtil.getLong(request, "groupId"), articleId));
 		}
 
 		return articles;
@@ -69,10 +69,10 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 	private List<JournalFolder> _getFolders(ResourceRequest request)
 		throws Exception {
 
+		List<JournalFolder> folders = new ArrayList<>();
+
 		long[] folderIds = ParamUtil.getLongValues(
 			request, "rowIdsJournalFolder");
-
-		List<JournalFolder> folders = new ArrayList<>();
 
 		for (long folderId : folderIds) {
 			folders.add(_journalFolderService.getFolder(folderId));

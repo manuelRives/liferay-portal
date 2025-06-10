@@ -6,14 +6,14 @@
 package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
 
 import com.liferay.commerce.currency.constants.CommerceCurrencyConstants;
+import com.liferay.commerce.currency.exception.NoSuchCurrencyException;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Currency;
 import com.liferay.headless.commerce.admin.catalog.internal.odata.entity.v1_0.CurrencyEntityModel;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.CurrencyResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
@@ -24,13 +24,13 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.math.BigDecimal;
 
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,17 +47,33 @@ public class CurrencyResourceImpl extends BaseCurrencyResourceImpl {
 
 	@Override
 	public void deleteCurrency(Long id) throws Exception {
-		_checkFeatureFlag();
-
 		_commerceCurrencyService.deleteCommerceCurrency(id);
+	}
+
+	@Override
+	public void deleteCurrencyByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception {
+
+		CommerceCurrency commerceCurrency =
+			_commerceCurrencyService.
+				fetchCommerceCurrencyByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceCurrency == null) {
+			throw new NoSuchCurrencyException(
+				"Unable to find currency with external reference code " +
+					externalReferenceCode);
+		}
+
+		_commerceCurrencyService.deleteCommerceCurrency(
+			commerceCurrency.getCommerceCurrencyId());
 	}
 
 	@Override
 	public Page<Currency> getCurrenciesPage(
 			String search, Filter filter, Pagination pagination, Sort[] sorts)
 		throws Exception {
-
-		_checkFeatureFlag();
 
 		return SearchUtil.search(
 			Collections.emptyMap(),
@@ -74,9 +90,28 @@ public class CurrencyResourceImpl extends BaseCurrencyResourceImpl {
 
 	@Override
 	public Currency getCurrency(Long id) throws Exception {
-		_checkFeatureFlag();
-
 		return _toCurrency(_commerceCurrencyService.getCommerceCurrency(id));
+	}
+
+	@Override
+	public Currency getCurrencyByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception {
+
+		CommerceCurrency commerceCurrency =
+			_commerceCurrencyService.
+				fetchCommerceCurrencyByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceCurrency == null) {
+			throw new NoSuchCurrencyException(
+				"Unable to find currency with external reference code " +
+					externalReferenceCode);
+		}
+
+		return _toCurrency(
+			_commerceCurrencyService.getCommerceCurrency(
+				commerceCurrency.getCommerceCurrencyId()));
 	}
 
 	@Override
@@ -88,10 +123,97 @@ public class CurrencyResourceImpl extends BaseCurrencyResourceImpl {
 
 	@Override
 	public Currency patchCurrency(Long id, Currency currency) throws Exception {
-		_checkFeatureFlag();
+		return _updateCurrency(
+			_commerceCurrencyService.getCommerceCurrency(id), currency);
+	}
+
+	@Override
+	public Currency patchCurrencyByExternalReferenceCode(
+			String externalReferenceCode, Currency currency)
+		throws Exception {
 
 		CommerceCurrency commerceCurrency =
-			_commerceCurrencyService.getCommerceCurrency(id);
+			_commerceCurrencyService.
+				fetchCommerceCurrencyByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceCurrency == null) {
+			throw new NoSuchCurrencyException(
+				"Unable to find currency with external reference code " +
+					externalReferenceCode);
+		}
+
+		return _updateCurrency(commerceCurrency, currency);
+	}
+
+	@Override
+	public Currency postCurrency(Currency currency) throws Exception {
+		Map<Locale, String> formatPatternMap = LanguageUtils.getLocalizedMap(
+			currency.getFormatPattern());
+
+		if (formatPatternMap == null) {
+			formatPatternMap = _localization.getLocalizationMap(
+				CommerceCurrencyConstants.DECIMAL_FORMAT_PATTERN);
+		}
+
+		return _toCurrency(
+			_commerceCurrencyService.addCommerceCurrency(
+				GetterUtil.getString(
+					currency.getExternalReferenceCode(), currency.getCode()),
+				currency.getCode(),
+				LanguageUtils.getLocalizedMap(currency.getName()),
+				GetterUtil.getString(currency.getSymbol()),
+				(BigDecimal)GetterUtil.getNumber(currency.getRate()),
+				formatPatternMap,
+				GetterUtil.getInteger(currency.getMaxFractionDigits(), 2),
+				GetterUtil.getInteger(currency.getMinFractionDigits(), 2),
+				GetterUtil.getString(
+					currency.getRoundingModeAsString(),
+					Currency.RoundingMode.HALF_EVEN.getValue()),
+				GetterUtil.getBoolean(currency.getPrimary()),
+				GetterUtil.getDouble(currency.getPriority()),
+				GetterUtil.getBoolean(currency.getActive())));
+	}
+
+	private Currency _toCurrency(CommerceCurrency commerceCurrency)
+		throws Exception {
+
+		return _toCurrency(commerceCurrency.getCommerceCurrencyId());
+	}
+
+	private Currency _toCurrency(Long commerceCurrencyId) throws Exception {
+		CommerceCurrency commerceCurrency =
+			_commerceCurrencyService.getCommerceCurrency(commerceCurrencyId);
+
+		return new Currency() {
+			{
+				setActive(commerceCurrency::isActive);
+				setCode(commerceCurrency::getCode);
+				setExternalReferenceCode(
+					commerceCurrency::getExternalReferenceCode);
+				setFormatPattern(
+					() -> LanguageUtils.getLanguageIdMap(
+						commerceCurrency.getFormatPatternMap()));
+				setId(commerceCurrency::getCommerceCurrencyId);
+				setMaxFractionDigits(commerceCurrency::getMaxFractionDigits);
+				setMinFractionDigits(commerceCurrency::getMinFractionDigits);
+				setName(
+					() -> LanguageUtils.getLanguageIdMap(
+						commerceCurrency.getNameMap()));
+				setPrimary(commerceCurrency::isPrimary);
+				setPriority(commerceCurrency::getPriority);
+				setRate(commerceCurrency::getRate);
+				setRoundingMode(
+					() -> RoundingMode.valueOf(
+						commerceCurrency.getRoundingMode()));
+				setSymbol(commerceCurrency::getSymbol);
+			}
+		};
+	}
+
+	private Currency _updateCurrency(
+			CommerceCurrency commerceCurrency, Currency currency)
+		throws Exception {
 
 		Map<String, String> nameMap = currency.getName();
 
@@ -109,6 +231,9 @@ public class CurrencyResourceImpl extends BaseCurrencyResourceImpl {
 
 		return _toCurrency(
 			_commerceCurrencyService.updateCommerceCurrency(
+				GetterUtil.getString(
+					currency.getExternalReferenceCode(),
+					commerceCurrency.getExternalReferenceCode()),
 				commerceCurrency.getCommerceCurrencyId(),
 				LanguageUtils.getLocalizedMap(nameMap),
 				GetterUtil.getString(
@@ -133,75 +258,6 @@ public class CurrencyResourceImpl extends BaseCurrencyResourceImpl {
 					currency.getActive(), commerceCurrency.isActive()),
 				_serviceContextHelper.getServiceContext(
 					contextUser.getUserId())));
-	}
-
-	@Override
-	public Currency postCurrency(Currency currency) throws Exception {
-		_checkFeatureFlag();
-
-		Map<Locale, String> formatPatternMap = LanguageUtils.getLocalizedMap(
-			currency.getFormatPattern());
-
-		if (formatPatternMap == null) {
-			formatPatternMap = _localization.getLocalizationMap(
-				CommerceCurrencyConstants.DECIMAL_FORMAT_PATTERN);
-		}
-
-		return _toCurrency(
-			_commerceCurrencyService.addCommerceCurrency(
-				currency.getCode(),
-				LanguageUtils.getLocalizedMap(currency.getName()),
-				GetterUtil.getString(currency.getSymbol()),
-				(BigDecimal)GetterUtil.getNumber(currency.getRate()),
-				formatPatternMap,
-				GetterUtil.getInteger(currency.getMaxFractionDigits(), 2),
-				GetterUtil.getInteger(currency.getMinFractionDigits(), 2),
-				GetterUtil.getString(
-					currency.getRoundingModeAsString(),
-					Currency.RoundingMode.HALF_EVEN.getValue()),
-				GetterUtil.getBoolean(currency.getPrimary()),
-				GetterUtil.getDouble(currency.getPriority()),
-				GetterUtil.getBoolean(currency.getActive())));
-	}
-
-	private void _checkFeatureFlag() throws Exception {
-		if (!FeatureFlagManagerUtil.isEnabled("COMMERCE-12170")) {
-			throw new UnsupportedOperationException();
-		}
-	}
-
-	private Currency _toCurrency(CommerceCurrency commerceCurrency)
-		throws Exception {
-
-		return _toCurrency(commerceCurrency.getCommerceCurrencyId());
-	}
-
-	private Currency _toCurrency(Long commerceCurrencyId) throws Exception {
-		CommerceCurrency commerceCurrency =
-			_commerceCurrencyService.getCommerceCurrency(commerceCurrencyId);
-
-		return new Currency() {
-			{
-				setActive(commerceCurrency::isActive);
-				setCode(commerceCurrency::getCode);
-				setFormatPattern(
-					() -> LanguageUtils.getLanguageIdMap(
-						commerceCurrency.getFormatPatternMap()));
-				setId(commerceCurrency::getCommerceCurrencyId);
-				setMaxFractionDigits(commerceCurrency::getMaxFractionDigits);
-				setMinFractionDigits(commerceCurrency::getMinFractionDigits);
-				setName(
-					() -> LanguageUtils.getLanguageIdMap(
-						commerceCurrency.getNameMap()));
-				setPrimary(commerceCurrency::isPrimary);
-				setPriority(commerceCurrency::getPriority);
-				setRate(commerceCurrency::getRate);
-				setRoundingMode(
-					() -> RoundingMode.valueOf(
-						commerceCurrency.getRoundingMode()));
-				setSymbol(commerceCurrency::getSymbol);
-			}
-		};
 	}
 
 	private static final EntityModel _entityModel = new CurrencyEntityModel();

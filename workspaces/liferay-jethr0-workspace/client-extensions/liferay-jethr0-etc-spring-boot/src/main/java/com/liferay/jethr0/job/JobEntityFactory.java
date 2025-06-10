@@ -120,6 +120,9 @@ public class JobEntityFactory extends BaseEntityFactory<JobEntity> {
 		else if (type == JobEntity.Type.PORTAL_RELEASE) {
 			return new PortalReleaseJobEntity(jsonObject);
 		}
+		else if (type == JobEntity.Type.PORTAL_UPSTREAM) {
+			return new DefaultPortalUpstreamJobEntity(jsonObject);
+		}
 		else if (type == JobEntity.Type.PORTAL_UPSTREAM_ACCEPTANCE) {
 			return new AcceptancePortalUpstreamJobEntity(jsonObject);
 		}
@@ -153,6 +156,9 @@ public class JobEntityFactory extends BaseEntityFactory<JobEntity> {
 		else if (type == JobEntity.Type.SANITIZE_LANGUAGE) {
 			return new SanitizeLanguageJobEntity(jsonObject);
 		}
+		else if (type == JobEntity.Type.SCANCODE_PIPELINES) {
+			return new ScancodePipelinesJobEntity(jsonObject);
+		}
 		else if (type == JobEntity.Type.SUBREPOSITORY_PULL_REQUEST) {
 			return new SubrepositoryPullRequestJobEntity(jsonObject);
 		}
@@ -161,6 +167,9 @@ public class JobEntityFactory extends BaseEntityFactory<JobEntity> {
 		}
 		else if (type == JobEntity.Type.VERIFICATION_NODE) {
 			return new VerificationNodeJobEntity(jsonObject);
+		}
+		else if (type == JobEntity.Type.VERIFICATION_SERVERS_DAILY) {
+			return new VerificationServersDailyJobEntity(jsonObject);
 		}
 
 		return new DefaultJobEntity(jsonObject);

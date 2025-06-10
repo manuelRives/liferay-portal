@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -52,7 +53,7 @@ public class CPDefinitionLocalServiceUtil {
 	}
 
 	public static CPDefinition addCPDefinition(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> shortDescriptionMap,
 			Map<java.util.Locale, String> descriptionMap,
@@ -83,7 +84,7 @@ public class CPDefinitionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().addCPDefinition(
-			externalReferenceCode, groupId, userId, nameMap,
+			externalReferenceCode, userId, groupId, nameMap,
 			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
 			metaDescriptionMap, metaKeywordsMap, productTypeName,
 			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
@@ -101,7 +102,7 @@ public class CPDefinitionLocalServiceUtil {
 	}
 
 	public static CPDefinition addCPDefinition(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> shortDescriptionMap,
 			Map<java.util.Locale, String> descriptionMap,
@@ -128,7 +129,7 @@ public class CPDefinitionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().addCPDefinition(
-			externalReferenceCode, groupId, userId, nameMap,
+			externalReferenceCode, userId, groupId, nameMap,
 			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
 			metaDescriptionMap, metaKeywordsMap, productTypeName,
 			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
@@ -143,7 +144,7 @@ public class CPDefinitionLocalServiceUtil {
 	}
 
 	public static CPDefinition addOrUpdateCPDefinition(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> shortDescriptionMap,
 			Map<java.util.Locale, String> descriptionMap,
@@ -174,7 +175,7 @@ public class CPDefinitionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().addOrUpdateCPDefinition(
-			externalReferenceCode, groupId, userId, nameMap,
+			externalReferenceCode, userId, groupId, nameMap,
 			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
 			metaDescriptionMap, metaKeywordsMap, productTypeName,
 			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
@@ -192,7 +193,7 @@ public class CPDefinitionLocalServiceUtil {
 	}
 
 	public static CPDefinition addOrUpdateCPDefinition(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> shortDescriptionMap,
 			Map<java.util.Locale, String> descriptionMap,
@@ -219,7 +220,7 @@ public class CPDefinitionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().addOrUpdateCPDefinition(
-			externalReferenceCode, groupId, userId, nameMap,
+			externalReferenceCode, userId, groupId, nameMap,
 			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
 			metaDescriptionMap, metaKeywordsMap, productTypeName,
 			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
@@ -441,6 +442,13 @@ public class CPDefinitionLocalServiceUtil {
 
 	public static CPDefinition fetchCPDefinitionByCProductId(long cProductId) {
 		return getService().fetchCPDefinitionByCProductId(cProductId);
+	}
+
+	public static CPDefinition fetchCPDefinitionByFriendlyURL(
+		long groupId, String friendlyURL) {
+
+		return getService().fetchCPDefinitionByFriendlyURL(
+			groupId, friendlyURL);
 	}
 
 	/**
@@ -772,15 +780,15 @@ public class CPDefinitionLocalServiceUtil {
 
 	public static boolean isVersionable(
 		long cpDefinitionId,
-		javax.servlet.http.HttpServletRequest httpServletRequest) {
+		jakarta.servlet.http.HttpServletRequest httpServletRequest) {
 
 		return getService().isVersionable(cpDefinitionId, httpServletRequest);
 	}
 
-	public static void maintainVersionThreshold(long cProductId)
+	public static void maintainVersionThreshold(long companyId, long cProductId)
 		throws PortalException {
 
-		getService().maintainVersionThreshold(cProductId);
+		getService().maintainVersionThreshold(companyId, cProductId);
 	}
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
@@ -1034,13 +1042,11 @@ public class CPDefinitionLocalServiceUtil {
 	}
 
 	public static CPDefinitionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPDefinitionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CPDefinitionLocalService _service;
+	private static final Snapshot<CPDefinitionLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			CPDefinitionLocalServiceUtil.class, CPDefinitionLocalService.class);
 
 }

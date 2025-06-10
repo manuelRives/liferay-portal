@@ -24,7 +24,7 @@
 							<liferay-template:template-selector
 								className="<%= CommerceOrderContentPortlet.class.getName() %>"
 								displayStyle="<%= commerceOrderContentDisplayContext.getDisplayStyle(CommercePortletKeys.COMMERCE_ORDER_CONTENT) %>"
-								displayStyleGroupId="<%= commerceOrderContentDisplayContext.getDisplayStyleGroupId(CommercePortletKeys.COMMERCE_ORDER_CONTENT) %>"
+								displayStyleGroupKey="<%= commerceOrderContentDisplayContext.getDisplayStyleGroupKey(CommercePortletKeys.COMMERCE_ORDER_CONTENT) %>"
 								refreshURL="<%= PortalUtil.getCurrentURL(request) %>"
 								showEmptyOption="<%= true %>"
 							/>
@@ -33,6 +33,11 @@
 
 					<aui:fieldset collapsible="<%= true %>" label="order-date-display">
 						<aui:input checked="<%= commerceOrderContentDisplayContext.isShowCommerceOrderCreateTime() %>" id="showCommerceOrderCreateTime" label="show-commerce-order-create-time" name="preferences--showCommerceOrderCreateTime--" type="toggle-switch" />
+					</aui:fieldset>
+
+					<aui:fieldset collapsible="<%= true %>" label="order-advanced-configuration">
+						<aui:input checked="<%= commerceOrderContentDisplayContext.isShowCommerceOrderFullAddress() %>" id="showCommerceOrderFullAddress" label="show-commerce-order-full-address" name="preferences--showCommerceOrderFullAddress--" type="toggle-switch" />
+						<aui:input checked="<%= commerceOrderContentDisplayContext.isShowCommerceOrderPhoneNumber() %>" id="showCommerceOrderPhoneNumber" label="show-commerce-order-phone-number" name="preferences--showCommerceOrderPhoneNumber--" type="toggle-switch" />
 					</aui:fieldset>
 				</div>
 			</div>

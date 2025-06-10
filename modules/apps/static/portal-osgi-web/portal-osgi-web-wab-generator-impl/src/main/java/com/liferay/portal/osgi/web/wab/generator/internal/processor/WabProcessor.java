@@ -37,6 +37,7 @@ import com.liferay.portal.kernel.model.PortletConstants;
 import com.liferay.portal.kernel.plugin.PluginPackage;
 import com.liferay.portal.kernel.servlet.PortalClassLoaderFilter;
 import com.liferay.portal.kernel.servlet.PortalClassLoaderServlet;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ConcurrentHashMapBuilder;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -213,7 +214,7 @@ public class WabProcessor {
 
 				});
 
-			if ((files == null) || (files.length == 0)) {
+			if (ArrayUtil.isEmpty(files)) {
 				_log.error("Unable to find any WARs in " + parentFile);
 
 				return null;
@@ -1325,11 +1326,7 @@ public class WabProcessor {
 
 				String fileName = file.getName();
 
-				if (fileName.endsWith(".tld")) {
-					return true;
-				}
-
-				return false;
+				return fileName.endsWith(".tld");
 			});
 
 		for (File file : files) {
@@ -1566,11 +1563,17 @@ public class WabProcessor {
 
 			_processExcludedJSPs(analyzer);
 
-			analyzer.setProperties(pluginPackageProperties);
-
 			_processBeans(analyzer);
 
 			_processOSGiConfigurator(jar, analyzer);
+
+			for (String stringPropertyName :
+					pluginPackageProperties.stringPropertyNames()) {
+
+				analyzer.setProperty(
+					stringPropertyName,
+					pluginPackageProperties.getProperty(stringPropertyName));
+			}
 
 			try {
 				jar = analyzer.build();
@@ -1690,8 +1693,10 @@ public class WabProcessor {
 	private static final String _XPATHS_JAVAEE = StringUtil.merge(
 		new String[] {
 			"//j2ee:filter-class", "//j2ee:listener-class",
-			"//j2ee:servlet-class", "//javaee:filter-class",
-			"//javaee:listener-class", "//javaee:servlet-class"
+			"//j2ee:servlet-class", "//jakartaee:filter-class",
+			"//jakartaee:listener-class", "//jakartaee:servlet-class",
+			"//javaee:filter-class", "//javaee:listener-class",
+			"//javaee:servlet-class"
 		},
 		"|");
 
@@ -1760,6 +1765,8 @@ public class WabProcessor {
 			"http://www.eclipse.org/gemini/blueprint/schema/blueprint"
 		).put(
 			"j2ee", "http://java.sun.com/xml/ns/j2ee"
+		).put(
+			"jakartaee", "https://jakarta.ee/xml/ns/jakartaee"
 		).put(
 			"javaee", "http://java.sun.com/xml/ns/javaee"
 		).put(

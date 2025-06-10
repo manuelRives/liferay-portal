@@ -254,7 +254,8 @@ public class LayoutRevisionLocalServiceImpl
 	public LayoutRevision fetchLastLayoutRevision(long plid, boolean head) {
 		try {
 			return layoutRevisionPersistence.findByH_P_Last(
-				head, plid, new LayoutRevisionCreateDateComparator(true));
+				head, plid,
+				LayoutRevisionCreateDateComparator.getInstance(true));
 		}
 		catch (NoSuchLayoutRevisionException noSuchLayoutRevisionException) {
 
@@ -274,7 +275,7 @@ public class LayoutRevisionLocalServiceImpl
 
 		return layoutRevisionPersistence.fetchByL_P_First(
 			layoutSetBranchId, plid,
-			new LayoutRevisionCreateDateComparator(false));
+			LayoutRevisionCreateDateComparator.getInstance(false));
 	}
 
 	@Override
@@ -283,15 +284,7 @@ public class LayoutRevisionLocalServiceImpl
 
 		return layoutRevisionPersistence.fetchByL_L_P_First(
 			layoutSetBranchId, layoutBranchId, plid,
-			new LayoutRevisionCreateDateComparator(false));
-	}
-
-	@Override
-	public LayoutRevision fetchLayoutRevision(
-		long layoutSetBranchId, long layoutBranchId, boolean head, long plid) {
-
-		return layoutRevisionPersistence.fetchByL_L_H_P(
-			layoutSetBranchId, layoutBranchId, head, plid);
+			LayoutRevisionCreateDateComparator.getInstance(false));
 	}
 
 	@Override
@@ -328,7 +321,7 @@ public class LayoutRevisionLocalServiceImpl
 		List<LayoutRevision> layoutRevisions =
 			layoutRevisionPersistence.findByL_L_P(
 				layoutSetBranchId, layoutBranchId, plid, 0, 1,
-				new LayoutRevisionCreateDateComparator(false));
+				LayoutRevisionCreateDateComparator.getInstance(false));
 
 		if (!layoutRevisions.isEmpty()) {
 			return layoutRevisions.get(0);
@@ -514,7 +507,7 @@ public class LayoutRevisionLocalServiceImpl
 				String[] removePortletIdsArray =
 					(String[])serviceContext.getAttribute("removePortletIds");
 
-				if (!ArrayUtil.isEmpty(removePortletIdsArray)) {
+				if (ArrayUtil.isNotEmpty(removePortletIdsArray)) {
 					Set<String> removePortletIds = SetUtil.fromArray(
 						removePortletIdsArray);
 
@@ -646,7 +639,7 @@ public class LayoutRevisionLocalServiceImpl
 					layoutRevision.getLayoutSetBranchId(),
 					layoutRevision.getPlid(), WorkflowConstants.STATUS_APPROVED,
 					QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-					new LayoutRevisionModifiedDateComparator(false));
+					LayoutRevisionModifiedDateComparator.getInstance(false));
 
 			for (LayoutRevision curLayoutRevision : layoutRevisions) {
 				if (curLayoutRevision.getLayoutRevisionId() !=
@@ -672,7 +665,7 @@ public class LayoutRevisionLocalServiceImpl
 				parentLayoutRevisionId);
 
 		for (PortletPreferences portletPreferences : portletPreferencesList) {
-			javax.portlet.PortletPreferences jxPortletPreferences =
+			jakarta.portlet.PortletPreferences jxPortletPreferences =
 				_portletPreferenceValueLocalService.getPreferences(
 					portletPreferences);
 
@@ -729,11 +722,7 @@ public class LayoutRevisionLocalServiceImpl
 			LayoutTypeControllerTracker.getLayoutTypeController(
 				layout.getType());
 
-		if (layoutTypeController.isWorkflowEnabled()) {
-			return true;
-		}
-
-		return false;
+		return layoutTypeController.isWorkflowEnabled();
 	}
 
 	protected LayoutRevision updateMajor(LayoutRevision layoutRevision)

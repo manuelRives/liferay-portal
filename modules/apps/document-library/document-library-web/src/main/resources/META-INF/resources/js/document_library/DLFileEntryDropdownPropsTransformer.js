@@ -4,12 +4,11 @@
  */
 
 import {
-	addParams,
-	navigate,
 	openConfirmModal,
 	openModal,
 	openSelectionModal,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {addParams, navigate} from 'frontend-js-web';
 
 const ACTIONS = {
 	checkin({checkinURL}, portletNamespace) {
@@ -144,6 +143,14 @@ const ACTIONS = {
 			},
 		});
 	},
+
+	subscribeFileEntry({subscribeFileEntryURL}) {
+		location.href = subscribeFileEntryURL;
+	},
+
+	unsubscribeFileEntry({unsubscribeFileEntryURL}) {
+		location.href = unsubscribeFileEntryURL;
+	},
 };
 
 export default function propsTransformer({items, portletNamespace, ...props}) {
@@ -168,7 +175,7 @@ export default function propsTransformer({items, portletNamespace, ...props}) {
 								}
 							},
 						})),
-				  }
+					}
 				: {
 						...item,
 						onClick(event) {
@@ -180,7 +187,7 @@ export default function propsTransformer({items, portletNamespace, ...props}) {
 								ACTIONS[action](item.data, portletNamespace);
 							}
 						},
-				  }
+					}
 		),
 	};
 }

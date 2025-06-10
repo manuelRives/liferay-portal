@@ -30,6 +30,7 @@ TrashManagementToolbarDisplayContext trashManagementToolbarDisplayContext = new 
 
 	<clay:container-fluid
 		cssClass="sidenav-content"
+		size="xxxl"
 	>
 		<c:if test="<%= Validator.isNull(trashDisplayContext.getKeywords()) %>">
 			<liferay-site-navigation:breadcrumb
@@ -152,11 +153,11 @@ TrashManagementToolbarDisplayContext trashManagementToolbarDisplayContext = new 
 									<liferay-ui:message arguments="<%= dateTimeFormat.format(trashEntry.getCreateDate()) %>" key="removed-x" />
 								</div>
 
-								<h5>
+								<div class="h5">
 									<aui:a href="<%= viewContentURLString %>">
 										<%= HtmlUtil.escape(trashRenderer.getTitle(locale)) %>
 									</aui:a>
-								</h5>
+								</div>
 
 								<div class="h6 text-default">
 									<strong><liferay-ui:message key="type" />:</strong> <%= ResourceActionsUtil.getModelResource(locale, trashEntry.getClassName()) %>

@@ -1,6 +1,38 @@
+<script>
+	const _addEventListener = (selectors) => {
+		var elements = document.querySelectorAll(selectors);
+
+		elements.forEach((element) => {
+			element.addEventListener("click", (event) => {
+				event.preventDefault();
+
+				const anchorElement = document.getElementById(element.getAttribute("id").replace("toc-", ""));
+
+				if (anchorElement) {
+					window.history.pushState(
+						{},
+						"",
+						"#" + element.getAttribute("id").replace("toc-", "")
+					);
+
+					window.scrollTo({
+						behavior: "smooth",
+						top: anchorElement.getBoundingClientRect().top + window.scrollY - 190,
+					});
+				}
+			});
+		});
+	}
+
+	window.addEventListener('load', function() {
+		_addEventListener("h1 a, h2 a, h3 a");
+		_addEventListener(".toc li a");
+	});
+</script>
+
 <#assign
 	journalArticleId = .vars["reserved-article-id"].data
-	navigationJSONObject = jsonFactoryUtil.createJSONObject(navigation.getData())
+	navigationJSONObject = jsonFactoryUtil.createJSONObject(htmlUtil.unescape(navigation.getData()?trim))
 	taxonomyCategoriesMap = {}
 	taxonomyCategoryBriefs = restClient.get("/headless-delivery/v1.0/sites/${groupId}/structured-contents/by-key/${journalArticleId}?nestedFields=embeddedTaxonomyCategory").taxonomyCategoryBriefs
 	taxonomyVocabularies = []
@@ -43,7 +75,7 @@
 <article class="learn-article">
 	<div class="d-flex flex-column">
 		<div class="learn-article-breadcrumbs">
-			<div>
+			<div class="learn-article-breadcrumbs-content">
 				<div class="align-items-baseline d-flex justify-content-between mb-3">
 					<ul
 						aria-label="breadcrumb navigation"
@@ -54,7 +86,7 @@
 							<a href="/"><@clay["icon"] symbol="home-full" /></a>
 						</li>
 
-						<#if breadcrumbJSONArray?has_content>
+						<#if breadcrumbJSONArray.length() gt 0>
 							<#list breadcrumbJSONArray.length()-1..0 as i>
 								<li>
 									<a href='${breadcrumbJSONArray.getJSONObject(i).getString("url")}'>${breadcrumbJSONArray.getJSONObject(i).getString("title")}</a>
@@ -81,16 +113,39 @@
 		</div>
 
 		<div class="learn-article-wrapper">
-			<div class="learn-article-content">
+			<div class="language-log learn-article-content">
 				<#if (content.getData())??>
 					${content.getData()}
 				</#if>
 
 				<#if showChildrenCards && childrenJSONArray.length() gt 0>
-					<#list childrenJSONArray.length()-1..0 as i>
-						<a href='${childrenJSONArray.getJSONObject(i).getString("url")}'>${childrenJSONArray.getJSONObject(i).getString("title")}</a>
-					</#list>
+					<div class="learn-card-container">
+						<#list 0..childrenJSONArray.length()-1 as i>
+							<#assign childJSONObject = childrenJSONArray.getJSONObject(i) />
+
+							<div class="learn-card">
+								<a href="${childJSONObject.getString("url")}">
+									<h4>${childJSONObject.getString("title")}</h4>
+								</a>
+
+								<#if childJSONObject.getJSONArray("children")?? && childJSONObject.getJSONArray("children").length() gt 0>
+									<#assign grandchildrenJSONArray = childJSONObject.getJSONArray("children") />
+
+									<div class="mt-2 subsection">
+										<#list 0..grandchildrenJSONArray.length()-1 as j>
+											<#assign grandchildJSONObject = grandchildrenJSONArray.getJSONObject(j) />
+
+											<a href="${grandchildJSONObject.getString("url")}">
+												${grandchildJSONObject.getString("title")}
+											</a>
+										</#list>
+									</div>
+								</#if>
+							</div>
+						</#list>
+					</div>
 				</#if>
+
 				<div class="learn-article-categories-tags">
 					<#list taxonomyVocabularies as vocabulary>
 						<div class="align-items-baseline d-flex mt-2">
@@ -101,7 +156,7 @@
 								<div class="learn-article-category-tag mr-2">
 									<a
 										class="label tag-container"
-										href="/search?category=${taxonomyCategory.categoryId}"
+										href="/search?${vocabulary?lower_case?replace(" ", "-", "r")}=${taxonomyCategory.categoryId}"
 									>
 										<span>${taxonomyCategory.categoryName}</span>
 									</a>
@@ -110,6 +165,8 @@
 						</div>
 					</#list>
 				</div>
+
+				<div class="article-related-recipes" data-article-id="${.vars["reserved-article-id"].data}" id="article-related-recipes"></div>
 			</div>
 
 			<div class="learn-article-page-nav">

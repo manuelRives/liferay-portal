@@ -49,7 +49,6 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
-import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.ImageLocalServiceUtil;
@@ -100,6 +99,15 @@ import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.sites.kernel.util.SitesUtil;
 
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.File;
 import java.io.Serializable;
 
@@ -113,15 +121,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang.time.StopWatch;
 
@@ -290,9 +289,10 @@ public class ServicePreAction extends Action {
 				PropsValues.DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL));
 
 		Layout layout = LayoutLocalServiceUtil.addLayout(
-			userId, groupId, true, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			nameMap, null, null, null, null, LayoutConstants.TYPE_PORTLET,
-			StringPool.BLANK, false, friendlyURLMap, new ServiceContext());
+			null, userId, groupId, true,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, nameMap, null, null, null,
+			null, LayoutConstants.TYPE_PORTLET, StringPool.BLANK, false,
+			friendlyURLMap, new ServiceContext());
 
 		LayoutTypePortlet layoutTypePortlet =
 			(LayoutTypePortlet)layout.getLayoutType();
@@ -376,9 +376,10 @@ public class ServicePreAction extends Action {
 				PropsValues.DEFAULT_USER_PUBLIC_LAYOUT_FRIENDLY_URL));
 
 		Layout layout = LayoutLocalServiceUtil.addLayout(
-			userId, groupId, false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			nameMap, null, null, null, null, LayoutConstants.TYPE_PORTLET,
-			StringPool.BLANK, false, friendlyURLMap, new ServiceContext());
+			null, userId, groupId, false,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, nameMap, null, null, null,
+			null, LayoutConstants.TYPE_PORTLET, StringPool.BLANK, false,
+			friendlyURLMap, new ServiceContext());
 
 		LayoutTypePortlet layoutTypePortlet =
 			(LayoutTypePortlet)layout.getLayoutType();
@@ -944,15 +945,8 @@ public class ServicePreAction extends Action {
 		// Permission checker
 
 		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
-
-		if ((initPermissionChecker && (permissionChecker == null)) ||
-			(permissionChecker.getUserId() != user.getUserId())) {
-
-			permissionChecker = PermissionCheckerFactoryUtil.create(user);
-
-			PermissionThreadLocal.setPermissionChecker(permissionChecker);
-		}
+			PermissionThreadLocal.getPermissionChecker(
+				user, initPermissionChecker);
 
 		// Cookie support
 
@@ -1536,7 +1530,6 @@ public class ServicePreAction extends Action {
 		themeDisplay.setLocale(locale);
 		themeDisplay.setLookAndFeel(theme, colorScheme);
 		themeDisplay.setPathApplet(contextPath.concat("/applets"));
-		themeDisplay.setPathCms(contextPath.concat("/cms"));
 		themeDisplay.setPathContext(contextPath);
 		themeDisplay.setPathFriendlyURLPrivateGroup(
 			friendlyURLPrivateGroupPath);
@@ -2104,7 +2097,7 @@ public class ServicePreAction extends Action {
 
 		if (addDefaultUserPrivateLayouts) {
 			hasPrivateLayouts = LayoutLocalServiceUtil.hasLayouts(
-				user, true, false);
+				user.getGroup(), true, false);
 
 			if (!hasPrivateLayouts) {
 				_addDefaultUserPrivateLayouts(user);
@@ -2132,7 +2125,7 @@ public class ServicePreAction extends Action {
 		if (deleteDefaultUserPrivateLayouts) {
 			if (hasPrivateLayouts == null) {
 				hasPrivateLayouts = LayoutLocalServiceUtil.hasLayouts(
-					user, true, false);
+					user.getGroup(), true, false);
 			}
 
 			if (hasPrivateLayouts) {
@@ -2168,7 +2161,7 @@ public class ServicePreAction extends Action {
 
 		if (addDefaultUserPublicLayouts) {
 			hasPublicLayouts = LayoutLocalServiceUtil.hasLayouts(
-				user, false, false);
+				user.getGroup(), false, false);
 
 			if (!hasPublicLayouts) {
 				_addDefaultUserPublicLayouts(user);
@@ -2196,7 +2189,7 @@ public class ServicePreAction extends Action {
 		if (deleteDefaultUserPublicLayouts) {
 			if (hasPublicLayouts == null) {
 				hasPublicLayouts = LayoutLocalServiceUtil.hasLayouts(
-					user, false, false);
+					user.getGroup(), false, false);
 			}
 
 			if (hasPublicLayouts) {

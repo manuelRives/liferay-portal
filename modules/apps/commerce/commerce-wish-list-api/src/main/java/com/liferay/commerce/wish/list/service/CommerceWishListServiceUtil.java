@@ -7,6 +7,7 @@ package com.liferay.commerce.wish.list.service;
 
 import com.liferay.commerce.wish.list.model.CommerceWishList;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -31,12 +32,10 @@ public class CommerceWishListServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.commerce.wish.list.service.impl.CommerceWishListServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static CommerceWishList addCommerceWishList(
-			String name, boolean defaultWishList,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+			long groupId, String name, boolean defaultWishList)
 		throws PortalException {
 
-		return getService().addCommerceWishList(
-			name, defaultWishList, serviceContext);
+		return getService().addCommerceWishList(groupId, name, defaultWishList);
 	}
 
 	public static void deleteCommerceWishList(long commerceWishListId)
@@ -46,12 +45,12 @@ public class CommerceWishListServiceUtil {
 	}
 
 	public static CommerceWishList fetchCommerceWishList(
-			long groupId, long userId, boolean defaultWishList,
+			long groupId, boolean defaultWishList,
 			OrderByComparator<CommerceWishList> orderByComparator)
 		throws PortalException {
 
 		return getService().fetchCommerceWishList(
-			groupId, userId, defaultWishList, orderByComparator);
+			groupId, defaultWishList, orderByComparator);
 	}
 
 	public static CommerceWishList getCommerceWishList(long commerceWishListId)
@@ -69,32 +68,16 @@ public class CommerceWishListServiceUtil {
 			groupId, start, end, orderByComparator);
 	}
 
-	public static List<CommerceWishList> getCommerceWishLists(
-			long groupId, long userId, int start, int end,
-			OrderByComparator<CommerceWishList> orderByComparator)
-		throws PortalException {
-
-		return getService().getCommerceWishLists(
-			groupId, userId, start, end, orderByComparator);
-	}
-
 	public static int getCommerceWishListsCount(long groupId)
 		throws PortalException {
 
 		return getService().getCommerceWishListsCount(groupId);
 	}
 
-	public static int getCommerceWishListsCount(long groupId, long userId)
+	public static CommerceWishList getDefaultCommerceWishList(long groupId)
 		throws PortalException {
 
-		return getService().getCommerceWishListsCount(groupId, userId);
-	}
-
-	public static CommerceWishList getDefaultCommerceWishList(
-			long groupId, long userId)
-		throws PortalException {
-
-		return getService().getDefaultCommerceWishList(groupId, userId);
+		return getService().getDefaultCommerceWishList(groupId);
 	}
 
 	/**
@@ -115,13 +98,11 @@ public class CommerceWishListServiceUtil {
 	}
 
 	public static CommerceWishListService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceWishListService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceWishListService _service;
+	private static final Snapshot<CommerceWishListService> _serviceSnapshot =
+		new Snapshot<>(
+			CommerceWishListServiceUtil.class, CommerceWishListService.class);
 
 }

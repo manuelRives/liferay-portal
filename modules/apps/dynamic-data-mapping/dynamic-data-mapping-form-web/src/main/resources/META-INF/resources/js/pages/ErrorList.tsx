@@ -10,18 +10,17 @@ import ClayAlert from '@clayui/alert';
 import classNames from 'classnames';
 import React from 'react';
 
-const ErrorList: React.FC<IProps> = ({
-	errorMessages = [],
-	onRemove,
-	sidebarOpen,
-}) => {
+const ErrorList: React.FC<
+	{children?: React.ReactNode | undefined} & IProps
+> = ({errorMessages = [], onRemove, sidebarOpen}) => {
 	const handleRemove = (index: number) => () => onRemove?.(index);
 
 	return errorMessages.length ? (
 		<div className="container-fluid container-fluid-max-xl">
 			<div
 				className={classNames('ddm-form-web__exception-container', {
-					'ddm-form-web__exception-container--sidebar-open': sidebarOpen,
+					'ddm-form-web__exception-container--sidebar-open':
+						sidebarOpen,
 				})}
 			>
 				{errorMessages.map((errorMsg, index) => (

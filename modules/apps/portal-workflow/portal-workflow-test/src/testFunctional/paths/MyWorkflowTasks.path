@@ -88,12 +88,12 @@
 </tr>
 <tr>
 	<td>ASSIGNED_TO_ME_TABLE_ACTIONS</td>
-	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[7]//div/a</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[7]//div/div/div/button</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ASSIGNED_TO_ME_TABLE_SPECIFIC_ACTIONS</td>
-	<td>//tr[${key_position}][contains(.,'${key_workflowAssetTitle}')]/td[7]//div/a</td>
+	<td>//tr[${key_position}][contains(.,'${key_workflowAssetTitle}')]/td[7]//div/div/div/button</td>
 	<td></td>
 </tr>
 <tr>
@@ -141,7 +141,7 @@
 </tr>
 <tr>
 	<td>ASSIGNED_TO_MY_ROLES_TABLE_ACTIONS</td>
-	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')]/td[7]//div/a</td>
+	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')]/td[7]//div/div/div/button</td>
 	<td></td>
 </tr>
 <tr>
@@ -243,12 +243,12 @@
 </tr>
 <tr>
 	<td>MESSAGE_BOARD_SUBJECT_TITLE</td>
-	<td>//span[contains(@class, 'taglib-text ') and contains(., 'Thread Message Subject')]</td>
+	<td>//span[contains(@class, 'taglib-text') and contains(., 'Thread Message Subject')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>NAME_AUTHOR</td>
-	<td>//h4[(@class= 'component-title mt-0') and contains(., '${key_nameAuthor}')]</td>
+	<td>//div[contains(@class,'component-title') and contains(., '${key_nameAuthor}')]</td>
 	<td></td>
 </tr>
 </tbody>

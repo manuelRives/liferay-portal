@@ -5,11 +5,14 @@
 
 package com.liferay.layout.taglib.servlet.taglib.renderer;
 
+import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.constants.FragmentWebKeys;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.renderer.DefaultFragmentRendererContext;
 import com.liferay.fragment.renderer.FragmentRendererController;
 import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
+import com.liferay.fragment.util.configuration.FragmentConfigurationField;
+import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.frontend.taglib.clay.servlet.taglib.ButtonTag;
 import com.liferay.frontend.taglib.clay.servlet.taglib.ColTag;
 import com.liferay.frontend.taglib.clay.servlet.taglib.ContainerTag;
@@ -17,11 +20,15 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.PaginationBarTag;
 import com.liferay.frontend.taglib.clay.servlet.taglib.RowTag;
 import com.liferay.frontend.taglib.servlet.taglib.ComponentTag;
 import com.liferay.info.constants.InfoDisplayWebKeys;
+import com.liferay.info.field.InfoField;
+import com.liferay.info.field.type.BooleanInfoFieldType;
+import com.liferay.info.field.type.MultiselectInfoFieldType;
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemDetails;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemDetailsProvider;
+import com.liferay.info.item.provider.InfoItemPermissionProvider;
 import com.liferay.info.list.renderer.DefaultInfoListRendererContext;
 import com.liferay.info.list.renderer.InfoListRenderer;
 import com.liferay.info.permission.provider.InfoPermissionProvider;
@@ -30,6 +37,7 @@ import com.liferay.layout.constants.LayoutWebKeys;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
+import com.liferay.layout.helper.structure.LayoutStructureRulesHelper;
 import com.liferay.layout.list.retriever.ListObjectReference;
 import com.liferay.layout.responsive.ResponsiveLayoutStructureUtil;
 import com.liferay.layout.taglib.internal.display.context.RenderCollectionLayoutStructureItemDisplayContext;
@@ -41,6 +49,7 @@ import com.liferay.layout.util.structure.CollectionStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.ColumnLayoutStructureItem;
 import com.liferay.layout.util.structure.ContainerStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.DropZoneLayoutStructureItem;
+import com.liferay.layout.util.structure.FormStepContainerStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.FormStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
@@ -57,6 +66,7 @@ import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTemplate;
 import com.liferay.portal.kernel.model.LayoutTemplateConstants;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutTemplateLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.SessionErrors;
@@ -67,6 +77,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -74,17 +85,17 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.layoutconfiguration.util.RuntimePageUtil;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Mikel Lorza
@@ -124,7 +135,22 @@ public class LayoutStructureRenderer {
 				"infoItemActionComponent",
 				_renderLayoutStructureDisplayContext.
 					getInfoItemActionComponentContext(),
-				"{InfoItemActionHandler} from layout-taglib");
+				"{InfoItemActionHandler} from layout-taglib/render");
+		}
+
+		LayoutStructureRulesHelper.LayoutStructureRulesResult
+			layoutStructureRulesResult =
+				_renderLayoutStructureDisplayContext.
+					getLayoutStructureRulesResult();
+
+		if (MapUtil.isNotEmpty(
+				layoutStructureRulesResult.getLayoutStructureRuleIdsMap())) {
+
+			_renderComponent(
+				"RulesHandlerComponent",
+				_renderLayoutStructureDisplayContext.
+					getRulesHandlerComponentContext(),
+				"{RulesHandler} from layout-taglib/render");
 		}
 	}
 
@@ -193,6 +219,31 @@ public class LayoutStructureRenderer {
 		return false;
 	}
 
+	private boolean _hasUpdatePermission(
+			LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider)
+		throws Exception {
+
+		InfoItemServiceRegistry infoItemServiceRegistry =
+			ServletContextUtil.getInfoItemServiceRegistry();
+
+		InfoItemPermissionProvider infoItemPermissionProvider =
+			infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemPermissionProvider.class,
+				layoutDisplayPageObjectProvider.getClassName());
+
+		if ((infoItemPermissionProvider == null) ||
+			((_themeDisplay != null) &&
+			 infoItemPermissionProvider.hasPermission(
+				 _themeDisplay.getPermissionChecker(),
+				 layoutDisplayPageObjectProvider.getDisplayObject(),
+				 ActionKeys.UPDATE))) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private void _renderCollectionStyledLayoutStructureItem(
 			InfoForm infoForm,
 			CollectionStyledLayoutStructureItem
@@ -217,6 +268,8 @@ public class LayoutStructureRenderer {
 			collectionStyledLayoutStructureItem.getUniqueCssClass());
 		jspWriter.write(StringPool.SPACE);
 		jspWriter.write(collectionStyledLayoutStructureItem.getCssClass());
+		jspWriter.write("\" data-layout-structure-item-id=\"");
+		jspWriter.write(collectionStyledLayoutStructureItem.getItemId());
 		jspWriter.write("\"");
 
 		ListObjectReference listObjectReference =
@@ -230,11 +283,16 @@ public class LayoutStructureRenderer {
 		}
 
 		jspWriter.write(" id=\"analytics-targetable-collection-");
-		jspWriter.write(collectionStyledLayoutStructureItem.getNamespace());
-		jspWriter.write("\" style=\"");
-		jspWriter.write(
-			_renderLayoutStructureDisplayContext.getStyle(
-				collectionStyledLayoutStructureItem));
+		jspWriter.write(collectionStyledLayoutStructureItem.getItemId());
+
+		String style = _renderLayoutStructureDisplayContext.getStyle(
+			collectionStyledLayoutStructureItem);
+
+		if (Validator.isNotNull(style)) {
+			jspWriter.write("\" style=\"");
+			jspWriter.write(style);
+		}
+
 		jspWriter.write("\">");
 
 		List<String> collectionStyledLayoutStructureItemIds =
@@ -459,7 +517,7 @@ public class LayoutStructureRenderer {
 			paginationBarTag.setCssClass("pb-2 pt-3");
 			paginationBarTag.setPropsTransformer(
 				"{NumericCollectionPaginationPropsTransformer} from " +
-					"layout-taglib");
+					"layout-taglib/render");
 			paginationBarTag.setShowDeltasDropDown(false);
 			paginationBarTag.setTotalItems(
 				renderCollectionLayoutStructureItemDisplayContext.
@@ -530,7 +588,7 @@ public class LayoutStructureRenderer {
 					"collectionId",
 					collectionStyledLayoutStructureItem.getItemId()
 				).build(),
-				"{SimpleCollectionPagination} from layout-taglib");
+				"{SimpleCollectionPagination} from layout-taglib/render");
 		}
 
 		jspWriter.write("</div>");
@@ -673,20 +731,29 @@ public class LayoutStructureRenderer {
 			}
 		}
 
-		jspWriter.write("\" style=\"");
+		jspWriter.write("\" data-layout-structure-item-id=\"");
+		jspWriter.write(containerStyledLayoutStructureItem.getItemId());
 
-		String contentVisibility =
-			containerStyledLayoutStructureItem.getContentVisibility();
+		StringBundler sb = new StringBundler(4);
 
-		if (Validator.isNotNull(contentVisibility)) {
-			jspWriter.append("content-visibility:");
-			jspWriter.append(contentVisibility);
-			jspWriter.append(StringPool.SEMICOLON);
+		if (Validator.isNotNull(
+				containerStyledLayoutStructureItem.getContentVisibility())) {
+
+			sb.append("content-visibility:");
+			sb.append(
+				containerStyledLayoutStructureItem.getContentVisibility());
+			sb.append(StringPool.SEMICOLON);
 		}
 
-		jspWriter.write(
+		sb.append(
 			_renderLayoutStructureDisplayContext.getStyle(
 				containerStyledLayoutStructureItem));
+
+		if (sb.length() > 0) {
+			jspWriter.write("\" style=\"");
+			jspWriter.write(sb.toString());
+		}
+
 		jspWriter.write("\">");
 
 		_renderLayoutStructure(
@@ -785,8 +852,25 @@ public class LayoutStructureRenderer {
 			}
 		}
 		else {
+			JspWriter jspWriter = _pageContext.getOut();
+
+			if (Objects.equals(
+					_renderLayoutStructureDisplayContext.getLayoutMode(),
+					Constants.VIEW)) {
+
+				jspWriter.write("<div class=\"layout-content portlet-layout\"");
+				jspWriter.write("id=\"main-content\" role=\"main\">");
+			}
+
 			_renderLayoutStructure(
 				layoutStructureItem.getChildrenItemIds(), infoForm);
+
+			if (Objects.equals(
+					_renderLayoutStructureDisplayContext.getLayoutMode(),
+					Constants.VIEW)) {
+
+				jspWriter.write("</div>");
+			}
 		}
 	}
 
@@ -826,15 +910,82 @@ public class LayoutStructureRenderer {
 		jspWriter.write("</div></div>");
 	}
 
+	private void _renderFormStepContainerStyledLayoutStructureItem(
+			InfoForm infoForm,
+			FormStepContainerStyledLayoutStructureItem
+				formStepContainerStyledLayoutStructureItem)
+		throws Exception {
+
+		JspWriter jspWriter = _pageContext.getOut();
+
+		jspWriter.write("<div class=\"");
+		jspWriter.write(
+			formStepContainerStyledLayoutStructureItem.getUniqueCssClass());
+		jspWriter.write(StringPool.SPACE);
+		jspWriter.write(
+			formStepContainerStyledLayoutStructureItem.getCssClass());
+		jspWriter.write(StringPool.SPACE);
+		jspWriter.write(
+			formStepContainerStyledLayoutStructureItem.getStyledCssClasses());
+		jspWriter.write("\" data-layout-structure-item-id=\"");
+		jspWriter.write(formStepContainerStyledLayoutStructureItem.getItemId());
+
+		String style = _renderLayoutStructureDisplayContext.getStyle(
+			formStepContainerStyledLayoutStructureItem);
+
+		if (Validator.isNotNull(style)) {
+			jspWriter.write("\" style=\"");
+			jspWriter.write(style);
+		}
+
+		jspWriter.write("\">");
+
+		List<String> childrenItemIds =
+			formStepContainerStyledLayoutStructureItem.getChildrenItemIds();
+
+		for (int i = 0; i < childrenItemIds.size(); i++) {
+			jspWriter.write("<div");
+
+			if (i != 0) {
+				jspWriter.write(" class=\"d-none\"");
+			}
+
+			jspWriter.write(" data-step-index=\"");
+			jspWriter.write(String.valueOf(i));
+			jspWriter.write(StringPool.QUOTE);
+
+			jspWriter.write(StringPool.GREATER_THAN);
+
+			LayoutStructureItem layoutStructureItem =
+				_layoutStructure.getLayoutStructureItem(childrenItemIds.get(i));
+
+			_renderLayoutStructure(
+				layoutStructureItem.getChildrenItemIds(), infoForm);
+
+			jspWriter.write("</div>");
+		}
+
+		jspWriter.write("</div>");
+
+		_renderComponent(
+			"FormStepComponent" +
+				formStepContainerStyledLayoutStructureItem.getItemId(),
+			HashMapBuilder.<String, Object>put(
+				"formId",
+				formStepContainerStyledLayoutStructureItem.getParentItemId()
+			).build(),
+			"{FormStepHandler} from layout-taglib/render");
+	}
+
 	private void _renderFormStyledLayoutStructureItem(
 			InfoForm infoForm,
 			FormStyledLayoutStructureItem formStyledLayoutStructureItem)
 		throws Exception {
 
-		if ((infoForm == null) ||
-			!_hasAddPermission(
-				PortalUtil.getClassName(
-					formStyledLayoutStructureItem.getClassNameId()))) {
+		String className = formStyledLayoutStructureItem.getClassName();
+
+		if (Validator.isNull(className) || (infoForm == null) ||
+			!_hasAddPermission(className)) {
 
 			return;
 		}
@@ -895,23 +1046,36 @@ public class LayoutStructureRenderer {
 			}
 		}
 
-		jspWriter.write(
-			"\" enctype=\"multipart/form-data\" method=\"POST\" style=\"");
-		jspWriter.write(
-			_renderLayoutStructureDisplayContext.getStyle(
-				formStyledLayoutStructureItem));
-		jspWriter.write("\"><input name=\"redirect\" type=\"hidden\" value=\"");
-		jspWriter.write(
+		jspWriter.write("\" data-layout-structure-item-id=\"");
+		jspWriter.write(formStyledLayoutStructureItem.getItemId());
+		jspWriter.write("\" enctype=\"multipart/form-data\" id=\"");
+		jspWriter.write(formStyledLayoutStructureItem.getUniqueCssClass());
+		jspWriter.write("\" method=\"POST");
+
+		String style = _renderLayoutStructureDisplayContext.getStyle(
+			formStyledLayoutStructureItem);
+
+		if (Validator.isNotNull(style)) {
+			jspWriter.write("\" style=\"");
+			jspWriter.write(style);
+		}
+
+		jspWriter.write("\">");
+
+		String redirect =
 			_renderLayoutStructureDisplayContext.
 				getFormStyledLayoutStructureItemRedirect(
-					formStyledLayoutStructureItem));
-		jspWriter.write("\"><input name=\"backURL\" type=\"hidden\" value=\"");
+					formStyledLayoutStructureItem);
+
+		if (Validator.isNotNull(redirect)) {
+			jspWriter.write(
+				"<input name=\"redirect\" type=\"hidden\" value=\"");
+			jspWriter.write(redirect);
+			jspWriter.write("\">");
+		}
+
+		jspWriter.write("<input name=\"backURL\" type=\"hidden\" value=\"");
 		jspWriter.write(_themeDisplay.getURLCurrent());
-		jspWriter.write(
-			"\"><input name=\"checkboxNames\" type=\"hidden\" value=\"");
-		jspWriter.write(
-			_renderLayoutStructureDisplayContext.getInfoFormCheckboxNames(
-				infoForm));
 		jspWriter.write(
 			"\"><input name=\"classNameId\" type=\"hidden\" value=\"");
 		jspWriter.write(
@@ -920,6 +1084,8 @@ public class LayoutStructureRenderer {
 			"\"><input name=\"classTypeId\" type=\"hidden\" value=\"");
 		jspWriter.write(
 			String.valueOf(formStyledLayoutStructureItem.getClassTypeId()));
+
+		boolean readOnly = false;
 
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
 			(LayoutDisplayPageObjectProvider<?>)
@@ -940,6 +1106,10 @@ public class LayoutStructureRenderer {
 			jspWriter.write(" value=\"");
 			jspWriter.write(
 				layoutDisplayPageObjectProvider.getExternalReferenceCode());
+
+			if (!_hasUpdatePermission(layoutDisplayPageObjectProvider)) {
+				readOnly = true;
+			}
 		}
 
 		jspWriter.write(
@@ -1003,10 +1173,18 @@ public class LayoutStructureRenderer {
 			_httpServletRequest,
 			"infoFormParameterMap" + formStyledLayoutStructureItem.getItemId());
 
+		if (readOnly) {
+			jspWriter.write("<fieldset disabled=\"disabled\">");
+		}
+
 		_renderLayoutStructure(
 			formStyledLayoutStructureItem.getChildrenItemIds(), infoForm);
 
 		SessionMessages.remove(_httpServletRequest, "infoFormParameterMap");
+
+		if (readOnly) {
+			jspWriter.write("</fieldset>");
+		}
 
 		jspWriter.write("</form>");
 	}
@@ -1053,6 +1231,24 @@ public class LayoutStructureRenderer {
 							fragmentEntryLink, infoForm,
 							fragmentStyledLayoutStructureItem.getItemId());
 
+				Set<String> disabledItemIds =
+					_renderLayoutStructureDisplayContext.getDisabledItemIds();
+				Set<String> enabledItemIds =
+					_renderLayoutStructureDisplayContext.getEnabledItemIds();
+
+				if (disabledItemIds.contains(
+						fragmentStyledLayoutStructureItem.getItemId())) {
+
+					defaultFragmentRendererContext.setAttribute(
+						"disabled", Boolean.TRUE);
+				}
+				else if (enabledItemIds.contains(
+							fragmentStyledLayoutStructureItem.getItemId())) {
+
+					defaultFragmentRendererContext.setAttribute(
+						"enabled", Boolean.TRUE);
+				}
+
 				FragmentRendererController fragmentRendererController =
 					ServletContextUtil.getFragmentRendererController();
 
@@ -1064,6 +1260,38 @@ public class LayoutStructureRenderer {
 				String html = fragmentRendererController.render(
 					defaultFragmentRendererContext, _httpServletRequest,
 					httpServletResponse);
+
+				if ((infoForm != null) &&
+					Objects.equals(
+						fragmentEntryLink.getType(),
+						FragmentConstants.TYPE_INPUT)) {
+
+					FragmentEntryConfigurationParser
+						fragmentEntryConfigurationParser =
+							ServletContextUtil.
+								getFragmentEntryConfigurationParser();
+
+					String fieldName = GetterUtil.getString(
+						fragmentEntryConfigurationParser.getFieldValue(
+							fragmentEntryLink.getEditableValues(),
+							new FragmentConfigurationField(
+								"inputFieldId", "string", "", false, "text"),
+							_themeDisplay.getLocale()));
+
+					InfoField<?> infoField = infoForm.getInfoField(fieldName);
+
+					if ((infoField != null) &&
+						(infoField.getInfoFieldType() instanceof
+							BooleanInfoFieldType ||
+						 infoField.getInfoFieldType() instanceof
+							 MultiselectInfoFieldType)) {
+
+						jspWriter.write("<input name=\"checkboxNames\" ");
+						jspWriter.write("type=\"hidden\" value=\"");
+						jspWriter.write(fieldName);
+						jspWriter.write("\">");
+					}
+				}
 
 				if (GetterUtil.getBoolean(
 						_httpServletRequest.getAttribute(
@@ -1152,6 +1380,14 @@ public class LayoutStructureRenderer {
 					infoForm, layoutStructureItem);
 			}
 			else if (layoutStructureItem instanceof
+						FormStepContainerStyledLayoutStructureItem) {
+
+				_renderFormStepContainerStyledLayoutStructureItem(
+					infoForm,
+					(FormStepContainerStyledLayoutStructureItem)
+						layoutStructureItem);
+			}
+			else if (layoutStructureItem instanceof
 						FormStyledLayoutStructureItem) {
 
 				FormStyledLayoutStructureItem formStyledLayoutStructureItem =
@@ -1238,10 +1474,17 @@ public class LayoutStructureRenderer {
 		jspWriter.write(rowStyledLayoutStructureItem.getCssClass());
 		jspWriter.write(StringPool.SPACE);
 		jspWriter.write(rowStyledLayoutStructureItem.getStyledCssClasses());
-		jspWriter.write("\" style=\"");
-		jspWriter.write(
-			_renderLayoutStructureDisplayContext.getStyle(
-				rowStyledLayoutStructureItem));
+		jspWriter.write("\" data-layout-structure-item-id=\"");
+		jspWriter.write(rowStyledLayoutStructureItem.getItemId());
+
+		String style = _renderLayoutStructureDisplayContext.getStyle(
+			rowStyledLayoutStructureItem);
+
+		if (Validator.isNotNull(style)) {
+			jspWriter.write("\" style=\"");
+			jspWriter.write(style);
+		}
+
 		jspWriter.write("\">");
 
 		if (_renderLayoutStructureDisplayContext.isIncludeContainer(
@@ -1321,10 +1564,17 @@ public class LayoutStructureRenderer {
 			jspWriter.write(colorCssClasses);
 		}
 
-		jspWriter.write("\" style=\"");
-		jspWriter.write(
-			_renderLayoutStructureDisplayContext.getStyle(
-				fragmentStyledLayoutStructureItem));
+		jspWriter.write("\" data-layout-structure-item-id=\"");
+		jspWriter.write(fragmentStyledLayoutStructureItem.getItemId());
+
+		String style = _renderLayoutStructureDisplayContext.getStyle(
+			fragmentStyledLayoutStructureItem);
+
+		if (Validator.isNotNull(style)) {
+			jspWriter.write("\" style=\"");
+			jspWriter.write(style);
+		}
+
 		jspWriter.write("\">");
 	}
 

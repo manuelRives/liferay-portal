@@ -9,12 +9,12 @@ import React, {useContext, useEffect, useState} from 'react';
 import {DefinitionBuilderContext} from '../../../../../../DefinitionBuilderContext';
 import {contextUrl} from '../../../../../../constants';
 import {
-	headers,
+	HEADERS,
 	retrieveAccountRoles,
 	userBaseURL,
 } from '../../../../../../util/fetchUtil';
 import SidebarPanel from '../../../SidebarPanel';
-import BaseRoleType from '../../shared-components/BaseRoleType';
+import {BaseRoleType} from '../../shared-components/BaseRoleType';
 
 const RoleType = ({subSectionIdentifier, subSectionsLength, ...otherProps}) => {
 	const {accountEntryId} = useContext(DefinitionBuilderContext);
@@ -24,30 +24,25 @@ const RoleType = ({subSectionIdentifier, subSectionsLength, ...otherProps}) => {
 
 	const {resource} = useResource({
 		fetchOptions: {
-			headers: {
-				...headers,
-				'accept': `application/json`,
-				'x-csrf-token': Liferay.authToken,
-			},
+			headers: HEADERS,
 		},
 		fetchPolicy: 'cache-first',
-		link: `${window.location.origin}${contextUrl}${userBaseURL}/roles`,
+		link: `${window.location.origin}${contextUrl}${userBaseURL}/roles?restrictFields=rolePermissions`,
 		onNetworkStatusChange: setNetworkStatus,
 		variables: {
 			pageSize: -1,
 		},
 	});
 
-	const {autoCreate, roleKey, roleName, roleType} = otherProps?.restProps;
+	const {autoCreate, roleName, roleType} = otherProps?.restProps;
 
 	useEffect(() => {
 		retrieveAccountRoles(accountEntryId)
 			.then((response) => response.json())
 			.then(({items}) => {
-				const accountRoleItems = items.map(({displayName, name}) => {
+				const accountRoleItems = items.map(({name}) => {
 					return {
-						roleKey: name,
-						roleName: displayName,
+						roleName: name,
 						roleType: 'Account',
 					};
 				});
@@ -69,7 +64,6 @@ const RoleType = ({subSectionIdentifier, subSectionsLength, ...otherProps}) => {
 				inputLabel={Liferay.Language.get('role-type')}
 				networkStatus={networkStatus}
 				resource={resource}
-				roleKey={roleKey}
 				roleName={roleName}
 				roleType={roleType}
 				sectionsLength={subSectionsLength}

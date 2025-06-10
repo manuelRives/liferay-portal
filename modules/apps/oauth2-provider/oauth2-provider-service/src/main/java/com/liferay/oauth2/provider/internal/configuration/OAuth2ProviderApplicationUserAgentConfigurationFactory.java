@@ -94,6 +94,9 @@ public class OAuth2ProviderApplicationUserAgentConfigurationFactory
 						externalReferenceCode + ".oauth2.authorization.uri",
 						"/o/oauth2/authorize"
 					).put(
+						externalReferenceCode + ".oauth2.home.page.uri",
+						oAuth2Application.getHomePageURL()
+					).put(
 						externalReferenceCode + ".oauth2.introspection.uri",
 						"/o/oauth2/introspect"
 					).put(
@@ -164,9 +167,7 @@ public class OAuth2ProviderApplicationUserAgentConfigurationFactory
 					privacyPolicyURL(),
 				redirectURIsList, false, true, null, new ServiceContext());
 
-		oAuth2Application = oAuth2ApplicationLocalService.updateScopeAliases(
-			oAuth2Application.getUserId(), oAuth2Application.getUserName(),
-			oAuth2Application.getOAuth2ApplicationId(), scopeAliasesList);
+		updateScopes(oAuth2Application, scopeAliasesList);
 
 		if (_log.isInfoEnabled()) {
 			_log.info(

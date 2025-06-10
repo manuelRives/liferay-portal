@@ -168,8 +168,11 @@ public class SynchronousDestinationTestRule
 				tensorflowModelDownloadFilter, videoProcessorFilter);
 
 			_bufferedIncrementForceSyncSafeCloseable =
-				BufferedIncrementThreadLocal.setWithSafeCloseable(true);
+				BufferedIncrementThreadLocal.setForceSyncWithSafeCloseable(
+					true);
 
+			replaceDestination(
+				DestinationNames.ASSET_CATEGORY_ASSET_ENTRIES_REINDEX);
 			replaceDestination(DestinationNames.ASYNC_SERVICE);
 			replaceDestination(DestinationNames.BACKGROUND_TASK);
 			replaceDestination(DestinationNames.BACKGROUND_TASK_STATUS);

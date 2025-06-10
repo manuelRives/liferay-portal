@@ -47,7 +47,7 @@ public class SiteNavigationMenuTestUtil {
 		serviceContext.setModifiedDate(date);
 
 		return SiteNavigationMenuLocalServiceUtil.addSiteNavigationMenu(
-			TestPropsValues.getUserId(), group.getGroupId(), name,
+			null, TestPropsValues.getUserId(), group.getGroupId(), name,
 			serviceContext);
 	}
 
@@ -63,22 +63,9 @@ public class SiteNavigationMenuTestUtil {
 		throws PortalException {
 
 		return SiteNavigationMenuLocalServiceUtil.addSiteNavigationMenu(
-			TestPropsValues.getUserId(), group.getGroupId(),
+			null, TestPropsValues.getUserId(), group.getGroupId(),
 			RandomTestUtil.randomString(), type, auto,
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
-	}
-
-	public static SiteNavigationMenu addSiteNavigationMenu(
-			Group group, long userId)
-		throws PortalException {
-
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), userId);
-
-		return SiteNavigationMenuLocalServiceUtil.addSiteNavigationMenu(
-			userId, group.getGroupId(), RandomTestUtil.randomString(),
-			serviceContext);
 	}
 
 	public static SiteNavigationMenu addSiteNavigationMenu(
@@ -86,7 +73,30 @@ public class SiteNavigationMenuTestUtil {
 		throws PortalException {
 
 		return SiteNavigationMenuLocalServiceUtil.addSiteNavigationMenu(
-			TestPropsValues.getUserId(), group.getGroupId(), name,
+			null, TestPropsValues.getUserId(), group.getGroupId(), name,
+			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
+	}
+
+	public static SiteNavigationMenu addSiteNavigationMenu(
+			long userId, Group group)
+		throws PortalException {
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), userId);
+
+		return SiteNavigationMenuLocalServiceUtil.addSiteNavigationMenu(
+			null, userId, group.getGroupId(), RandomTestUtil.randomString(),
+			serviceContext);
+	}
+
+	public static SiteNavigationMenu addSiteNavigationMenu(
+			String externalReferenceCode, Group group, String name)
+		throws PortalException {
+
+		return SiteNavigationMenuLocalServiceUtil.addSiteNavigationMenu(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			group.getGroupId(), name,
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 	}
 

@@ -17,12 +17,15 @@ import com.liferay.asset.publisher.util.AssetPublisherHelper;
 import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherPortletInstanceConfiguration;
 import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherSelectionStyleConfigurationUtil;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
+import com.liferay.asset.publisher.web.internal.util.FF_LPD_39304_CompanyTemporarySwapper;
 import com.liferay.asset.util.AssetEntryQueryProcessor;
 import com.liferay.asset.util.AssetRendererFactoryClassProvider;
 import com.liferay.dynamic.data.mapping.util.DDMIndexer;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.concurrent.DCLSingleton;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
@@ -69,15 +72,15 @@ import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portlet.StrictPortletPreferencesImpl;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -119,10 +122,18 @@ public class AssetPublisherWebHelper {
 			return;
 		}
 
-		String selectionStyle = portletPreferences.getValue(
-			"selectionStyle",
-			AssetPublisherSelectionStyleConfigurationUtil.
-				defaultSelectionStyle());
+		String selectionStyle = StringPool.BLANK;
+
+		try (SafeCloseable safeCloseable =
+				FF_LPD_39304_CompanyTemporarySwapper.
+					setCompanyIdWithSafeCloseable(
+						themeDisplay.getCompanyId())) {
+
+			selectionStyle = portletPreferences.getValue(
+				"selectionStyle",
+				AssetPublisherSelectionStyleConfigurationUtil.
+					defaultSelectionStyle());
+		}
 
 		if (selectionStyle.equals(
 				AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC)) {
@@ -225,18 +236,13 @@ public class AssetPublisherWebHelper {
 
 	public Long[] getClassTypeIds(
 		PortletPreferences portletPreferences, String className,
-		List<ClassType> availableClassTypes) {
-
-		Long[] availableClassTypeIds = new Long[availableClassTypes.size()];
-
-		for (int i = 0; i < availableClassTypeIds.length; i++) {
-			ClassType classType = availableClassTypes.get(i);
-
-			availableClassTypeIds[i] = classType.getClassTypeId();
-		}
+		List<ClassType> classTypes) {
 
 		return _getClassTypeIds(
-			portletPreferences, className, availableClassTypeIds);
+			portletPreferences, className,
+			TransformUtil.transformToArray(
+				classTypes, classType -> classType.getClassTypeId(),
+				Long.class));
 	}
 
 	public String getDefaultAssetPublisherId(Layout layout) {
@@ -648,7 +654,9 @@ public class AssetPublisherWebHelper {
 				0L));
 
 		if (classTypeIds != null) {
-			return classTypeIds;
+			return ArrayUtil.filter(
+				availableClassTypeIds,
+				classTypeId -> ArrayUtil.contains(classTypeIds, classTypeId));
 		}
 
 		return availableClassTypeIds;

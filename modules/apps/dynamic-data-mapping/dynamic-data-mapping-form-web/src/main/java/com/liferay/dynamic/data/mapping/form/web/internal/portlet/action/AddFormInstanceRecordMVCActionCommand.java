@@ -26,9 +26,9 @@ import com.liferay.dynamic.data.mapping.model.DDMFormInstanceVersion;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
+import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordVersionLocalService;
-import com.liferay.dynamic.data.mapping.service.DDMFormInstanceService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.petra.string.StringPool;
@@ -51,13 +51,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletSession;
+
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,8 +67,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 		"mvc.command.name=/dynamic_data_mapping_form/add_form_instance_record"
 	},
 	service = MVCActionCommand.class
@@ -100,7 +100,7 @@ public class AddFormInstanceRecordMVCActionCommand
 		}
 
 		DDMFormInstance ddmFormInstance =
-			_ddmFormInstanceService.getFormInstance(formInstanceId);
+			_ddmFormInstanceLocalService.getFormInstance(formInstanceId);
 
 		AddFormInstanceRecordMVCCommandUtil.validateExpirationStatus(
 			ddmFormInstance, actionRequest);
@@ -117,18 +117,25 @@ public class AddFormInstanceRecordMVCActionCommand
 		DDMFormValues ddmFormValues = _ddmFormValuesFactory.create(
 			actionRequest, ddmForm);
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		String languageId = ParamUtil.getString(
+			actionRequest, "defaultLanguageId");
+
+		if (Validator.isNull(languageId)) {
+			languageId = _language.getLanguageId(actionRequest);
+		}
+
+		Locale locale = LocaleUtil.fromLanguageId(languageId);
 
 		_createDDMFormFieldOptionsFromDataProvider(
-			actionRequest, ddmForm, themeDisplay.getLocale());
+			actionRequest, ddmForm, locale);
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
 		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
 			_ddmFormEvaluator.evaluate(
 				DDMFormEvaluatorEvaluateRequest.Builder.newBuilder(
-					ddmForm, ddmFormValues,
-					LocaleUtil.fromLanguageId(
-						_language.getLanguageId(actionRequest))
+					ddmForm, ddmFormValues, locale
 				).withCompanyId(
 					_portal.getCompanyId(actionRequest)
 				).withDDMFormInstanceId(
@@ -323,14 +330,14 @@ public class AddFormInstanceRecordMVCActionCommand
 	private DDMFormFieldOptionsFactory _ddmFormFieldOptionsFactory;
 
 	@Reference
+	private DDMFormInstanceLocalService _ddmFormInstanceLocalService;
+
+	@Reference
 	private DDMFormInstanceRecordService _ddmFormInstanceRecordService;
 
 	@Reference
 	private DDMFormInstanceRecordVersionLocalService
 		_ddmFormInstanceRecordVersionLocalService;
-
-	@Reference
-	private DDMFormInstanceService _ddmFormInstanceService;
 
 	@Reference
 	private DDMFormInstanceVersionLocalService

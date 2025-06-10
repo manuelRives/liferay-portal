@@ -8,7 +8,7 @@ import {
 	ItemFinder,
 	commerceEvents,
 } from 'commerce-frontend-js';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 export default function ({
 	apiUrl,
@@ -16,9 +16,8 @@ export default function ({
 	rootPortletId,
 	shippingFixedOptionId,
 }) {
-	const shippingFixedOptionTermsResource = CommerceServiceProvider.AdminChannelAPI(
-		'v1'
-	);
+	const shippingFixedOptionTermsResource =
+		CommerceServiceProvider.AdminChannelAPI('v1');
 
 	function selectItem(term) {
 		const termData = {

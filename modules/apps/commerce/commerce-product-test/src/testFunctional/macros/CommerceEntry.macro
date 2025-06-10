@@ -1357,6 +1357,8 @@ definition {
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
 				value1 = ${keyReferenceCode});
 
+			SelectFrame.selectFrameTop();
+
 			Button.click(button = "Submit");
 		}
 
@@ -1515,8 +1517,10 @@ definition {
 
 	@summary = "Default summary"
 	macro gotoMenuTab(menuTab = null) {
+		var menuTabKey = StringUtil.replace(${menuTab}, " DEPRECATED", "");
+
 		AssertClick(
-			key_menuTab = ${menuTab},
+			key_menuTab = ${menuTabKey},
 			locator1 = "CommerceEntry#MENU_TAB",
 			value1 = ${menuTab});
 	}
@@ -2348,7 +2352,7 @@ definition {
 
 			Click(
 				key_entryName = "${sku}SKU",
-				locator1 = "CommerceNavigation#ENTRY_NAME");
+				locator1 = "CommerceNavigation#ENTRY_NAME_EXACT_MATCH");
 
 			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 

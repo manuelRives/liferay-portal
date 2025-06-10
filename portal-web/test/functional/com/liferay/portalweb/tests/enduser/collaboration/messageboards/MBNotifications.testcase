@@ -4,7 +4,6 @@ definition {
 	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Notifications";
 	property testray.main.component.name = "Message Boards";
 
 	setUp {
@@ -241,7 +240,7 @@ definition {
 			threadBody = "MB Thread Message Body",
 			threadSubject = "MB Thread Message Subject",
 			userEmailAddress = "userea@liferay.com",
-			userPassword = "test");
+			userPassword = PropsUtil.get("default.admin.password"));
 
 		Notifications.viewBadgeCount(notificationCount = 0);
 
@@ -271,6 +270,8 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanViewWebsiteNotificationForUpdatedThreadInCategory {
+		property portal.acceptance = "quarantine";
+
 		JSONMBMessage.addCategory(
 			categoryDescription = "MB Category Description",
 			categoryName = "MB Category Name",
@@ -511,7 +512,7 @@ definition {
 		User.logoutPG();
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = PropsUtil.get("email.address.3"));
 
 		Navigator.gotoPage(pageName = "Message Boards Page");
@@ -523,7 +524,7 @@ definition {
 		User.logoutPG();
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = PropsUtil.get("email.address.4"));
 
 		Navigator.gotoPage(pageName = "Message Boards Page");

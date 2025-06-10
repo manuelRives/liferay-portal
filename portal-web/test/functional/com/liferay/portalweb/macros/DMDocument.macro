@@ -270,6 +270,18 @@ definition {
 
 			AssertElementNotPresent(locator1 = "TextInput#FILE_PRESENT");
 		}
+		else if (isSet(fileExtensionMismatch)) {
+			Button.clickPublish();
+
+			Alert.viewRequestFailedToComplete();
+
+			AssertTextEquals.assertPartialText(
+				key_alertMessage = "The file extension cannot be different from the file name extension.",
+				locator1 = "Message#ERROR_ENTER_A_VALID_VALUE",
+				value1 = "The file extension cannot be different from the file name extension.");
+
+			AssertElementNotPresent(locator1 = "TextInput#FILE_PRESENT");
+		}
 		else if (isSet(validateStorageQuota)) {
 			Button.clickPublish();
 
@@ -886,10 +898,10 @@ definition {
 		var downloadedFile = FileUtil.exists("${tempDir}/${fileName}");
 
 		if (${downloadedFile} == "true") {
-			echo("This is a correct file name.");
+			echo("There is a file named ${fileName} in temp folder ${tempDir}");
 		}
 		else {
-			fail("FAIL!");
+			fail("There is no file named ${fileName} in temp folder ${tempDir}");
 		}
 	}
 
@@ -2273,9 +2285,17 @@ definition {
 
 		var dmDocumentURL = selenium.getAttribute("//img[contains(@class,'preview-file-image') and contains(@src,'${dmDocumentFileName}')]@src");
 
+		echo("## * Document URL: ${dmDocumentURL}");
+
 		var curl = '''${dmDocumentURL} -I''';
 
 		var responseHeader = JSONCurlUtil.post(${curl});
+
+		if (${responseHeader} == "") {
+			fail("FAIL. Cannot get document.");
+		}
+
+		echo("## * Headers: ${responseHeader}");
 
 		return ${responseHeader};
 	}
@@ -2784,7 +2804,7 @@ definition {
 
 	@summary = "Default summary"
 	macro setExpirationDate(invalidExpirationDate = null, increaseMinutes = null) {
-		Panel.expandPanel(panel = "Expiration Date");
+		Panel.expandPanel(panel = "Schedule");
 
 		if (isSet(enableExpirationDate)) {
 			Uncheck(
@@ -2833,7 +2853,7 @@ definition {
 
 	@summary = "Default summary"
 	macro setReviewDate(increaseMinutes = null) {
-		Panel.expandPanel(panel = "Expiration Date");
+		Panel.expandPanel(panel = "Schedule");
 
 		if (isSet(enableReviewDate)) {
 			Uncheck(
@@ -3455,9 +3475,21 @@ definition {
 
 		AssertElementPresent(locator1 = "DocumentsAndMedia#ICON_DOCUMENT_ICON_LOCKED");
 
-		AssertTextEquals(
-			locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS",
-			value1 = ${status});
+		if (${status} == "Approved") {
+			AssertTextEquals(
+				locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS_APPROVED",
+				value1 = "Approved");
+		}
+		else if (${status} == "Draft") {
+			AssertTextEquals(
+				locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS_DRAFT",
+				value1 = "Draft");
+		}
+		else {
+			AssertTextEquals(
+				locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS",
+				value1 = ${status});
+		}
 
 		AssertClick(
 			locator1 = "DocumentsAndMedia#DESCRIPTIVE_LIST_DOCUMENT_TITLE",
@@ -4767,13 +4799,20 @@ definition {
 
 		if (${dmDocumentStatus} == "Approved") {
 			AssertTextEquals(
-				locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS",
+				locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS_APPROVED",
 				value1 = "Approved");
 		}
 		else {
-			AssertTextEquals(
-				locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS",
-				value1 = ${dmDocumentStatus});
+			if (${dmDocumentStatus} == "Draft") {
+				AssertTextEquals(
+					locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS_DRAFT",
+					value1 = "Draft");
+			}
+			else {
+				AssertTextEquals(
+					locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS",
+					value1 = ${dmDocumentStatus});
+			}
 
 			DMDocument.gotoEntry(dmDocumentTitle = ${dmDocumentTitle});
 
@@ -4815,8 +4854,6 @@ definition {
 
 	@summary = "Default summary"
 	macro viewVideoPreviewGeneratingInfo() {
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EMBEDDED_VIDEO_IFRAME");
-
 		if (isSet(disabled)) {
 			AssertTextEquals.assertPartialText(
 				key_text = "No video preview available.",
@@ -4826,14 +4863,12 @@ definition {
 		else {
 			VerifyElementPresent(
 				key_text = "Generating preview will take a few minutes.",
-				locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_INFO");
+				locator1 = "Message#INFO");
 
-			while (IsElementPresent(key_text = "Generating preview will take a few minutes.", locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_INFO")) {
+			while (IsElementPresent(key_text = "Generating preview will take a few minutes.", locator1 = "Message#INFO")) {
 				WaitForElementPresent.waitForLastScript();
 
 				Refresh();
-
-				SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EMBEDDED_VIDEO_IFRAME");
 			}
 		}
 

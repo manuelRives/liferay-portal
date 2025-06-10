@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -44,7 +44,7 @@ SearchResultContentDisplayContext searchResultContentDisplayContext = searchResu
 
 <c:if test="<%= searchResultContentDisplayContext.isVisible() %>">
 	<div class="mb-2">
-		<h4 class="component-title">
+		<div class="component-title">
 			<span class="asset-title d-inline">
 				<%= HtmlUtil.escape(searchResultContentDisplayContext.getHeaderTitle()) %>
 			</span>
@@ -62,7 +62,7 @@ SearchResultContentDisplayContext searchResultContentDisplayContext = searchResu
 					/>
 				</span>
 			</c:if>
-		</h4>
+		</div>
 	</div>
 
 	<liferay-asset:asset-display

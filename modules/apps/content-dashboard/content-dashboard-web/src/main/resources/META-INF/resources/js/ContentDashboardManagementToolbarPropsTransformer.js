@@ -4,12 +4,13 @@
  */
 
 import {
-	addParams,
-	navigate,
 	openCategorySelectionModal,
 	openSelectionModal,
 	openTagSelectionModal,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {addParams, navigate} from 'frontend-js-web';
+
+import openCustomDateModal from './utils/openCustomDateModal';
 
 const DEFAULT_VALUES = {
 	buttonAddLabel: Liferay.Language.get('select'),
@@ -211,7 +212,10 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 				size = DEFAULT_VALUES.size,
 			} = data;
 
-			if (action === 'selectAssetCategory') {
+			if (action === 'customDate') {
+				openCustomDateModal(JSON.parse(data.props));
+			}
+			else if (action === 'selectAssetCategory') {
 				selectAssetCategory(data);
 			}
 			else if (action === 'selectAssetTag') {

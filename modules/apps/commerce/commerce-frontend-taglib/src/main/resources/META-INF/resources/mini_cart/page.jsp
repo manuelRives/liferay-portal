@@ -14,12 +14,14 @@
 		</div>
 	</c:when>
 	<c:otherwise>
-		<div class="cart-root" id="<%= miniCartId %>"></div>
+		<div class="<%= (cssClasses != null) ? "cart-root " + cssClasses : "cart-root" %>" id="<%= miniCartId %>"></div>
 
 		<liferay-frontend:component
 			context='<%=
 				HashMapBuilder.<String, Object>put(
 					"accountId", accountEntryId
+				).put(
+					"baseOrderDetailURL", baseOrderDetailURL
 				).put(
 					"cartViews", cartViews
 				).put(
@@ -32,6 +34,8 @@
 					"displayTotalItemsQuantity", displayTotalItemsQuantity
 				).put(
 					"groupId", commerceChannelGroupId
+				).put(
+					"guestOrderEnabled", guestOrderEnabled
 				).put(
 					"id", commerceChannelId
 				).put(
@@ -48,6 +52,8 @@
 					"productURLSeparator", productURLSeparator
 				).put(
 					"requestQuoteEnabled", requestCodeEnabled
+				).put(
+					"signInURL", signInURL
 				).put(
 					"siteDefaultURL", siteDefaultURL
 				).put(

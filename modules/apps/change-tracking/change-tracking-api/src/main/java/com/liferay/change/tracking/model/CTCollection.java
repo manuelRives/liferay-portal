@@ -49,8 +49,16 @@ public interface CTCollection extends CTCollectionModel, PersistedModel {
 
 		};
 
+	public int getScore();
+
+	public String getScoreSizeClassification();
+
 	public String getUserName();
 
+	public boolean isEmpty();
+
 	public boolean isProduction();
+
+	public boolean isReadOnly();
 
 }

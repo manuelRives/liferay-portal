@@ -7,19 +7,9 @@
 
 <%@ include file="/init.jsp" %>
 
-<%
-VirtualHost virtualHost = null;
-
-try {
-	virtualHost = VirtualHostLocalServiceUtil.getVirtualHost(company.getCompanyId(), 0);
-}
-catch (Exception e) {
-}
-%>
-
 <aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
 
-<h4><liferay-ui:message key="main-configuration" /></h4>
+<div class="h4"><liferay-ui:message key="main-configuration" /></div>
 
 <aui:model-context bean="<%= company %>" model="<%= Company.class %>" />
 
@@ -37,7 +27,7 @@ catch (Exception e) {
 
 		<liferay-ui:error exception="<%= CompanyVirtualHostException.class %>" message="please-enter-a-valid-virtual-host" />
 
-		<aui:input bean="<%= virtualHost %>" fieldParam="virtualHostname" label="virtual-host" model="<%= VirtualHost.class %>" name="hostname" />
+		<aui:input bean="<%= VirtualHostLocalServiceUtil.fetchCompanyDefaultVirtualHost(company.getCompanyId()) %>" fieldParam="virtualHostname" label="virtual-host" model="<%= VirtualHost.class %>" name="hostname" />
 	</clay:col>
 
 	<clay:col
@@ -51,7 +41,7 @@ catch (Exception e) {
 	</clay:col>
 </clay:row>
 
-<h4><liferay-ui:message key="navigation" /></h4>
+<div class="h4"><liferay-ui:message key="navigation" /></div>
 
 <clay:row>
 	<clay:col
@@ -69,7 +59,7 @@ catch (Exception e) {
 	</clay:col>
 </clay:row>
 
-<h4><liferay-ui:message key="additional-information" /></h4>
+<div class="h4"><liferay-ui:message key="additional-information" /></div>
 
 <clay:row>
 	<clay:col

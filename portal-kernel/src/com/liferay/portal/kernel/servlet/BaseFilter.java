@@ -8,16 +8,18 @@ package com.liferay.portal.kernel.servlet;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.servlet.filters.invoker.InvokerFilterHelper;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Raymond Augé
@@ -80,6 +82,18 @@ public abstract class BaseFilter implements LiferayFilter {
 
 	@Override
 	public void setFilterEnabled(boolean filterEnabled) {
+		if (filterEnabled != _filterEnabled) {
+			ServletContext servletContext = _filterConfig.getServletContext();
+
+			InvokerFilterHelper invokerFilterHelper =
+				(InvokerFilterHelper)servletContext.getAttribute(
+					InvokerFilterHelper.class.getName());
+
+			if (invokerFilterHelper != null) {
+				invokerFilterHelper.clearFilterChainsCache();
+			}
+		}
+
 		_filterEnabled = filterEnabled;
 	}
 

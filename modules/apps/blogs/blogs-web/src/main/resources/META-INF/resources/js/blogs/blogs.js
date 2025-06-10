@@ -4,10 +4,10 @@
  */
 
 import {State} from '@liferay/frontend-js-state-web';
+import {openConfirmModal} from 'frontend-js-components-web';
 import {
 	fetch,
 	normalizeFriendlyURL,
-	openConfirmModal,
 	toggleBoxes,
 	toggleDisabled,
 } from 'frontend-js-web';
@@ -236,9 +236,8 @@ export default class Blogs {
 		if (this._shortenDescription) {
 			this._customDescription = this._getElementById('description').value;
 
-			description = window[
-				`${this._config.namespace}contentEditor`
-			].getText();
+			description =
+				window[`${this._config.namespace}contentEditor`].getText();
 		}
 
 		this.setDescription(description);
@@ -342,9 +341,8 @@ export default class Blogs {
 
 		const content = window[`${namespace}contentEditor`].getHTML();
 
-		const coverImageCaption = CKEDITOR.instances[
-			`${namespace}coverImageCaptionEditor`
-		].getData();
+		const coverImageCaption =
+			CKEDITOR.instances[`${namespace}coverImageCaptionEditor`].getData();
 
 		const subtitle = this._getElementById('subtitle').value;
 		const title = this._getElementById('title').value;
@@ -375,14 +373,12 @@ export default class Blogs {
 
 				const bodyData = addNamespace(
 					{
-						addEntryResources: this._getElementById(
-							'addEntryResources'
-						).value,
+						addEntryResources:
+							this._getElementById('addEntryResources').value,
 						allowPingbacks: allowPingbacks?.value,
 						allowTrackbacks: allowTrackbacks?.value,
-						assetCategoryIds: this._getValuesByName(
-							'assetCategoryIds'
-						),
+						assetCategoryIds:
+							this._getValuesByName('assetCategoryIds'),
 						assetTagNames: this._getValuesByName('assetTagNames'),
 						cmd: constants.ADD,
 						content,
@@ -393,21 +389,22 @@ export default class Blogs {
 						coverImageFileEntryId: this._getElementById(
 							'coverImageFileEntryId'
 						).value,
-						displayDateAmPm: this._getElementById('displayDateAmPm')
-							.value,
-						displayDateDay: this._getElementById('displayDateDay')
-							.value,
-						displayDateHour: this._getElementById('displayDateHour')
-							.value,
-						displayDateMinute: this._getElementById(
-							'displayDateMinute'
-						).value,
-						displayDateMonth: this._getElementById(
-							'displayDateMonth'
-						).value,
-						displayDateYear: this._getElementById('displayDateYear')
-							.value,
+						displayDateAmPm:
+							this._getElementById('displayDateAmPm').value,
+						displayDateDay:
+							this._getElementById('displayDateDay').value,
+						displayDateHour:
+							this._getElementById('displayDateHour').value,
+						displayDateMinute:
+							this._getElementById('displayDateMinute').value,
+						displayDateMonth:
+							this._getElementById('displayDateMonth').value,
+						displayDateYear:
+							this._getElementById('displayDateYear').value,
 						entryId: this._getElementById('entryId').value,
+						friendlyUrlCategories: this._getValuesByName(
+							'friendlyURLAssetCategoryIds'
+						),
 						inputPermissionsViewRole,
 						referringPortletResource: this._getElementById(
 							'referringPortletResource'
@@ -564,9 +561,8 @@ export default class Blogs {
 	}
 
 	_updateContentImages(finalContent, attributeDataImageId) {
-		const originalContent = window[
-			`${this._config.namespace}contentEditor`
-		].getHTML();
+		const originalContent =
+			window[`${this._config.namespace}contentEditor`].getHTML();
 
 		const originalContentImages = this._getContentImages(originalContent);
 

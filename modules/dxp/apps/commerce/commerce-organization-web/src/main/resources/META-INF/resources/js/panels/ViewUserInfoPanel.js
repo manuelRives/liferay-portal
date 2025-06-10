@@ -5,16 +5,10 @@
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
-import {openConfirmModal, openToast, sub} from 'frontend-js-web';
-import moment from 'moment';
+import {openConfirmModal, openToast} from 'frontend-js-components-web';
+import {dateUtils, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React, {
-	useCallback,
-	useContext,
-	useEffect,
-	useRef,
-	useState,
-} from 'react';
+import React, {useCallback, useContext, useEffect, useState} from 'react';
 
 import ChartContext from '../ChartContext';
 import {deleteUser, getUser, getUserFullNameDefinition} from '../data/users';
@@ -40,13 +34,6 @@ function ViewUserInfoPanel({
 	const {chartInstanceRef} = useContext(ChartContext);
 	const [userLanguageId] = useState(data.languageId);
 	const [fullNameDefinition, setFullNameDefinition] = useState([]);
-
-	const momentLocaleFormatRef = useRef(
-		moment()
-			.locale(Liferay.ThemeDisplay.getLanguageId())
-			.localeData()
-			.longDateFormat('L')
-	);
 
 	useEffect(() => {
 		getUserFullNameDefinition(userLanguageId).then((data) => {
@@ -90,6 +77,7 @@ function ViewUserInfoPanel({
 					type: 'danger',
 				});
 			});
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [userData.id]);
 
@@ -244,7 +232,7 @@ function ViewUserInfoPanel({
 								: sub(
 										Liferay.Language.get('custom-x'),
 										Liferay.Language.get('image')
-								  )}
+									)}
 						</div>
 					</div>
 
@@ -368,9 +356,7 @@ function ViewUserInfoPanel({
 						</div>
 
 						<div className="sidebar-dd">
-							{moment(userData.birthDate).format(
-								momentLocaleFormatRef.current
-							) || '-'}
+							{dateUtils.format(userData.birthDate, 'P') || '-'}
 						</div>
 					</div>
 				</div>

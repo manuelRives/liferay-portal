@@ -10,10 +10,19 @@
 		"externalReferenceCode": "TESTUSER1",
 		"familyName": "User1",
 		"givenName": "Test",
+		"imageId": "[#DOCUMENT_FILE_ENTRY_ID:/site-initializer/documents/group/portrait.png#]",
 		"name": "Test User 1",
 		"organizationBriefs": [
 			{
 				"name": "Test Organization 1"
+			}
+		],
+		"userGroupBriefs": [
+			{
+				"name": "Test User Group 1"
+			},
+			{
+				"name": "Test User Group 2"
 			}
 		]
 	},
@@ -33,6 +42,19 @@
 			{
 				"name": "Test Organization 2"
 			}
+		],
+		"userGroupBriefs": [
+			{
+				"name": "Test User Group 2"
+			}
 		]
+	},
+	{
+		"alternateName": "testAlternateName3",
+		"emailAddress": "test.user3@liferay.com",
+		"externalReferenceCode": "TESTUSER3",
+		"familyName": "User3",
+		"givenName": "Test",
+		"name": "Test User 3"
 	}
 ]

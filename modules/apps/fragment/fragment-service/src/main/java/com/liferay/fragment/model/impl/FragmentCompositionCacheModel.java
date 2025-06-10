@@ -69,7 +69,7 @@ public class FragmentCompositionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(43);
+		StringBundler sb = new StringBundler(47);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -77,6 +77,8 @@ public class FragmentCompositionCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", fragmentCompositionId=");
 		sb.append(fragmentCompositionId);
 		sb.append(", groupId=");
@@ -103,6 +105,8 @@ public class FragmentCompositionCacheModel
 		sb.append(data);
 		sb.append(", previewFileEntryId=");
 		sb.append(previewFileEntryId);
+		sb.append(", marketplace=");
+		sb.append(marketplace);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append(", status=");
@@ -131,6 +135,14 @@ public class FragmentCompositionCacheModel
 		}
 		else {
 			fragmentCompositionImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			fragmentCompositionImpl.setExternalReferenceCode("");
+		}
+		else {
+			fragmentCompositionImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		fragmentCompositionImpl.setFragmentCompositionId(fragmentCompositionId);
@@ -191,6 +203,7 @@ public class FragmentCompositionCacheModel
 		}
 
 		fragmentCompositionImpl.setPreviewFileEntryId(previewFileEntryId);
+		fragmentCompositionImpl.setMarketplace(marketplace);
 
 		if (lastPublishDate == Long.MIN_VALUE) {
 			fragmentCompositionImpl.setLastPublishDate(null);
@@ -230,6 +243,7 @@ public class FragmentCompositionCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		fragmentCompositionId = objectInput.readLong();
 
@@ -249,6 +263,8 @@ public class FragmentCompositionCacheModel
 		data = (String)objectInput.readObject();
 
 		previewFileEntryId = objectInput.readLong();
+
+		marketplace = objectInput.readBoolean();
 		lastPublishDate = objectInput.readLong();
 
 		status = objectInput.readInt();
@@ -269,6 +285,13 @@ public class FragmentCompositionCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(fragmentCompositionId);
@@ -320,6 +343,8 @@ public class FragmentCompositionCacheModel
 		}
 
 		objectOutput.writeLong(previewFileEntryId);
+
+		objectOutput.writeBoolean(marketplace);
 		objectOutput.writeLong(lastPublishDate);
 
 		objectOutput.writeInt(status);
@@ -339,6 +364,7 @@ public class FragmentCompositionCacheModel
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long fragmentCompositionId;
 	public long groupId;
 	public long companyId;
@@ -352,6 +378,7 @@ public class FragmentCompositionCacheModel
 	public String description;
 	public String data;
 	public long previewFileEntryId;
+	public boolean marketplace;
 	public long lastPublishDate;
 	public int status;
 	public long statusByUserId;

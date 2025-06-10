@@ -25,9 +25,9 @@ import com.liferay.taglib.security.PermissionsURLTag;
 import com.liferay.template.constants.TemplatePortletKeys;
 import com.liferay.template.web.internal.security.permissions.resource.DDMTemplatePermission;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author Lourdes Fernández Besada
@@ -221,8 +221,8 @@ public class DDMTemplateActionDropdownItemsProvider {
 			dropdownItem.setHref(
 				PortletURLBuilder.createRenderURL(
 					_liferayPortletResponse
-				).setMVCPath(
-					"/view_widget_templates_usages.jsp"
+				).setMVCRenderCommandName(
+					"/template/view_widget_templates_usages"
 				).setRedirect(
 					_themeDisplay.getURLCurrent()
 				).setParameter(

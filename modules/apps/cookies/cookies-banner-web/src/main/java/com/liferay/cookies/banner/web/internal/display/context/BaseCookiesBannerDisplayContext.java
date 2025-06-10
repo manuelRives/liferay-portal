@@ -8,6 +8,7 @@ package com.liferay.cookies.banner.web.internal.display.context;
 import com.liferay.cookies.configuration.CookiesConfigurationProvider;
 import com.liferay.cookies.configuration.banner.CookiesBannerConfiguration;
 import com.liferay.cookies.configuration.consent.CookiesConsentConfiguration;
+import com.liferay.layout.utility.page.kernel.provider.LayoutUtilityPageEntryLayoutProvider;
 import com.liferay.portal.kernel.cookies.ConsentCookieType;
 import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -18,10 +19,10 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.List;
 
 /**
  * @author Jürgen Kappler
@@ -30,9 +31,13 @@ public class BaseCookiesBannerDisplayContext {
 
 	public BaseCookiesBannerDisplayContext(
 		CookiesConfigurationProvider cookiesConfigurationProvider,
+		LayoutUtilityPageEntryLayoutProvider
+			layoutUtilityPageEntryLayoutProvider,
 		RenderRequest renderRequest, RenderResponse renderResponse) {
 
 		_cookiesConfigurationProvider = cookiesConfigurationProvider;
+		this.layoutUtilityPageEntryLayoutProvider =
+			layoutUtilityPageEntryLayoutProvider;
 		this.renderRequest = renderRequest;
 		this.renderResponse = renderResponse;
 
@@ -98,6 +103,8 @@ public class BaseCookiesBannerDisplayContext {
 
 	protected CookiesBannerConfiguration cookiesBannerConfiguration;
 	protected CookiesConsentConfiguration cookiesConsentConfiguration;
+	protected LayoutUtilityPageEntryLayoutProvider
+		layoutUtilityPageEntryLayoutProvider;
 	protected RenderRequest renderRequest;
 	protected RenderResponse renderResponse;
 

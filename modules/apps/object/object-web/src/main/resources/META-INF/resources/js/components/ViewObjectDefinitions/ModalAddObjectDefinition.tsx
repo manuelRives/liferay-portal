@@ -13,17 +13,17 @@ import {
 	Input,
 	SingleSelect,
 	constantsUtils,
+	objectDefinitionUtils,
 	openToast,
 	useForm,
 } from '@liferay/object-js-components-web';
-import {FeatureIndicator} from 'frontend-js-components-web';
+import {LearnMessage, LearnResourcesContext} from 'frontend-js-components-web';
 import {sub} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 import {defaultLanguageId} from '../../utils/constants';
 
 import './ModalAddObjectDefinition.scss';
-import {normalizeName} from './objectDefinitionUtil';
 
 interface ModalAddObjectDefinitionProps {
 	handleOnClose: () => void;
@@ -53,6 +53,8 @@ export function ModalAddObjectDefinition({
 	const {observer, onClose} = useModal({
 		onClose: () => handleOnClose(),
 	});
+
+	const [showProxyWarning, setShowProxyWarning] = useState<boolean>(false);
 
 	const objectDefinitionStorageTypesSortedByLabel = [
 		...objectDefinitionsStorageTypes,
@@ -88,7 +90,7 @@ export function ModalAddObjectDefinition({
 			label: {
 				[defaultLanguageId]: label,
 			},
-			name: name || normalizeName(label),
+			name: name || objectDefinitionUtils.normalizeName(label),
 			objectFields: [],
 			pluralLabel: {
 				[defaultLanguageId]: pluralLabel,
@@ -97,7 +99,8 @@ export function ModalAddObjectDefinition({
 		};
 
 		if (objectFolderExternalReferenceCode) {
-			objectDefinition.objectFolderExternalReferenceCode = objectFolderExternalReferenceCode;
+			objectDefinition.objectFolderExternalReferenceCode =
+				objectFolderExternalReferenceCode;
 		}
 
 		if (Liferay.FeatureFlags['LPS-135430']) {
@@ -189,38 +192,65 @@ export function ModalAddObjectDefinition({
 							name="name"
 							onChange={handleChange}
 							required
-							value={values.name ?? normalizeName(values.label)}
+							value={
+								values.name ??
+								objectDefinitionUtils.normalizeName(
+									values.label
+								)
+							}
 						/>
 
 						{Liferay.FeatureFlags['LPS-135430'] && (
-							<div className="lfr__object-web-modal-add-object-definition-storage-type">
-								<SingleSelect<LabelValueObject>
-									items={
-										objectDefinitionStorageTypesSortedByLabel
-									}
-									label={Liferay.Language.get('storage-type')}
-									onSelectionChange={(value) => {
-										setValues({
-											...values,
-											storageType: value as string,
-										});
-									}}
-									selectedKey={values.storageType}
-									tooltip={Liferay.Language.get(
-										'object-definition-storage-type-tooltip'
-									)}
-								/>
-
-								<div className="lfr__object-web-modal-add-object-definition-storage-type-beta">
-									<FeatureIndicator
-										interactive
-										learnResourceContext={
-											learnResourceContext
+							<>
+								<div className="lfr__object-web-modal-add-object-definition-storage-type">
+									<SingleSelect<LabelValueObject>
+										items={
+											objectDefinitionStorageTypesSortedByLabel
 										}
-										type="beta"
+										label={Liferay.Language.get(
+											'storage-type'
+										)}
+										onSelectionChange={(value) => {
+											setValues({
+												...values,
+												storageType: value as string,
+											});
+
+											if (value !== 'default') {
+												setShowProxyWarning(true);
+											}
+										}}
+										selectedKey={values.storageType}
+										tooltip={Liferay.Language.get(
+											'object-definition-storage-type-tooltip'
+										)}
 									/>
 								</div>
-							</div>
+
+								{showProxyWarning && (
+									<ClayAlert
+										displayType="info"
+										onClose={() =>
+											setShowProxyWarning(false)
+										}
+										title={`${Liferay.Language.get('info')}:`}
+									>
+										{Liferay.Language.get(
+											'proxy-objects-have-some-known-limitations'
+										)}
+										&nbsp;
+										<LearnResourcesContext.Provider
+											value={learnResourceContext}
+										>
+											<LearnMessage
+												className="alert-link"
+												resource="object-web"
+												resourceKey="managing-data-from-external-systems"
+											/>
+										</LearnResourcesContext.Provider>
+									</ClayAlert>
+								)}
+							</>
 						)}
 					</ClayModal.Body>
 

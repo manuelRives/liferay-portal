@@ -1,4 +1,5 @@
 {
+	"enableIndexSearch": false,
 	"label": {
 		"en_US": "Testray Case Result"
 	},
@@ -27,26 +28,50 @@
 			"type": "Long"
 		},
 		{
-			"DBType": "Date",
+			"DBType": "DateTime",
 			"indexed": true,
 			"indexedAsKeyword": false,
 			"label": {
 				"en_US": "Start Date"
 			},
 			"name": "startDate",
+			"objectFieldSettings": [
+				{
+					"name": "timeStorage",
+					"value": "convertToUTC"
+				}
+			],
 			"required": false,
-			"type": "Date"
+			"type": "DateTime"
 		},
 		{
-			"DBType": "Date",
+			"DBType": "DateTime",
 			"indexed": true,
 			"indexedAsKeyword": false,
 			"label": {
 				"en_US": "Closed Date"
 			},
 			"name": "closedDate",
+			"objectFieldSettings": [
+				{
+					"name": "timeStorage",
+					"value": "convertToUTC"
+				}
+			],
 			"required": false,
-			"type": "Date"
+			"type": "DateTime"
+		},
+		{
+			"DBType": "Long",
+			"businessType": "LongInteger",
+			"indexed": true,
+			"indexedAsKeyword": false,
+			"label": {
+				"en_US": "Duration"
+			},
+			"name": "duration",
+			"required": false,
+			"type": "Long"
 		},
 		{
 			"DBType": "Clob",
@@ -117,6 +142,8 @@
 			"type": "Integer"
 		}
 	],
+	"objectFolderExternalReferenceCode": "TESTRAY",
+	"panelCategoryKey": "control_panel.object",
 	"pluralLabel": {
 		"en_US": "Testray Cases Results"
 	},

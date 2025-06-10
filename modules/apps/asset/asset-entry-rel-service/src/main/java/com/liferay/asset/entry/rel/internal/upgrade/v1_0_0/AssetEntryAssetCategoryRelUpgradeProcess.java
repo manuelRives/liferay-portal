@@ -52,8 +52,7 @@ public class AssetEntryAssetCategoryRelUpgradeProcess extends UpgradeProcess {
 					throw exception;
 				}
 			},
-			"Unable to add relationships between asset entries and asset " +
-				"categories");
+			null);
 	}
 
 	private void _upgradeSchema() throws Exception {
@@ -61,7 +60,7 @@ public class AssetEntryAssetCategoryRelUpgradeProcess extends UpgradeProcess {
 			AssetEntryAssetCategoryRelUpgradeProcess.class.getResourceAsStream(
 				"dependencies/update.sql"));
 
-		runSQLTemplateString(template, false);
+		runSQLTemplate(template, false);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

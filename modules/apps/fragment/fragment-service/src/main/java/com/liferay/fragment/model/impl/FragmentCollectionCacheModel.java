@@ -69,7 +69,7 @@ public class FragmentCollectionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(33);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -77,6 +77,8 @@ public class FragmentCollectionCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", fragmentCollectionId=");
 		sb.append(fragmentCollectionId);
 		sb.append(", groupId=");
@@ -97,6 +99,8 @@ public class FragmentCollectionCacheModel
 		sb.append(name);
 		sb.append(", description=");
 		sb.append(description);
+		sb.append(", marketplace=");
+		sb.append(marketplace);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append("}");
@@ -117,6 +121,14 @@ public class FragmentCollectionCacheModel
 		}
 		else {
 			fragmentCollectionImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			fragmentCollectionImpl.setExternalReferenceCode("");
+		}
+		else {
+			fragmentCollectionImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		fragmentCollectionImpl.setFragmentCollectionId(fragmentCollectionId);
@@ -167,6 +179,8 @@ public class FragmentCollectionCacheModel
 			fragmentCollectionImpl.setDescription(description);
 		}
 
+		fragmentCollectionImpl.setMarketplace(marketplace);
+
 		if (lastPublishDate == Long.MIN_VALUE) {
 			fragmentCollectionImpl.setLastPublishDate(null);
 		}
@@ -186,6 +200,7 @@ public class FragmentCollectionCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		fragmentCollectionId = objectInput.readLong();
 
@@ -200,6 +215,8 @@ public class FragmentCollectionCacheModel
 		fragmentCollectionKey = objectInput.readUTF();
 		name = objectInput.readUTF();
 		description = objectInput.readUTF();
+
+		marketplace = objectInput.readBoolean();
 		lastPublishDate = objectInput.readLong();
 	}
 
@@ -214,6 +231,13 @@ public class FragmentCollectionCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(fragmentCollectionId);
@@ -255,12 +279,14 @@ public class FragmentCollectionCacheModel
 			objectOutput.writeUTF(description);
 		}
 
+		objectOutput.writeBoolean(marketplace);
 		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long fragmentCollectionId;
 	public long groupId;
 	public long companyId;
@@ -271,6 +297,7 @@ public class FragmentCollectionCacheModel
 	public String fragmentCollectionKey;
 	public String name;
 	public String description;
+	public boolean marketplace;
 	public long lastPublishDate;
 
 }

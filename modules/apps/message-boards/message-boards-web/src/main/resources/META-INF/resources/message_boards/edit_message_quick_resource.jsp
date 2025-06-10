@@ -85,7 +85,7 @@ String redirect = ParamUtil.getString(request, "redirect");
 				<%= userDisplayText %>
 			</span>
 
-			<h4 title="<%= HtmlUtil.escape(message.getSubject()) %>">
+			<div class="h4" title="<%= HtmlUtil.escape(message.getSubject()) %>">
 				<c:choose>
 					<c:when test='<%= GetterUtil.getBoolean(request.getAttribute("edit-message.jsp-showPermanentLink")) %>'>
 						<a href="#<portlet:namespace />message_<%= message.getMessageId() %>" title="<liferay-ui:message key="permanent-link-to-this-item" />">
@@ -96,22 +96,29 @@ String redirect = ParamUtil.getString(request, "redirect");
 						<%= HtmlUtil.escape(message.getSubject()) %>
 					</c:otherwise>
 				</c:choose>
-			</h4>
+			</div>
 
 			<%
-			String[] ranks = MBStatsUserLocalServiceUtil.getUserRank(themeDisplay.getSiteGroupId(), themeDisplay.getLanguageId(), message.getUserId());
+			User messageUser = UserLocalServiceUtil.fetchUser(message.getUserId());
 			%>
 
-			<c:if test="<%= Validator.isNotNull(ranks[1]) %>">
-				<span class="h5 text-default" title="<%= HtmlUtil.escape(ranks[1]) %>">
-					<%= HtmlUtil.escape(ranks[1]) %>
-				</span>
-			</c:if>
+			<c:if test="<%= messageUser != null %>">
 
-			<c:if test="<%= Validator.isNotNull(ranks[0]) %>">
-				<span class="h5 text-default" title="<%= HtmlUtil.escape(ranks[0]) %>">
-					<%= HtmlUtil.escape(ranks[0]) %>
-				</span>
+				<%
+				String[] ranks = MBStatsUserLocalServiceUtil.getUserRank(themeDisplay.getSiteGroupId(), themeDisplay.getLanguageId(), message.getUserId());
+				%>
+
+				<c:if test="<%= Validator.isNotNull(ranks[1]) %>">
+					<span class="h5 text-default" title="<%= HtmlUtil.escape(ranks[1]) %>">
+						<%= HtmlUtil.escape(ranks[1]) %>
+					</span>
+				</c:if>
+
+				<c:if test="<%= Validator.isNotNull(ranks[0]) %>">
+					<span class="h5 text-default" title="<%= HtmlUtil.escape(ranks[0]) %>">
+						<%= HtmlUtil.escape(ranks[0]) %>
+					</span>
+				</c:if>
 			</c:if>
 		</clay:content-col>
 	</clay:content-row>
@@ -235,12 +242,11 @@ String redirect = ParamUtil.getString(request, "redirect");
 />
 
 <aui:script>
-	window[
-		'<portlet:namespace />replyMessageOnChange' + <%= parentMessageId %>
-	] = function (html) {
-		Liferay.Util.toggleDisabled(
-			'#<portlet:namespace />quickReplyButton<%= parentMessageId %>',
-			html === ''
-		);
-	};
+	window['<portlet:namespace />replyMessageOnChange' + <%= parentMessageId %>] =
+		function (html) {
+			Liferay.Util.toggleDisabled(
+				'#<portlet:namespace />quickReplyButton<%= parentMessageId %>',
+				html === ''
+			);
+		};
 </aui:script>

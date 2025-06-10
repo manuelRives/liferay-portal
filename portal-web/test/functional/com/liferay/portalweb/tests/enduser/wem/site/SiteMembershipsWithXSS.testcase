@@ -1,4 +1,4 @@
-@component-name = "portal-wcm"
+@component-name = "portal-site-management"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -72,7 +72,7 @@ definition {
 			User.logoutPG();
 
 			User.loginUserPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "userea@liferay.com");
 		}
 
@@ -88,7 +88,7 @@ definition {
 			User.logoutPG();
 
 			User.loginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com");
 
 			Site.openSiteMembershipsAdmin(siteURLKey = "site-name");

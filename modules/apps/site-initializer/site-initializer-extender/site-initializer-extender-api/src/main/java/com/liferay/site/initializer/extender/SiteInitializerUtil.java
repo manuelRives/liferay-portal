@@ -7,13 +7,18 @@ package com.liferay.site.initializer.extender;
 
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
+
+import jakarta.servlet.ServletContext;
 
 import java.io.InputStream;
 
@@ -25,8 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.framework.Bundle;
 
@@ -64,6 +67,45 @@ public class SiteInitializerUtil {
 			return StringUtil.replace(
 				content, "[$", "$]", portalPropertiesStringUtilReplaceValues);
 		}
+	}
+
+	public static String replace(
+		Map<String, String> classNameIdStringUtilReplaceValues,
+		Map<String, String> releaseInfoStringUtilReplaceValues, String s,
+		Map<String, String> stringUtilReplaceValues) {
+
+		HashMap<String, String> aggregatedStringUtilReplaceValues =
+			HashMapBuilder.putAll(
+				classNameIdStringUtilReplaceValues
+			).putAll(
+				releaseInfoStringUtilReplaceValues
+			).putAll(
+				stringUtilReplaceValues
+			).build();
+
+		s = StringUtil.replace(
+			s, "\"[#", "#]\"", aggregatedStringUtilReplaceValues);
+
+		return StringUtil.replace(
+			s, "[$", "$]", aggregatedStringUtilReplaceValues);
+	}
+
+	public static String replace(String s, ServiceContext serviceContext)
+		throws Exception {
+
+		Group group = serviceContext.getScopeGroup();
+
+		return StringUtil.replace(
+			s,
+			new String[] {
+				"[$COMPANY_ID$]", "[$GROUP_FRIENDLY_URL$]", "[$GROUP_ID$]",
+				"[$GROUP_KEY$]", "[$PORTAL_URL$]"
+			},
+			new String[] {
+				String.valueOf(group.getCompanyId()), group.getFriendlyURL(),
+				String.valueOf(serviceContext.getScopeGroupId()),
+				group.getGroupKey(), serviceContext.getPortalURL()
+			});
 	}
 
 	public static Map<Locale, String> toMap(String values) {

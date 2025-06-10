@@ -59,41 +59,31 @@ public class JavaDetector {
 	public static boolean isJDK7() {
 		String javaVersion = getJavaVersion();
 
-		if (javaVersion.startsWith(_JAVA_VERSION_JDK_7)) {
-			return true;
-		}
-
-		return false;
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_7);
 	}
 
 	public static boolean isJDK8() {
 		String javaVersion = getJavaVersion();
 
-		if (javaVersion.startsWith(_JAVA_VERSION_JDK_8)) {
-			return true;
-		}
-
-		return false;
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_8);
 	}
 
 	public static boolean isJDK11() {
 		String javaVersion = getJavaVersion();
 
-		if (javaVersion.startsWith(_JAVA_VERSION_JDK_11)) {
-			return true;
-		}
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_11);
+	}
 
-		return false;
+	public static boolean isJDK17() {
+		String javaVersion = getJavaVersion();
+
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_17);
 	}
 
 	public static boolean isJDK21() {
 		String javaVersion = getJavaVersion();
 
-		if (javaVersion.startsWith(_JAVA_VERSION_JDK_21)) {
-			return true;
-		}
-
-		return false;
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_21);
 	}
 
 	public static boolean isOpenJDK() {
@@ -153,6 +143,8 @@ public class JavaDetector {
 	private static final String _JAVA_VERSION_JDK_8 = "1.8.";
 
 	private static final String _JAVA_VERSION_JDK_11 = "11";
+
+	private static final String _JAVA_VERSION_JDK_17 = "17";
 
 	private static final String _JAVA_VERSION_JDK_21 = "21";
 

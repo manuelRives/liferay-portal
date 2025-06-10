@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
 
 export default function propsTransformer({
 	actions,
@@ -42,9 +42,8 @@ export default function propsTransformer({
 									data: {
 										assetEntryIds: Array.from(selectedItems)
 											.map((selectedItem) => {
-												const assetEntry = JSON.parse(
-													selectedItem
-												);
+												const assetEntry =
+													JSON.parse(selectedItem);
 
 												return assetEntry.assetEntryId;
 											})

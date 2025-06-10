@@ -8,7 +8,6 @@ package com.liferay.portal.osgi.web.http.servlet.internal.activator;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.SecureRandomUtil;
 import com.liferay.portal.kernel.servlet.PortletSessionListenerManager;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
@@ -18,16 +17,17 @@ import com.liferay.portal.osgi.web.http.servlet.HttpServletEndpoint;
 import com.liferay.portal.osgi.web.http.servlet.internal.HttpServletEndpointControllerImpl;
 import com.liferay.portal.osgi.web.http.servlet.internal.servlet.HttpServletEndpointServlet;
 
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
+
 import java.util.Collections;
 import java.util.Map;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.equinox.http.servlet.internal.HttpServletEndpointController;
 import org.eclipse.equinox.http.servlet.internal.servlet.HttpSessionTracker;
@@ -147,9 +147,11 @@ public class HttpServletImplBundleActivator implements BundleActivator {
 
 			ServletContext servletContext = servletConfig.getServletContext();
 
+			ThreadLocalRandom threadLocalRandom = ThreadLocalRandom.current();
+
 			Map<String, Object> attributesMap =
 				HashMapBuilder.<String, Object>put(
-					"http.servlet.endpoint.id", SecureRandomUtil.nextLong()
+					"http.servlet.endpoint.id", threadLocalRandom.nextLong()
 				).put(
 					ListUtil.fromEnumeration(
 						servletConfig.getInitParameterNames()),

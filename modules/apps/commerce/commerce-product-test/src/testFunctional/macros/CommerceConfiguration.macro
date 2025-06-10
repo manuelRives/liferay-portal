@@ -459,11 +459,11 @@ definition {
 			collectionName = "Layout Elements",
 			fragmentName = "Grid");
 
-		PageEditor.editLayoutGrid(
-			columnCount = 2,
-			panel = "General");
+		PageEditor.editLayoutGrid(columnCount = 2);
 
 		PageEditor.clickConfigurableField(fragmentName = "Grid");
+
+		PageEditor.gotoTab(tabName = "Browser");
 
 		DragAndDrop.dragAndDrop(
 			key_position = 2,

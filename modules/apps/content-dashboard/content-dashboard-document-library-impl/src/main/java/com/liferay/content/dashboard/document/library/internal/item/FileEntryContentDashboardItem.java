@@ -16,18 +16,20 @@ import com.liferay.content.dashboard.item.action.ContentDashboardItemVersionActi
 import com.liferay.content.dashboard.item.action.exception.ContentDashboardItemActionException;
 import com.liferay.content.dashboard.item.action.exception.ContentDashboardItemVersionActionException;
 import com.liferay.content.dashboard.item.action.provider.ContentDashboardItemActionProvider;
-import com.liferay.content.dashboard.item.action.provider.ContentDashboardItemVersionActionProvider;
 import com.liferay.content.dashboard.item.type.ContentDashboardItemSubtype;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.display.context.DLDisplayContextProvider;
 import com.liferay.document.library.display.context.DLEditFileEntryDisplayContext;
+import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
+import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalService;
 import com.liferay.document.library.util.DLURLHelper;
-import com.liferay.info.field.InfoFieldValue;
+import com.liferay.dynamic.data.mapping.model.DDMField;
+import com.liferay.dynamic.data.mapping.model.DDMFieldAttribute;
+import com.liferay.dynamic.data.mapping.service.DDMFieldLocalService;
 import com.liferay.info.item.InfoItemClassDetails;
-import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -52,8 +54,13 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -66,10 +73,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -84,9 +87,10 @@ public class FileEntryContentDashboardItem
 		ContentDashboardItemVersionActionProviderRegistry
 			contentDashboardItemVersionActionProviderRegistry,
 		ContentDashboardItemSubtype contentDashboardItemSubtype,
+		DDMFieldLocalService ddmFieldLocalService,
 		DLDisplayContextProvider dlDisplayContextProvider,
+		DLFileEntryMetadataLocalService dlFileEntryMetadataLocalService,
 		DLURLHelper dlURLHelper, FileEntry fileEntry, Group group,
-		InfoItemFieldValuesProvider<FileEntry> infoItemFieldValuesProvider,
 		Language language, Portal portal) {
 
 		if (ListUtil.isEmpty(assetCategories)) {
@@ -108,11 +112,12 @@ public class FileEntryContentDashboardItem
 		_contentDashboardItemVersionActionProviderRegistry =
 			contentDashboardItemVersionActionProviderRegistry;
 		_contentDashboardItemSubtype = contentDashboardItemSubtype;
+		_ddmFieldLocalService = ddmFieldLocalService;
 		_dlDisplayContextProvider = dlDisplayContextProvider;
+		_dlFileEntryMetadataLocalService = dlFileEntryMetadataLocalService;
 		_dlURLHelper = dlURLHelper;
 		_fileEntry = fileEntry;
 		_group = group;
-		_infoItemFieldValuesProvider = infoItemFieldValuesProvider;
 		_language = language;
 		_portal = portal;
 	}
@@ -224,7 +229,7 @@ public class FileEntryContentDashboardItem
 		ContentDashboardItemVersion contentDashboardItemVersion =
 			_getLastContentDashboardItemVersion(locale);
 
-		if ((getUserId() == userId) &&
+		if ((contentDashboardItemVersion != null) && (getUserId() == userId) &&
 			Objects.equals(
 				contentDashboardItemVersion.getLabel(),
 				_language.get(
@@ -290,7 +295,7 @@ public class FileEntryContentDashboardItem
 
 	@Override
 	public String getDescription(Locale locale) {
-		return _getStringValue("description");
+		return _fileEntry.getDescription();
 	}
 
 	@Override
@@ -311,7 +316,7 @@ public class FileEntryContentDashboardItem
 		try {
 			FileVersion latestFileVersion = _fileEntry.getLatestFileVersion();
 			FileVersion latestTrustedFileVersion =
-				_fileEntry.getLatestFileVersion(true);
+				_getLatestApprovedFileVersion(_fileEntry);
 
 			List<FileVersion> fileVersions = new ArrayList<>();
 
@@ -374,7 +379,25 @@ public class FileEntryContentDashboardItem
 	public List<SpecificInformation<?>> getSpecificInformationList(
 		Locale locale) {
 
+		List<DLFileEntryMetadata> dlFileEntryMetadatas =
+			_getDLFileEntryMetadatas();
+
+		long tiffImageLength = _getDDMFormFieldsValueValue(
+			dlFileEntryMetadatas, "TIFF_IMAGE_LENGTH");
+
+		long tiffImageWidth = _getDDMFormFieldsValueValue(
+			dlFileEntryMetadatas, "TIFF_IMAGE_WIDTH");
+
 		return Arrays.asList(
+			new SpecificInformation<>(
+				"size", SpecificInformation.Type.STRING, _getSize(locale)),
+			new SpecificInformation<>(
+				"resolution", SpecificInformation.Type.STRING,
+				_getResolution(tiffImageLength, tiffImageWidth)),
+			new SpecificInformation<>(
+				"content-dashboard-aspect-ratio",
+				SpecificInformation.Type.STRING,
+				_getAspectRatio(tiffImageLength, tiffImageWidth, locale)),
 			new SpecificInformation<>(
 				"extension", SpecificInformation.Type.STRING, _getExtension()),
 			new SpecificInformation<>(
@@ -382,8 +405,6 @@ public class FileEntryContentDashboardItem
 			new SpecificInformation<>(
 				"latest-version-url", SpecificInformation.Type.URL,
 				_getLatestVersionURL()),
-			new SpecificInformation<>(
-				"size", SpecificInformation.Type.STRING, _getSize(locale)),
 			new SpecificInformation<>(
 				"webdav-help", "web-dav-url", SpecificInformation.Type.URL,
 				_getWebDAVURL()));
@@ -481,6 +502,23 @@ public class FileEntryContentDashboardItem
 			_fileEntry, httpServletRequest);
 	}
 
+	private String _getAspectRatio(
+		long imageLength, long imageWidth, Locale locale) {
+
+		if ((imageLength <= 0) && (imageWidth <= 0)) {
+			return null;
+		}
+
+		if (imageLength > imageWidth) {
+			return _language.get(locale, "tall");
+		}
+		else if (imageLength < imageWidth) {
+			return _language.get(locale, "wide");
+		}
+
+		return _language.get(locale, "square");
+	}
+
 	private ContentDashboardItemAction _getContentDashboardItemAction(
 		HttpServletRequest httpServletRequest) {
 
@@ -510,45 +548,101 @@ public class FileEntryContentDashboardItem
 		_getContentDashboardItemVersionActions(
 			FileVersion fileVersion, HttpServletRequest httpServletRequest) {
 
-		List<ContentDashboardItemVersionAction>
-			contentDashboardItemVersionActions = new ArrayList<>();
+		return TransformUtil.transform(
+			_contentDashboardItemVersionActionProviderRegistry.
+				getContentDashboardItemVersionActionProviders(
+					FileVersion.class.getName()),
+			contentDashboardItemVersionActionProvider -> {
+				if (!contentDashboardItemVersionActionProvider.isShow(
+						fileVersion, httpServletRequest)) {
 
-		List<ContentDashboardItemVersionActionProvider>
-			contentDashboardItemVersionActionProviders =
-				_contentDashboardItemVersionActionProviderRegistry.
-					getContentDashboardItemVersionActionProviders(
-						FileVersion.class.getName());
-
-		for (ContentDashboardItemVersionActionProvider
-				contentDashboardItemVersionActionProvider :
-					contentDashboardItemVersionActionProviders) {
-
-			if (!contentDashboardItemVersionActionProvider.isShow(
-					fileVersion, httpServletRequest)) {
-
-				continue;
-			}
-
-			try {
-				ContentDashboardItemVersionAction
-					contentDashboardItemVersionAction =
-						contentDashboardItemVersionActionProvider.
-							getContentDashboardItemVersionAction(
-								fileVersion, httpServletRequest);
-
-				if (contentDashboardItemVersionAction != null) {
-					contentDashboardItemVersionActions.add(
-						contentDashboardItemVersionAction);
+					return null;
 				}
-			}
-			catch (ContentDashboardItemVersionActionException
-						contentDashboardItemVersionActionException) {
 
-				_log.error(contentDashboardItemVersionActionException);
+				try {
+					ContentDashboardItemVersionAction
+						contentDashboardItemVersionAction =
+							contentDashboardItemVersionActionProvider.
+								getContentDashboardItemVersionAction(
+									fileVersion, httpServletRequest);
+
+					if (contentDashboardItemVersionAction != null) {
+						return contentDashboardItemVersionAction;
+					}
+				}
+				catch (ContentDashboardItemVersionActionException
+							contentDashboardItemVersionActionException) {
+
+					_log.error(contentDashboardItemVersionActionException);
+				}
+
+				return null;
+			});
+	}
+
+	private long _getDDMFormFieldsValueValue(
+		List<DLFileEntryMetadata> dlFileEntryMetadatas, String fieldName) {
+
+		if (ListUtil.isEmpty(dlFileEntryMetadatas)) {
+			return 0;
+		}
+
+		for (DLFileEntryMetadata dlFileEntryMetadata : dlFileEntryMetadatas) {
+			Long ddmFormFieldsValueValue = _getDDMFormFieldsValueValue(
+				dlFileEntryMetadata.getDDMStorageId(), fieldName);
+
+			if (ddmFormFieldsValueValue != null) {
+				return ddmFormFieldsValueValue;
 			}
 		}
 
-		return contentDashboardItemVersionActions;
+		return 0;
+	}
+
+	private Long _getDDMFormFieldsValueValue(
+		long ddmStorageId, String fieldName) {
+
+		List<DDMField> ddmFields = _ddmFieldLocalService.getDDMFields(
+			ddmStorageId, fieldName);
+
+		if (ListUtil.isEmpty(ddmFields)) {
+			return null;
+		}
+
+		DDMField ddmField = ddmFields.get(0);
+
+		DDMFieldAttribute ddmFieldAttribute =
+			_ddmFieldLocalService.fetchDDMFieldAttribute(
+				ddmField.getFieldId(), StringPool.BLANK, StringPool.BLANK);
+
+		if ((ddmFieldAttribute == null) ||
+			(ddmFieldAttribute.getAttributeValue() == null) ||
+			!Validator.isNumber(ddmFieldAttribute.getAttributeValue())) {
+
+			return null;
+		}
+
+		return Long.valueOf(ddmFieldAttribute.getAttributeValue());
+	}
+
+	private List<DLFileEntryMetadata> _getDLFileEntryMetadatas() {
+		FileVersion fileVersion = null;
+
+		try {
+			fileVersion = _fileEntry.getFileVersion();
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+
+			return null;
+		}
+
+		if (fileVersion == null) {
+			return null;
+		}
+
+		return _dlFileEntryMetadataLocalService.
+			getFileVersionFileEntryMetadatas(fileVersion.getFileVersionId());
 	}
 
 	private String _getExtension() {
@@ -556,7 +650,7 @@ public class FileEntryContentDashboardItem
 	}
 
 	private String _getFileName() {
-		return _getStringValue("fileName");
+		return _fileEntry.getFileName();
 	}
 
 	private ContentDashboardItemVersion _getLastContentDashboardItemVersion(
@@ -565,8 +659,23 @@ public class FileEntryContentDashboardItem
 		List<ContentDashboardItemVersion> contentDashboardItemVersions =
 			getLatestContentDashboardItemVersions(locale);
 
+		if (ListUtil.isEmpty(contentDashboardItemVersions)) {
+			return null;
+		}
+
 		return contentDashboardItemVersions.get(
 			contentDashboardItemVersions.size() - 1);
+	}
+
+	private FileVersion _getLatestApprovedFileVersion(FileEntry fileEntry) {
+		List<FileVersion> approvedFileVersions = fileEntry.getFileVersions(
+			WorkflowConstants.STATUS_APPROVED, 0, 1);
+
+		if (ListUtil.isEmpty(approvedFileVersions)) {
+			return null;
+		}
+
+		return approvedFileVersions.get(0);
 	}
 
 	private URL _getLatestVersionURL() {
@@ -589,43 +698,39 @@ public class FileEntryContentDashboardItem
 				_portal.getHttpServletRequest(liferayPortletRequest),
 				ContentDashboardItemAction.Type.PREVIEW);
 
-		if (!contentDashboardItemActions.isEmpty()) {
-			ContentDashboardItemAction contentDashboardItemAction =
-				contentDashboardItemActions.get(0);
+		if (contentDashboardItemActions.isEmpty()) {
+			return null;
+		}
 
-			try {
-				return new URL(contentDashboardItemAction.getURL());
-			}
-			catch (MalformedURLException malformedURLException) {
-				_log.error(malformedURLException);
-			}
+		ContentDashboardItemAction contentDashboardItemAction =
+			contentDashboardItemActions.get(0);
+
+		try {
+			return new URL(contentDashboardItemAction.getURL());
+		}
+		catch (MalformedURLException malformedURLException) {
+			_log.error(malformedURLException);
 		}
 
 		return null;
 	}
 
-	private String _getSize(Locale locale) {
-		return LanguageUtil.formatStorageSize(_fileEntry.getSize(), locale);
+	private String _getResolution(long imageLength, long imageWidth) {
+		if ((imageLength <= 0) && (imageWidth <= 0)) {
+			return null;
+		}
+
+		StringBundler sb = new StringBundler(3);
+
+		sb.append(imageWidth);
+		sb.append("x");
+		sb.append(imageLength);
+
+		return sb.toString();
 	}
 
-	private String _getStringValue(String infoFieldName) {
-		InfoItemFieldValues infoItemFieldValues =
-			_infoItemFieldValuesProvider.getInfoItemFieldValues(_fileEntry);
-
-		InfoFieldValue<Object> infoFieldValue =
-			infoItemFieldValues.getInfoFieldValue(infoFieldName);
-
-		if (infoFieldValue == null) {
-			return StringPool.BLANK;
-		}
-
-		Object value = infoFieldValue.getValue();
-
-		if (value == null) {
-			return StringPool.BLANK;
-		}
-
-		return value.toString();
+	private String _getSize(Locale locale) {
+		return LanguageUtil.formatStorageSize(_fileEntry.getSize(), locale);
 	}
 
 	private URL _getWebDAVURL() {
@@ -700,12 +805,13 @@ public class FileEntryContentDashboardItem
 	private final ContentDashboardItemSubtype _contentDashboardItemSubtype;
 	private final ContentDashboardItemVersionActionProviderRegistry
 		_contentDashboardItemVersionActionProviderRegistry;
+	private final DDMFieldLocalService _ddmFieldLocalService;
 	private final DLDisplayContextProvider _dlDisplayContextProvider;
+	private final DLFileEntryMetadataLocalService
+		_dlFileEntryMetadataLocalService;
 	private final DLURLHelper _dlURLHelper;
 	private final FileEntry _fileEntry;
 	private final Group _group;
-	private final InfoItemFieldValuesProvider<FileEntry>
-		_infoItemFieldValuesProvider;
 	private final Language _language;
 	private final Portal _portal;
 

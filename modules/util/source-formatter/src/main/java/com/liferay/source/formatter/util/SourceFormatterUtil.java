@@ -71,7 +71,11 @@ public class SourceFormatterUtil {
 	public static final String UPGRADE_INPUT_DATA_DIRECTORY_NAME =
 		"upgrade-to-7.4-input-data";
 
-	public static final String UPGRADE_TO_VERSION = "upgrade.to.version";
+	public static final String UPGRADE_TO_LIFERAY_VERSION =
+		"upgrade.to.liferay.version";
+
+	public static final String UPGRADE_TO_RELEASE_VERSION =
+		"upgrade.to.release.version";
 
 	public static List<String> filterFileNames(
 		List<String> allFileNames, String[] excludes, String[] includes,
@@ -245,7 +249,7 @@ public class SourceFormatterUtil {
 		markdownFileName = TextFormatter.format(
 			markdownFileName, TextFormatter.N);
 
-		return markdownFileName + ".markdown";
+		return markdownFileName + ".md";
 	}
 
 	public static File getPortalDir(String baseDirName, int maxDirLevel) {

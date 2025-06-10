@@ -10,9 +10,7 @@ import com.liferay.client.extension.web.internal.frontend.data.set.model.CETFDSE
 import com.liferay.frontend.data.set.provider.FDSActionProvider;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder.DropdownItemListWrapper;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
@@ -27,13 +25,13 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -61,22 +59,16 @@ public class CETFDSActionProvider implements FDSActionProvider {
 			).build();
 		}
 
-		DropdownItemListWrapper dropdownItemListWrapper =
-			DropdownItemListBuilder.add(
-				dropdownItem -> _buildEditClientExtensionEntryAction(
-					cetFDSEntry, dropdownItem, httpServletRequest)
-			).add(
-				dropdownItem -> _buildDeleteClientExtensionEntryAction(
-					cetFDSEntry, dropdownItem, httpServletRequest)
-			);
-
-		if (FeatureFlagManagerUtil.isEnabled("LPS-182184")) {
-			dropdownItemListWrapper = dropdownItemListWrapper.add(
-				dropdownItem -> _buildExportClientExtensionEntryAction(
-					cetFDSEntry, dropdownItem, httpServletRequest));
-		}
-
-		return dropdownItemListWrapper.build();
+		return DropdownItemListBuilder.add(
+			dropdownItem -> _buildEditClientExtensionEntryAction(
+				cetFDSEntry, dropdownItem, httpServletRequest)
+		).add(
+			dropdownItem -> _buildDeleteClientExtensionEntryAction(
+				cetFDSEntry, dropdownItem, httpServletRequest)
+		).add(
+			dropdownItem -> _buildExportClientExtensionEntryAction(
+				cetFDSEntry, dropdownItem, httpServletRequest)
+		).build();
 	}
 
 	private void _buildDeleteClientExtensionEntryAction(

@@ -57,7 +57,7 @@
 		<@liferay.silently propertiesJSONObject.put("title", assetRenderer.getTitle(locale)) />
 
 		<#assign entryAbstract>
-			<@getAbstract asset=entry />
+			<@getAbstract asset = entry />
 		</#assign>
 
 		<@liferay.silently propertiesJSONObject.put("abstract", entryAbstract) />
@@ -88,7 +88,7 @@
 
 <@liferay.silently featureCollectionJSONObject.put("features", featureJSONArray) />
 
-<style type="text/css">
+<style ${nonceAttribute} type="text/css">
 	.asset-entry-abstract {
 		min-width: 400px;
 	}

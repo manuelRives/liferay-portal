@@ -43,21 +43,21 @@ const SelectReassignment = ({
 }) => {
 	const {
 		allowScriptContentToBeExecutedOrIncluded,
-		hadGroovyScriptBefore,
+		hadGroovyOrJavaScriptBefore,
 	} = useContext(DefinitionBuilderContext);
 
 	useEffect(() => {
 		if (!currentAssignmentType) {
 			setSection('assetCreator');
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const getReassignmentTypeOptions = () => {
 		if (
-			Liferay.FeatureFlags['LPD-11179'] &&
 			!allowScriptContentToBeExecutedOrIncluded &&
-			!hadGroovyScriptBefore
+			!hadGroovyOrJavaScriptBefore
 		) {
 			return options.filter(
 				(option) => option.assignmentType !== 'scriptedReassignment'

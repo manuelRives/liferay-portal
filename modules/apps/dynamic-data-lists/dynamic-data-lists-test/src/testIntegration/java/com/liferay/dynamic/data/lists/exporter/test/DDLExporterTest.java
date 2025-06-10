@@ -51,6 +51,8 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.security.permission.SimplePermissionChecker;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -176,6 +178,8 @@ public class DDLExporterTest {
 		ddmForm.addDDMFormField(
 			DDMFormTestUtil.createTextDDMFormField(
 				"field0", false, false, false));
+		ddmForm.addDDMFormField(
+			createDDMFormField("field1", "radio", "string"));
 
 		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
 			ddmForm, _availableLocales, _defaultLocale);
@@ -183,6 +187,9 @@ public class DDLExporterTest {
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createDDMFormFieldValue(
 				"field0", new UnlocalizedValue("text0")));
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				"field1", createDDMFormFieldValue("Value 1")));
 
 		DDLRecordSetTestHelper recordSetTestHelper = new DDLRecordSetTestHelper(
 			_group);
@@ -205,22 +212,22 @@ public class DDLExporterTest {
 
 		ddmForm.addDDMFormField(
 			DDMFormTestUtil.createTextDDMFormField(
-				"field1", false, false, false));
+				"field2", false, false, false));
 
 		ddmForm.addDDMFormField(
 			DDMFormTestUtil.createTextDDMFormField(
-				"field2", false, false, false));
+				"field3", false, false, false));
 
 		ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
 			ddmForm, _availableLocales, _defaultLocale);
 
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createDDMFormFieldValue(
-				"field1", new UnlocalizedValue("text1")));
+				"field2", new UnlocalizedValue("text1")));
 
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createDDMFormFieldValue(
-				"field2", new UnlocalizedValue("text2")));
+				"field3", new UnlocalizedValue("text2")));
 
 		DDMStructure ddmStructure = recordSet.getDDMStructure();
 
@@ -253,13 +260,14 @@ public class DDLExporterTest {
 			String header = bufferedReader.readLine();
 
 			Assert.assertEquals(
-				"field0,field1,field2,Status,Modified Date,Author", header);
+				"field0,field1,field2,field3,Status,Modified Date,Author",
+				header);
 
 			String row2 = bufferedReader.readLine();
 
 			Assert.assertEquals(
 				StringBundler.concat(
-					",text1,text2,Approved,",
+					",,text1,text2,Approved,",
 					formatDate(recordVersion1.getStatusDate()), CharPool.COMMA,
 					recordVersion1.getUserName()),
 				row2);
@@ -268,7 +276,7 @@ public class DDLExporterTest {
 
 			Assert.assertEquals(
 				StringBundler.concat(
-					"text0,,,Approved,",
+					"text0,Option 1,,,Approved,",
 					formatDate(recordVersion0.getStatusDate()), CharPool.COMMA,
 					recordVersion0.getUserName()),
 				row1);
@@ -355,13 +363,16 @@ public class DDLExporterTest {
 
 		DDLExporter ddlExporter = _ddlExporterFactory.getDDLExporter("xls");
 
-		byte[] bytes = ddlExporter.export(recordSet.getRecordSetId());
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"org.apache.poi.POIDocument", LoggerTestUtil.WARN)) {
 
-		try (ByteArrayInputStream byteArrayInputStream =
-				new ByteArrayInputStream(bytes);
-			HSSFWorkbook workbook = new HSSFWorkbook(byteArrayInputStream)) {
+			ByteArrayInputStream byteArrayInputStream =
+				new ByteArrayInputStream(
+					ddlExporter.export(recordSet.getRecordSetId()));
 
-			Sheet sheet = workbook.getSheetAt(0);
+			HSSFWorkbook hssfWorkbook = new HSSFWorkbook(byteArrayInputStream);
+
+			Sheet sheet = hssfWorkbook.getSheetAt(0);
 
 			Row row = sheet.getRow(0);
 

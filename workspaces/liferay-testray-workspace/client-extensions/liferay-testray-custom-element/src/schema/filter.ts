@@ -19,7 +19,7 @@ import {
 import {
 	BuildStatuses,
 	CaseResultStatuses,
-	SubTaskStatuses,
+	SubtaskStatuses,
 	TaskStatuses,
 } from '../util/statuses';
 
@@ -85,7 +85,7 @@ const baseFilters: Filter = {
 	caseType: {
 		label: i18n.translate('case-type'),
 		name: 'caseType',
-		resource: '/casetypes?fields=id,name&pageSize=100&sort=name:asc',
+		resource: '/casetypes?fields=id,name&pageSize=-1&sort=name:asc',
 		transformData(item) {
 			return dataToOptions(transformData<TestrayCaseType>(item));
 		},
@@ -100,7 +100,7 @@ const baseFilters: Filter = {
 				projectId as string
 			)}`;
 
-			return `/components?fields=id,name&filter=${filter}&pageSize=200&sort=name:asc`;
+			return `/components?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
 		},
 
 		transformData(item) {
@@ -156,7 +156,7 @@ const baseFilters: Filter = {
 				projectId as string
 			)}`;
 
-			return `/productversions?fields=id,name&filter=${filter}&pageSize=100&sort=name:asc`;
+			return `/productversions?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
 		},
 		transformData(item) {
 			return dataToOptions(transformData<TestrayProductVersion>(item));
@@ -166,7 +166,7 @@ const baseFilters: Filter = {
 	project: {
 		label: i18n.translate('project'),
 		name: 'projectId',
-		resource: '/projects?fields=id,name&pageSize=100',
+		resource: '/projects?fields=id,name&pageSize=-1',
 		transformData(item) {
 			return dataToOptions(transformData<TestrayProject>(item));
 		},
@@ -181,7 +181,7 @@ const baseFilters: Filter = {
 				projectId as string
 			)}`;
 
-			return `/routines?fields=id,name&filter=${filter}&pageSize=100`;
+			return `/routines?fields=id,name&filter=${filter}&pageSize=-1`;
 		},
 		transformData(item) {
 			return dataToOptions(transformData<TestrayRoutine>(item));
@@ -220,7 +220,7 @@ const baseFilters: Filter = {
 				projectId as string
 			)}`;
 
-			return `/teams?fields=id,name&filter=${filter}&pageSize=100&sort=name:asc`;
+			return `/teams?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
 		},
 		transformData(item) {
 			return dataToOptions(transformData<TestrayTeam>(item));
@@ -242,12 +242,21 @@ const filterSchema = {
 	buildCaseTypes: {
 		fields: [
 			overrides(baseFilters.priority, {
-				name: 'caseTypeToCases/priority',
+				isCustomFilter: true,
+				name: 'testrayCasePriorities',
 				removeQuoteMark: true,
 			}),
 			overrides(baseFilters.team, {
-				name:
-					'caseTypeToCases/componentToCases/r_teamToComponents_c_teamId',
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
+				resource: ({projectId}) => {
+					const filter = `${SearchBuilder.eq(
+						'projectId',
+						projectId as string
+					)}`;
+
+					return `/teams?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
+				},
 				type: 'multiselect',
 			}),
 		] as RendererFields[],
@@ -256,18 +265,31 @@ const filterSchema = {
 	buildComponents: {
 		fields: [
 			overrides(baseFilters.priority, {
-				name: 'componentToCases/priority',
+				isCustomFilter: true,
+				name: 'testrayCasePriorities',
 				removeQuoteMark: true,
 				type: 'select',
 			}),
 			overrides(baseFilters.caseType, {
-				name: 'componentToCases/caseTypeId',
+				isCustomFilter: true,
+				name: 'testrayCaseTypes',
 			}),
 			overrides(baseFilters.team, {
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
+				resource: ({projectId}) => {
+					const filter = `${SearchBuilder.eq(
+						'projectId',
+						projectId as string
+					)}`;
+
+					return `/teams?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
+				},
 				type: 'multiselect',
 			}),
 			overrides(baseFilters.run, {
-				name: 'componentToCaseResult/r_runToCaseResult_c_runId',
+				isCustomFilter: true,
+				name: 'testrayRunId',
 				transformData(item) {
 					return dataToOptions(
 						transformData<TestrayRun>(item),
@@ -284,40 +306,84 @@ const filterSchema = {
 	buildResults: {
 		fields: [
 			overrides(baseFilters.caseType, {
-				name: 'caseToCaseResult/r_caseTypeToCases_c_caseTypeId',
+				isCustomFilter: true,
+				name: 'testrayCaseTypeIds',
 				type: 'multiselect',
 			}),
+			{
+				isCustomFilter: true,
+				label: i18n.translate('flaky'),
+				name: 'flaky',
+				options: [
+					{
+						label: i18n.translate('true'),
+						value: true,
+					},
+					{
+						label: i18n.translate('false'),
+						value: false,
+					},
+				],
+				removeQuoteMark: true,
+				type: 'select',
+			},
 			overrides(baseFilters.priority, {
-				name: 'caseToCaseResult/priority',
+				isCustomFilter: true,
+				name: 'priority',
 				removeQuoteMark: true,
 				type: 'multiselect',
 			}),
 			overrides(baseFilters.team, {
-				name: 'componentToCaseResult/r_teamToComponents_c_teamId',
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
+				resource: ({projectId}) => {
+					const filter = `${SearchBuilder.eq(
+						'projectId',
+						projectId as string
+					)}`;
+
+					return `/teams?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
+				},
 				type: 'multiselect',
 			}),
 			overrides(baseFilters.component, {
-				name: 'componentToCaseResult/id',
+				isCustomFilter: true,
+				name: 'testrayComponentIds',
+				resource: ({projectId}) => {
+					const filter = `${SearchBuilder.eq(
+						'projectId',
+						projectId as string
+					)}`;
+
+					return `/components?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
+				},
 				type: 'multiselect',
 			}),
 			{
+				isCustomFilter: true,
 				label: i18n.translate('environment'),
-				name: 'runToCaseResult/name',
-				operator: 'contains',
+				name: 'testrayRunName',
+
 				type: 'text',
 			},
 			overrides(baseFilters.run, {
-				name: 'runToCaseResult/id',
+				isCustomFilter: true,
+				name: 'testrayRunId',
 				type: 'select',
 			}),
 			{
+				isCustomFilter: true,
 				label: i18n.translate('case-name'),
-				name: 'caseToCaseResult/name',
-				operator: 'contains',
+				name: 'testrayCaseName',
 				type: 'text',
 			},
-			overrides(baseFilters.assignee, {name: 'userId'}),
+			overrides(baseFilters.assignee, {
+				isCustomFilter: true,
+				name: 'userId',
+			}),
 			overrides(baseFilters.dueStatus, {
+				isCustomFilter: true,
+				name: 'status',
 				options: [
 					{
 						label: i18n.translate('blocked'),
@@ -330,6 +396,10 @@ const filterSchema = {
 					{
 						label: i18n.translate('in-progress'),
 						value: CaseResultStatuses.IN_PROGRESS,
+					},
+					{
+						label: i18n.translate('incomplete'),
+						value: CaseResultStatuses.INCOMPLETE,
 					},
 					{
 						label: i18n.translate('passed'),
@@ -345,14 +415,21 @@ const filterSchema = {
 					},
 				],
 			}),
-			baseFilters.issues,
-			overrides(baseFilters.erros, {
-				operator: 'contains',
+			overrides(baseFilters.issues, {
+				isCustomFilter: true,
+				name: 'issues',
 			}),
 			{
+				isCustomFilter: true,
+				label: i18n.translate('errors'),
+				name: 'error',
+				optionalOperator: 'ne',
+				type: 'textarea',
+			},
+			{
+				isCustomFilter: true,
 				label: i18n.translate('comments'),
 				name: 'comment',
-				operator: 'contains',
 				type: 'textarea',
 			},
 		] as RendererFields[],
@@ -361,24 +438,34 @@ const filterSchema = {
 	buildResultsHistory: {
 		fields: [
 			overrides(baseFilters.productVersion, {
+				isCustomFilter: true,
 				label: i18n.translate('product-version-name'),
-				name:
-					'buildToCaseResult/r_productVersionToBuilds_c_productVersionId',
+				name: 'testrayProductVersionIds',
 				type: 'multiselect',
 			}),
 			{
+				isCustomFilter: true,
 				label: i18n.translate('environment'),
-				name: 'runToCaseResult/name',
-				operator: 'contains',
+				name: 'testrayRunName',
 				type: 'text',
 			},
 			overrides(baseFilters.routine, {
-				name: 'buildToCaseResult/routineId',
+				isCustomFilter: true,
+				name: 'testrayRoutineIds',
+				type: 'multiselect',
+			}),
+			overrides(baseFilters.team, {
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
+				type: 'multiselect',
 			}),
 			overrides(baseFilters.assignee, {
+				isCustomFilter: true,
 				name: 'userId',
 			}),
 			overrides(baseFilters.dueStatus, {
+				isCustomFilter: true,
+				name: 'status',
 				options: [
 					{
 						label: 'Blocked',
@@ -391,6 +478,10 @@ const filterSchema = {
 					{
 						label: 'In Progress',
 						value: CaseResultStatuses.IN_PROGRESS,
+					},
+					{
+						label: 'Incomplete',
+						value: CaseResultStatuses.INCOMPLETE,
 					},
 					{
 						label: 'Passed',
@@ -406,25 +497,33 @@ const filterSchema = {
 					},
 				],
 			}),
-			baseFilters.issues,
-			overrides(baseFilters.erros, {
-				operator: 'contains',
+			overrides(baseFilters.issues, {
+				isCustomFilter: true,
+				name: 'issues',
 			}),
 			{
+				isCustomFilter: true,
+				label: i18n.translate('errors'),
+				name: 'error',
+				optionalOperator: 'ne',
+				type: 'textarea',
+			},
+			{
+				isCustomFilter: true,
 				label: i18n.translate('case-result-warning'),
-				name: 'warnings',
+				name: 'warning',
 				type: 'number',
 			},
 			{
-				label: i18n.sub('x-create-date', 'min'),
-				name: 'dateCreated',
-				operator: 'gt',
+				isCustomFilter: true,
+				label: i18n.sub('x-execution-date', 'min'),
+				name: 'minExecutionDate',
 				type: 'date',
 			},
 			{
-				label: i18n.sub('x-create-date', 'max'),
-				name: 'dateCreated$',
-				operator: 'lt',
+				isCustomFilter: true,
+				label: i18n.sub('x-execution-date', 'max'),
+				name: 'maxExecutionDate',
 				type: 'date',
 			},
 		] as RendererFields[],
@@ -433,16 +532,27 @@ const filterSchema = {
 	buildRuns: {
 		fields: [
 			overrides(baseFilters.priority, {
-				name: 'runToCaseResult/caseToCaseResult/priority',
+				isCustomFilter: true,
+				name: 'testrayCasePriorities',
 				removeQuoteMark: true,
 				type: 'multiselect',
 			}),
 			overrides(baseFilters.caseType, {
-				name: 'runToCaseResult/caseToCaseResult/caseTypeToCases/id',
+				isCustomFilter: true,
+				name: 'testrayCaseTypes',
 			}),
 			overrides(baseFilters.team, {
-				name:
-					'runToCaseResult/componentToCaseResult/r_teamToComponents_c_teamId',
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
+				resource: ({projectId}) => {
+					const filter = `${SearchBuilder.eq(
+						'projectId',
+						projectId as string
+					)}`;
+
+					return `/teams?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
+				},
+				type: 'multiselect',
 			}),
 		] as RendererFields[],
 		name: 'buildRuns',
@@ -450,16 +560,30 @@ const filterSchema = {
 	buildTeams: {
 		fields: [
 			overrides(baseFilters.priority, {
-				name: 'teamToComponents/componentToCases/priority',
+				isCustomFilter: true,
+				name: 'testrayCasePriorities',
 				removeQuoteMark: true,
 			}),
 			overrides(baseFilters.caseType, {
-				name: 'teamToComponents/componentToCases/caseTypeToCases/id',
+				isCustomFilter: true,
+				name: 'testrayCaseTypes',
 			}),
-			overrides(baseFilters.team, {name: 'id', type: 'multiselect'}),
+			overrides(baseFilters.team, {
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
+				resource: ({projectId}) => {
+					const filter = `${SearchBuilder.eq(
+						'projectId',
+						projectId as string
+					)}`;
+
+					return `/teams?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
+				},
+				type: 'multiselect',
+			}),
 			overrides(baseFilters.run, {
-				name:
-					'teamToComponents/componentToCaseResult/runToCaseResult/id',
+				isCustomFilter: true,
+				name: 'testrayRunId',
 			}),
 		] as RendererFields[],
 		name: 'buildTeams',
@@ -491,18 +615,20 @@ const filterSchema = {
 	builds: {
 		fields: [
 			overrides(baseFilters.productVersion, {
-				name: 'productVersionToBuilds/id',
+				isCustomFilter: true,
+				name: 'testrayProductVersion',
 				type: 'select',
 			}),
 			{
+				isCustomFilter: true,
 				label: i18n.translate('build-name'),
-				name: 'name',
-				operator: 'contains',
+				name: 'testrayBuildName',
 				type: 'text',
 			},
 			{
+				isCustomFilter: true,
 				label: i18n.translate('status'),
-				name: 'buildToTasks/dueStatus',
+				name: 'testrayTaskStatus',
 				options: [
 					{
 						label: i18n.translate('abandoned'),
@@ -570,6 +696,22 @@ const filterSchema = {
 				operator: 'contains',
 				type: 'text',
 			},
+			{
+				label: i18n.translate('Flaky'),
+				name: 'flaky',
+				options: [
+					{
+						label: i18n.translate('true'),
+						value: true,
+					},
+					{
+						label: i18n.translate('false'),
+						value: false,
+					},
+				],
+				removeQuoteMark: true,
+				type: 'select',
+			},
 			overrides(baseFilters.team, {
 				name: 'componentToCases/r_teamToComponents_c_teamId',
 				type: 'multiselect',
@@ -596,7 +738,8 @@ const filterSchema = {
 				type: 'multiselect',
 			}),
 			overrides(baseFilters.team, {
-				name: 'componentToCaseResult/teamId',
+				label: 'Teams',
+				name: 'componentToCaseResult/teamToComponents/name',
 				resource: ({runA, runB}) => {
 					const filter = `${SearchBuilder.eq(
 						'teamToComponents/componentToCaseResult/r_runToCaseResult_c_runId',
@@ -606,12 +749,13 @@ const filterSchema = {
 						runB as string
 					)}`;
 
-					return `/teams?filter=${filter}&pageSize=100&sort=name:asc`;
+					return `/teams?filter=${filter}&pageSize=-1&sort=name:asc`;
 				},
 				type: 'select',
 			}),
 			overrides(baseFilters.component, {
-				name: 'componentToCaseResult/id',
+				label: 'Components',
+				name: 'componentToCaseResult/name',
 				resource: ({runA, runB}) => {
 					const filter = `${SearchBuilder.eq(
 						'componentToCaseResult/r_runToCaseResult_c_runId',
@@ -621,7 +765,7 @@ const filterSchema = {
 						runB as string
 					)}`;
 
-					return `/components?filter=${filter}&pageSize=100&sort=name:asc`;
+					return `/components?filter=${filter}&pageSize=-1&sort=name:asc`;
 				},
 				type: 'multiselect',
 			}),
@@ -636,6 +780,7 @@ const filterSchema = {
 				label: i18n.sub('status-in-x', 'run-a'),
 				name: 'testrayCaseResultStatus1',
 				operator: 'eq',
+				optionalOperator: 'ne',
 				options: [
 					{
 						label: i18n.translate('passed'),
@@ -666,6 +811,7 @@ const filterSchema = {
 				label: i18n.sub('status-in-x', 'run-b'),
 				name: 'testrayCaseResultStatus2',
 				operator: 'eq',
+				optionalOperator: 'ne',
 				options: [
 					{
 						label: i18n.translate('passed'),
@@ -747,7 +893,7 @@ const filterSchema = {
 						runB as string
 					)}`;
 
-					return `/teams?filter=${filter}&pageSize=100&sort=name:asc`;
+					return `/teams?filter=${filter}&pageSize=-1&sort=name:asc`;
 				},
 
 				type: 'select',
@@ -817,8 +963,7 @@ const filterSchema = {
 			},
 			{
 				label: i18n.translate('case'),
-				name:
-					'requiremenToRequirementsCases/caseToRequirementsCases/name',
+				name: 'requiremenToRequirementsCases/caseToRequirementsCases/name',
 				operator: 'contains',
 				optionalOperator: 'ne',
 				type: 'textarea',
@@ -826,71 +971,252 @@ const filterSchema = {
 		] as RendererFields[],
 		name: 'requirements',
 	},
+	routineDuration: {
+		fields: [
+			{
+				isCustomFilter: true,
+				label: i18n.translate('flaky'),
+				name: 'flaky',
+				options: [
+					{
+						label: i18n.translate('true'),
+						value: true,
+					},
+					{
+						label: i18n.translate('false'),
+						value: false,
+					},
+				],
+				removeQuoteMark: true,
+				type: 'select',
+			},
+			overrides(baseFilters.priority, {
+				isCustomFilter: true,
+				name: 'priority',
+				removeQuoteMark: true,
+				type: 'multiselect',
+			}),
+			{
+				isCustomFilter: true,
+				label: i18n.translate('case-name'),
+				name: 'testrayCaseName',
+				type: 'text',
+			},
+			overrides(baseFilters.caseType, {
+				isCustomFilter: true,
+				name: 'testrayCaseTypeIds',
+				type: 'multiselect',
+			}),
+			overrides(baseFilters.component, {
+				isCustomFilter: true,
+				name: 'testrayComponentIds',
+				type: 'multiselect',
+			}),
+			overrides(baseFilters.team, {
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
+				type: 'multiselect',
+			}),
+		] as RendererFields[],
+		name: 'routineDuration',
+	},
 	routines: {
 		fields: [
 			overrides(baseFilters.priority, {
-				name:
-					'routineToBuilds/buildToCaseResult/caseToCaseResult/priority',
+				isCustomFilter: true,
+				name: 'testrayCasePriorities',
 				removeQuoteMark: true,
 			}),
 			overrides(baseFilters.caseType, {
-				name:
-					'routineToBuilds/buildToCaseResult/caseToCaseResult/caseTypeToCases/id',
+				isCustomFilter: true,
+				name: 'testrayCaseTypes',
 			}),
 			overrides(baseFilters.team, {
-				name:
-					'routineToBuilds/buildToCaseResult/componentToCaseResult/r_teamToComponents_c_teamId',
+				isCustomFilter: true,
+				name: 'testrayTeamId',
 			}),
 		] as RendererFields[],
 		name: 'routines',
 	},
+	subtaskCaseResults: {
+		fields: [
+			overrides(baseFilters.caseType, {
+				isCustomFilter: true,
+				name: 'testrayCaseTypeIds',
+				type: 'multiselect',
+			}),
+			{
+				isCustomFilter: true,
+				label: i18n.translate('flaky'),
+				name: 'flaky',
+				options: [
+					{
+						label: i18n.translate('true'),
+						value: true,
+					},
+					{
+						label: i18n.translate('false'),
+						value: false,
+					},
+				],
+				removeQuoteMark: true,
+				type: 'select',
+			},
+			overrides(baseFilters.priority, {
+				isCustomFilter: true,
+				name: 'priority',
+				removeQuoteMark: true,
+				type: 'multiselect',
+			}),
+			overrides(baseFilters.team, {
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
+				resource: ({projectId}) => {
+					const filter = `${SearchBuilder.eq(
+						'projectId',
+						projectId as string
+					)}`;
+
+					return `/teams?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
+				},
+				type: 'multiselect',
+			}),
+			overrides(baseFilters.component, {
+				isCustomFilter: true,
+				name: 'testrayComponentIds',
+				resource: ({projectId}) => {
+					const filter = `${SearchBuilder.eq(
+						'projectId',
+						projectId as string
+					)}`;
+
+					return `/components?fields=id,name&filter=${filter}&pageSize=-1&sort=name:asc`;
+				},
+				type: 'multiselect',
+			}),
+			{
+				isCustomFilter: true,
+				label: i18n.translate('environment'),
+				name: 'testrayRunName',
+
+				type: 'text',
+			},
+			overrides(baseFilters.run, {
+				isCustomFilter: true,
+				name: 'testrayRunId',
+				type: 'select',
+			}),
+			{
+				isCustomFilter: true,
+				label: i18n.translate('case-name'),
+				name: 'testrayCaseName',
+				type: 'text',
+			},
+			overrides(baseFilters.assignee, {
+				isCustomFilter: true,
+				name: 'userId',
+			}),
+			overrides(baseFilters.dueStatus, {
+				isCustomFilter: true,
+				name: 'status',
+				options: [
+					{
+						label: i18n.translate('blocked'),
+						value: CaseResultStatuses.BLOCKED,
+					},
+					{
+						label: i18n.translate('failed'),
+						value: CaseResultStatuses.FAILED,
+					},
+					{
+						label: i18n.translate('in-progress'),
+						value: CaseResultStatuses.IN_PROGRESS,
+					},
+					{
+						label: i18n.translate('incomplete'),
+						value: CaseResultStatuses.INCOMPLETE,
+					},
+					{
+						label: i18n.translate('passed'),
+						value: CaseResultStatuses.PASSED,
+					},
+					{
+						label: i18n.translate('test-fix'),
+						value: CaseResultStatuses.TEST_FIX,
+					},
+					{
+						label: i18n.translate('untested'),
+						value: CaseResultStatuses.UNTESTED,
+					},
+				],
+			}),
+			overrides(baseFilters.issues, {
+				isCustomFilter: true,
+				name: 'issues',
+			}),
+			overrides(baseFilters.erros, {
+				isCustomFilter: true,
+				name: 'error',
+			}),
+			{
+				isCustomFilter: true,
+				label: i18n.translate('comments'),
+				name: 'comment',
+				type: 'textarea',
+			},
+		] as RendererFields[],
+		name: 'subtaskCaseResults',
+	},
 	subtasks: {
 		fields: [
 			{
+				isCustomFilter: true,
 				label: i18n.translate('subtask-name'),
 				name: 'name',
-				operator: 'contains',
 				type: 'text',
 			},
 			{
+				isCustomFilter: true,
 				label: i18n.translate('errors'),
-				name: 'errors',
-				operator: 'contains',
+				name: 'error',
 				type: 'text',
 			},
-			overrides(baseFilters.assignee, {name: 'userId'}),
+			overrides(baseFilters.assignee, {
+				isCustomFilter: true,
+				name: 'userId',
+			}),
 			{
+				isCustomFilter: true,
 				label: i18n.translate('status'),
-				name: 'dueStatus',
+				name: 'status',
 				options: [
 					{
 						label: i18n.translate('complete'),
-						value: SubTaskStatuses.COMPLETE,
+						value: SubtaskStatuses.COMPLETE,
 					},
 					{
 						label: i18n.translate('in-analysis'),
-						value: SubTaskStatuses.IN_ANALYSIS,
+						value: SubtaskStatuses.IN_ANALYSIS,
 					},
 					{
 						label: i18n.translate('open'),
-						value: SubTaskStatuses.OPEN,
+						value: SubtaskStatuses.OPEN,
 					},
 				],
 				type: 'checkbox',
 			},
 			overrides(baseFilters.issues, {
-				name:
-					'subtaskToSubtasksCasesResults/caseResultToSubtasksCasesResults/issues',
-				operator: 'contains',
+				isCustomFilter: true,
+				name: 'issues',
 			}),
 			overrides(baseFilters.team, {
-				name:
-					'subtaskToSubtasksCasesResults/caseResultToSubtasksCasesResults/componentToCaseResult/r_teamToComponents_c_teamId',
+				isCustomFilter: true,
+				name: 'testrayTeamIds',
 				type: 'multiselect',
 			}),
 			overrides(baseFilters.component, {
-				name:
-					'subtaskToSubtasksCasesResults/caseResultToSubtasksCasesResults/r_componentToCaseResult_c_componentId',
+				isCustomFilter: true,
+				name: 'testrayComponentIds',
 				type: 'multiselect',
 			}),
 		] as RendererFields[],
@@ -936,7 +1262,7 @@ const filterSchema = {
 				label: i18n.translate('routine-name'),
 				name: 'buildToTasks/r_routineToBuilds_c_routineId',
 				resource:
-					'/routines?fields=id,name,routineToProjects.name&nestedFields=routineToProjects&pageSize=100&sort=name:asc',
+					'/routines?fields=id,name,routineToProjects.name&nestedFields=routineToProjects&pageSize=-1&sort=name:asc',
 				transformData(item) {
 					const transformRoutineData = (routine: TestrayRoutine) => ({
 						label: `${routine.routineToProjects?.name} / ${routine.name}`,

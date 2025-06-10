@@ -62,7 +62,7 @@ long accountEntryId = accountEntryDisplay.getAccountEntryId();
 		/>
 	</c:if>
 
-	<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryId, AccountActionKeys.MANAGE_ORGANIZATIONS) %>">
+	<c:if test="<%= AccountEntryPermission.hasEditOrManageOrganizationsPermission(permissionChecker, accountEntryId) %>">
 		<portlet:renderURL var="manageOrganizationsURL">
 			<portlet:param name="mvcRenderCommandName" value="/account_admin/edit_account_entry" />
 			<portlet:param name="screenNavigationCategoryKey" value="<%= AccountScreenNavigationEntryConstants.CATEGORY_KEY_ORGANIZATIONS %>" />
@@ -76,7 +76,7 @@ long accountEntryId = accountEntryDisplay.getAccountEntryId();
 		/>
 	</c:if>
 
-	<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryId, ActionKeys.DELETE) %>">
+	<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryId, ActionKeys.DEACTIVATE) %>">
 		<c:if test="<%= accountEntryDisplay.isApproved() %>">
 			<portlet:actionURL name="/account_admin/update_account_entry_status" var="deactivateAccountURL">
 				<portlet:param name="<%= Constants.CMD %>" value="<%= Constants.DEACTIVATE %>" />
@@ -102,7 +102,9 @@ long accountEntryId = accountEntryDisplay.getAccountEntryId();
 				url="<%= activateAccountURL %>"
 			/>
 		</c:if>
+	</c:if>
 
+	<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryId, ActionKeys.DELETE) %>">
 		<portlet:actionURL name="/account_admin/delete_account_entry" var="deleteAccountURL">
 			<portlet:param name="redirect" value="<%= currentURL %>" />
 			<portlet:param name="accountEntryIds" value="<%= String.valueOf(accountEntryId) %>" />

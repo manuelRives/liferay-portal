@@ -36,11 +36,11 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -210,7 +210,7 @@ public class FragmentEntryProcessorRegistryImpl
 			return;
 		}
 
-		Set<String> validHTMLs = _validHTMLsThreadLocal.get();
+		Set<String> validHTMLs = _validHTMLs.get();
 
 		if (validHTMLs.contains(html)) {
 			return;
@@ -345,10 +345,9 @@ public class FragmentEntryProcessorRegistryImpl
 		return html;
 	}
 
-	private static final ThreadLocal<Set<String>> _validHTMLsThreadLocal =
+	private static final ThreadLocal<Set<String>> _validHTMLs =
 		new CentralizedThreadLocal(
-			FragmentEntryProcessorRegistryImpl.class.getName() +
-				"._validHTMLsThreadLocal",
+			FragmentEntryProcessorRegistryImpl.class.getName() + "._validHTMLs",
 			HashSet::new);
 
 	private ServiceTrackerList<CSSFragmentEntryProcessor>

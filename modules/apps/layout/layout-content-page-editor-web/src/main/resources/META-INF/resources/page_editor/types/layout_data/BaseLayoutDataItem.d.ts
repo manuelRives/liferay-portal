@@ -11,8 +11,6 @@ export type ResponsiveConfig<T> = T & {
 	tablet: {[Key in keyof T]?: T[Key]};
 };
 
-export type LanguageId = Liferay.Language.Locale;
-
 export type TranslatedConfig<T> = Record<LanguageId, T>;
 
 export type BackgroundImage = {classPK: string; url: string};
@@ -27,7 +25,7 @@ interface BaseCommonStyles {
 	paddingTop?: string;
 	styles?: {
 		backgroundImage?: {classPK?: string};
-		display?: 'none';
+		display?: 'none' | 'block';
 		height?: string;
 		maxHeight?: string;
 		maxWidth?: string;
@@ -43,7 +41,7 @@ export type CommonStyles = ResponsiveConfig<BaseCommonStyles>;
 
 export interface BaseLayoutDataItem<
 	ItemType extends LayoutDataItemType,
-	Config
+	Config,
 > {
 	children: string[];
 	config: Config & {name?: string};

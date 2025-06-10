@@ -11,6 +11,7 @@ import React from 'react';
 import ConvertToPageTemplateModal from '../../plugins/convert_to_page_template_modal/components/ConvertToPageTemplateModal';
 import {StyleBookContextProvider} from '../../plugins/page_design_options/hooks/useStyleBook';
 import {INIT} from '../actions/types';
+import {ClipboardContextProvider} from '../contexts/ClipboardContext';
 import {CollectionActiveItemContextProvider} from '../contexts/CollectionActiveItemContext';
 import {ControlsProvider} from '../contexts/ControlsContext';
 import {DisplayPagePreviewItemContextProvider} from '../contexts/DisplayPagePreviewItemContext';
@@ -19,12 +20,14 @@ import {FormValidationContextProvider} from '../contexts/FormValidationContext';
 import {GlobalContextProvider} from '../contexts/GlobalContext';
 import {
 	KeyboardMovementContextProvider,
-	useMovementSource,
+	useMovementSources,
 } from '../contexts/KeyboardMovementContext';
 import {LayoutKeyboardContextProvider} from '../contexts/LayoutKeyboardContext';
 import {LocalConfigContextProvider} from '../contexts/LocalConfigContext';
 import {PortletContentContextProvider} from '../contexts/PortletContentContext';
+import {ShortcutContextProvider} from '../contexts/ShortcutContext';
 import {StoreContextProvider} from '../contexts/StoreContext';
+import {WidgetsContextProvider} from '../contexts/WidgetsContext';
 import AppHooks from '../hooks/app_hooks/index';
 import {reducer} from '../reducers/index';
 import {DragAndDropContextProvider} from '../utils/drag_and_drop/useDragAndDrop';
@@ -35,13 +38,13 @@ import FocusManager from './FocusManager';
 import ItemConfigurationSidebar from './ItemConfigurationSidebar';
 import {LayoutBreadcrumbs} from './LayoutBreadcrumbs';
 import LayoutViewport from './LayoutViewport';
+import MultiSelectManager from './MultiSelectManager';
 import ShortcutManager from './ShortcutManager';
 import Sidebar from './Sidebar';
 import Toolbar from './Toolbar';
-import WidgetsManager from './WidgetsManager';
+import ExperienceCustomizerModal from './cms/ExperienceCustomizerModal';
 import KeyboardMovementManager from './keyboard_movement/KeyboardMovementManager';
 import KeyboardMovementPreview from './keyboard_movement/KeyboardMovementPreview';
-import KeyboardMovementText from './keyboard_movement/KeyboardMovementText';
 
 export default function App({state}) {
 	const initialState = reducer(state, {type: INIT});
@@ -51,52 +54,56 @@ export default function App({state}) {
 			<StoreContextProvider initialState={initialState} reducer={reducer}>
 				<ConvertToPageTemplateModal />
 
+				<ExperienceCustomizerModal />
+
 				<ControlsProvider>
 					<CollectionActiveItemContextProvider>
 						<DragAndDropContextProvider>
 							<EditableProcessorContextProvider>
 								<DisplayPagePreviewItemContextProvider>
-									<AppHooks />
+									<WidgetsContextProvider>
+										<AppHooks />
 
-									<DisplayPagePreviewItemSelector dark />
+										<DisplayPagePreviewItemSelector dark />
 
-									<DragPreviewWrapper />
+										<DragPreviewWrapper />
 
-									<FocusManager />
+										<FocusManager />
 
-									<WidgetsManager />
+										<FormValidationContextProvider>
+											<Toolbar />
 
-									<FormValidationContextProvider>
-										<Toolbar />
+											<KeyboardMovementContextProvider>
+												<ClipboardContextProvider>
+													<ShortcutContextProvider>
+														<KeyboardManager />
 
-										<KeyboardMovementContextProvider>
-											<KeyboardManager />
+														<KeyboardMovementPreview />
 
-											<KeyboardMovementPreview />
+														<PortletContentContextProvider>
+															<LocalConfigContextProvider>
+																<GlobalContextProvider>
+																	<CommonStylesManager />
 
-											<KeyboardMovementText />
+																	<StyleBookContextProvider>
+																		<Sidebar />
 
-											<PortletContentContextProvider>
-												<LocalConfigContextProvider>
-													<GlobalContextProvider>
-														<CommonStylesManager />
+																		<LayoutKeyboardContextProvider>
+																			<LayoutViewport />
+																		</LayoutKeyboardContextProvider>
 
-														<StyleBookContextProvider>
-															<Sidebar />
+																		<LayoutBreadcrumbs />
 
-															<LayoutKeyboardContextProvider>
-																<LayoutViewport />
-															</LayoutKeyboardContextProvider>
-
-															<LayoutBreadcrumbs />
-
-															<ItemConfigurationSidebar />
-														</StyleBookContextProvider>
-													</GlobalContextProvider>
-												</LocalConfigContextProvider>
-											</PortletContentContextProvider>
-										</KeyboardMovementContextProvider>
-									</FormValidationContextProvider>
+																		<ItemConfigurationSidebar />
+																	</StyleBookContextProvider>
+																</GlobalContextProvider>
+															</LocalConfigContextProvider>
+														</PortletContentContextProvider>
+													</ShortcutContextProvider>
+												</ClipboardContextProvider>
+											</KeyboardMovementContextProvider>
+										</FormValidationContextProvider>
+									</WidgetsContextProvider>
 								</DisplayPagePreviewItemContextProvider>
 							</EditableProcessorContextProvider>
 						</DragAndDropContextProvider>
@@ -112,7 +119,14 @@ App.propTypes = {
 };
 
 function KeyboardManager() {
-	const movementSource = useMovementSource();
+	const movementSources = useMovementSources();
 
-	return movementSource ? <KeyboardMovementManager /> : <ShortcutManager />;
+	return movementSources.length ? (
+		<KeyboardMovementManager />
+	) : (
+		<>
+			<ShortcutManager />
+			<MultiSelectManager />
+		</>
+	);
 }

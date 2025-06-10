@@ -8,17 +8,16 @@ import classnames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useCallback, useContext, useEffect, useState} from 'react';
 
-import {OPEN_MINICART_FOR_EDITING} from '../../utilities/eventsDefinitions';
+import {
+	OPEN_MINICART_FOR_EDITING,
+	OPEN_MINI_CART,
+} from '../../utilities/eventsDefinitions';
 import MiniCartContext from './MiniCartContext';
 import {hasOptions} from './util/index';
 
 function Opener() {
-	const {
-		cartState,
-		displayTotalItemsQuantity,
-		openCart,
-		setEditedItem,
-	} = useContext(MiniCartContext);
+	const {cartState, displayTotalItemsQuantity, openCart, setEditedItem} =
+		useContext(MiniCartContext);
 
 	const {cartItems = [], summary = {}} = cartState;
 	const {itemsQuantity: initialItemsQuantity} = summary;
@@ -62,11 +61,13 @@ function Opener() {
 
 	useEffect(() => {
 		Liferay.on(OPEN_MINICART_FOR_EDITING, openMiniCartForEditing);
+		Liferay.on(OPEN_MINI_CART, openCart);
 
 		return () => {
 			Liferay.detach(OPEN_MINICART_FOR_EDITING, openMiniCartForEditing);
+			Liferay.detach(OPEN_MINI_CART, openCart);
 		};
-	}, [openMiniCartForEditing]);
+	}, [openCart, openMiniCartForEditing]);
 
 	return (
 		<button
@@ -75,7 +76,7 @@ function Opener() {
 				'mini-cart-opener': true,
 			})}
 			data-badge-count={numberOfItems}
-			data-qa-id="mini-cart-button"
+			data-qa-id="miniCartButton"
 			onClick={openCart}
 		>
 			<ClayIcon symbol="shopping-cart" />

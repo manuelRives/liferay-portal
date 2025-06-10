@@ -8,6 +8,7 @@ package com.liferay.friendly.url.internal.upgrade.v3_4_1;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.model.FriendlyURLEntryLocalization;
 import com.liferay.friendly.url.model.FriendlyURLEntryMapping;
+import com.liferay.friendly.url.model.impl.FriendlyURLEntryLocalizationModelImpl;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -26,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,18 +41,17 @@ public class LayoutFriendlyURLEntryUpgradeProcess extends UpgradeProcess {
 		ClassNameLocalService classNameLocalService, Portal portal,
 		ResourceActions resourceActions) {
 
+		_classNameLocalService = classNameLocalService;
 		_portal = portal;
-
-		_privateLayoutClassNameId = classNameLocalService.getClassNameId(
-			resourceActions.getCompositeModelName(
-				Layout.class.getName(), Boolean.TRUE.toString()));
-		_publicLayoutClassNameId = classNameLocalService.getClassNameId(
-			resourceActions.getCompositeModelName(
-				Layout.class.getName(), Boolean.FALSE.toString()));
+		_resourceActions = resourceActions;
 	}
 
 	@Override
 	protected void doUpgrade() throws Exception {
+		dropIndexes(
+			Arrays.asList("IX_8AB5CAE", "IX_C753170C"),
+			FriendlyURLEntryLocalizationModelImpl.TABLE_NAME);
+
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			Map<Long, String> defaultLanguageIds = new ConcurrentHashMap<>();
 
@@ -59,7 +60,13 @@ public class LayoutFriendlyURLEntryUpgradeProcess extends UpgradeProcess {
 				"LayoutFriendlyURL.groupId, LayoutFriendlyURL.companyId, ",
 				"LayoutFriendlyURL.plid, LayoutFriendlyURL.privateLayout, ",
 				"CASE WHEN LayoutFriendlyURL.privateLayout = [$TRUE$] THEN ",
-				_privateLayoutClassNameId, " ELSE ", _publicLayoutClassNameId,
+				_classNameLocalService.getClassNameId(
+					_resourceActions.getCompositeModelName(
+						Layout.class.getName(), Boolean.TRUE.toString())),
+				" ELSE ",
+				_classNameLocalService.getClassNameId(
+					_resourceActions.getCompositeModelName(
+						Layout.class.getName(), Boolean.FALSE.toString())),
 				" END as classNameId from LayoutFriendlyURL left join ",
 				"FriendlyURLEntryLocalization on ",
 				"(FriendlyURLEntryLocalization.ctCollectionId = ",
@@ -131,7 +138,7 @@ public class LayoutFriendlyURLEntryUpgradeProcess extends UpgradeProcess {
 							preparedStatement.setLong(9, classNameId);
 							preparedStatement.setLong(10, plid);
 
-							preparedStatement.executeUpdate();
+							preparedStatement.addBatch();
 						}
 					}
 					catch (Exception exception) {
@@ -144,8 +151,7 @@ public class LayoutFriendlyURLEntryUpgradeProcess extends UpgradeProcess {
 						}
 					}
 				},
-				"Unable to create friendly URL entries for layout friendly " +
-					"URLs");
+				null);
 		}
 	}
 
@@ -354,8 +360,8 @@ public class LayoutFriendlyURLEntryUpgradeProcess extends UpgradeProcess {
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutFriendlyURLEntryUpgradeProcess.class);
 
+	private final ClassNameLocalService _classNameLocalService;
 	private final Portal _portal;
-	private final long _privateLayoutClassNameId;
-	private final long _publicLayoutClassNameId;
+	private final ResourceActions _resourceActions;
 
 }

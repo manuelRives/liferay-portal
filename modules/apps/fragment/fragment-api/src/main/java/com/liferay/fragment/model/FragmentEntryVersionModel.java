@@ -7,6 +7,7 @@ package com.liferay.fragment.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -32,8 +33,8 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface FragmentEntryVersionModel
 	extends BaseModel<FragmentEntryVersion>, CTModel<FragmentEntryVersion>,
-			GroupedModel, MVCCModel, ShardedModel, VersionModel<FragmentEntry>,
-			WorkflowedModel {
+			ExternalReferenceCodeModel, GroupedModel, MVCCModel, ShardedModel,
+			VersionModel<FragmentEntry>, WorkflowedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -133,6 +134,23 @@ public interface FragmentEntryVersionModel
 	 * @param uuid the uuid of this fragment entry version
 	 */
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this fragment entry version.
+	 *
+	 * @return the external reference code of this fragment entry version
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this fragment entry version.
+	 *
+	 * @param externalReferenceCode the external reference code of this fragment entry version
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the fragment entry ID of this fragment entry version.
@@ -414,6 +432,27 @@ public interface FragmentEntryVersionModel
 	 * @param previewFileEntryId the preview file entry ID of this fragment entry version
 	 */
 	public void setPreviewFileEntryId(long previewFileEntryId);
+
+	/**
+	 * Returns the marketplace of this fragment entry version.
+	 *
+	 * @return the marketplace of this fragment entry version
+	 */
+	public boolean getMarketplace();
+
+	/**
+	 * Returns <code>true</code> if this fragment entry version is marketplace.
+	 *
+	 * @return <code>true</code> if this fragment entry version is marketplace; <code>false</code> otherwise
+	 */
+	public boolean isMarketplace();
+
+	/**
+	 * Sets whether this fragment entry version is marketplace.
+	 *
+	 * @param marketplace the marketplace of this fragment entry version
+	 */
+	public void setMarketplace(boolean marketplace);
 
 	/**
 	 * Returns the read only of this fragment entry version.

@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {LiferayStorage} from '../core/Storage';
+import {CONSENT_TYPE} from '../core/Storage';
 
-export interface IOAuth2ClientAgentApplication {
+export type IOAuth2ClientAgentApplication = {
 	authorizeURL: string;
 	clientId: string;
 	encodedRedirectURL: string;
@@ -13,20 +13,30 @@ export interface IOAuth2ClientAgentApplication {
 	homePageURL: string;
 	redirectURIs: string[];
 	tokenURL: string;
-}
+};
 
-export interface IOAuth2Client {
+export type LiferayStorage = Storage & {
+	getItem(key: string, consentType: CONSENT_TYPE): string | null;
+	setItem(key: string, value: string, consentType: CONSENT_TYPE): void;
+};
+
+export type IOAuth2Client = {
 	FromUserAgentApplication: (
 		agentName: string
 	) => IOAuth2ClientAgentApplication;
-}
+};
 
-interface ILiferay {
+type ILiferay = {
 	CommerceContext: {
 		account?: {
 			accountId: number | string | null;
+			accountName: string | null;
 		};
 		commerceChannelId: string;
+		currency: {
+			currencyCode: string;
+			currencyId: string;
+		};
 	};
 	MarketplaceCustomerFlow: {appId: number};
 	OAuth2Client: IOAuth2Client;
@@ -44,6 +54,7 @@ interface ILiferay {
 		getPathThemeImages: () => string;
 		getPortalURL: () => string;
 		getScopeGroupId: () => number;
+		getURLHome: () => string;
 		getUserEmailAddress: () => string;
 		getUserId: () => string;
 		getUserName: () => string;
@@ -52,20 +63,22 @@ interface ILiferay {
 	Util: {
 		LocalStorage: LiferayStorage;
 		SessionStorage: LiferayStorage;
+		fetch: typeof fetch;
 		navigate: (path: string) => void;
 		openModal: (options?: {}) => void;
 		openToast: (options?: {
 			message: string;
 			onClick?: ({event}: {event: any}) => void;
 			title?: string;
-			type?: 'danger' | 'success';
+			type?: 'danger' | 'info' | 'success';
 		}) => void;
 	};
 	authToken: string;
 	detach: Function;
 	fire: (event: string, data: unknown) => null;
 	on: Function;
-}
+};
+
 declare global {
 	interface Window {
 		Liferay: ILiferay;
@@ -87,6 +100,7 @@ export const Liferay = window.Liferay || {
 		getPathContext: () => '',
 		getPathThemeImages: () => '',
 		getPortalURL: () => '',
+		getURLHome: () => '',
 		getUserId: () => '',
 		isSignedIn: () => {
 			return false;

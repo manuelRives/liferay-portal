@@ -24,7 +24,6 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.saml.constants.SamlWebKeys;
-import com.liferay.saml.helper.RelayStateHelper;
 import com.liferay.saml.helper.SamlHttpRequestHelper;
 import com.liferay.saml.opensaml.integration.internal.binding.SamlBinding;
 import com.liferay.saml.opensaml.integration.internal.transport.HttpClientFactory;
@@ -43,6 +42,13 @@ import com.liferay.saml.runtime.exception.UnsupportedBindingException;
 import com.liferay.saml.runtime.servlet.profile.SingleLogoutProfile;
 import com.liferay.saml.util.JspUtil;
 
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.Writer;
 
 import java.util.Collections;
@@ -50,13 +56,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import net.shibboleth.utilities.java.support.resolver.CriteriaSet;
 
@@ -621,8 +620,7 @@ public class SingleLogoutProfileImpl
 				SAMLBindingContext.class, true);
 
 		samlBindingContext.setRelayState(
-			_relayStateHelper.getRelayStateTokenFromRedirect(
-				portal.getPortalURL(httpServletRequest)));
+			portal.getPortalURL(httpServletRequest));
 
 		outboundMessageContext.setMessage(logoutRequest);
 
@@ -1071,8 +1069,8 @@ public class SingleLogoutProfileImpl
 			terminateSsoSession(httpServletRequest, httpServletResponse);
 		}
 
-		String relayState = _relayStateHelper.getRedirectFromRelayStateToken(
-			ParamUtil.getString(httpServletRequest, "RelayState"));
+		String relayState = ParamUtil.getString(
+			httpServletRequest, "RelayState");
 
 		if (Validator.isNotNull(relayState)) {
 			httpServletResponse.sendRedirect(
@@ -1448,9 +1446,6 @@ public class SingleLogoutProfileImpl
 
 	@Reference
 	private HttpClientFactory _httpClientFactory;
-
-	@Reference
-	private RelayStateHelper _relayStateHelper;
 
 	@Reference
 	private SamlHttpRequestHelper _samlHttpRequestHelper;

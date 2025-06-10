@@ -7,6 +7,7 @@ package com.liferay.portal.tools;
 
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
 import com.liferay.document.library.kernel.store.Store;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
 import com.liferay.portal.db.index.IndexUpdaterUtil;
@@ -27,6 +28,7 @@ import com.liferay.portal.kernel.model.ReleaseConstants;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.module.util.ServiceLatch;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
@@ -43,8 +45,9 @@ import com.liferay.portal.util.InitUtil;
 import com.liferay.portal.util.PortalClassPathUtil;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.verify.PreupgradeVerifyProcessSuite;
+import com.liferay.portal.verify.VerifyException;
 import com.liferay.portal.verify.VerifyProcessSuite;
-import com.liferay.portal.verify.VerifyProperties;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.sql.Connection;
@@ -55,7 +58,6 @@ import org.apache.commons.lang.time.StopWatch;
 import org.apache.logging.log4j.core.Appender;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 
 /**
  * @author Michael C. Han
@@ -126,6 +128,10 @@ public class DBUpgrader {
 	}
 
 	public static boolean isUpgradeDatabaseAutoRunEnabled() {
+		if (_upgradeClient) {
+			return true;
+		}
+
 		if (PortalRunMode.isTestMode()) {
 			return GetterUtil.getBoolean(
 				PropsUtil.get(PropsKeys.UPGRADE_DATABASE_AUTO_RUN));
@@ -167,7 +173,7 @@ public class DBUpgrader {
 
 			InitUtil.registerContext();
 
-			upgradeModules(false);
+			upgradeModules(() -> StartupHelperUtil.setUpgrading(false));
 
 			BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
@@ -184,8 +190,6 @@ public class DBUpgrader {
 			result = "Failed";
 		}
 		finally {
-			StartupHelperUtil.setUpgrading(false);
-
 			System.out.println(
 				StringBundler.concat(
 					"\n", result, " Liferay upgrade process in ",
@@ -196,9 +200,7 @@ public class DBUpgrader {
 	}
 
 	public static void startUpgradeLogAppender() {
-		if (_stopWatch == null) {
-			_initUpgradeStopwatch();
-		}
+		_initUpgradeStopwatch();
 
 		ServiceLatch serviceLatch = SystemBundleUtil.newServiceLatch();
 
@@ -222,37 +224,52 @@ public class DBUpgrader {
 
 			_appender.stop();
 		}
-
-		if (_appenderServiceReference != null) {
-			BundleContext bundleContext = SystemBundleUtil.getBundleContext();
-
-			bundleContext.ungetService(_appenderServiceReference);
-		}
 	}
 
-	public static void upgradeModules(boolean autoUpgrade) {
-		_registerModuleServiceLifecycle("portal.initialized");
+	public static void upgradeModules(Runnable upgradeModulesCallbackRunnable) {
+		_registerModuleServiceLifecycle(
+			moduleServiceLifecyclePortalInitialized);
 
-		if (!autoUpgrade) {
+		if (_upgradeClient) {
 			DependencyManagerSyncUtil.sync();
 		}
 
 		PortalCacheHelperUtil.clearPortalCaches(
 			PortalCacheManagerNames.MULTI_VM);
 
-		_registerModuleServiceLifecycle("portlets.initialized");
-
-		if (isUpgradeDatabaseAutoRunEnabled()) {
+		if (_upgradeClient || StartupHelperUtil.isNewRelease()) {
 			IndexUpdaterUtil.updateAllIndexes();
 		}
+
+		upgradeModulesCallbackRunnable.run();
+
+		_registerModuleServiceLifecycle(
+			moduleServiceLifecyclePortletsInitialized);
 	}
 
 	public static void upgradePortal() throws Exception {
-		try {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setUpgradingPortalInstanceWithSafeCloseable(
+					true)) {
+
 			UpgradeLogContext.setContext(
 				ReleaseConstants.DEFAULT_SERVLET_CONTEXT_NAME);
 
-			VerifyProperties.verify();
+			PreupgradeVerifyProcessSuite preupgradeVerifyProcessSuite =
+				new PreupgradeVerifyProcessSuite();
+
+			try {
+				preupgradeVerifyProcessSuite.verify();
+			}
+			catch (VerifyException verifyException) {
+				_log.error(
+					"Stopping the server because the preupgrade verification " +
+						"process failed: " + verifyException.getMessage());
+
+				StartupHelperUtil.setUpgrading(false);
+
+				System.exit(1);
+			}
 
 			if (FeatureFlagManagerUtil.isEnabled("LPS-157670")) {
 				checkRequiredBuildNumber(
@@ -353,6 +370,11 @@ public class DBUpgrader {
 		verifyProcessSuite.verify();
 	}
 
+	protected static String moduleServiceLifecyclePortalInitialized =
+		"portal.initialized";
+	protected static String moduleServiceLifecyclePortletsInitialized =
+		"portlets.initialized";
+
 	private static void _checkClassNamesAndResourceActions() {
 		if (_log.isDebugEnabled()) {
 			_log.debug("Check class names");
@@ -433,8 +455,6 @@ public class DBUpgrader {
 	private static final Log _log = LogFactoryUtil.getLog(DBUpgrader.class);
 
 	private static volatile Appender _appender;
-	private static volatile ServiceReference<Appender>
-		_appenderServiceReference;
 	private static volatile StopWatch _stopWatch;
 	private static volatile boolean _upgradeClient;
 	private static Boolean _upgradeDatabaseAutoRun;

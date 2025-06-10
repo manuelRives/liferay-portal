@@ -4,8 +4,10 @@
  */
 
 import ClayButton from '@clayui/button';
+import {ClayToggle} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import ClayModal, {ClayModalProvider, useModal} from '@clayui/modal';
+import {ClayTooltipProvider} from '@clayui/tooltip';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
 import getCN from 'classnames';
 import {fetch, navigate} from 'frontend-js-web';
@@ -18,14 +20,12 @@ import {
 	DEFAULT_SORT_CONFIGURATION,
 } from '../utils/data';
 import {DEFAULT_ERROR} from '../utils/errorMessages';
-import fetchData, {DEFAULT_HEADERS} from '../utils/fetch/fetch_data';
-import filterAndSortClassNames from '../utils/functions/filter_and_sort_class_names';
+import {DEFAULT_HEADERS} from '../utils/fetch/fetch_data';
 import {setInitialSuccessToast} from '../utils/toasts';
 
 const ADD_EVENT = 'addSXPBlueprint';
 
 const AddModal = ({
-	clauseContributorsList = [],
 	defaultLocale,
 	editSXPBlueprintURL,
 	observer,
@@ -39,6 +39,8 @@ const AddModal = ({
 
 	const [descriptionInputValue, setDescriptionInputValue] = useState('');
 	const [titleInputValue, setTitleInputValue] = useState('');
+	const [collectionProviderToggleValue, setCollectionProviderToggleValue] =
+		useState(false);
 
 	const _handleFormError = (responseContent) => {
 		setErrorMessage(responseContent.error || DEFAULT_ERROR);
@@ -54,11 +56,19 @@ const AddModal = ({
 				configuration: {
 					advancedConfiguration: DEFAULT_ADVANCED_CONFIGURATION,
 					aggregationConfiguration: {},
-					generalConfiguration: {
-						clauseContributorsExcludes: [],
-						clauseContributorsIncludes: clauseContributorsList,
-						searchableAssetTypes: [],
-					},
+					generalConfiguration: Liferay.FeatureFlags['LPS-129412']
+						? {
+								clauseContributorsExcludes: [],
+								clauseContributorsIncludes: ['*'],
+								collectionProvider:
+									collectionProviderToggleValue,
+								searchableAssetTypes: [],
+							}
+						: {
+								clauseContributorsExcludes: [],
+								clauseContributorsIncludes: ['*'],
+								searchableAssetTypes: [],
+							},
 					highlightConfiguration: DEFAULT_HIGHLIGHT_CONFIGURATION,
 					parameterConfiguration: DEFAULT_PARAMETER_CONFIGURATION,
 					queryConfiguration: {
@@ -212,6 +222,42 @@ const AddModal = ({
 							value={descriptionInputValue}
 						/>
 					</div>
+
+					{Liferay.FeatureFlags['LPS-129412'] && (
+						<div className="form-group">
+							<ClayToggle
+								aria-label={Liferay.Language.get(
+									'enable-as-a-collection-provider'
+								)}
+								checked={collectionProviderToggleValue}
+								label={
+									<>
+										{Liferay.Language.get(
+											'enable-as-a-collection-provider'
+										)}
+
+										<ClayTooltipProvider>
+											<span
+												title={Liferay.Language.get(
+													'enable-as-a-collection-provider-help'
+												)}
+											>
+												<ClayIcon
+													className="c-ml-2 text-3 text-secondary"
+													symbol="question-circle-full"
+												/>
+											</span>
+										</ClayTooltipProvider>
+									</>
+								}
+								onChange={() =>
+									setCollectionProviderToggleValue(
+										!collectionProviderToggleValue
+									)
+								}
+							/>
+						</div>
+					)}
 				</ClayModal.Body>
 
 				<ClayModal.Footer
@@ -258,17 +304,6 @@ export function AddSXPBlueprintModal({
 		onClose: () => setVisibleModal(false),
 	});
 
-	const [keywordQueryContributors, setKeywordQueryContributors] = useState(
-		null
-	);
-	const [
-		modelPrefilterContributors,
-		setModelPrefilterContributors,
-	] = useState(null);
-	const [
-		queryPrefilterContributors,
-		setQueryPrefilterContributors,
-	] = useState(null);
 	const [visibleModal, setVisibleModal] = useState(false);
 
 	useEffect(() => {
@@ -279,49 +314,10 @@ export function AddSXPBlueprintModal({
 		};
 	}, []);
 
-	useEffect(() => {
-		[
-			{
-				setProperty: setKeywordQueryContributors,
-				url:
-					'/o/search-experiences-rest/v1.0/keyword-query-contributors',
-			},
-			{
-				setProperty: setModelPrefilterContributors,
-				url:
-					'/o/search-experiences-rest/v1.0/model-prefilter-contributors',
-			},
-			{
-				setProperty: setQueryPrefilterContributors,
-				url:
-					'/o/search-experiences-rest/v1.0/query-prefilter-contributors',
-			},
-		].forEach(({setProperty, url}) =>
-			fetchData(url)
-				.then((responseContent) =>
-					setProperty(filterAndSortClassNames(responseContent.items))
-				)
-				.catch(() => setProperty([]))
-		);
-	}, []); //eslint-disable-line
-
-	if (
-		!keywordQueryContributors ||
-		!modelPrefilterContributors ||
-		!queryPrefilterContributors
-	) {
-		return null;
-	}
-
 	return (
 		<ClayModalProvider>
 			{visibleModal && (
 				<AddModal
-					clauseContributorsList={[
-						...keywordQueryContributors,
-						...modelPrefilterContributors,
-						...queryPrefilterContributors,
-					]}
 					defaultLocale={defaultLocale}
 					editSXPBlueprintURL={editSXPBlueprintURL}
 					observer={observer}

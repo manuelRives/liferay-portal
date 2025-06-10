@@ -34,16 +34,7 @@ public class LayoutModelSummaryContributor implements ModelSummaryContributor {
 	public Summary getSummary(
 		Document document, Locale locale, String snippet) {
 
-		String localizedFieldName = Field.getLocalizedName(locale, Field.NAME);
-
-		if (Validator.isNull(document.getField(localizedFieldName))) {
-			locale = LocaleUtil.fromLanguageId(
-				document.get(Field.DEFAULT_LANGUAGE_ID));
-		}
-
-		String name = document.get(
-			locale, Field.SNIPPET + StringPool.UNDERLINE + Field.TITLE,
-			Field.TITLE);
+		Summary summary = null;
 
 		String content = document.get(locale, Field.CONTENT);
 
@@ -67,18 +58,33 @@ public class LayoutModelSummaryContributor implements ModelSummaryContributor {
 			HighlightUtil.HIGHLIGHT_TAG_OPEN,
 			HighlightUtil.HIGHLIGHT_TAG_CLOSE);
 
-		Summary summary = null;
-
 		if (Validator.isBlank(snippet)) {
-			summary = new Summary(locale, name, content);
+			summary = new Summary(locale, _getTitle(document, locale), content);
 		}
 		else {
-			summary = new Summary(locale, name, snippet);
+			summary = new Summary(locale, _getTitle(document, locale), snippet);
 		}
 
 		summary.setMaxContentLength(200);
 
 		return summary;
+	}
+
+	private String _getTitle(Document document, Locale locale) {
+		String localizedFieldTitle = Field.getLocalizedName(
+			locale, Field.TITLE);
+
+		if (Validator.isNull(document.getField(localizedFieldTitle))) {
+			return document.get(
+				LocaleUtil.fromLanguageId(
+					document.get(Field.DEFAULT_LANGUAGE_ID)),
+				Field.SNIPPET + StringPool.UNDERLINE + Field.TITLE,
+				Field.TITLE);
+		}
+
+		return document.get(
+			locale, Field.SNIPPET + StringPool.UNDERLINE + Field.TITLE,
+			Field.TITLE);
 	}
 
 	private static final String[] _ESCAPE_SAFE_HIGHLIGHTS = {

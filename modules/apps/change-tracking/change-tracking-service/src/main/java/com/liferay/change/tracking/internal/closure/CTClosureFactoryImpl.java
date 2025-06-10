@@ -82,8 +82,8 @@ public class CTClosureFactoryImpl implements CTClosureFactory {
 
 	@Override
 	public CTClosure create(long ctCollectionId, Set<Long> classNameIds) {
-		Map<Set<Long>, CTClosure> ctClosures = _ctClosuresMap.getOrDefault(
-			ctCollectionId, new LRUMap<>(5));
+		Map<Set<Long>, CTClosure> ctClosures = _ctClosuresMap.computeIfAbsent(
+			ctCollectionId, key -> new LRUMap<>(5));
 
 		CTClosure ctClosure = ctClosures.get(classNameIds);
 
@@ -110,8 +110,6 @@ public class CTClosureFactoryImpl implements CTClosureFactory {
 				ctCollectionId, classNameIds, combinedTableReferenceInfos));
 
 		ctClosures.put(classNameIds, ctClosure);
-
-		_ctClosuresMap.putIfAbsent(ctCollectionId, ctClosures);
 
 		return ctClosure;
 	}
@@ -426,17 +424,17 @@ public class CTClosureFactoryImpl implements CTClosureFactory {
 						Column<?, Long> ctCollectionIdColumn =
 							parentTable.getColumn("ctCollectionId", Long.class);
 
-						if ((ctCollectionIdColumn != null) &&
-							ctCollectionIdColumn.isPrimaryKey()) {
+						if ((ctCollectionIdColumn == null) ||
+							!ctCollectionIdColumn.isPrimaryKey()) {
 
-							return ctCollectionIdColumn.eq(
-								CTConstants.CT_COLLECTION_ID_PRODUCTION
-							).or(
-								ctCollectionIdColumn.eq(ctCollectionId)
-							).withParentheses();
+							return null;
 						}
 
-						return null;
+						return ctCollectionIdColumn.eq(
+							CTConstants.CT_COLLECTION_ID_PRODUCTION
+						).or(
+							ctCollectionIdColumn.eq(ctCollectionId)
+						).withParentheses();
 					}
 				));
 
@@ -454,6 +452,8 @@ public class CTClosureFactoryImpl implements CTClosureFactory {
 	private Map<Node, Collection<Node>> _getNodeMap(
 		List<Node> nodes, Map<Node, Collection<Edge>> edgeMap) {
 
+		Map<Node, Collection<Node>> nodeMap = new HashMap<>();
+
 		Deque<Edge> backtraceEdges = new LinkedList<>();
 		Set<Edge> cyclingEdges = new HashSet<>();
 		Set<Edge> resolvedEdges = new HashSet<>();
@@ -464,8 +464,6 @@ public class CTClosureFactoryImpl implements CTClosureFactory {
 					edge, edgeMap, backtraceEdges, cyclingEdges, resolvedEdges);
 			}
 		}
-
-		Map<Node, Collection<Node>> nodeMap = new HashMap<>();
 
 		for (Edge edge : resolvedEdges) {
 			Collection<Node> children = nodeMap.computeIfAbsent(

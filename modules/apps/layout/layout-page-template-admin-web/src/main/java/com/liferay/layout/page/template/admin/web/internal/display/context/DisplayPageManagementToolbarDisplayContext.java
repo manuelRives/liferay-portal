@@ -18,12 +18,12 @@ import com.liferay.layout.page.template.admin.web.internal.security.permission.r
 import com.liferay.layout.page.template.admin.web.internal.security.permission.resource.LayoutPageTemplatePermission;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateActionKeys;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
-import com.liferay.layout.page.template.item.selector.criterion.LayoutPageTemplateCollectionTreeNodeItemSelectorCriterion;
+import com.liferay.layout.page.template.item.selector.LayoutPageTemplateCollectionTreeNodeItemSelectorCriterion;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -36,10 +36,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -57,6 +57,8 @@ public class DisplayPageManagementToolbarDisplayContext
 			httpServletRequest, liferayPortletRequest, liferayPortletResponse,
 			displayPageDisplayContext.getDisplayPagesSearchContainer());
 
+		_displayPageDisplayContext = displayPageDisplayContext;
+
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -72,10 +74,23 @@ public class DisplayPageManagementToolbarDisplayContext
 								"action", "copySelectedEntries");
 							dropdownItem.putData(
 								"copySelectedEntriesURL",
-								_getCopySelectedEntriesURL());
+								PortletURLBuilder.createActionURL(
+									liferayPortletResponse
+								).setActionName(
+									StringBundler.concat(
+										"/layout_page_template_admin",
+										"/copy_layout_page_template_entries",
+										"_and_layout_page_template",
+										"_collections")
+								).setRedirect(
+									_themeDisplay.getURLCurrent()
+								).buildString());
+							dropdownItem.putData(
+								"itemSelectorURL", _getItemSelectorURL());
 							dropdownItem.setIcon("copy");
 							dropdownItem.setLabel(
-								LanguageUtil.get(httpServletRequest, "copy"));
+								LanguageUtil.get(
+									httpServletRequest, "copy-to"));
 							dropdownItem.setQuickAction(true);
 						}
 					).build());
@@ -87,9 +102,9 @@ public class DisplayPageManagementToolbarDisplayContext
 					DropdownItemListBuilder.add(
 						dropdownItem -> {
 							dropdownItem.putData(
-								"action", "exportDisplayPages");
+								"action", "exportSelectedEntries");
 							dropdownItem.putData(
-								"exportDisplayPageURL",
+								"exportSelectedEntriesURL",
 								_getExportDisplayPageURL());
 							dropdownItem.setIcon("upload");
 							dropdownItem.setLabel(
@@ -108,6 +123,19 @@ public class DisplayPageManagementToolbarDisplayContext
 								"action", "moveSelectedEntries");
 							dropdownItem.putData(
 								"itemSelectorURL", _getItemSelectorURL());
+							dropdownItem.putData(
+								"moveSelectedEntriesURL",
+								PortletURLBuilder.createActionURL(
+									liferayPortletResponse
+								).setActionName(
+									StringBundler.concat(
+										"/layout_page_template_admin",
+										"/move_layout_page_template_entries",
+										"_and_layout_page_template",
+										"_collections")
+								).setRedirect(
+									_themeDisplay.getURLCurrent()
+								).buildString());
 							dropdownItem.setIcon("move-folder");
 							dropdownItem.setLabel(
 								LanguageUtil.get(httpServletRequest, "move"));
@@ -152,6 +180,13 @@ public class DisplayPageManagementToolbarDisplayContext
 
 		if (LayoutPageTemplateCollectionPermission.contains(
 				_themeDisplay.getPermissionChecker(),
+				layoutPageTemplateCollection, ActionKeys.VIEW)) {
+
+			availableActions.add("exportSelectedEntries");
+		}
+
+		if (LayoutPageTemplateCollectionPermission.contains(
+				_themeDisplay.getPermissionChecker(),
 				layoutPageTemplateCollection, ActionKeys.UPDATE)) {
 
 			availableActions.add("copySelectedEntries");
@@ -177,7 +212,7 @@ public class DisplayPageManagementToolbarDisplayContext
 		if ((layoutPageTemplateEntry.getLayoutPrototypeId() == 0) &&
 			!layoutPageTemplateEntry.isDraft()) {
 
-			availableActions.add("exportDisplayPages");
+			availableActions.add("exportSelectedEntries");
 		}
 
 		if (LayoutPageTemplateEntryPermission.contains(
@@ -212,7 +247,6 @@ public class DisplayPageManagementToolbarDisplayContext
 	@Override
 	public CreationMenu getCreationMenu() {
 		return CreationMenuBuilder.addDropdownItem(
-			() -> FeatureFlagManagerUtil.isEnabled("LPS-189856"),
 			dropdownItem -> {
 				dropdownItem.putData("action", "addDisplayPageCollection");
 				dropdownItem.putData(
@@ -263,11 +297,7 @@ public class DisplayPageManagementToolbarDisplayContext
 
 	@Override
 	public String getInfoPanelId() {
-		if (FeatureFlagManagerUtil.isEnabled("LPS-189856")) {
-			return "infoPanelId";
-		}
-
-		return null;
+		return "infoPanelId";
 	}
 
 	@Override
@@ -281,20 +311,16 @@ public class DisplayPageManagementToolbarDisplayContext
 
 	@Override
 	public String getSearchContainerId() {
-		return "displayPages";
+		return "displayPages" +
+			_displayPageDisplayContext.getLayoutPageTemplateCollectionId();
 	}
 
 	@Override
 	public Boolean isShowCreationMenu() {
-		if (LayoutPageTemplatePermission.contains(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getSiteGroupId(),
-				LayoutPageTemplateActionKeys.ADD_LAYOUT_PAGE_TEMPLATE_ENTRY)) {
-
-			return true;
-		}
-
-		return false;
+		return LayoutPageTemplatePermission.contains(
+			_themeDisplay.getPermissionChecker(),
+			_themeDisplay.getSiteGroupId(),
+			LayoutPageTemplateActionKeys.ADD_LAYOUT_PAGE_TEMPLATE_ENTRY);
 	}
 
 	@Override
@@ -302,47 +328,18 @@ public class DisplayPageManagementToolbarDisplayContext
 		return new String[] {"create-date", "modified-date", "name"};
 	}
 
-	private String _getCopySelectedEntriesURL() {
-		return PortletURLBuilder.createActionURL(
-			liferayPortletResponse
-		).setActionName(
-			"/layout_page_template_admin/copy_layout_page_template_entries_" +
-				"and_layout_page_template_collections"
-		).setRedirect(
-			_themeDisplay.getURLCurrent()
-		).setParameter(
-			"copyPermissions", false
-		).setParameter(
-			"layoutParentPageTemplateCollectionId",
-			ParamUtil.getLong(
-				httpServletRequest, "layoutPageTemplateCollectionId")
-		).buildString();
-	}
-
 	private String _getDeleteSelectedEntriesURL() {
-		if (FeatureFlagManagerUtil.isEnabled("LPS-189856")) {
-			return PortletURLBuilder.createActionURL(
-				liferayPortletResponse
-			).setActionName(
-				"/layout_page_template_admin/delete_layout_page_template_" +
-					"entries_and_layout_page_template_collections"
-			).setTabs1(
-				"display-page-templates"
-			).setParameter(
-				"layoutPageTemplateCollectionId",
-				ParamUtil.getLong(
-					httpServletRequest, "layoutPageTemplateCollectionId")
-			).buildString();
-		}
-
 		return PortletURLBuilder.createActionURL(
 			liferayPortletResponse
 		).setActionName(
-			"/layout_page_template_admin/delete_layout_page_template_entry"
-		).setRedirect(
-			_themeDisplay.getURLCurrent()
+			"/layout_page_template_admin/delete_layout_page_template_" +
+				"entries_and_layout_page_template_collections"
 		).setTabs1(
 			"display-page-templates"
+		).setParameter(
+			"layoutPageTemplateCollectionId",
+			ParamUtil.getLong(
+				httpServletRequest, "layoutPageTemplateCollectionId")
 		).buildString();
 	}
 
@@ -350,11 +347,16 @@ public class DisplayPageManagementToolbarDisplayContext
 		return ResourceURLBuilder.createResourceURL(
 			liferayPortletResponse
 		).setResourceID(
-			"/layout_page_template_admin/export_display_pages"
+			"/layout_page_template_admin/export_layout_page_template_entries_" +
+				"and_layout_page_template_collections"
 		).buildString();
 	}
 
 	private String _getItemSelectorURL() {
+		if (_itemSelectorURL != null) {
+			return _itemSelectorURL;
+		}
+
 		ItemSelector itemSelector =
 			(ItemSelector)httpServletRequest.getAttribute(
 				LayoutPageTemplateAdminWebKeys.ITEM_SELECTOR);
@@ -366,14 +368,18 @@ public class DisplayPageManagementToolbarDisplayContext
 		layoutPageTemplateCollectionTreeNodeItemSelectorCriterion.
 			setDesiredItemSelectorReturnTypes(new UUIDItemSelectorReturnType());
 
-		return String.valueOf(
+		_itemSelectorURL = String.valueOf(
 			itemSelector.getItemSelectorURL(
 				RequestBackedPortletURLFactoryUtil.create(
 					liferayPortletRequest),
 				liferayPortletResponse.getNamespace() + "selectFolder",
 				layoutPageTemplateCollectionTreeNodeItemSelectorCriterion));
+
+		return _itemSelectorURL;
 	}
 
+	private final DisplayPageDisplayContext _displayPageDisplayContext;
+	private String _itemSelectorURL;
 	private final ThemeDisplay _themeDisplay;
 
 }

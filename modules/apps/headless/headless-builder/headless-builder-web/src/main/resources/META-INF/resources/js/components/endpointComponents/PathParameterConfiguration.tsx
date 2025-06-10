@@ -39,9 +39,8 @@ export default function PathParameterConfiguration({
 		SelectOption[]
 	>([]);
 
-	const [selectedPathParameter, setSelectedPathParameter] = useState<
-		SelectOption
-	>();
+	const [selectedPathParameter, setSelectedPathParameter] =
+		useState<SelectOption>();
 
 	useEffect(() => {
 		setSelectedPathParameter(
@@ -94,7 +93,7 @@ export default function PathParameterConfiguration({
 					? response.map((objectField) => ({
 							label: getObjectFieldLabel(objectField),
 							value: objectField.name,
-					  }))
+						}))
 					: [];
 
 				if (options.length) {
@@ -105,13 +104,13 @@ export default function PathParameterConfiguration({
 	}, []);
 
 	useEffect(() => {
-		if (data.r_responseAPISchemaToAPIEndpoints_c_apiSchemaId) {
+		if (data.r_responseAPISchemaToAPIEndpoints_l_apiSchemaId) {
 			fetchPathParameterOptions(
-				data.r_responseAPISchemaToAPIEndpoints_c_apiSchemaId?.toString()
+				data.r_responseAPISchemaToAPIEndpoints_l_apiSchemaId?.toString()
 			);
 		}
 	}, [
-		data.r_responseAPISchemaToAPIEndpoints_c_apiSchemaId,
+		data.r_responseAPISchemaToAPIEndpoints_l_apiSchemaId,
 		fetchPathParameterOptions,
 	]);
 

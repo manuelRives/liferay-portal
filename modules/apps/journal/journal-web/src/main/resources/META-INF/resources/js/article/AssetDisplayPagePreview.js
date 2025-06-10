@@ -5,7 +5,8 @@
 
 import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
-import {openSelectionModal, sub} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useMemo, useState} from 'react';
 
 import AssetDisplayPageSelector from './AssetDisplayPageSelector';
@@ -96,8 +97,7 @@ export default function AssetDisplayPagePreview({
 										onSelect(selectedItem) {
 											setSelectedSite({
 												groupId: selectedItem.groupid,
-												name:
-													selectedItem.groupdescriptivename,
+												name: selectedItem.groupdescriptivename,
 											});
 										},
 										selectEventName: selectSiteEventName,

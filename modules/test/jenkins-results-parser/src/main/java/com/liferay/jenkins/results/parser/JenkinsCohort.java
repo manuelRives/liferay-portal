@@ -40,11 +40,11 @@ public class JenkinsCohort {
 	}
 
 	public int getIdleJenkinsSlaveCount() {
+		int idleJenkinsSlaveCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int idleJenkinsSlaveCount = 0;
 
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			idleJenkinsSlaveCount += jenkinsMaster.getIdleJenkinsSlavesCount();
@@ -80,14 +80,15 @@ public class JenkinsCohort {
 	}
 
 	public JenkinsMaster getMostAvailableJenkinsMaster(
-		int invokedBatchSize, int minimumRAM, int maximumSlavesPerHost) {
+		int invokedBatchSize, String jobName, String labelExpression,
+		int minimumRAM, int maximumSlavesPerHost) {
 
 		String mostAvailableMasterURL =
 			JenkinsResultsParserUtil.getMostAvailableMasterURL(
-				JenkinsResultsParserUtil.combine(
-					"http://", getName(), ".liferay.com"),
+				"http://" + getName() + ".liferay.com",
 				JenkinsResultsParserUtil.join(",", _jenkinsMastersBlacklist),
-				invokedBatchSize, minimumRAM, maximumSlavesPerHost);
+				invokedBatchSize, jobName, labelExpression, minimumRAM,
+				maximumSlavesPerHost);
 
 		return JenkinsMaster.getInstance(
 			mostAvailableMasterURL.replaceAll("http://(.+)", "$1"));
@@ -108,11 +109,11 @@ public class JenkinsCohort {
 	}
 
 	public int getOfflineJenkinsSlaveCount() {
+		int offlineJenkinsSlaveCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int offlineJenkinsSlaveCount = 0;
 
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			offlineJenkinsSlaveCount +=
@@ -123,11 +124,11 @@ public class JenkinsCohort {
 	}
 
 	public int getOnlineJenkinsSlaveCount() {
+		int onlineJenkinsSlaveCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int onlineJenkinsSlaveCount = 0;
 
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			onlineJenkinsSlaveCount +=
@@ -138,11 +139,11 @@ public class JenkinsCohort {
 	}
 
 	public int getQueuedBuildCount() {
+		int queuedBuildCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int queuedBuildCount = 0;
 
 		for (JenkinsCohortJob jenkinsCohortJob :
 				_jenkinsCohortJobsMap.values()) {
@@ -155,11 +156,11 @@ public class JenkinsCohort {
 	}
 
 	public int getRunningBuildCount() {
+		int runningBuildCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int runningBuildCount = 0;
 
 		for (JenkinsCohortJob jenkinsCohortJob :
 				_jenkinsCohortJobsMap.values()) {

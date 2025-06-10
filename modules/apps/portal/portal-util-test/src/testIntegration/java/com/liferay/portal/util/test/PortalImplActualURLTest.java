@@ -21,8 +21,6 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
-import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
@@ -75,9 +73,9 @@ public class PortalImplActualURLTest {
 		_serviceContext = ServiceContextTestUtil.getServiceContext();
 
 		_userGroup = _userGroupLocalService.addUserGroup(
-			TestPropsValues.getUserId(), TestPropsValues.getCompanyId(),
-			"Test " + RandomTestUtil.nextInt(), StringPool.BLANK,
-			_serviceContext);
+			StringPool.BLANK, TestPropsValues.getUserId(),
+			TestPropsValues.getCompanyId(), "Test " + RandomTestUtil.nextInt(),
+			StringPool.BLANK, _serviceContext);
 
 		UserTestUtil.setUser(TestPropsValues.getUser());
 	}
@@ -87,13 +85,13 @@ public class PortalImplActualURLTest {
 		Group group = _userGroup.getGroup();
 
 		Layout homeLayout = _layoutLocalService.addLayout(
-			_serviceContext.getUserId(), group.getGroupId(), true,
+			null, _serviceContext.getUserId(), group.getGroupId(), true,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "Home", StringPool.BLANK,
 			StringPool.BLANK, LayoutConstants.TYPE_PORTLET, false,
 			StringPool.BLANK, _serviceContext);
 
 		_layoutLocalService.addLayout(
-			_serviceContext.getUserId(), group.getGroupId(), true,
+			null, _serviceContext.getUserId(), group.getGroupId(), true,
 			homeLayout.getLayoutId(), "Child Layout", StringPool.BLANK,
 			StringPool.BLANK, LayoutConstants.TYPE_PORTLET, false,
 			StringPool.BLANK, _serviceContext);
@@ -125,19 +123,19 @@ public class PortalImplActualURLTest {
 		Group group = _userGroup.getGroup();
 
 		Layout homeLayout = _layoutLocalService.addLayout(
-			_serviceContext.getUserId(), group.getGroupId(), true,
+			null, _serviceContext.getUserId(), group.getGroupId(), true,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "Home", StringPool.BLANK,
 			StringPool.BLANK, LayoutConstants.TYPE_PORTLET, false,
 			StringPool.BLANK, _serviceContext);
 
 		Layout nodeLayout = _layoutLocalService.addLayout(
-			_serviceContext.getUserId(), group.getGroupId(), true,
+			null, _serviceContext.getUserId(), group.getGroupId(), true,
 			homeLayout.getLayoutId(), "Node", StringPool.BLANK,
 			StringPool.BLANK, LayoutConstants.TYPE_NODE, false,
 			StringPool.BLANK, _serviceContext);
 
 		Layout childLayout = _layoutLocalService.addLayout(
-			_serviceContext.getUserId(), group.getGroupId(), true,
+			null, _serviceContext.getUserId(), group.getGroupId(), true,
 			nodeLayout.getLayoutId(), "Child Layout", StringPool.BLANK,
 			StringPool.BLANK, LayoutConstants.TYPE_PORTLET, false,
 			StringPool.BLANK, _serviceContext);
@@ -187,40 +185,6 @@ public class PortalImplActualURLTest {
 	}
 
 	@Test
-	public void testNullFriendlyURLFirstLayoutPublishedWithoutPermissionUserMissingInRequest()
-		throws Exception {
-
-		Layout layout1 = LayoutTestUtil.addTypeContentLayout(_group);
-		Layout layout2 = LayoutTestUtil.addTypeContentLayout(_group);
-
-		_publishLayouts(
-			layout1, layout2, LayoutTestUtil.addTypeContentLayout(_group));
-
-		_removeResourcePermission(layout1);
-
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
-
-		try {
-			PermissionThreadLocal.setPermissionChecker(null);
-
-			Map<String, String[]> parameterMap =
-				HttpComponentsUtil.getParameterMap(
-					HttpComponentsUtil.getQueryString(
-						_portal.getActualURL(
-							_group.getGroupId(), false, Portal.PATH_MAIN, null,
-							Collections.emptyMap(), _getRequestContext())));
-
-			Assert.assertEquals(
-				MapUtil.toString(parameterMap), layout2.getPlid(),
-				MapUtil.getLong(parameterMap, "p_l_id"));
-		}
-		finally {
-			PermissionThreadLocal.setPermissionChecker(permissionChecker);
-		}
-	}
-
-	@Test
 	public void testNullFriendlyURLFirstLayoutUnpublished() throws Exception {
 		LayoutTestUtil.addTypeContentLayout(_group);
 		LayoutTestUtil.addTypeContentLayout(_group);
@@ -234,12 +198,22 @@ public class PortalImplActualURLTest {
 
 	@Test
 	public void testNullFriendlyURLNoLayoutPublished() throws Exception {
-		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
-
 		LayoutTestUtil.addTypeContentLayout(_group);
 		LayoutTestUtil.addTypeContentLayout(_group);
+		LayoutTestUtil.addTypeContentLayout(_group);
 
-		_assertGetActualURLAsGuestUser(layout);
+		try {
+			_getActualURLAsGuestUserParameterMap();
+
+			Assert.fail();
+		}
+		catch (NoSuchLayoutException noSuchLayoutException) {
+			Assert.assertEquals(
+				noSuchLayoutException.getMessage(),
+				StringBundler.concat(
+					"{groupId=", _group.getGroupId(), ", privateLayout=false}"),
+				noSuchLayoutException.getMessage());
+		}
 	}
 
 	@Test

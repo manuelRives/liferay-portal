@@ -53,39 +53,6 @@ public class RoleLocalServiceUtil {
 	}
 
 	/**
-	 * Adds a role with additional parameters. The user is reindexed after role
-	 * is added.
-	 *
-	 * @param userId the primary key of the user
-	 * @param className the name of the class for which the role is created
-	 (optionally <code>null</code>)
-	 * @param classPK the primary key of the class for which the role is
-	 created (optionally <code>0</code>)
-	 * @param name the role's name
-	 * @param titleMap the role's localized titles (optionally
-	 <code>null</code>)
-	 * @param descriptionMap the role's localized descriptions (optionally
-	 <code>null</code>)
-	 * @param type the role's type (optionally <code>0</code>)
-	 * @param subtype the role's subtype (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set expando bridge attributes for the
-	 role.
-	 * @return the role
-	 */
-	public static Role addRole(
-			long userId, String className, long classPK, String name,
-			Map<java.util.Locale, String> titleMap,
-			Map<java.util.Locale, String> descriptionMap, int type,
-			String subtype, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addRole(
-			userId, className, classPK, name, titleMap, descriptionMap, type,
-			subtype, serviceContext);
-	}
-
-	/**
 	 * Adds the role to the database. Also notifies the appropriate model listeners.
 	 *
 	 * <p>
@@ -97,6 +64,18 @@ public class RoleLocalServiceUtil {
 	 */
 	public static Role addRole(Role role) {
 		return getService().addRole(role);
+	}
+
+	public static Role addRole(
+			String externalReferenceCode, long userId, String className,
+			long classPK, String name, Map<java.util.Locale, String> titleMap,
+			Map<java.util.Locale, String> descriptionMap, int type,
+			String subtype, ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addRole(
+			externalReferenceCode, userId, className, classPK, name, titleMap,
+			descriptionMap, type, subtype, serviceContext);
 	}
 
 	/**
@@ -382,6 +361,13 @@ public class RoleLocalServiceUtil {
 		return getService().fetchRole(companyId, name);
 	}
 
+	public static Role fetchRoleByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the role with the matching UUID and company.
 	 *
@@ -497,6 +483,16 @@ public class RoleLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
+	public static Role getOrAddIncompleteRole(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK, String name, int type)
+		throws Exception {
+
+		return getService().getOrAddIncompleteRole(
+			externalReferenceCode, companyId, userId, className, classPK, name,
+			type);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -577,6 +573,14 @@ public class RoleLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getRole(companyId, name);
+	}
+
+	public static Role getRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -1183,6 +1187,36 @@ public class RoleLocalServiceUtil {
 		getService().unsetUserRoles(userId, roleIds);
 	}
 
+	public static Role updateExternalReferenceCode(
+			long roleId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			roleId, externalReferenceCode);
+	}
+
+	public static Role updateExternalReferenceCode(
+			Role role, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			role, externalReferenceCode);
+	}
+
+	/**
+	 * Updates the role in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect RoleLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
+	 * @param role the role
+	 * @return the role that was updated
+	 */
+	public static Role updateRole(Role role) {
+		return getService().updateRole(role);
+	}
+
 	/**
 	 * Updates the role with the primary key.
 	 *
@@ -1199,27 +1233,15 @@ public class RoleLocalServiceUtil {
 	 * @return the role with the primary key
 	 */
 	public static Role updateRole(
-			long roleId, String name, Map<java.util.Locale, String> titleMap,
+			String externalReferenceCode, long roleId, String name,
+			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, String subtype,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateRole(
-			roleId, name, titleMap, descriptionMap, subtype, serviceContext);
-	}
-
-	/**
-	 * Updates the role in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
-	 *
-	 * <p>
-	 * <strong>Important:</strong> Inspect RoleLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
-	 * </p>
-	 *
-	 * @param role the role
-	 * @return the role that was updated
-	 */
-	public static Role updateRole(Role role) {
-		return getService().updateRole(role);
+			externalReferenceCode, roleId, name, titleMap, descriptionMap,
+			subtype, serviceContext);
 	}
 
 	public static void validateName(String name) throws PortalException {

@@ -142,7 +142,7 @@ exports[`RequestList should render 1`] = `
       class="table-responsive table-root flex-grow-1"
     >
       <table
-        class="table table-autofit table-hover table-heading-nowrap table-nowrap"
+        class="table table-autofit table-hover table-heading-nowrap"
       >
         <thead>
           <tr>
@@ -162,7 +162,7 @@ exports[`RequestList should render 1`] = `
               </a>
             </th>
             <th
-              class="table-head-title table-cell-expand"
+              class="table-head-title"
             >
               <a
                 class="button-root inline-item text-truncate-inline btn btn-unstyled"
@@ -254,15 +254,13 @@ exports[`RequestList should render 1`] = `
               </div>
             </td>
             <td>
-              <h4
-                class="table-title text-truncate"
+              <div
+                class="h4 table-title text-truncate"
               >
                 1
-              </h4>
+              </div>
             </td>
-            <td
-              class="table-cell-expand"
-            >
+            <td>
               t.smith@nosaints.com
             </td>
             <td>
@@ -309,15 +307,13 @@ exports[`RequestList should render 1`] = `
               </div>
             </td>
             <td>
-              <h4
-                class="table-title text-truncate"
+              <div
+                class="h4 table-title text-truncate"
               >
                 2
-              </h4>
+              </div>
             </td>
-            <td
-              class="table-cell-expand"
-            >
+            <td>
               alice.bryant@example.com
             </td>
             <td>
@@ -364,15 +360,13 @@ exports[`RequestList should render 1`] = `
               </div>
             </td>
             <td>
-              <h4
-                class="table-title text-truncate"
+              <div
+                class="h4 table-title text-truncate"
               >
                 3
-              </h4>
+              </div>
             </td>
-            <td
-              class="table-cell-expand"
-            >
+            <td>
               scott.gilbert@example.com
             </td>
             <td>
@@ -422,15 +416,13 @@ exports[`RequestList should render 1`] = `
               </div>
             </td>
             <td>
-              <h4
-                class="table-title text-truncate"
+              <div
+                class="h4 table-title text-truncate"
               >
                 4
-              </h4>
+              </div>
             </td>
-            <td
-              class="table-cell-expand"
-            >
+            <td>
               foo@bar.com
             </td>
             <td>
@@ -486,16 +478,14 @@ exports[`RequestList should render 1`] = `
               </div>
             </td>
             <td>
-              <h4
-                class="table-title text-truncate"
+              <div
+                class="h4 table-title text-truncate"
               >
                 5
-              </h4>
+              </div>
             </td>
-            <td
-              class="table-cell-expand"
-            >
-              lillie.foster@example.com
+            <td>
+              ]lillie.foster@example.com
             </td>
             <td>
               Access
@@ -541,15 +531,13 @@ exports[`RequestList should render 1`] = `
               </div>
             </td>
             <td>
-              <h4
-                class="table-title text-truncate"
+              <div
+                class="h4 table-title text-truncate"
               >
                 6
-              </h4>
+              </div>
             </td>
-            <td
-              class="table-cell-expand"
-            >
+            <td>
               bazbuz@example.com
             </td>
             <td>
@@ -595,15 +583,13 @@ exports[`RequestList should render 1`] = `
               </div>
             </td>
             <td>
-              <h4
-                class="table-title text-truncate"
+              <div
+                class="h4 table-title text-truncate"
               >
                 7
-              </h4>
+              </div>
             </td>
-            <td
-              class="table-cell-expand"
-            >
+            <td>
               scott.gilbert@example.com
             </td>
             <td>

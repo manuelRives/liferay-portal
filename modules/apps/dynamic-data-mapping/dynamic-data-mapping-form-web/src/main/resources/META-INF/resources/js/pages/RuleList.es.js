@@ -12,7 +12,7 @@ import ClayLayout from '@clayui/layout';
 import ClayList from '@clayui/list';
 import {RulesSupport, capitalize} from 'data-engine-js-components-web';
 import {LangUtil, OPERATOR_OPTIONS_TYPES} from 'data-engine-taglib';
-import {openConfirmModal} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
 import React, {useMemo} from 'react';
 
 import './RuleList.scss';
@@ -49,7 +49,7 @@ const EmptyState = () => (
 			description={Liferay.Language.get(
 				'there-are-no-rules-yet-click-on-plus-icon-below-to-add-the-first'
 			)}
-			imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.gif`}
+			imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.svg`}
 			title={Liferay.Language.get('no-results-found')}
 		/>
 	</ClayLayout.Sheet>

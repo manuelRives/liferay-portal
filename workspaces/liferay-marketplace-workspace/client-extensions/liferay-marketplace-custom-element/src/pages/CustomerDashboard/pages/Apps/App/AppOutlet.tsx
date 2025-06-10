@@ -3,114 +3,143 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
-import classNames from 'classnames';
 import {
-	NavLink,
+	Link,
 	Outlet,
-	useLocation,
 	useNavigate,
+	useOutletContext,
 	useParams,
 } from 'react-router-dom';
 
+import Navbar, {NavbarProps} from '../../../../../components/Navbar';
+import {PageRenderer} from '../../../../../components/Page';
+import {MarketplaceDeliveryProduct} from '../../../../../entity/MarketplaceDeliveryProduct';
+import {OrderTypes, OrderWorkflowStatusCode} from '../../../../../enums/Order';
 import useGetProductByOrderId from '../../../../../hooks/useGetProductByOrderId';
 import i18n from '../../../../../i18n';
+import {getProductPriceModel} from '../../../../../utils/productUtils';
 import OrderDetailsHeader from '../../../components/OrderDetailsHeader';
 
 import './App.scss';
-import {PageRenderer} from '../../../../../components/Page';
-import {isTrialSKU} from '../../../../../utils/productUtils';
-import getProductPriceModel from '../../../../GetApp/utils/getProductPriceModel';
 
-type AppNavbarProps = {
-	showLicenseTab: boolean;
+type ProductAndOrderPayload = NonNullable<
+	ReturnType<typeof useGetProductByOrderId>['data']
+>;
+
+type BaseOutletProps = {
+	backTitle: string;
+	backURL?: string;
+	routes:
+		| NavbarProps['routes']
+		| ((data: ProductAndOrderPayload) => NavbarProps['routes']);
 };
 
-const AppNavbar: React.FC<AppNavbarProps> = ({showLicenseTab}) => {
-	const location = useLocation();
-
-	const routeParams = location.pathname.split('/').filter(Boolean);
-
-	return (
-		<div className="navbar navbar-expand-md navbar-underline navigation-bar navigation-bar-light">
-			<ul className="navbar-nav">
-				<NavLink
-					className={({isActive}) =>
-						classNames('nav-link', {
-							active: isActive && routeParams.length === 2,
-						})
-					}
-					to=""
-				>
-					Details
-				</NavLink>
-
-				{showLicenseTab && (
-					<NavLink
-						className={({isActive}) =>
-							classNames('nav-link', {
-								active: isActive,
-							})
-						}
-						to="licenses"
-					>
-						Licenses
-					</NavLink>
-				)}
-			</ul>
-		</div>
-	);
-};
-
-const AppOutlet = () => {
-	const {orderId} = useParams();
-	const {data, error, isLoading} = useGetProductByOrderId(orderId as string);
-	const product = data?.product;
-	const {isFreeApp} = getProductPriceModel(product);
+const BaseOutlet: React.FC<BaseOutletProps> = ({
+	backTitle,
+	backURL = '..',
+	routes,
+}) => {
 	const navigate = useNavigate();
+	const {orderId} = useParams();
+	const outletContext = useOutletContext();
+	const {data, error, isLoading} = useGetProductByOrderId(orderId as string);
+
 	const placedOrderItems = data?.placedOrder.placedOrderItems ?? [];
 	const productCreatorAccountName = data?.product?.catalogName || '';
 
 	return (
-		<PageRenderer error={error} isLoading={isLoading}>
-			<div className="app-details-header d-flex flex-column w-100">
-				<ClayButton
-					className="align-items-center d-flex"
-					displayType="unstyled"
-					onClick={() => navigate('..')}
-				>
-					<ClayIcon className="mr-2" symbol="order-arrow-left" />
-					<h5 className="mt-1">
-						{i18n.translate('back-to-my-apps')}
-					</h5>
-				</ClayButton>
+		<PageRenderer
+			className="app-details-header d-flex flex-column w-100"
+			error={error}
+			isLoading={isLoading}
+		>
+			<Link
+				className="align-items-center d-flex text-dark"
+				onClick={() => navigate('..')}
+				to={backURL}
+			>
+				<ClayIcon className="mr-2" symbol="order-arrow-left" />
 
-				<OrderDetailsHeader
-					className="d-flex flex-row justify-content-between pb-3 pt-5"
-					hasOrderDetails
-					image={placedOrderItems[0]?.thumbnail}
-					name={data?.product?.name}
-					order={data?.placedOrder}
-					productOwner={productCreatorAccountName}
-				/>
+				<span className="h5 mt-1">{backTitle}</span>
+			</Link>
 
-				<AppNavbar
-					showLicenseTab={
-						!(
-							isFreeApp ||
-							(placedOrderItems[0]?.price?.price === 0 &&
-								product?.skus?.some((sku) =>
-									isTrialSKU((sku as unknown) as SKU)
-								))
-						)
-					}
-				/>
+			<OrderDetailsHeader
+				className="d-flex flex-row justify-content-between pb-3 pt-5"
+				hasOrderDetails
+				image={placedOrderItems[0]?.thumbnail}
+				name={placedOrderItems[0]?.name}
+				order={data?.placedOrder as unknown as Cart}
+				productOwner={productCreatorAccountName}
+			/>
 
-				<Outlet context={data} />
-			</div>
+			<Navbar
+				routes={
+					typeof routes === 'function'
+						? data
+							? routes(data as ProductAndOrderPayload)
+							: []
+						: routes
+				}
+			/>
+
+			<Outlet context={{...data, ...(outletContext || {})}} />
 		</PageRenderer>
 	);
 };
+
+const AppOutlet = () => (
+	<BaseOutlet
+		backTitle={i18n.translate('back-to-my-apps')}
+		routes={({marketplaceDeliveryOrder, placedOrder, product}) => {
+			const {isPaidApp} = getProductPriceModel(product);
+
+			const marketplaceDeliveryProduct = new MarketplaceDeliveryProduct(
+				product
+			);
+
+			const isCompletedOrderWithVirtualItems =
+				placedOrder.workflowStatusInfo.code ===
+					OrderWorkflowStatusCode.COMPLETED &&
+				placedOrder.placedOrderItems.some(
+					(item: PlacedOrderItems) => item.virtualItems?.length
+				);
+
+			const tabs = [
+				{
+					name: i18n.translate('details'),
+					path: '',
+				},
+				{
+					name: i18n.translate('download'),
+					path: 'download',
+					visible:
+						isCompletedOrderWithVirtualItems &&
+						(marketplaceDeliveryOrder.isDownloadable ||
+							marketplaceDeliveryProduct.appSettings
+								.isDownloadable),
+				},
+				{
+					name: i18n.translate('app-provisioning'),
+					path: 'cloud-provisioning',
+					visible:
+						placedOrder.orderTypeExternalReferenceCode ===
+						OrderTypes.CLOUDAPP,
+				},
+				{
+					name: i18n.translate('licenses'),
+					path: 'licenses',
+					visible:
+						placedOrder.orderTypeExternalReferenceCode ===
+							OrderTypes.DXPAPP && isPaidApp,
+				},
+			];
+
+			return tabs;
+		}}
+	/>
+);
+
+export {BaseOutlet};
 
 export default AppOutlet;

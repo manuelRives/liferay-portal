@@ -5,6 +5,7 @@
 
 package com.liferay.portal.template.freemarker.internal;
 
+import com.liferay.petra.function.UnsafeSupplierValue;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.template.StringTemplateResource;
@@ -35,14 +36,14 @@ import freemarker.template.TemplateModelWithAPISupport;
 import freemarker.template.WrappingTemplateModel;
 import freemarker.template.utility.ObjectWrapperWithAPISupport;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 import java.io.Writer;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Mika Koivisto
@@ -207,6 +208,13 @@ public class FreeMarkerTemplate extends BaseTemplate {
 			}
 
 			Object value = _map.get(key);
+
+			if (value instanceof UnsafeSupplierValue) {
+				UnsafeSupplierValue<?, RuntimeException> unsafeSupplierValue =
+					(UnsafeSupplierValue<?, RuntimeException>)value;
+
+				value = unsafeSupplierValue.getValue();
+			}
 
 			if (value == null) {
 				_wrappedValueMap.put(key, _NULL_TEMPLATE_MODEL);

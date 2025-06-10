@@ -36,15 +36,14 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.site.configuration.manager.SitemapConfigurationManager;
 
-import java.util.Dictionary;
+import jakarta.portlet.PortletException;
 
-import javax.portlet.PortletException;
+import java.util.Dictionary;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -60,7 +59,6 @@ import org.osgi.service.cm.ConfigurationAdmin;
 /**
  * @author Lourdes Fernández Besada
  */
-@FeatureFlags("LPS-187793")
 @RunWith(Arquillian.class)
 public class SaveCompanyConfigurationMVCActionCommandTest {
 
@@ -96,6 +94,9 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 		_originalIncludeWebContent =
 			_sitemapConfigurationManager.includeWebContentCompanyEnabled(
 				_company.getCompanyId());
+		_originalXMLSitemapIndexEnabled =
+			_sitemapConfigurationManager.xmlSitemapIndexCompanyEnabled(
+				_company.getCompanyId());
 
 		_originalName = PrincipalThreadLocal.getName();
 
@@ -105,9 +106,10 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 	@AfterClass
 	public static void tearDownClass() throws Exception {
 		_sitemapConfigurationManager.saveSitemapCompanyConfiguration(
-			_company.getCompanyId(), _originalIncludeCategories,
-			_originalIncludePages, _originalIncludeWebContent,
-			ArrayUtil.toArray(_originalCompanySitemapGroupIds));
+			_company.getCompanyId(),
+			ArrayUtil.toArray(_originalCompanySitemapGroupIds),
+			_originalIncludeCategories, _originalIncludePages,
+			_originalIncludeWebContent, _originalXMLSitemapIndexEnabled);
 
 		PrincipalThreadLocal.setName(_originalName);
 	}
@@ -115,7 +117,7 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 	@Test
 	public void testSaveCompanyConfiguration() throws Exception {
 		_assertSaveCompanyConfiguration(
-			new long[0], new long[0], true, true, true, _adminUser);
+			new long[0], new long[0], true, true, true, true, _adminUser);
 	}
 
 	@Test
@@ -128,7 +130,7 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 
 		_assertSaveCompanyConfiguration(
 			new long[] {group.getGroupId()}, new long[] {group.getGroupId()},
-			true, true, false, _adminUser);
+			true, true, false, true, _adminUser);
 	}
 
 	@Test
@@ -145,7 +147,7 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 		_assertSaveCompanyConfiguration(
 			new long[] {group.getGroupId()},
 			new long[] {guestGroup.getGroupId(), group.getGroupId()}, true,
-			true, false, _adminUser);
+			true, false, true, _adminUser);
 	}
 
 	@Test
@@ -159,7 +161,7 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 		_assertSaveCompanyConfiguration(
 			new long[] {group.getGroupId()},
 			new long[] {RandomTestUtil.randomLong(), group.getGroupId()}, true,
-			true, false, _adminUser);
+			true, false, true, _adminUser);
 	}
 
 	@Test
@@ -167,7 +169,7 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 		throws Exception {
 
 		_assertSaveCompanyConfiguration(
-			new long[0], new long[0], false, true, true, _adminUser);
+			new long[0], new long[0], false, true, true, true, _adminUser);
 	}
 
 	@Test
@@ -175,7 +177,7 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 		throws Exception {
 
 		_assertSaveCompanyConfiguration(
-			new long[0], new long[0], true, false, true, _adminUser);
+			new long[0], new long[0], true, false, true, true, _adminUser);
 	}
 
 	@Test
@@ -183,7 +185,15 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 		throws Exception {
 
 		_assertSaveCompanyConfiguration(
-			new long[0], new long[0], true, true, false, _adminUser);
+			new long[0], new long[0], true, true, false, true, _adminUser);
+	}
+
+	@Test
+	public void testSaveCompanyConfigurationDisablingXMLSitemapIndexEnabled()
+		throws Exception {
+
+		_assertSaveCompanyConfiguration(
+			new long[0], new long[0], true, true, true, false, _adminUser);
 	}
 
 	@Test
@@ -198,7 +208,7 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 
 		try {
 			_assertSaveCompanyConfiguration(
-				new long[0], new long[0], true, true, true,
+				new long[0], new long[0], true, true, true, true,
 				UserTestUtil.addGroupAdminUser(group));
 		}
 		catch (PortletException portletException) {
@@ -216,7 +226,8 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 
 	private void _assertCompanyConfiguration(
 			long[] companySitemapGroupIds, boolean includeCategories,
-			boolean includePages, boolean includeWebContent)
+			boolean includePages, boolean includeWebContent,
+			boolean xmlSitemapIndexEnabled)
 		throws Exception {
 
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
@@ -243,17 +254,21 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 		Assert.assertEquals(
 			includeWebContent,
 			GetterUtil.getBoolean(properties.get("includeWebContent")));
+		Assert.assertEquals(
+			xmlSitemapIndexEnabled,
+			GetterUtil.getBoolean(properties.get("xmlSitemapIndexEnabled")));
 	}
 
 	private void _assertSaveCompanyConfiguration(
 			long[] expectedGroupIds, long[] groupIds, boolean includeCategories,
-			boolean includePages, boolean includeWebContent, User user)
+			boolean includePages, boolean includeWebContent,
+			boolean xmlSitemapIndexEnabled, User user)
 		throws Exception {
 
 		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
 			_getMockLiferayPortletActionRequest(
 				groupIds, includeCategories, includePages, includeWebContent,
-				user);
+				xmlSitemapIndexEnabled, user);
 
 		Assert.assertFalse(
 			SessionMessages.contains(
@@ -269,12 +284,13 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 
 		_assertCompanyConfiguration(
 			expectedGroupIds, includeCategories, includePages,
-			includeWebContent);
+			includeWebContent, xmlSitemapIndexEnabled);
 	}
 
 	private MockLiferayPortletActionRequest _getMockLiferayPortletActionRequest(
 			long[] groupIds, boolean includeCategories, boolean includePages,
-			boolean includeWebContent, User user)
+			boolean includeWebContent, boolean xmlSitemapIndexEnabled,
+			User user)
 		throws Exception {
 
 		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
@@ -289,6 +305,8 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 			"includePages", String.valueOf(includePages));
 		mockLiferayPortletActionRequest.addParameter(
 			"includeWebContent", String.valueOf(includeWebContent));
+		mockLiferayPortletActionRequest.addParameter(
+			"xmlSitemapIndexEnabled", String.valueOf(xmlSitemapIndexEnabled));
 		mockLiferayPortletActionRequest.setAttribute(
 			JavaConstants.JAVAX_PORTLET_RESPONSE,
 			new MockLiferayPortletActionResponse());
@@ -339,6 +357,7 @@ public class SaveCompanyConfigurationMVCActionCommandTest {
 	private static boolean _originalIncludePages;
 	private static boolean _originalIncludeWebContent;
 	private static String _originalName;
+	private static boolean _originalXMLSitemapIndexEnabled;
 
 	@Inject
 	private static SitemapConfigurationManager _sitemapConfigurationManager;

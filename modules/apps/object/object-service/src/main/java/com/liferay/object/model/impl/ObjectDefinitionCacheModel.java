@@ -69,7 +69,7 @@ public class ObjectDefinitionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(75);
+		StringBundler sb = new StringBundler(81);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -95,30 +95,36 @@ public class ObjectDefinitionCacheModel
 		sb.append(descriptionObjectFieldId);
 		sb.append(", objectFolderId=");
 		sb.append(objectFolderId);
-		sb.append(", rootObjectDefinitionId=");
-		sb.append(rootObjectDefinitionId);
 		sb.append(", titleObjectFieldId=");
 		sb.append(titleObjectFieldId);
 		sb.append(", accountEntryRestricted=");
 		sb.append(accountEntryRestricted);
 		sb.append(", active=");
 		sb.append(active);
-		sb.append(", dbTableName=");
-		sb.append(dbTableName);
-		sb.append(", label=");
-		sb.append(label);
 		sb.append(", className=");
 		sb.append(className);
+		sb.append(", dbTableName=");
+		sb.append(dbTableName);
 		sb.append(", enableCategorization=");
 		sb.append(enableCategorization);
 		sb.append(", enableComments=");
 		sb.append(enableComments);
+		sb.append(", enableFriendlyURLCustomization=");
+		sb.append(enableFriendlyURLCustomization);
+		sb.append(", enableIndexSearch=");
+		sb.append(enableIndexSearch);
 		sb.append(", enableLocalization=");
 		sb.append(enableLocalization);
 		sb.append(", enableObjectEntryDraft=");
 		sb.append(enableObjectEntryDraft);
 		sb.append(", enableObjectEntryHistory=");
 		sb.append(enableObjectEntryHistory);
+		sb.append(", enableObjectEntryVersioning=");
+		sb.append(enableObjectEntryVersioning);
+		sb.append(", friendlyURLSeparator=");
+		sb.append(friendlyURLSeparator);
+		sb.append(", label=");
+		sb.append(label);
 		sb.append(", modifiable=");
 		sb.append(modifiable);
 		sb.append(", name=");
@@ -201,16 +207,41 @@ public class ObjectDefinitionCacheModel
 		objectDefinitionImpl.setDescriptionObjectFieldId(
 			descriptionObjectFieldId);
 		objectDefinitionImpl.setObjectFolderId(objectFolderId);
-		objectDefinitionImpl.setRootObjectDefinitionId(rootObjectDefinitionId);
 		objectDefinitionImpl.setTitleObjectFieldId(titleObjectFieldId);
 		objectDefinitionImpl.setAccountEntryRestricted(accountEntryRestricted);
 		objectDefinitionImpl.setActive(active);
+
+		if (className == null) {
+			objectDefinitionImpl.setClassName("");
+		}
+		else {
+			objectDefinitionImpl.setClassName(className);
+		}
 
 		if (dbTableName == null) {
 			objectDefinitionImpl.setDBTableName("");
 		}
 		else {
 			objectDefinitionImpl.setDBTableName(dbTableName);
+		}
+
+		objectDefinitionImpl.setEnableCategorization(enableCategorization);
+		objectDefinitionImpl.setEnableComments(enableComments);
+		objectDefinitionImpl.setEnableFriendlyURLCustomization(
+			enableFriendlyURLCustomization);
+		objectDefinitionImpl.setEnableIndexSearch(enableIndexSearch);
+		objectDefinitionImpl.setEnableLocalization(enableLocalization);
+		objectDefinitionImpl.setEnableObjectEntryDraft(enableObjectEntryDraft);
+		objectDefinitionImpl.setEnableObjectEntryHistory(
+			enableObjectEntryHistory);
+		objectDefinitionImpl.setEnableObjectEntryVersioning(
+			enableObjectEntryVersioning);
+
+		if (friendlyURLSeparator == null) {
+			objectDefinitionImpl.setFriendlyURLSeparator("");
+		}
+		else {
+			objectDefinitionImpl.setFriendlyURLSeparator(friendlyURLSeparator);
 		}
 
 		if (label == null) {
@@ -220,19 +251,6 @@ public class ObjectDefinitionCacheModel
 			objectDefinitionImpl.setLabel(label);
 		}
 
-		if (className == null) {
-			objectDefinitionImpl.setClassName("");
-		}
-		else {
-			objectDefinitionImpl.setClassName(className);
-		}
-
-		objectDefinitionImpl.setEnableCategorization(enableCategorization);
-		objectDefinitionImpl.setEnableComments(enableComments);
-		objectDefinitionImpl.setEnableLocalization(enableLocalization);
-		objectDefinitionImpl.setEnableObjectEntryDraft(enableObjectEntryDraft);
-		objectDefinitionImpl.setEnableObjectEntryHistory(
-			enableObjectEntryHistory);
 		objectDefinitionImpl.setModifiable(modifiable);
 
 		if (name == null) {
@@ -324,26 +342,31 @@ public class ObjectDefinitionCacheModel
 
 		objectFolderId = objectInput.readLong();
 
-		rootObjectDefinitionId = objectInput.readLong();
-
 		titleObjectFieldId = objectInput.readLong();
 
 		accountEntryRestricted = objectInput.readBoolean();
 
 		active = objectInput.readBoolean();
-		dbTableName = objectInput.readUTF();
-		label = objectInput.readUTF();
 		className = objectInput.readUTF();
+		dbTableName = objectInput.readUTF();
 
 		enableCategorization = objectInput.readBoolean();
 
 		enableComments = objectInput.readBoolean();
+
+		enableFriendlyURLCustomization = objectInput.readBoolean();
+
+		enableIndexSearch = objectInput.readBoolean();
 
 		enableLocalization = objectInput.readBoolean();
 
 		enableObjectEntryDraft = objectInput.readBoolean();
 
 		enableObjectEntryHistory = objectInput.readBoolean();
+
+		enableObjectEntryVersioning = objectInput.readBoolean();
+		friendlyURLSeparator = objectInput.readUTF();
+		label = objectInput.readUTF();
 
 		modifiable = objectInput.readBoolean();
 		name = objectInput.readUTF();
@@ -404,27 +427,11 @@ public class ObjectDefinitionCacheModel
 
 		objectOutput.writeLong(objectFolderId);
 
-		objectOutput.writeLong(rootObjectDefinitionId);
-
 		objectOutput.writeLong(titleObjectFieldId);
 
 		objectOutput.writeBoolean(accountEntryRestricted);
 
 		objectOutput.writeBoolean(active);
-
-		if (dbTableName == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(dbTableName);
-		}
-
-		if (label == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(label);
-		}
 
 		if (className == null) {
 			objectOutput.writeUTF("");
@@ -433,15 +440,42 @@ public class ObjectDefinitionCacheModel
 			objectOutput.writeUTF(className);
 		}
 
+		if (dbTableName == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(dbTableName);
+		}
+
 		objectOutput.writeBoolean(enableCategorization);
 
 		objectOutput.writeBoolean(enableComments);
+
+		objectOutput.writeBoolean(enableFriendlyURLCustomization);
+
+		objectOutput.writeBoolean(enableIndexSearch);
 
 		objectOutput.writeBoolean(enableLocalization);
 
 		objectOutput.writeBoolean(enableObjectEntryDraft);
 
 		objectOutput.writeBoolean(enableObjectEntryHistory);
+
+		objectOutput.writeBoolean(enableObjectEntryVersioning);
+
+		if (friendlyURLSeparator == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(friendlyURLSeparator);
+		}
+
+		if (label == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(label);
+		}
 
 		objectOutput.writeBoolean(modifiable);
 
@@ -522,18 +556,21 @@ public class ObjectDefinitionCacheModel
 	public long accountEntryRestrictedObjectFieldId;
 	public long descriptionObjectFieldId;
 	public long objectFolderId;
-	public long rootObjectDefinitionId;
 	public long titleObjectFieldId;
 	public boolean accountEntryRestricted;
 	public boolean active;
-	public String dbTableName;
-	public String label;
 	public String className;
+	public String dbTableName;
 	public boolean enableCategorization;
 	public boolean enableComments;
+	public boolean enableFriendlyURLCustomization;
+	public boolean enableIndexSearch;
 	public boolean enableLocalization;
 	public boolean enableObjectEntryDraft;
 	public boolean enableObjectEntryHistory;
+	public boolean enableObjectEntryVersioning;
+	public String friendlyURLSeparator;
+	public String label;
 	public boolean modifiable;
 	public String name;
 	public String panelAppOrder;

@@ -37,6 +37,7 @@ public class RoleWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("roleId", getRoleId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -50,6 +51,7 @@ public class RoleWrapper
 		attributes.put("description", getDescription());
 		attributes.put("type", getType());
 		attributes.put("subtype", getSubtype());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -72,6 +74,13 @@ public class RoleWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long roleId = (Long)attributes.get("roleId");
@@ -150,6 +159,12 @@ public class RoleWrapper
 
 		if (subtype != null) {
 			setSubtype(subtype);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -311,6 +326,16 @@ public class RoleWrapper
 		return model.getDescriptiveName();
 	}
 
+	/**
+	 * Returns the external reference code of this role.
+	 *
+	 * @return the external reference code of this role
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
 	@Override
 	public String getIconCssClass() {
 		return model.getIconCssClass();
@@ -364,6 +389,16 @@ public class RoleWrapper
 	@Override
 	public long getRoleId() {
 		return model.getRoleId();
+	}
+
+	/**
+	 * Returns the status of this role.
+	 *
+	 * @return the status of this role
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
 	}
 
 	/**
@@ -660,6 +695,16 @@ public class RoleWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this role.
+	 *
+	 * @param externalReferenceCode the external reference code of this role
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the modified date of this role.
 	 *
 	 * @param modifiedDate the modified date of this role
@@ -707,6 +752,16 @@ public class RoleWrapper
 	@Override
 	public void setRoleId(long roleId) {
 		model.setRoleId(roleId);
+	}
+
+	/**
+	 * Sets the status of this role.
+	 *
+	 * @param status the status of this role
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
 	}
 
 	/**

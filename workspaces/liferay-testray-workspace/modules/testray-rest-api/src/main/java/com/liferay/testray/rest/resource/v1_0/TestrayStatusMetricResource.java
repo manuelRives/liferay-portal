@@ -1,7 +1,5 @@
 package com.liferay.testray.rest.resource.v1_0;
 
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
@@ -12,8 +10,10 @@ import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
+import com.liferay.testray.rest.dto.v1_0.TestrayBuildMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayCaseTypeMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayComponentMetric;
+import com.liferay.testray.rest.dto.v1_0.TestrayRoutineMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayRunMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayTeamMetric;
 
@@ -46,28 +46,41 @@ public interface TestrayStatusMetricResource {
 	public Page<TestrayCaseTypeMetric>
 			getTestrayStatusMetricByTestrayBuildIdTestrayBuildTestrayCaseTypesMetricsPage(
 				Long testrayBuildId, String testrayCasePriorities,
-				Long testrayTeamId, Pagination pagination)
+				String testrayTeamIds, Pagination pagination)
 		throws Exception;
 
 	public Page<TestrayComponentMetric>
 			getTestrayStatusMetricByTestrayBuildIdTestrayBuildTestrayComponentsMetricsPage(
 				Long testrayBuildId, String testrayCasePriorities,
-				String testrayCaseTypes, Long testrayTeamId,
+				String testrayCaseTypes, String testrayTeamIds,
 				Pagination pagination)
 		throws Exception;
 
 	public Page<TestrayRunMetric>
 			getTestrayStatusMetricByTestrayBuildIdTestrayBuildTestrayRunsMetricsPage(
 				Long testrayBuildId, String testrayCasePriorities,
-				String testrayCaseTypes, Long testrayTeamId,
+				String testrayCaseTypes, String testrayTeamIds,
 				Pagination pagination)
 		throws Exception;
 
 	public Page<TestrayTeamMetric>
 			getTestrayStatusMetricByTestrayBuildIdTestrayBuildTestrayTeamsMetricsPage(
 				Long testrayBuildId, String testrayCasePriorities,
-				String testrayCaseTypes, Long testrayRunId, Long testrayTeamId,
-				Pagination pagination)
+				String testrayCaseTypes, Long testrayRunId,
+				String testrayTeamIds, Pagination pagination)
+		throws Exception;
+
+	public Page<TestrayRoutineMetric>
+			getTestrayStatusMetricByTestrayProjectIdTestrayProjectTestrayRoutinesMetricsPage(
+				Long testrayProjectId, Pagination pagination,
+				com.liferay.portal.kernel.search.Sort[] sorts)
+		throws Exception;
+
+	public Page<TestrayBuildMetric>
+			getTestrayStatusMetricByTestrayRoutineIdTestrayRoutineTestrayBuildsMetricsPage(
+				Long testrayRoutineId, Long testrayBuildId,
+				String testrayBuildName, String testrayProductVersion,
+				String testrayTaskStatus, Pagination pagination)
 		throws Exception;
 
 	public default void setContextAcceptLanguage(
@@ -92,7 +105,8 @@ public interface TestrayStatusMetricResource {
 		com.liferay.portal.kernel.model.User contextUser);
 
 	public void setExpressionConvert(
-		ExpressionConvert<Filter> expressionConvert);
+		ExpressionConvert<com.liferay.portal.kernel.search.filter.Filter>
+			expressionConvert);
 
 	public void setFilterParserProvider(
 		FilterParserProvider filterParserProvider);
@@ -109,19 +123,23 @@ public interface TestrayStatusMetricResource {
 
 	public void setSortParserProvider(SortParserProvider sortParserProvider);
 
-	public default Filter toFilter(String filterString) {
+	public default com.liferay.portal.kernel.search.filter.Filter toFilter(
+		String filterString) {
+
 		return toFilter(
 			filterString, Collections.<String, List<String>>emptyMap());
 	}
 
-	public default Filter toFilter(
+	public default com.liferay.portal.kernel.search.filter.Filter toFilter(
 		String filterString, Map<String, List<String>> multivaluedMap) {
 
 		return null;
 	}
 
-	public default Sort[] toSorts(String sortsString) {
-		return new Sort[0];
+	public default com.liferay.portal.kernel.search.Sort[] toSorts(
+		String sortsString) {
+
+		return new com.liferay.portal.kernel.search.Sort[0];
 	}
 
 	@ProviderType

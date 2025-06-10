@@ -77,8 +77,8 @@ public class PortalWorkspace extends BaseWorkspace {
 		_osbAsahGitHubURL = osbAsahGitHubURL;
 	}
 
-	public void setPortalPrivateGitHubURL(String portalPrivateGitHubURL) {
-		_portalPrivateGitHubURL = portalPrivateGitHubURL;
+	public void setOSBFaroGitHubURL(String osbFaroGitHubURL) {
+		_osbFaroGitHubURL = osbFaroGitHubURL;
 	}
 
 	@Override
@@ -94,9 +94,10 @@ public class PortalWorkspace extends BaseWorkspace {
 		_configureLiferayFacesPortalWorkspaceGitRepository();
 		_configureLiferayFacesShowcaseWorkspaceGitRepository();
 		_configureOSBAsahWorkspaceGitRepository();
+		_configureOSBFaroWorkspaceGitRepository();
 		_configurePluginsWorkspaceGitRepository();
-		_configurePortalPrivateWorkspaceGitRepository();
 		_configurePortalsPlutoWorkspaceGitRepository();
+		_configurePortletAPIGitRepository();
 		_configureReleaseToolWorkspaceGitRepository();
 
 		super.setUp();
@@ -352,6 +353,33 @@ public class PortalWorkspace extends BaseWorkspace {
 		workspaceGitRepository.setGitHubURL(_osbAsahGitHubURL);
 	}
 
+	private void _configureOSBFaroWorkspaceGitRepository() {
+		if (_osbFaroGitHubURL == null) {
+			return;
+		}
+
+		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
+			getPortalWorkspaceGitRepository();
+
+		String portalUpstreamBranchName =
+			portalWorkspaceGitRepository.getUpstreamBranchName();
+
+		String repositoryName = "liferay-portal";
+
+		if (!portalUpstreamBranchName.startsWith("release-")) {
+			repositoryName += "-ee";
+		}
+
+		WorkspaceGitRepository workspaceGitRepository =
+			getWorkspaceGitRepository(repositoryName);
+
+		if (workspaceGitRepository == null) {
+			return;
+		}
+
+		workspaceGitRepository.setGitHubURL(_osbFaroGitHubURL);
+	}
+
 	private void _configurePluginsWorkspaceGitRepository() {
 		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
 			getPortalWorkspaceGitRepository();
@@ -371,40 +399,13 @@ public class PortalWorkspace extends BaseWorkspace {
 			portalWorkspaceGitRepository.getUpstreamBranchName());
 	}
 
-	private void _configurePortalPrivateWorkspaceGitRepository() {
-		WorkspaceGitRepository primaryWorkspaceGitRepository =
-			getPrimaryWorkspaceGitRepository();
-
-		if (!(primaryWorkspaceGitRepository instanceof
-				PortalWorkspaceGitRepository)) {
-
-			return;
-		}
-
-		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
-			(PortalWorkspaceGitRepository)primaryWorkspaceGitRepository;
-
-		String portalPrivateDirectoryName =
-			portalWorkspaceGitRepository.getPortalPrivateRepositoryDirName();
-
-		WorkspaceGitRepository workspaceGitRepository =
-			getWorkspaceGitRepository(portalPrivateDirectoryName);
-
-		if ((workspaceGitRepository == null) ||
-			(_portalPrivateGitHubURL == null)) {
-
-			return;
-		}
-
-		workspaceGitRepository.setGitHubURL(_portalPrivateGitHubURL);
-
-		_updateWorkspaceGitRepository(
-			"git-commit-portal-private", portalPrivateDirectoryName);
-	}
-
 	private void _configurePortalsPlutoWorkspaceGitRepository() {
 		_updateWorkspaceGitRepository(
 			"git-commit-portals-pluto", "portals-pluto");
+	}
+
+	private void _configurePortletAPIGitRepository() {
+		_updateWorkspaceGitRepository("git-commit-portlet-api", "portlet-api");
 	}
 
 	private void _configureReleaseToolWorkspaceGitRepository() {
@@ -479,6 +480,6 @@ public class PortalWorkspace extends BaseWorkspace {
 
 	private boolean _commitOSBAsahModule;
 	private String _osbAsahGitHubURL;
-	private String _portalPrivateGitHubURL;
+	private String _osbFaroGitHubURL;
 
 }

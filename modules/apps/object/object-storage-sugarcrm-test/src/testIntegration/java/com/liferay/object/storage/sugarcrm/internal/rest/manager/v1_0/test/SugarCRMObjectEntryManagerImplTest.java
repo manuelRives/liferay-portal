@@ -28,7 +28,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -49,7 +49,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,8 +56,7 @@ import org.junit.runner.RunWith;
 /**
  * @author Maurice Sepe
  */
-@FeatureFlags("LPS-135430")
-@Ignore
+@FeatureFlag("LPS-135430")
 @RunWith(Arquillian.class)
 public class SugarCRMObjectEntryManagerImplTest
 	extends BaseObjectEntryManagerImplTestCase {
@@ -121,17 +119,19 @@ public class SugarCRMObjectEntryManagerImplTest
 	}
 
 	@Before
+	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 
 		_objectDefinition =
 			objectDefinitionLocalService.addCustomObjectDefinition(
-				adminUser.getUserId(), 0, false, false, false,
-				LocalizedMapUtil.getLocalizedMap("Contact"), "Contact", null,
-				null, LocalizedMapUtil.getLocalizedMap("Contacts"), true,
+				adminUser.getUserId(), 0, null, false, false, true, false,
+				false, false, null, LocalizedMapUtil.getLocalizedMap("Contact"),
+				"Contact", null, null,
+				LocalizedMapUtil.getLocalizedMap("Contacts"), true,
 				ObjectDefinitionConstants.SCOPE_COMPANY,
 				ObjectDefinitionConstants.STORAGE_TYPE_SUGARCRM,
-				Collections.emptyList());
+				Collections.emptyList(), Collections.emptyList());
 
 		_objectDefinition.setExternalReferenceCode("Contacts");
 

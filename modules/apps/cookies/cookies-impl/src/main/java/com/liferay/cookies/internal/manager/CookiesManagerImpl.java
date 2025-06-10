@@ -30,13 +30,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeFormatter;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -155,6 +155,8 @@ public class CookiesManagerImpl implements CookiesManager {
 			}
 		}
 
+		cookie.setPath(_getContextPath(httpServletRequest));
+
 		// LEP-5175
 
 		cookie.setSecure(secure);
@@ -211,11 +213,11 @@ public class CookiesManagerImpl implements CookiesManager {
 			CookiesConstants.NAME_COOKIE_SUPPORT, "true");
 
 		cookieSupportCookie.setMaxAge(CookiesConstants.MAX_AGE);
-		cookieSupportCookie.setPath(StringPool.SLASH);
 
 		return addCookie(
-			CookiesConstants.CONSENT_TYPE_NECESSARY, cookieSupportCookie, null,
-			httpServletResponse, _portal.isSecure(httpServletRequest));
+			CookiesConstants.CONSENT_TYPE_NECESSARY, cookieSupportCookie,
+			httpServletRequest, httpServletResponse,
+			_portal.isSecure(httpServletRequest));
 	}
 
 	@Override
@@ -242,7 +244,7 @@ public class CookiesManagerImpl implements CookiesManager {
 			}
 
 			cookie.setMaxAge(0);
-			cookie.setPath(StringPool.SLASH);
+			cookie.setPath(_getContextPath(httpServletRequest));
 			cookie.setValue(StringPool.BLANK);
 
 			httpServletResponse.addCookie(cookie);
@@ -335,7 +337,7 @@ public class CookiesManagerImpl implements CookiesManager {
 		}
 
 		if (internetDomainName.isTopPrivateDomain()) {
-			return StringPool.PERIOD + internetDomainName.toString();
+			return internetDomainName.toString();
 		}
 
 		int x = host.indexOf(CharPool.PERIOD);
@@ -347,10 +349,10 @@ public class CookiesManagerImpl implements CookiesManager {
 		int y = host.indexOf(CharPool.PERIOD, x + 1);
 
 		if (y <= 0) {
-			return StringPool.PERIOD + host;
+			return host;
 		}
 
-		return host.substring(x);
+		return host.substring(x + 1);
 	}
 
 	@Override
@@ -487,6 +489,19 @@ public class CookiesManagerImpl implements CookiesManager {
 		}
 
 		return false;
+	}
+
+	private String _getContextPath(HttpServletRequest httpServletRequest) {
+		if (httpServletRequest != null) {
+			String contextPath = _portal.getPathContext(
+				_portal.getOriginalServletRequest(httpServletRequest));
+
+			if (Validator.isNotNull(contextPath)) {
+				return contextPath;
+			}
+		}
+
+		return StringPool.SLASH;
 	}
 
 	private Map<String, Cookie> _getCookiesMap(

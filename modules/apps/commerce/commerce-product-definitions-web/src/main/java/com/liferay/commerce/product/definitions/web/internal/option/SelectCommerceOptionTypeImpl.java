@@ -8,8 +8,8 @@ package com.liferay.commerce.product.definitions.web.internal.option;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
+import com.liferay.commerce.frontend.helper.ProductHelper;
 import com.liferay.commerce.frontend.model.ProductSettingsModel;
-import com.liferay.commerce.frontend.util.ProductHelper;
 import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.model.CPDefinition;
@@ -35,14 +35,14 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.PrintWriter;
 
 import java.math.BigDecimal;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -125,7 +125,7 @@ public class SelectCommerceOptionTypeImpl implements CommerceOptionType {
 
 			ProductSettingsModel productSettingsModel =
 				_productHelper.getProductSettingsModel(
-					cpDefinition.getCPDefinitionId());
+					cpDefinition.getCPDefinitionId(), commerceContext);
 
 			minQuantity = productSettingsModel.getMinQuantity();
 
@@ -148,7 +148,7 @@ public class SelectCommerceOptionTypeImpl implements CommerceOptionType {
 						commerceContext,
 						_portal.getCompanyId(httpServletRequest), cpDefinition,
 						_portal.getLocale(httpServletRequest), minQuantity,
-						defaultCPInstanceId, StringPool.BLANK, null,
+						defaultCPInstanceId, null, StringPool.BLANK, null,
 						_portal.getUser(httpServletRequest)));
 			}
 		}

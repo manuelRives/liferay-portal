@@ -5,7 +5,7 @@
 
 package com.liferay.portal.search.admin.web.internal.display.context.builder;
 
-import com.liferay.portal.instances.service.PortalInstancesLocalServiceUtil;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -36,6 +36,10 @@ import com.liferay.portal.search.configuration.ReindexConfiguration;
 import com.liferay.portal.search.web.util.comparator.IndexerClassNameModelResourceComparator;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
 
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,10 +48,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Olivia Yu
@@ -80,20 +80,6 @@ public class IndexActionsDisplayContextBuilder {
 
 		indexActionsDisplayContext.setData(getData());
 
-		if (_isStatsInformationAvailable()) {
-			StatsInformation statsInformation =
-				_statsInformationFactory.getStatsInformation();
-
-			indexActionsDisplayContext.setAvailableDiskSpace(
-				statsInformation.getAvailableDiskSpace());
-			indexActionsDisplayContext.setCurrentDiskSpaceUsed(
-				statsInformation.getUsedDiskSpace());
-			indexActionsDisplayContext.setIsLowOnDiskSpace(
-				_isLowOnDiskSpace(
-					statsInformation.getAvailableDiskSpace(),
-					statsInformation.getSizeOfLargestIndex()));
-		}
-
 		return indexActionsDisplayContext;
 	}
 
@@ -117,8 +103,6 @@ public class IndexActionsDisplayContextBuilder {
 			"controlMenuCategoryKey",
 			ProductNavigationControlMenuCategoryKeys.TOOLS
 		).put(
-			"elasticSearchDiskSpace", _getElasticSearchDiskSpace()
-		).put(
 			"indexersMap", _getIndexersMap()
 		).put(
 			"indexReindexerNames", _getIndexReindexerNames()
@@ -131,29 +115,10 @@ public class IndexActionsDisplayContextBuilder {
 		).put(
 			"omniadmin", _permissionChecker.isOmniadmin()
 		).put(
+			"searchEngineDiskSpace", _getSearchEngineDiskSpace()
+		).put(
 			"virtualInstances", _getVirtualInstancesJSONArray()
 		).build();
-	}
-
-	private Map<String, Object> _getElasticSearchDiskSpace() {
-		Map<String, Object> elasticSearchDiskSpace = new HashMap<>();
-
-		if (_isStatsInformationAvailable()) {
-			StatsInformation statsInformation =
-				_statsInformationFactory.getStatsInformation();
-
-			elasticSearchDiskSpace.put(
-				"availableDiskSpace", statsInformation.getAvailableDiskSpace());
-			elasticSearchDiskSpace.put(
-				"currentDiskSpaceUsed", statsInformation.getUsedDiskSpace());
-			elasticSearchDiskSpace.put(
-				"isLowOnDiskSpace",
-				_isLowOnDiskSpace(
-					statsInformation.getAvailableDiskSpace(),
-					statsInformation.getSizeOfLargestIndex()));
-		}
-
-		return elasticSearchDiskSpace;
 	}
 
 	private Map<String, List<Object>> _getIndexersMap() {
@@ -278,10 +243,31 @@ public class IndexActionsDisplayContextBuilder {
 		return ParamUtil.getString(_httpServletRequest, "scope");
 	}
 
+	private Map<String, Object> _getSearchEngineDiskSpace() {
+		Map<String, Object> searchEngineDiskSpace = new HashMap<>();
+
+		if (_isStatsInformationAvailable()) {
+			StatsInformation statsInformation =
+				_statsInformationFactory.getStatsInformation();
+
+			searchEngineDiskSpace.put(
+				"availableDiskSpace", statsInformation.getAvailableDiskSpace());
+			searchEngineDiskSpace.put(
+				"isLowOnDiskSpace",
+				_isLowOnDiskSpace(
+					statsInformation.getAvailableDiskSpace(),
+					statsInformation.getSizeOfLargestIndex()));
+			searchEngineDiskSpace.put(
+				"usedDiskSpace", statsInformation.getUsedDiskSpace());
+		}
+
+		return searchEngineDiskSpace;
+	}
+
 	private JSONArray _getVirtualInstancesJSONArray() {
 		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
 
-		long[] companyIds = PortalInstancesLocalServiceUtil.getCompanyIds();
+		long[] companyIds = PortalInstancePool.getCompanyIds();
 
 		if (!ArrayUtil.contains(companyIds, CompanyConstants.SYSTEM)) {
 			jsonArray.put(

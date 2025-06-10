@@ -38,24 +38,30 @@ const useIssuesFound = ({buildId, caseId}: useIssuesFoundProps) => {
 		[buildId, id]
 	);
 
-	const {data} = useFetch<APIResponse<TestrayCaseResult>>(
-		testrayCaseResultImpl.resource,
-		{
-			params: {
-				fields: 'issues',
-				filter,
-			},
-			swrConfig: {
-				shouldFetch: id,
-			},
-			transformData: (response) =>
-				testrayCaseResultImpl.transformDataFromList(response),
-		}
-	);
+	const {data} = useFetch<APIResponse<TestrayCaseResult>>('/caseresults', {
+		params: {
+			aggregationTerms: 'issues',
+			fields: 'issues',
+			filter,
+			pageSize: -1,
+		},
+		swrConfig: {
+			shouldFetch: id,
+		},
+		transformData: (response) =>
+			testrayCaseResultImpl.transformDataFromList(response),
+	});
 
 	const issues = useMemo(
-		() => (data?.items ?? []).map(({issues}) => issues),
-		[data?.items]
+		() =>
+			Array.from(
+				new Set(
+					(data?.facets[0].facetValues ?? []).flatMap(({term}) =>
+						term.split(',').map((t) => t.trim())
+					)
+				)
+			),
+		[data?.facets]
 	);
 
 	return issues;

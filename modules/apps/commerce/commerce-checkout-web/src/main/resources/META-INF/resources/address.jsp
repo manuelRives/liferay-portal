@@ -11,7 +11,12 @@
 CommerceAddress commerceAddress = (CommerceAddress)request.getAttribute("address.jsp-commerceAddress");
 %>
 
-<h4><%= HtmlUtil.escape(commerceAddress.getName()) %></h4>
+<div class="h4"><%= HtmlUtil.escape(commerceAddress.getName()) %></div>
+
+<c:if test="<%= Validator.isNotNull(commerceAddress.getSubtype()) %>">
+	<p><%= HtmlUtil.escape(commerceAddress.getSubtype(locale)) %></p>
+</c:if>
+
 <p><%= HtmlUtil.escape(commerceAddress.getStreet1()) %></p>
 
 <c:if test="<%= Validator.isNotNull(commerceAddress.getStreet2()) %>">

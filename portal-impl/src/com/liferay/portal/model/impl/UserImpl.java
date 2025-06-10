@@ -5,6 +5,7 @@
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.AutoEscape;
@@ -25,7 +26,10 @@ import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.Team;
 import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.model.UserGroupGroupRole;
+import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.Website;
+import com.liferay.portal.kernel.model.cache.CacheField;
 import com.liferay.portal.kernel.security.auth.EmailAddressGenerator;
 import com.liferay.portal.kernel.security.auth.FullNameGenerator;
 import com.liferay.portal.kernel.security.auth.FullNameGeneratorFactory;
@@ -42,7 +46,9 @@ import com.liferay.portal.kernel.service.PasswordPolicyLocalServiceUtil;
 import com.liferay.portal.kernel.service.PhoneLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.TeamLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.service.WebsiteLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -50,6 +56,7 @@ import com.liferay.portal.kernel.util.Digester;
 import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -64,7 +71,9 @@ import com.liferay.portal.security.auth.EmailAddressGeneratorFactory;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.users.admin.kernel.util.UserInitialsGeneratorUtil;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -124,6 +133,20 @@ public class UserImpl extends UserBaseImpl {
 	public List<Address> getAddresses() {
 		return AddressLocalServiceUtil.getAddresses(
 			getCompanyId(), Contact.class.getName(), getContactId());
+	}
+
+	@Override
+	public List<Group> getAllGroups() throws PortalException {
+		return ListUtil.concat(
+			getGroups(), getInheritedGroups(), getInheritedSiteGroups(),
+			getOrganizationsGroups(), getSiteGroups());
+	}
+
+	@Override
+	public List<Role> getAllRoles() throws PortalException {
+		return ListUtil.concat(
+			getInheritedRoles(), getInheritedSiteRoles(),
+			getOrganizationsRoles(), getRoles(), getSiteRoles());
 	}
 
 	/**
@@ -357,15 +380,35 @@ public class UserImpl extends UserBaseImpl {
 
 	@Override
 	public Group getGroup() {
-		return GroupLocalServiceUtil.fetchUserGroup(
-			getCompanyId(), getUserId());
+		if (_group == null) {
+			if (_groupId == -1) {
+				_group = GroupLocalServiceUtil.fetchUserGroup(
+					getCompanyId(), getUserId());
+
+				if (_group != null) {
+					_groupId = _group.getGroupId();
+				}
+			}
+			else {
+				_group = GroupLocalServiceUtil.fetchGroup(_groupId);
+			}
+		}
+
+		return _group;
 	}
 
 	@Override
 	public long getGroupId() {
-		Group group = getGroup();
+		if (_groupId == -1) {
+			_group = GroupLocalServiceUtil.fetchUserGroup(
+				getCompanyId(), getUserId());
 
-		return group.getGroupId();
+			if (_group != null) {
+				_groupId = _group.getGroupId();
+			}
+		}
+
+		return _groupId;
 	}
 
 	@Override
@@ -380,6 +423,47 @@ public class UserImpl extends UserBaseImpl {
 	@Override
 	public List<Group> getGroups() {
 		return GroupLocalServiceUtil.getUserGroups(getUserId());
+	}
+
+	@Override
+	public List<Group> getInheritedGroups() throws PortalException {
+		return GroupLocalServiceUtil.getUserGroupsGroups(getUserGroups());
+	}
+
+	@Override
+	public List<Role> getInheritedRoles() throws PortalException {
+		Set<Role> roles = new HashSet<>();
+
+		for (Group group :
+				ListUtil.filter(
+					getAllGroups(),
+					group -> RoleLocalServiceUtil.hasGroupRoles(
+						group.getGroupId()))) {
+
+			roles.addAll(
+				RoleLocalServiceUtil.getGroupRoles(group.getGroupId()));
+		}
+
+		return ListUtil.fromCollection(roles);
+	}
+
+	@Override
+	public List<Group> getInheritedSiteGroups() throws PortalException {
+		Set<Group> groups = new HashSet<>();
+
+		groups.addAll(
+			GroupLocalServiceUtil.getUserGroupsRelatedGroups(getUserGroups()));
+		groups.addAll(_getOrganizationRelatedGroups());
+
+		return ListUtil.fromCollection(groups);
+	}
+
+	@Override
+	public List<Role> getInheritedSiteRoles() {
+		return TransformUtil.transform(
+			UserGroupGroupRoleLocalServiceUtil.getUserGroupGroupRolesByUser(
+				getUserId()),
+			UserGroupGroupRole::getRole);
 	}
 
 	@Override
@@ -476,15 +560,45 @@ public class UserImpl extends UserBaseImpl {
 
 	@Override
 	public List<Organization> getOrganizations() throws PortalException {
-		return getOrganizations(false);
+		return getOrganizations(false, false);
 	}
 
 	@Override
 	public List<Organization> getOrganizations(boolean includeAdministrative)
 		throws PortalException {
 
-		return OrganizationLocalServiceUtil.getUserOrganizations(
-			getUserId(), includeAdministrative);
+		return getOrganizations(includeAdministrative, false);
+	}
+
+	@Override
+	public List<Organization> getOrganizations(
+			boolean includeAdministrative, boolean includeParentOrganizations)
+		throws PortalException {
+
+		List<Organization> organizations =
+			OrganizationLocalServiceUtil.getUserOrganizations(
+				getUserId(), includeAdministrative);
+
+		if (includeParentOrganizations) {
+			organizations.addAll(_getParentOrganizations(organizations));
+		}
+
+		return organizations;
+	}
+
+	@Override
+	public List<Group> getOrganizationsGroups() throws PortalException {
+		return GroupLocalServiceUtil.getOrganizationsGroups(
+			getOrganizations(
+				false, !PropsValues.ORGANIZATIONS_MEMBERSHIP_STRICT));
+	}
+
+	@Override
+	public List<Role> getOrganizationsRoles() throws PortalException {
+		return TransformUtil.transform(
+			ListUtil.filter(
+				getUserGroupRoles(), UserGroupRole::hasOrganizationRole),
+			UserGroupRole::getRole);
 	}
 
 	@Override
@@ -607,6 +721,13 @@ public class UserImpl extends UserBaseImpl {
 	}
 
 	@Override
+	public List<Role> getSiteRoles() throws PortalException {
+		return TransformUtil.transform(
+			ListUtil.filter(getUserGroupRoles(), UserGroupRole::hasSiteRole),
+			UserGroupRole::getRole);
+	}
+
+	@Override
 	public long[] getTeamIds() {
 		if (_teamIds == null) {
 			_teamIds = UserLocalServiceUtil.getTeamPrimaryKeys(getUserId());
@@ -647,6 +768,11 @@ public class UserImpl extends UserBaseImpl {
 		}
 
 		return _userGroupIds;
+	}
+
+	@Override
+	public List<UserGroupRole> getUserGroupRoles() throws PortalException {
+		return UserGroupRoleLocalServiceUtil.getUserGroupRoles(getUserId());
 	}
 
 	@Override
@@ -879,11 +1005,7 @@ public class UserImpl extends UserBaseImpl {
 			getCompanyId(), PropsKeys.TERMS_OF_USE_REQUIRED,
 			PropsValues.TERMS_OF_USE_REQUIRED);
 
-		if (termsOfUseRequired) {
-			return false;
-		}
-
-		return true;
+		return !termsOfUseRequired;
 	}
 
 	@Override
@@ -900,6 +1022,16 @@ public class UserImpl extends UserBaseImpl {
 	@Override
 	public void setDigest(String digest) {
 		super.setDigest(digest);
+	}
+
+	@Override
+	public void setGroup(Group group) {
+		_group = group;
+	}
+
+	@Override
+	public void setGroupId(long groupId) {
+		_groupId = groupId;
 	}
 
 	@Override
@@ -979,6 +1111,38 @@ public class UserImpl extends UserBaseImpl {
 			});
 	}
 
+	private List<Group> _getOrganizationRelatedGroups() throws PortalException {
+		List<Organization> organizations = getOrganizations(
+			false, !PropsValues.ORGANIZATIONS_MEMBERSHIP_STRICT);
+
+		if (organizations.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		return GroupLocalServiceUtil.getOrganizationsRelatedGroups(
+			organizations);
+	}
+
+	private List<Organization> _getParentOrganizations(
+			List<Organization> organizations)
+		throws PortalException {
+
+		return TransformUtil.transform(
+			organizations,
+			organization -> {
+				Organization parentOrganization =
+					organization.getParentOrganization();
+
+				if ((parentOrganization == null) ||
+					organizations.contains(parentOrganization)) {
+
+					return null;
+				}
+
+				return parentOrganization;
+			});
+	}
+
 	private boolean _isRequirePasswordReset() {
 		if (!isPasswordReset() ||
 			((_passwordPolicy != null) && !_passwordPolicy.isChangeable())) {
@@ -997,6 +1161,11 @@ public class UserImpl extends UserBaseImpl {
 	private static final Log _log = LogFactoryUtil.getLog(UserImpl.class);
 
 	private Contact _contact;
+	private Group _group;
+
+	@CacheField(permanent = true, propagateToInterface = true)
+	private long _groupId = -1;
+
 	private long[] _groupIds;
 	private Locale _locale;
 	private long[] _organizationIds;

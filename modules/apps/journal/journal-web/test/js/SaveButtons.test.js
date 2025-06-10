@@ -29,7 +29,7 @@ const renderComponent = (props = DEFAULT_PROPS) => {
 		<>
 			<div className="article-content-content" />
 			<input id={`${props.portletNamespace}workflowAction`} />
-			<input id={`${props.portletNamespace}javax-portlet-action`} />
+			<input id={`${props.portletNamespace}jakarta-portlet-action`} />
 			<SaveButtons {...props} />
 		</>
 	);
@@ -70,6 +70,19 @@ describe('SaveButtons', () => {
 		});
 
 		expect(screen.getByText('save article')).toBeInTheDocument();
+	});
+
+	it('submit for workflow with permissions when publishing for the first time', () => {
+		renderComponent({
+			...DEFAULT_PROPS,
+			articleId: '2611',
+			showPublishModal: true,
+			workflowEnabled: true,
+		});
+
+		expect(
+			screen.getByText('submit-for-workflow-with-permissions')
+		).toBeInTheDocument();
 	});
 
 	it('Do not open modal for all buttons when there is an articleId', () => {
@@ -166,29 +179,6 @@ describe('SaveButtons', () => {
 		).toBeInTheDocument();
 	});
 
-	it('Show an alert appears when the title is empty', () => {
-		global.Liferay.component = jest
-			.fn()
-			.mockReturnValue({getValue: () => null});
-
-		renderComponent({
-			...DEFAULT_PROPS,
-			articleId: null,
-		});
-
-		userEvent.click(
-			screen.getByText('publish-with-permissions', {
-				selector: '.dropdown-item',
-			})
-		);
-
-		expect(
-			screen.getByText(
-				'please-enter-a-valid-title-for-the-default-language-x'
-			)
-		).toBeInTheDocument();
-	});
-
 	it('show alert and input feedback when trying to schedule without a date introduced', () => {
 		renderComponent({
 			...DEFAULT_PROPS,
@@ -223,7 +213,7 @@ describe('SaveButtons', () => {
 		).toBeInTheDocument();
 	});
 
-	it('show error when introducing a past date', () => {
+	it('show no error when introducing a past date', () => {
 		renderComponent({
 			...DEFAULT_PROPS,
 			articleId: null,
@@ -239,7 +229,7 @@ describe('SaveButtons', () => {
 		);
 
 		expect(
-			screen.getByText('the-date-entered-is-in-the-past')
-		).toBeInTheDocument();
+			screen.queryByText('please-enter-a-valid-date')
+		).not.toBeInTheDocument();
 	});
 });

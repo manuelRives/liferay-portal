@@ -18,21 +18,23 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Cristina González
@@ -72,6 +74,23 @@ public class FileExtensionContentDashboardItemFilter
 		).setLabel(
 			_language.get(_httpServletRequest, "extension")
 		).build();
+	}
+
+	@Override
+	public Filter getFilter() {
+		List<String> fileExtensions = getParameterValues();
+
+		if (ListUtil.isEmpty(fileExtensions)) {
+			return null;
+		}
+
+		TermsFilter termsFilter = new TermsFilter("fileExtension");
+
+		for (String fileExtension : fileExtensions) {
+			termsFilter.addValue(fileExtension);
+		}
+
+		return termsFilter;
 	}
 
 	@Override

@@ -1,4 +1,4 @@
-@component-name = "portal-object"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -1375,102 +1375,6 @@ definition {
 			locator1 = "ObjectAdmin#ANY_TAB_ON_ENTRY");
 	}
 
-	@description = "LPS-135401 - Verify that it is possible to delete a relation with an entry on the Relationship tab"
-	@priority = 5
-	test CanDeleteRelationOnRelationshipTab {
-		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object 141661",
-			objectName = "CustomObject141661",
-			pluralLabelName = "Custom Objects 141661");
-
-		ObjectAdmin.addObjectFieldViaAPI(
-			fieldBusinessType = "Text",
-			fieldLabelName = "Custom Field",
-			fieldName = "customObjectField",
-			fieldType = "String",
-			isRequired = "false",
-			objectName = "CustomObject141661");
-
-		ObjectAdmin.addObjectRelationshipViaAPI(
-			deletionType = "disassociate",
-			objectName_1 = "CustomObject141661",
-			objectName_2 = "CustomObject141661",
-			relationshipLabel = "Relationship",
-			relationshipName = "relationship",
-			relationshipType = "oneToMany");
-
-		ObjectAdmin.addObjectLayoutViaAPI(
-			layoutName = "Layout Name",
-			objectName = "CustomObject141661");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 141661");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field");
-
-		CreateObject.saveObject();
-
-		ObjectAdmin.goToLayoutsTab();
-
-		ObjectAdmin.selectKebabMenuOption(kebabOption = "Edit");
-
-		ObjectAdmin.markLayoutAsDefault();
-
-		Click(locator1 = "ObjectAdmin#LAYOUT_LAYOUT_TAB");
-
-		ObjectAdmin.addTabFieldsOnLayout(
-			blockName = "Block 1",
-			columnsNumber = 1,
-			fieldList = "Custom Field,Relationship",
-			tabName = "Field Tab");
-
-		ObjectAdmin.addTabFieldsOnLayout(tabName = "Field Tab");
-
-		ObjectAdmin.addTabRelationshipsOnLayout(
-			relationshipsLabelName = "Relationship",
-			tabName = "Relationship Tab");
-
-		CreateObject.saveObject();
-
-		Navigator.openURL();
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject141661");
-
-		ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-			fieldName = "customObjectField",
-			objectName = "CustomObject141661",
-			value = "Entry A");
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObject141661");
-
-		ObjectAdmin.addObjectStringFieldEntryViaUI(
-			entryOption = "Entry A",
-			entryValue = "Entry B");
-
-		ObjectAdmin.gotoRelationshipsTab();
-
-		CreateObject.addRelationshipAndSelectEntry(titleFieldName = "Entry A");
-
-		Navigator.openURL();
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObject141661");
-
-		ObjectPortlet.viewEntryDetails(entry = "Entry A");
-
-		CreateObject.deleteEntryInRelationshipTab(labelName = "Entry B");
-
-		ObjectPortlet.assertEntryNotPresent(entry = "Entry B");
-
-		Navigator.openURL();
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObject141661");
-
-		ObjectPortlet.viewEntryDetails(entry = "Entry B");
-
-		ObjectPortlet.assertEntryNotPresent(entry = "Entry A");
-	}
-
 	@description = "LPS-135400 - Verify it is possible to delete a Relationship"
 	@priority = 5
 	test CanDeleteRelationship {
@@ -2259,7 +2163,7 @@ definition {
 			fieldName = "Text",
 			fieldValue = "Entry 1");
 
-		PortletEntry.submitForWorkflow();
+		PortletEntry.save();
 	}
 
 	@description = "LPS-135400 - Verify it is not possible to submit an entry with a invalid value on the Relationship field"
@@ -2659,9 +2563,9 @@ definition {
 
 			CreateObject.saveObject();
 
-			AssertTextEquals.assertPartialText(
-				locator1 = "Message#WARNING_FEEDBACK",
-				value1 = "If activated, the account restriction field must be selected.");
+			AssertElementPresent(
+				key_warningMessage = "If activated, the account restriction field must be selected.",
+				locator1 = "Message#WARNING_FEEDBACK_SPECIFIC");
 
 			CreateObject.activeToogleAccountRestriction();
 
@@ -2685,15 +2589,19 @@ definition {
 
 			var objectId = JSONObject.getObjectId(objectName = "CustomObject");
 
+			var objectDefinitionPortletId = ObjectDefinitionAPI._getObjectDefinitionPortletId(objectDefinitionId = ${objectId});
+
 			Permissions.definePermissionViaJSONAPI(
 				resourceAction = "ACCESS_IN_CONTROL_PANEL",
-				resourceName = "com_liferay_object_web_internal_object_definitions_portlet_ObjectDefinitionsPortlet_${objectId}",
+				resourceName = ${objectDefinitionPortletId},
 				roleTitle = "Regular Role",
 				roleType = "regular");
 
+			var objectDefinitionClassName = ObjectDefinitionAPI._getObjectDefinitionClassNameById(objectDefinitionId = ${objectId});
+
 			Permissions.definePermissionViaJSONAPI(
 				resourceAction = "VIEW",
-				resourceName = "com.liferay.object.model.ObjectDefinition#${objectId}",
+				resourceName = ${objectDefinitionClassName},
 				roleTitle = "Regular Role",
 				roleType = "regular");
 
@@ -3198,63 +3106,6 @@ definition {
 			locator1 = "CreateObject#OBJECT_NAME");
 	}
 
-	@description = "LPS-139803 - Verify it is possible to search for the Object Entry Title on the Relationship field"
-	@priority = 4
-	test CanSearchObjectEntryTitleOnRelationshipField {
-		property portal.upstream = "quarantine";
-
-		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object 79",
-			objectName = "CustomObject79",
-			pluralLabelName = "Custom Objects 79");
-
-		ObjectAdmin.addObjectFieldViaAPI(
-			fieldBusinessType = "Text",
-			fieldLabelName = "Custom Field",
-			fieldName = "customObjectField",
-			fieldType = "String",
-			isRequired = "false",
-			objectName = "CustomObject79");
-
-		ObjectAdmin.addObjectRelationshipViaAPI(
-			objectName_1 = "CustomObject79",
-			objectName_2 = "CustomObject79",
-			relationshipLabel = "Relationship",
-			relationshipName = "relationship",
-			relationshipType = "oneToMany");
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject79");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 79");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field");
-
-		CreateObject.saveObject();
-
-		for (var fieldEntry : list "Entry ABC,Custom Field") {
-			ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-				fieldName = "customObjectField",
-				objectName = "CustomObject79",
-				value = ${fieldEntry});
-		}
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObject79");
-
-		LexiconEntry.gotoAdd();
-
-		ObjectPortlet.searchEntryRelationshipField(entryValue = "Entry ABC");
-
-		AssertElementPresent(
-			locator1 = "ObjectPortlet#SEARCH_RELATIONSHIP_ENTRY",
-			value1 = "Entry ABC");
-
-		AssertElementNotPresent(
-			key_picklistOption = "Custom Field",
-			locator1 = "ObjectAdmin#ENTRY_PICKLIST_OPTION");
-	}
-
 	@description = "LPS-135397 - Verify if it's possible to set the block as Collapsible"
 	@priority = 4
 	test CanSetBlockCollapsible {
@@ -3501,7 +3352,7 @@ definition {
 			fieldName = "Text",
 			fieldValue = "Entry 1");
 
-		PortletEntry.submitForWorkflow();
+		PortletEntry.save();
 
 		Navigator.openURL();
 
@@ -3810,7 +3661,7 @@ definition {
 
 		ObjectAdmin.openObjectAdmin();
 
-		ObjectPortlet.selectCustomObject(label = "Custom Object 93");
+		ObjectPortlet.selectCustomObject(label = "Update Custom Object 93");
 
 		AssertTextEquals(
 			locator1 = "CreateObject#OBJECT_LABEL",
@@ -3837,7 +3688,7 @@ definition {
 
 		ObjectAdmin.openObjectAdmin();
 
-		ObjectPortlet.selectCustomObject(label = "Custom Object 94");
+		ObjectPortlet.selectCustomObject(label = "Update Custom Object 94");
 
 		AssertTextEquals(
 			locator1 = "CreateObject#OBJECT_LABEL",
@@ -4621,8 +4472,6 @@ definition {
 	@description = "LPS-139803 - Verify it the Object Entry Title of a Date type is displayed on the Relationship field when adding an entry"
 	@priority = 4
 	test CanViewObjectEntryTitleDateOnRelationshipField {
-		property custom.properties = "feature.flag.LPS-183882=true";
-
 		ObjectAdmin.addObjectViaAPI(
 			labelName = "Custom Object 113",
 			objectName = "CustomObject113",
@@ -4798,63 +4647,6 @@ definition {
 		ObjectAdmin.goToCustomObject(objectName = "CustomObject141616");
 
 		CreateObject.assertAddedEntryRelationshipIsDisplayed(entry = 1234567891234567);
-	}
-
-	@description = "LPS-139803 - Verify it the Object Entry Title is displayed on the Item Selector of a fragment on a Display Page"
-	@priority = 4
-	test CanViewObjectEntryTitleOnItemSelectorFragment {
-		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object 116",
-			objectName = "CustomObject116",
-			pluralLabelName = "Custom Objects 116");
-
-		ObjectAdmin.addObjectFieldViaAPI(
-			fieldBusinessType = "Text",
-			fieldLabelName = "Custom Field",
-			fieldName = "customObjectField",
-			fieldType = "String",
-			isRequired = "false",
-			objectName = "CustomObject116");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 116");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field");
-
-		CreateObject.saveObject();
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject116");
-
-		ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-			fieldName = "customObjectField",
-			objectName = "CustomObject116",
-			value = "Test Entry");
-
-		Navigator.openURL();
-
-		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "guest");
-
-		DisplayPageTemplatesAdmin.addDisplayPage(
-			contentType = "Custom Object 116",
-			displayPageName = "Blank Display Page",
-			subtype = "Custom Object 116");
-
-		PageEditor.addFragment(
-			collectionName = "Basic Components",
-			fragmentName = "Heading");
-
-		VisualizeObjectCollectionDisplay.openHeading();
-
-		VisualizeObjectCollectionDisplay.mapFragment(fieldLabel = "Custom Field");
-
-		VisualizeObjectCollectionDisplay.viewMappedFragment(fieldLabel = "Custom Field");
-
-		PageEditor.selectItemToPreviewWithObject(entryValue = "Test Entry");
-
-		AssertElementPresent(
-			key_entry = "Test Entry",
-			locator1 = "VisualizeObjectDisplayPage#DISPLAY_ENTRY");
 	}
 
 	@description = "LPS-139803 - Verify it the Object Entry Title is displayed on the Relationship tab"
@@ -5056,59 +4848,6 @@ definition {
 
 			CreateObject.assertAddedEntryRelationshipIsDisplayed(entry = "Picklist Item");
 		}
-	}
-
-	@description = "LPS-139803 - Verify if the Object Entry Title is displayed when selecting to preview an object entry on a Page Template"
-	@priority = 4
-	test CanViewObjectEntryTitlePreviewOnPageTemplate {
-		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object 141623",
-			objectName = "CustomObject141623",
-			pluralLabelName = "Custom Objects 141623");
-
-		ObjectAdmin.addObjectFieldViaAPI(
-			fieldBusinessType = "Text",
-			fieldLabelName = "Custom Field",
-			fieldName = "customObjectField",
-			fieldType = "String",
-			isRequired = "false",
-			objectName = "CustomObject141623");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 141623");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field");
-
-		CreateObject.saveObject();
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject141623");
-
-		ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-			fieldName = "customObjectField",
-			objectName = "CustomObject141623",
-			value = "Test Entry");
-
-		Navigator.openURL();
-
-		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "guest");
-
-		DisplayPageTemplatesAdmin.addDisplayPage(
-			contentType = "Custom Object 141623",
-			displayPageName = "Blank Display Page",
-			subtype = "Custom Object 141623");
-
-		PageEditor.addFragment(
-			collectionName = "Basic Components",
-			fragmentName = "Heading");
-
-		VisualizeObjectCollectionDisplay.openHeading();
-
-		VisualizeObjectCollectionDisplay.mapFragment(fieldLabel = "Custom Field");
-
-		VisualizeObjectCollectionDisplay.viewMappedFragment(fieldLabel = "Custom Field");
-
-		VisualizeObjectCollectionDisplay.viewEntryPreviewOnPageTemplate(entryTitle = "Test Entry");
 	}
 
 	@description = "LPS-139803 - Verify it the Object Entry Title of a String type is displayed on the Relationship field when adding an entry"
@@ -5351,108 +5090,6 @@ definition {
 		AssertElementPresent(
 			key_tabName = "Relationship Tab",
 			locator1 = "ObjectAdmin#ANY_TAB_ON_ENTRY");
-	}
-
-	@description = "LPS-135401 - Verify if Cascade deletion type of Relationship Many to Many will allow to delete the entry with relation and its relations to be deleted"
-	@priority = 4
-	test CascadeDeletionManyToManyWillAllowDelete {
-		for (var letter : list "A,B") {
-			ObjectAdmin.addObjectViaAPI(
-				labelName = "Custom Object ${letter} 122",
-				objectName = "CustomObject${letter}122",
-				pluralLabelName = "Custom Objects ${letter} 122");
-		}
-
-		for (var letter : list "A,B") {
-			ObjectAdmin.addObjectFieldViaAPI(
-				fieldBusinessType = "Text",
-				fieldLabelName = "Custom Field ${letter}",
-				fieldName = "customObjectField${letter}",
-				fieldType = "String",
-				isRequired = "false",
-				objectName = "CustomObject${letter}122");
-		}
-
-		ObjectAdmin.addObjectRelationshipViaAPI(
-			deletionType = "cascade",
-			objectName_1 = "CustomObjectA122",
-			objectName_2 = "CustomObjectB122",
-			relationshipLabel = "Relationship",
-			relationshipName = "relationship",
-			relationshipType = "manyToMany");
-
-		ObjectAdmin.addObjectLayoutViaAPI(
-			layoutName = "Layout Name",
-			objectName = "CustomObjectA122");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object A 122");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field A");
-
-		PortletEntry.publish();
-
-		ObjectAdmin.goToLayoutsTab();
-
-		WaitForElementPresent(locator1 = "ObjectAdmin#KEBAB_MENU");
-
-		ObjectAdmin.selectKebabMenuOption(kebabOption = "Edit");
-
-		ObjectAdmin.markLayoutAsDefault();
-
-		ObjectAdmin.goToLayoutTabOnLayouts();
-
-		ObjectAdmin.addTabFieldsOnLayout(
-			blockName = "Block 1",
-			columnsNumber = 1,
-			fieldLabelName = "Custom Field A",
-			tabName = "Field Tab");
-
-		ObjectAdmin.addTabRelationshipsOnLayout(
-			relationshipsLabelName = "Relationship",
-			tabName = "Relationship Tab");
-
-		PortletEntry.save();
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object B 122");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field B");
-
-		PortletEntry.publish();
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObjectA122");
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObjectB122");
-
-		for (var fieldEntry : list "A,B") {
-			ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-				fieldName = "customObjectField${fieldEntry}",
-				objectName = "CustomObject${fieldEntry}122",
-				value = "Entry ${fieldEntry}");
-		}
-
-		Navigator.openURL();
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectA122");
-
-		ObjectPortlet.viewEntryDetails(entry = "Entry A");
-
-		ObjectAdmin.gotoRelationshipsTab();
-
-		CreateObject.addRelationshipAndSelectEntry(titleFieldName = "Entry B");
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectA122");
-
-		ObjectPortlet.deleteEntry(entry = "Entry A");
-
-		ObjectPortlet.assertEntryNotPresent(entry = "Entry A");
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectB122");
-
-		ObjectPortlet.assertEntryNotPresent(entry = "Entry B");
 	}
 
 	@description = "LPS-135401 - Verify if Cascade deletion type of Relationship One to Many will allow the entry with relation (from the child Object) to be deleted but not its relation"
@@ -5813,11 +5450,11 @@ definition {
 
 		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 		Workflow.confirmWorkflowAction();
 
@@ -5827,114 +5464,6 @@ definition {
 			key_entry = "Entry 1",
 			key_status = "Approved",
 			locator1 = "ObjectPortlet#ENTRY_STATUS");
-	}
-
-	@description = "LPS-135401 - Verify if Disassociate deletion type of Relationship Many to Many will allow the entry with relation to be deleted and its relations to be disassociated"
-	@priority = 4
-	test DisassociateDeletionManyToManyWillAllowDelete {
-		for (var letter : list "A,B") {
-			ObjectAdmin.addObjectViaAPI(
-				labelName = "Custom Object ${letter} 127",
-				objectName = "CustomObject${letter}127",
-				pluralLabelName = "Custom Objects ${letter} 127");
-		}
-
-		for (var letter : list "A,B") {
-			ObjectAdmin.addObjectFieldViaAPI(
-				fieldBusinessType = "Text",
-				fieldLabelName = "Custom Field ${letter}",
-				fieldName = "customObjectField${letter}",
-				fieldType = "String",
-				isRequired = "false",
-				objectName = "CustomObject${letter}127");
-		}
-
-		ObjectAdmin.addObjectRelationshipViaAPI(
-			deletionType = "disassociate",
-			objectName_1 = "CustomObjectA127",
-			objectName_2 = "CustomObjectB127",
-			relationshipLabel = "Relationship",
-			relationshipName = "relationship",
-			relationshipType = "manyToMany");
-
-		ObjectAdmin.addObjectLayoutViaAPI(
-			layoutName = "Layout Name",
-			objectName = "CustomObjectA127");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object A 127");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field A");
-
-		PortletEntry.publish();
-
-		ObjectAdmin.goToLayoutsTab();
-
-		ObjectAdmin.selectKebabMenuOption(kebabOption = "Edit");
-
-		ObjectAdmin.markLayoutAsDefault();
-
-		ObjectAdmin.goToLayoutTabOnLayouts();
-
-		ObjectAdmin.addTabFieldsOnLayout(
-			blockName = "Block 1",
-			columnsNumber = 1,
-			fieldLabelName = "Custom Field A",
-			tabName = "Field Tab");
-
-		ObjectAdmin.addTabRelationshipsOnLayout(
-			relationshipsLabelName = "Relationship",
-			tabName = "Relationship Tab");
-
-		PortletEntry.save();
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object B 127");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field B");
-
-		PortletEntry.publish();
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObjectA127");
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObjectB127");
-
-		for (var fieldEntry : list "A,B") {
-			ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-				fieldName = "customObjectField${fieldEntry}",
-				objectName = "CustomObject${fieldEntry}127",
-				value = "Entry ${fieldEntry}");
-		}
-
-		Navigator.openURL();
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectA127");
-
-		ObjectPortlet.viewEntryDetails(entry = "Entry A");
-
-		ObjectPortlet.gotoRelationshipTab();
-
-		CreateObject.addRelationshipAndSelectEntry(titleFieldName = "Entry B");
-
-		Navigator.openURL();
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectB127");
-
-		ObjectPortlet.deleteEntry(entry = "Entry B");
-
-		ObjectPortlet.assertEntryNotPresent(entry = "Entry B");
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectA127");
-
-		ObjectPortlet.viewEntryDetails(entry = "Entry A");
-
-		ObjectPortlet.gotoRelationshipTab();
-
-		AssertTextNotEquals(
-			locator1 = "ObjectPortlet#SEARCH_RELATIONSHIP_ENTRY",
-			value1 = "Entry B");
 	}
 
 	@description = "LPS-135401 - Verify if Disassociate deletion type of Relationship One to Many will allow the entry with relation (from the child Object) to be deleted and its relation to be disassociated"
@@ -6540,7 +6069,7 @@ definition {
 
 		VisualizeObjectDisplayPage.openPageTemplate();
 
-		Click(locator1 = "VisualizeObjectDisplayPage#SELECT_BLANK_OBJECT_DISPLAY_PAGE_TEMPLATE");
+		VisualizeObjectDisplayPage.selectBlankPageTemplate();
 
 		Click(locator1 = "VisualizeObjectDisplayPage#OBJECT_CONTENT_TYPE");
 
@@ -6817,11 +6346,11 @@ definition {
 
 		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 		Workflow.confirmWorkflowAction();
 
@@ -6969,11 +6498,11 @@ definition {
 
 		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 		Workflow.confirmWorkflowAction();
 
@@ -7046,11 +6575,11 @@ definition {
 
 		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 		Workflow.confirmWorkflowAction();
 
@@ -7093,69 +6622,6 @@ definition {
 		AssertElementPresent(
 			key_submissionName = "Custom Object 140887",
 			locator1 = "WorkflowSubmissions#SUBMISSION_BY_NAME");
-	}
-
-	@description = "LPS-135649 - Verify the Asset Title, Asset Type and Item Subject of a Object's entry on the Workflow Metrics page"
-	@priority = 4
-	test ObjectInfoDisplayedOnWorkflowMetrics {
-		property test.run.environment = "EE";
-
-		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object 148",
-			objectName = "CustomObject148",
-			pluralLabelName = "Custom Objects 148");
-
-		ObjectAdmin.addObjectFieldViaAPI(
-			fieldBusinessType = "Text",
-			fieldLabelName = "Custom Field",
-			fieldName = "customObjectField",
-			fieldType = "String",
-			isRequired = "false",
-			objectName = "CustomObject148");
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject148");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 148");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field");
-
-		CreateObject.saveObject();
-
-		Navigator.openURL();
-
-		ObjectAdmin.openWorkflowProcessBuilderConfiguration();
-
-		Workflow.configureWorkflow(
-			workflowDefinition = "Single Approver",
-			workflowResourceValue = "Custom Object 148");
-
-		ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-			fieldName = "customObjectField",
-			objectName = "CustomObject148",
-			value = "Entry Test");
-
-		Navigator.openURL();
-
-		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
-
-		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_PENDING_ITEMS_TITLE");
-
-		Workflow.assertInfoItem(
-			key_assignee = "Unassigned",
-			key_createdBy = "Test Test",
-			key_dueDate = "-",
-			key_itemSubject = "Custom Object 148: Entry Test",
-			key_processStep = "Review");
-
-		WorkflowMetricsAllItemsList.assertInfoItemByIDEntry(
-			assetTitle = "Entry Test",
-			assetType = "Custom Object 148",
-			createdBy = "Test Test",
-			currentAssignee = "Unassigned",
-			currentStep = "Review",
-			processStatus = "Pending");
 	}
 
 	@description = "LPS-139603 - Verify that the Object Name is displayed on the Relationship tab when a Relationship is created"
@@ -7391,102 +6857,6 @@ definition {
 			value1 = "Custom Objects 154");
 	}
 
-	@description = "LPS-139005 - Verify that the Object is displayed again on the Collection Providers when reactivated"
-	@priority = 4
-	test ObjectReappearsCollectionProvidersWhenReactivated {
-		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object 155",
-			objectName = "CustomObject155",
-			pluralLabelName = "Custom Objects 155");
-
-		ObjectAdmin.addObjectFieldViaAPI(
-			fieldBusinessType = "Text",
-			fieldLabelName = "Field",
-			fieldName = "customObjectField",
-			fieldType = "String",
-			isRequired = "false",
-			objectName = "CustomObject155");
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject155");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 155");
-
-		CreateObject.checkToggleInactive();
-
-		PortletEntry.save();
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 155");
-
-		CreateObject.checkToggleActive();
-
-		PortletEntry.save();
-
-		VisualizeObjectCollectionDisplay.openObjectCollectionProvider();
-
-		AssertElementPresent(
-			key_labelName = "Custom Objects 155",
-			locator1 = "VisualizeObjectCollectionDisplay#VIEW_OBJECT_COLLECTION_DISPLAY");
-	}
-
-	@description = "LPS-139005 - Verify that the Object is displayed again on the Page Item Selector when reactivated"
-	@priority = 4
-	test ObjectReappearsPageItemSelectorWhenReactivated {
-		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object 157",
-			objectName = "CustomObject157",
-			pluralLabelName = "Custom Objects 157");
-
-		ObjectAdmin.addObjectFieldViaAPI(
-			fieldBusinessType = "Text",
-			fieldLabelName = "Field",
-			fieldName = "customObjectField",
-			fieldType = "String",
-			isRequired = "false",
-			objectName = "CustomObject157");
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject157");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 157");
-
-		CreateObject.checkToggleInactive();
-
-		CreateObject.saveObject();
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object 157");
-
-		CreateObject.checkToggleActive();
-
-		CreateObject.saveObject();
-
-		Navigator.openURL();
-
-		ContentPages.addPage(pageName = "Test Content Page Name");
-
-		PageEditor.addFragment(
-			collectionName = "Basic Components",
-			fragmentName = "Heading");
-
-		VisualizeObjectCollectionDisplay.openHeading();
-
-		Click.javaScriptClick(locator1 = "VisualizeObjectDisplayPage#SELECT_ITEM");
-
-		SelectFrame(
-			key_title = "Select",
-			locator1 = "IFrame#MODAL_ANY");
-
-		AssertElementPresent(
-			key_pluralLabelName = "Custom Objects 157",
-			locator1 = "VisualizeObjectDisplayPage#SELECT_OBJECT");
-	}
-
 	@description = "LPS-139005 - Verify that the Object is displayed again on the Page Template (subtype) when reactivated"
 	@priority = 4
 	test ObjectReappearsPageTemplateWhenReactivated {
@@ -7515,7 +6885,7 @@ definition {
 
 		VisualizeObjectDisplayPage.openPageTemplate();
 
-		Click(locator1 = "VisualizeObjectDisplayPage#SELECT_BLANK_OBJECT_DISPLAY_PAGE_TEMPLATE");
+		VisualizeObjectDisplayPage.selectBlankPageTemplate();
 
 		Click(locator1 = "VisualizeObjectDisplayPage#OBJECT_CONTENT_TYPE");
 
@@ -7694,117 +7064,6 @@ definition {
 			key_labelName = "Deletion Type",
 			locator1 = "ObjectAdmin#CLAY_GENERIC_BUTTON",
 			value1 = "Prevent");
-	}
-
-	@description = "LPS-135401 - Verify if Prevent deletion type of Relationship Many to Many won't allow the user to delete an entry with relation"
-	@priority = 4
-	test PreventDeletionManyToManyWontAllowDelete {
-		for (var nameObject : list "A,B") {
-			ObjectAdmin.addObjectViaAPI(
-				labelName = "Custom Object ${nameObject} 163",
-				objectName = "CustomObject${nameObject}163",
-				pluralLabelName = "Custom Objects ${nameObject} 163");
-		}
-
-		for (var nameField : list "A,B") {
-			ObjectAdmin.addObjectFieldViaAPI(
-				fieldBusinessType = "Text",
-				fieldLabelName = "Custom Field ${nameField}",
-				fieldName = "customObjectField${nameField}",
-				fieldType = "String",
-				isRequired = "false",
-				objectName = "CustomObject${nameField}163");
-		}
-
-		ObjectAdmin.addObjectRelationshipViaAPI(
-			objectName_1 = "CustomObjectA163",
-			objectName_2 = "CustomObjectB163",
-			relationshipLabel = "Relationship",
-			relationshipName = "relationship",
-			relationshipType = "manyToMany");
-
-		ObjectAdmin.addObjectLayoutViaAPI(
-			layoutName = "Layout",
-			objectName = "CustomObjectA163");
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object A 163");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field");
-
-		PortletEntry.publish();
-
-		ObjectAdmin.goToLayoutsTab();
-
-		ObjectAdmin.selectKebabMenuOption(kebabOption = "Edit");
-
-		ObjectAdmin.markLayoutAsDefault();
-
-		ObjectAdmin.goToLayoutTabOnLayouts();
-
-		ObjectAdmin.addTabFieldsOnLayout(
-			blockName = "Block 1",
-			columnsNumber = 1,
-			fieldLabelName = "Custom Field A",
-			tabName = "Field Tab");
-
-		ObjectAdmin.addTabRelationshipsOnLayout(
-			relationshipsLabelName = "Relationship",
-			tabName = "Relationship Tab");
-
-		PortletEntry.save();
-
-		ObjectAdmin.openObjectAdmin();
-
-		ObjectPortlet.selectCustomObject(label = "Custom Object B 163");
-
-		CreateObject.selectTitleField(fieldLabel = "Custom Field");
-
-		PortletEntry.publish();
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObjectA163");
-
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObjectB163");
-
-		for (var nameEntry : list "A,B") {
-			ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-				fieldName = "customObjectField${nameEntry}",
-				objectName = "CustomObject${nameEntry}163",
-				value = "Entry ${nameEntry}");
-		}
-
-		Navigator.openURL();
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectA163");
-
-		ObjectPortlet.viewEntryDetails(entry = "Entry A");
-
-		ObjectPortlet.gotoRelationshipTab();
-
-		CreateObject.addRelationshipAndSelectEntry(titleFieldName = "Entry B");
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectA163");
-
-		ObjectPortlet.assertDeleteEntryButtonIsPresent(entry = "Entry A");
-
-		ClickNoError(locator1 = "ObjectPortlet#DELETE_ENTRY_BUTTON");
-
-		Button.clickDelete();
-
-		AssertTextEquals(
-			locator1 = "Modal#MODAL_CONTENT",
-			value1 = "Deletion Not Possible The prevent deletion type in the object relationship Relationship with object definition CustomObjectB163 is preventing this object entry from being deleted. Close");
-
-		Button.click(button = "Close");
-
-		ObjectPortlet.viewEntry(entry = "Entry A");
-
-		ObjectAdmin.goToCustomObject(objectName = "CustomObjectB163");
-
-		ObjectPortlet.deleteEntry(entry = "Entry B");
-
-		ObjectPortlet.assertEntryNotPresent(entry = "Entry B");
 	}
 
 	@description = "LPS-135401 - Verify if Prevent deletion type of Relationship One to Many will allow the user to delete an entry with relation from the child Object"

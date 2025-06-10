@@ -115,7 +115,7 @@ public abstract class BaseIndexingTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		setUpIndexingFixture();
+		_setUpIndexingFixture();
 
 		Class<?> clazz = getClass();
 
@@ -165,7 +165,7 @@ public abstract class BaseIndexingTestCase {
 
 	protected void addDocument(DocumentCreationHelper documentCreationHelper) {
 		Document document = DocumentFixture.newDocument(
-			getCompanyId(), GROUP_ID, _entryClassName);
+			getCompanyId(), _GROUP_ID, _entryClassName);
 
 		documentCreationHelper.populate(document);
 
@@ -210,8 +210,9 @@ public abstract class BaseIndexingTestCase {
 	protected SearchContext createSearchContext() {
 		SearchContext searchContext = new SearchContext();
 
+		searchContext.setCommitImmediately(true);
 		searchContext.setCompanyId(getCompanyId());
-		searchContext.setGroupIds(new long[] {GROUP_ID});
+		searchContext.setGroupIds(new long[] {_GROUP_ID});
 
 		QueryConfig queryConfig = searchContext.getQueryConfig();
 
@@ -247,7 +248,7 @@ public abstract class BaseIndexingTestCase {
 	}
 
 	protected long getGroupId() {
-		return GROUP_ID;
+		return _GROUP_ID;
 	}
 
 	protected IndexSearcher getIndexSearcher() {
@@ -263,7 +264,7 @@ public abstract class BaseIndexingTestCase {
 	}
 
 	protected DocumentBuilder newDocumentBuilder() {
-		return documentBuilderFactory.builder(
+		return _documentBuilderFactory.builder(
 		).setLong(
 			Field.COMPANY_ID, getCompanyId()
 		).setString(
@@ -307,30 +308,12 @@ public abstract class BaseIndexingTestCase {
 		query.setPreBooleanFilter(booleanFilter);
 	}
 
-	protected void setUpIndexingFixture() throws Exception {
-		if (_indexingFixture != null) {
-			Assume.assumeTrue(_indexingFixture.isSearchEngineAvailable());
-
-			return;
-		}
-
-		_indexingFixture = createIndexingFixture();
-
-		Assume.assumeTrue(_indexingFixture.isSearchEngineAvailable());
-
-		_indexingFixture.setUp();
-	}
-
-	protected static final long GROUP_ID = RandomTestUtil.randomLong();
-
 	protected final AggregationFixture aggregationFixture =
 		new AggregationFixture();
 	protected final Aggregations aggregations = new AggregationsImpl();
 	protected final ComplexQueryPartBuilderFactory
 		complexQueryPartBuilderFactory =
 			new ComplexQueryPartBuilderFactoryImpl();
-	protected DocumentBuilderFactory documentBuilderFactory =
-		new DocumentBuilderFactoryImpl();
 	protected final FieldConfigBuilderFactory fieldConfigBuilderFactory =
 		new FieldConfigBuilderFactoryImpl();
 	protected final GeoBuilders geoBuilders = new GeoBuildersImpl();
@@ -381,13 +364,13 @@ public abstract class BaseIndexingTestCase {
 		public <AR extends AggregationResult> AR getAggregationResult(
 			Aggregation aggregation) {
 
-			return getAggregationResult(aggregation.getName());
+			return _getAggregationResult(aggregation.getName());
 		}
 
 		public <AR extends AggregationResult> AR getAggregationResult(
 			PipelineAggregation pipelineAggregation) {
 
-			return getAggregationResult(pipelineAggregation.getName());
+			return _getAggregationResult(pipelineAggregation.getName());
 		}
 
 		public <AR extends AggregationResult> AR getChildAggregationResult(
@@ -414,7 +397,7 @@ public abstract class BaseIndexingTestCase {
 
 		public void search() {
 			_hits = BaseIndexingTestCase.this.search(
-				_searchContext, getQuery());
+				_searchContext, _getQuery());
 
 			SearchResponseBuilder searchResponseBuilder =
 				new SearchResponseBuilderImpl(_searchContext);
@@ -424,7 +407,7 @@ public abstract class BaseIndexingTestCase {
 
 		public long searchCount() {
 			long count = BaseIndexingTestCase.this.searchCount(
-				_searchContext, getQuery());
+				_searchContext, _getQuery());
 
 			SearchResponseBuilder searchResponseBuilder =
 				new SearchResponseBuilderImpl(_searchContext);
@@ -470,7 +453,7 @@ public abstract class BaseIndexingTestCase {
 			searchResponseConsumer.accept(_searchResponse);
 		}
 
-		protected <AR extends AggregationResult> AR getAggregationResult(
+		private <AR extends AggregationResult> AR _getAggregationResult(
 			String name) {
 
 			AggregationResult aggregationResult =
@@ -481,7 +464,7 @@ public abstract class BaseIndexingTestCase {
 			return (AR)aggregationResult;
 		}
 
-		protected Query getQuery() {
+		private Query _getQuery() {
 			Query query = _query;
 
 			if (query == null) {
@@ -526,10 +509,28 @@ public abstract class BaseIndexingTestCase {
 		}
 	}
 
+	private void _setUpIndexingFixture() throws Exception {
+		if (_indexingFixture != null) {
+			Assume.assumeTrue(_indexingFixture.isSearchEngineAvailable());
+
+			return;
+		}
+
+		_indexingFixture = createIndexingFixture();
+
+		Assume.assumeTrue(_indexingFixture.isSearchEngineAvailable());
+
+		_indexingFixture.setUp();
+	}
+
+	private static final long _GROUP_ID = RandomTestUtil.randomLong();
+
 	private static final DocumentFixture _documentFixture =
 		new DocumentFixture();
 	private static IndexingFixture _indexingFixture;
 
+	private final DocumentBuilderFactory _documentBuilderFactory =
+		new DocumentBuilderFactoryImpl();
 	private String _entryClassName;
 	private IndexSearcher _indexSearcher;
 	private IndexWriter _indexWriter;

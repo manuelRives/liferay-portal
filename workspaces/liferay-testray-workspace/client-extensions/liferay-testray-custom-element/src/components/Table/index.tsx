@@ -27,6 +27,7 @@ export type Column<T = any> = {
 		item: T,
 		mutate: KeyedMutator<APIResponse<T>>
 	) => String | React.ReactNode;
+	selectable?: boolean;
 	size?: 'sm' | 'md' | 'lg' | 'xl' | 'none';
 	sorteable?: boolean;
 	truncate?: boolean;
@@ -85,11 +86,8 @@ const Table: React.FC<TableProps> = ({
 
 	const displayActionColumn = !!filteredActions.length;
 
-	const {
-		contextMenuState,
-		handleContext,
-		setContextMenuState,
-	} = useContextMenu(displayActionColumn);
+	const {contextMenuState, handleContext, setContextMenuState} =
+		useContextMenu(displayActionColumn);
 
 	const [sorted, setSorted] = useState<SortDirection>(SortOption.ASC);
 
@@ -213,8 +211,9 @@ const Table: React.FC<TableProps> = ({
 															value
 														)
 													) {
-														return (value?.props as any)
-															?.children;
+														return (
+															value?.props as any
+														)?.children;
 													}
 
 													return value;
@@ -232,7 +231,7 @@ const Table: React.FC<TableProps> = ({
 																},
 																mutate
 															)
-													  )
+														)
 													: item[column.key];
 
 												return `${column.value}: ${
@@ -251,7 +250,8 @@ const Table: React.FC<TableProps> = ({
 
 							{columns?.map((column, columnIndex) => {
 								const Wrapper =
-									column.clickable && navigateTo
+									column.selectable ||
+									(column.clickable && navigateTo)
 										? Link
 										: (props: any) => <div {...props} />;
 
@@ -259,7 +259,8 @@ const Table: React.FC<TableProps> = ({
 									<ClayTable.Cell
 										className={classNames('text-dark', {
 											'cursor-pointer': column.clickable,
-											[`table-cell-minw-${column.width}`]: column.width,
+											[`table-cell-minw-${column.width}`]:
+												column.width,
 											'table-cell-expand':
 												column.size === 'sm',
 											'table-cell-expand-small':
@@ -272,10 +273,7 @@ const Table: React.FC<TableProps> = ({
 										expanded={column.truncate}
 										key={columnIndex}
 										onClick={() => {
-											if (
-												column.clickable &&
-												onClickRow
-											) {
+											if (onClickRow) {
 												onClickRow(item);
 											}
 										}}
@@ -294,7 +292,7 @@ const Table: React.FC<TableProps> = ({
 														item[column.key],
 														{...item, rowIndex},
 														mutate
-												  )
+													)
 												: item[column.key]}
 										</Wrapper>
 									</ClayTable.Cell>

@@ -5,8 +5,12 @@
 
 package com.liferay.friendly.url.internal.exportimport.data.handler;
 
+import com.liferay.asset.entry.rel.model.AssetEntryAssetCategoryRel;
+import com.liferay.asset.entry.rel.service.AssetEntryAssetCategoryRelLocalService;
+import com.liferay.asset.entry.rel.util.comparator.AssetEntryAssetCategoryRelAssetEntryAssetCategoryRelIdComparator;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.exportimport.data.handler.base.BaseStagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
@@ -16,7 +20,7 @@ import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
@@ -137,25 +141,21 @@ public class FriendlyURLEntryStagedModelDataHandler
 				friendlyURLEntry.getUuid(),
 				portletDataContext.getScopeGroupId());
 
-		FriendlyURLEntry importedFriendlyURLEntry = null;
+		FriendlyURLEntry importedFriendlyURLEntry =
+			(FriendlyURLEntry)friendlyURLEntry.clone();
+
+		importedFriendlyURLEntry.setGroupId(
+			portletDataContext.getScopeGroupId());
+		importedFriendlyURLEntry.setCompanyId(
+			portletDataContext.getCompanyId());
+		importedFriendlyURLEntry.setClassNameId(classNameId);
+		importedFriendlyURLEntry.setClassPK(
+			MapUtil.getLong(
+				newPrimaryKeysMap, friendlyURLEntry.getClassPK(),
+				friendlyURLEntry.getClassPK()));
 
 		if ((existingFriendlyURLEntry == null) ||
 			!portletDataContext.isDataStrategyMirror()) {
-
-			importedFriendlyURLEntry =
-				(FriendlyURLEntry)friendlyURLEntry.clone();
-
-			importedFriendlyURLEntry.setDefaultLanguageId(
-				friendlyURLEntry.getDefaultLanguageId());
-			importedFriendlyURLEntry.setGroupId(
-				portletDataContext.getScopeGroupId());
-			importedFriendlyURLEntry.setCompanyId(
-				portletDataContext.getCompanyId());
-			importedFriendlyURLEntry.setClassNameId(classNameId);
-			importedFriendlyURLEntry.setClassPK(
-				MapUtil.getLong(
-					newPrimaryKeysMap, friendlyURLEntry.getClassPK(),
-					friendlyURLEntry.getClassPK()));
 
 			importedFriendlyURLEntry = _stagedModelRepository.addStagedModel(
 				portletDataContext, importedFriendlyURLEntry);
@@ -170,7 +170,7 @@ public class FriendlyURLEntryStagedModelDataHandler
 		}
 		else {
 			importedFriendlyURLEntry = _stagedModelRepository.updateStagedModel(
-				portletDataContext, friendlyURLEntry);
+				portletDataContext, importedFriendlyURLEntry);
 
 			boolean mainEntry = GetterUtil.getBoolean(
 				friendlyURLEntryElement.attributeValue("mainEntry"));
@@ -200,10 +200,6 @@ public class FriendlyURLEntryStagedModelDataHandler
 			FriendlyURLEntry friendlyURLEntry)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-11147")) {
-			return;
-		}
-
 		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
 			FriendlyURLEntry.class.getName(),
 			friendlyURLEntry.getFriendlyURLEntryId());
@@ -212,16 +208,26 @@ public class FriendlyURLEntryStagedModelDataHandler
 			return;
 		}
 
-		List<AssetCategory> assetCategories = assetEntry.getCategories();
+		List<AssetEntryAssetCategoryRel> assetEntryAssetCategoryRels =
+			_assetEntryAssetCategoryRelLocalService.
+				getAssetEntryAssetCategoryRelsByAssetEntryId(
+					assetEntry.getEntryId(), QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS,
+					AssetEntryAssetCategoryRelAssetEntryAssetCategoryRelIdComparator.
+						getInstance(true));
 
-		if (ListUtil.isEmpty(assetCategories)) {
-			return;
-		}
+		for (AssetEntryAssetCategoryRel assetEntryAssetCategoryRel :
+				assetEntryAssetCategoryRels) {
 
-		for (AssetCategory assetCategory : assetCategories) {
-			StagedModelDataHandlerUtil.exportReferenceStagedModel(
-				portletDataContext, friendlyURLEntry, assetCategory,
-				PortletDataContext.REFERENCE_TYPE_DEPENDENCY);
+			AssetCategory assetCategory =
+				_assetCategoryLocalService.fetchCategory(
+					assetEntryAssetCategoryRel.getAssetCategoryId());
+
+			if (assetCategory != null) {
+				StagedModelDataHandlerUtil.exportReferenceStagedModel(
+					portletDataContext, friendlyURLEntry, assetCategory,
+					PortletDataContext.REFERENCE_TYPE_DEPENDENCY);
+			}
 		}
 	}
 
@@ -231,9 +237,8 @@ public class FriendlyURLEntryStagedModelDataHandler
 			FriendlyURLEntry importedFriendlyURL)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-11147") ||
-			(friendlyURLEntry.getClassNameId() == _portal.getClassNameId(
-				AssetCategory.class.getName()))) {
+		if (friendlyURLEntry.getClassNameId() == _portal.getClassNameId(
+				AssetCategory.class.getName())) {
 
 			return;
 		}
@@ -283,6 +288,13 @@ public class FriendlyURLEntryStagedModelDataHandler
 			null, null, null, null, ContentTypes.TEXT_PLAIN, null, null, null,
 			null, null, 0, 0, serviceContext.getAssetPriority());
 	}
+
+	@Reference
+	private AssetCategoryLocalService _assetCategoryLocalService;
+
+	@Reference
+	private AssetEntryAssetCategoryRelLocalService
+		_assetEntryAssetCategoryRelLocalService;
 
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;

@@ -50,7 +50,6 @@ import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.opensearch2.internal.configuration.OpenSearchConfigurationObserver;
 import com.liferay.portal.search.opensearch2.internal.configuration.OpenSearchConfigurationWrapper;
 import com.liferay.portal.search.opensearch2.internal.connection.OpenSearchConnectionManager;
-import com.liferay.portal.search.opensearch2.internal.index.IndexConfigurationDynamicUpdatesExecutor;
 import com.liferay.portal.search.opensearch2.internal.index.IndexFactory;
 
 import jakarta.json.JsonObject;
@@ -122,10 +121,10 @@ public class OpenSearchSearchEngine
 
 	@Override
 	public int compareTo(
-		OpenSearchConfigurationObserver elasticsearchConfigurationObserver) {
+		OpenSearchConfigurationObserver openSearchConfigurationObserver) {
 
 		return _openSearchConfigurationWrapper.compare(
-			this, elasticsearchConfigurationObserver);
+			this, openSearchConfigurationObserver);
 	}
 
 	public void createBackupRepository() {
@@ -167,7 +166,7 @@ public class OpenSearchSearchEngine
 		OpenSearchClient openSearchClient =
 			_openSearchConnectionManager.getOpenSearchClient();
 
-		boolean created = _indexFactory.createIndices(
+		boolean created = _indexFactory.initializeIndex(
 			companyId, openSearchClient.indices());
 
 		_indexFactory.registerCompanyId(companyId);
@@ -175,8 +174,6 @@ public class OpenSearchSearchEngine
 		if (created) {
 			_waitForYellowStatus();
 		}
-
-		_indexConfigurationDynamicUpdatesExecutor.execute(companyId);
 
 		CrossClusterReplicationHelper crossClusterReplicationHelper =
 			_crossClusterReplicationHelperSnapshot.get();
@@ -232,7 +229,7 @@ public class OpenSearchSearchEngine
 			OpenSearchClient openSearchClient =
 				_openSearchConnectionManager.getOpenSearchClient();
 
-			_indexFactory.deleteIndices(companyId, openSearchClient.indices());
+			_indexFactory.deleteIndex(companyId, openSearchClient.indices());
 
 			_indexFactory.unregisterCompanyId(companyId);
 		}
@@ -286,16 +283,38 @@ public class OpenSearchSearchEngine
 			openSearchClient.cluster();
 
 		try {
+			JsonData jsonData = JsonData.of(
+				_createAutoCreateIndexSetting(enable));
+
 			openSearchClusterClient.putSettings(
 				PutClusterSettingsRequest.of(
 					putClusterSettingsRequest ->
 						putClusterSettingsRequest.persistent(
-							"action.auto_create_index",
-							JsonData.of(
-								_createAutoCreateIndexSetting(enable)))));
+							"action.auto_create_index", jsonData)));
 		}
 		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
+			String message = StringUtil.toLowerCase(ioException.getMessage());
+
+			if (message.contains("forbidden") ||
+				message.contains("unauthorized")) {
+
+				StringBundler sb = new StringBundler(4);
+
+				sb.append("Unable to update cluster auto create index ");
+				sb.append("setting due to lack of permissions. This can lead ");
+				sb.append("to incorrectly created index mappings: ");
+
+				sb.append(ioException.getMessage());
+
+				_log.error(sb.toString());
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(ioException);
+				}
+			}
+			else {
+				_log.error(ioException);
+			}
 		}
 	}
 
@@ -363,7 +382,9 @@ public class OpenSearchSearchEngine
 		}
 	}
 
-	private String _createAutoCreateIndexSetting(boolean enable) {
+	private String _createAutoCreateIndexSetting(boolean enable)
+		throws IOException {
+
 		String currentValue = _getAutoCreateIndexSetting();
 		String disableAutoCreateLiferayIndexPattern = StringBundler.concat(
 			StringPool.MINUS, _indexNameBuilder.getIndexNamePrefix(),
@@ -420,41 +441,37 @@ public class OpenSearchSearchEngine
 			currentValue);
 	}
 
-	private String _getAutoCreateIndexSetting() {
+	private String _getAutoCreateIndexSetting() throws IOException {
 		OpenSearchClient openSearchClient =
 			_openSearchConnectionManager.getOpenSearchClient();
 
 		OpenSearchClusterClient openSearchClusterClient =
 			openSearchClient.cluster();
 
-		try {
-			GetClusterSettingsResponse getClusterSettingsResponse =
-				openSearchClusterClient.getSettings();
+		GetClusterSettingsResponse getClusterSettingsResponse =
+			openSearchClusterClient.getSettings();
 
-			Map<String, JsonData> persistentSettings =
-				getClusterSettingsResponse.persistent();
+		Map<String, JsonData> persistentSettings =
+			getClusterSettingsResponse.persistent();
 
-			JsonData jsonData = persistentSettings.get("action");
+		JsonData jsonData = persistentSettings.get("action");
 
-			if (jsonData == null) {
-				return null;
-			}
-
-			JsonValue jsonValue = jsonData.toJson();
-
-			JsonObject jsonObject = jsonValue.asJsonObject();
-
-			return jsonObject.getString("auto_create_index");
+		if (jsonData == null) {
+			return null;
 		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
+
+		JsonValue jsonValue = jsonData.toJson();
+
+		JsonObject jsonObject = jsonValue.asJsonObject();
+
+		return jsonObject.getString("auto_create_index");
 	}
 
 	private long[] _getIndexedCompanyIds() {
 		List<Long> companyIds = new ArrayList<>();
 
-		String firstIndexName = _indexNameBuilder.getIndexName(0);
+		String firstIndexName = _indexNameBuilder.getIndexName(
+			CompanyConstants.SYSTEM);
 
 		String prefix = firstIndexName.substring(
 			0, firstIndexName.length() - 1);
@@ -609,10 +626,6 @@ public class OpenSearchSearchEngine
 
 	@Reference
 	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private IndexConfigurationDynamicUpdatesExecutor
-		_indexConfigurationDynamicUpdatesExecutor;
 
 	@Reference
 	private IndexFactory _indexFactory;

@@ -105,6 +105,10 @@ public interface CTEntryLocalService
 	@Indexable(type = IndexableType.DELETE)
 	public CTEntry deleteCTEntry(CTEntry ctEntry) throws PortalException;
 
+	@Indexable(type = IndexableType.DELETE)
+	public CTEntry deleteCTEntry(CTEntry ctEntry, boolean force)
+		throws PortalException;
+
 	/**
 	 * Deletes the ct entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -250,6 +254,9 @@ public interface CTEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CTEntry> getCTEntries(
 		long ctCollectionId, long modelClassNameId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CTEntry> getCTEntries(long[] ctEntryIds);
 
 	/**
 	 * Returns the number of ct entries.

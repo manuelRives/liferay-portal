@@ -61,10 +61,7 @@ export default function TranslationAdminStatusLabel({
 	else if (localeValue) {
 		statusLabel = status.translated;
 	}
-	else if (
-		Liferay.FeatureFlags['LPS-114700'] &&
-		translationProgress?.translatedItems[languageId]
-	) {
+	else if (translationProgress?.translatedItems[languageId]) {
 		const {totalItems, translatedItems} = translationProgress;
 
 		statusLabel =
@@ -76,7 +73,7 @@ export default function TranslationAdminStatusLabel({
 							translatedItems[languageId],
 							totalItems,
 						]),
-				  };
+					};
 	}
 
 	return (

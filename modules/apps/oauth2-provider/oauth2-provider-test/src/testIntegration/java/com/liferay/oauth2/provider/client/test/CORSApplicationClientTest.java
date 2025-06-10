@@ -6,21 +6,26 @@
 package com.liferay.oauth2.provider.client.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.remote.cors.configuration.PortalCORSConfiguration;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
+
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Collections;
-
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -51,17 +56,16 @@ public class CORSApplicationClientTest extends BaseClientTestCase {
 		formData.add("client_id", "oauthTestApplicationRO");
 		formData.add("client_secret", "oauthTestApplicationSecret");
 		formData.add("grant_type", "password");
-		formData.add("password", "test");
-		formData.add("username", "test@liferay.com");
+		formData.add("password", PropsValues.DEFAULT_ADMIN_PASSWORD);
+		formData.add("username", _user.getEmailAddress());
 
 		tokenInvocationBuilder.header("Origin", _TEST_CORS_URI);
 
 		Response response = tokenInvocationBuilder.post(Entity.form(formData));
 
-		String corsHeaderString = response.getHeaderString(
-			"Access-Control-Allow-Origin");
-
-		Assert.assertEquals(_TEST_CORS_URI, corsHeaderString);
+		Assert.assertEquals(
+			_TEST_CORS_URI,
+			response.getHeaderString("Access-Control-Allow-Origin"));
 	}
 
 	@Test
@@ -70,7 +74,8 @@ public class CORSApplicationClientTest extends BaseClientTestCase {
 
 		String tokenString = getToken(
 			"oauthTestApplicationRO", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseTokenString);
 
 		Invocation.Builder invocationBuilder = authorize(
@@ -78,12 +83,24 @@ public class CORSApplicationClientTest extends BaseClientTestCase {
 
 		invocationBuilder.header("Origin", _TEST_CORS_URI);
 
-		Response response = invocationBuilder.get();
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				new ConfigurationTemporarySwapper(
+					PortalCORSConfiguration.class.getName() + "~default",
+					HashMapDictionaryBuilder.<String, Object>put(
+						"headers",
+						StringBundler.concat(
+							"Access-Control-Allow-Credentials: true|",
+							"Access-Control-Allow-Headers: *|",
+							"Access-Control-Allow-Methods: *|",
+							"Access-Control-Allow-Origin: *")
+					).build())) {
 
-		String corsHeaderString = response.getHeaderString(
-			"Access-Control-Allow-Origin");
+			Response response = invocationBuilder.get();
 
-		Assert.assertEquals(_TEST_CORS_URI, corsHeaderString);
+			Assert.assertEquals(
+				_TEST_CORS_URI,
+				response.getHeaderString("Access-Control-Allow-Origin"));
+		}
 	}
 
 	@Test
@@ -99,10 +116,8 @@ public class CORSApplicationClientTest extends BaseClientTestCase {
 
 		Response response = invocationBuilder.get();
 
-		String corsHeaderString = response.getHeaderString(
-			"Access-Control-Allow-Origin");
-
-		Assert.assertEquals(null, corsHeaderString);
+		Assert.assertEquals(
+			null, response.getHeaderString("Access-Control-Allow-Origin"));
 
 		Assert.assertEquals(401, response.getStatus());
 	}
@@ -113,7 +128,8 @@ public class CORSApplicationClientTest extends BaseClientTestCase {
 
 		String tokenString = getToken(
 			"oauthTestApplicationRO", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseTokenString);
 
 		Invocation.Builder invocationBuilder = authorize(
@@ -123,28 +139,24 @@ public class CORSApplicationClientTest extends BaseClientTestCase {
 			"Access-Control-Request-Method", HttpMethod.OPTIONS);
 		invocationBuilder.header("Origin", _TEST_CORS_URI);
 
-		Response response = invocationBuilder.options();
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				new ConfigurationTemporarySwapper(
+					PortalCORSConfiguration.class.getName() + "~default",
+					HashMapDictionaryBuilder.<String, Object>put(
+						"headers",
+						StringBundler.concat(
+							"Access-Control-Allow-Credentials: true|",
+							"Access-Control-Allow-Headers: *|",
+							"Access-Control-Allow-Methods: *|",
+							"Access-Control-Allow-Origin: *")
+					).build())) {
 
-		String corsHeaderString = response.getHeaderString(
-			"Access-Control-Allow-Origin");
+			Response response = invocationBuilder.options();
 
-		Assert.assertEquals(_TEST_CORS_URI, corsHeaderString);
-	}
-
-	public static class CORSApplicationTestPreparatorBundleActivator
-		extends BaseTestPreparatorBundleActivator {
-
-		@Override
-		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
-
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
-
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationRO",
-				Collections.singletonList("everything.read"));
+			Assert.assertEquals(
+				_TEST_CORS_URI,
+				response.getHeaderString("Access-Control-Allow-Origin"));
 		}
-
 	}
 
 	@Override
@@ -153,5 +165,23 @@ public class CORSApplicationClientTest extends BaseClientTestCase {
 	}
 
 	private static final String _TEST_CORS_URI = "http://test-cors.com";
+
+	private User _user;
+
+	private class CORSApplicationTestPreparatorBundleActivator
+		extends BaseTestPreparatorBundleActivator {
+
+		@Override
+		protected void prepareTest() throws Exception {
+			long companyId = TestPropsValues.getCompanyId();
+
+			_user = UserTestUtil.getAdminUser(companyId);
+
+			createOAuth2Application(
+				companyId, _user, "oauthTestApplicationRO",
+				Collections.singletonList("everything.read"));
+		}
+
+	}
 
 }

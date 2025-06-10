@@ -13,6 +13,7 @@ import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.relationship.util.ObjectRelationshipUtil;
+import com.liferay.object.rest.internal.odata.entity.ReferenceStringEntityField;
 import com.liferay.object.service.ObjectFieldLocalServiceUtil;
 import com.liferay.object.service.ObjectRelationshipLocalServiceUtil;
 import com.liferay.petra.string.StringPool;
@@ -31,13 +32,15 @@ import com.liferay.portal.odata.entity.IdEntityField;
 import com.liferay.portal.odata.entity.IntegerEntityField;
 import com.liferay.portal.odata.entity.StringEntityField;
 
+import jakarta.ws.rs.BadRequestException;
+
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.ws.rs.BadRequestException;
+import java.util.function.Function;
 
 /**
  * @author Javier de Arcos
@@ -45,10 +48,16 @@ import javax.ws.rs.BadRequestException;
 public class ObjectEntryEntityModel implements EntityModel {
 
 	public ObjectEntryEntityModel(
-		ObjectDefinition objectDefinition, List<ObjectField> objectFields) {
+		ObjectDefinition objectDefinition, List<ObjectField> objectFields,
+		boolean useLegacyStatus) {
+
+		_useLegacyStatus = useLegacyStatus;
 
 		_entityFieldsMap = _getStringEntityFieldsMap(
 			objectDefinition, objectFields);
+
+		_entityFieldsMaps.put(
+			objectDefinition.getObjectDefinitionId(), _entityFieldsMap);
 
 		List<ObjectRelationship> objectRelationships =
 			ObjectRelationshipLocalServiceUtil.getAllObjectRelationships(
@@ -151,6 +160,10 @@ public class ObjectEntryEntityModel implements EntityModel {
 			"Unable to get entity field for object field " + objectField);
 	}
 
+	private Function<Locale, String> _getExternalReferenceCodeFunction() {
+		return locale -> "externalReferenceCode";
+	}
+
 	private Map<String, EntityField> _getObjectDefinitionEntityFieldsMap(
 		ObjectDefinition objectDefinition) {
 
@@ -205,18 +218,28 @@ public class ObjectEntryEntityModel implements EntityModel {
 			).put(
 				"externalReferenceCode",
 				() -> new StringEntityField(
-					"externalReferenceCode", locale -> "externalReferenceCode")
+					"externalReferenceCode",
+					_getExternalReferenceCodeFunction())
 			).put(
 				"id", new IdEntityField("id", locale -> "id", String::valueOf)
 			).put(
 				"keywords",
 				new CollectionEntityField(
 					new StringEntityField(
-						"keywords", locale -> "assetTagNames.raw"))
+						"keywords", locale -> "assetTagNames.lowercase"))
 			).put(
 				"status",
-				new CollectionEntityField(
-					new IntegerEntityField("status", locale -> Field.STATUS))
+				() -> {
+					IntegerEntityField statusEntityField =
+						new IntegerEntityField(
+							"status", locale -> Field.STATUS);
+
+					if (_useLegacyStatus) {
+						return new CollectionEntityField(statusEntityField);
+					}
+
+					return statusEntityField;
+				}
 			).put(
 				"taxonomyCategoryIds",
 				new CollectionEntityField(
@@ -229,8 +252,7 @@ public class ObjectEntryEntityModel implements EntityModel {
 
 		for (ObjectField objectField : objectFields) {
 			if (objectField.isSystem() &&
-				!(objectDefinition.isModifiable() &&
-				  objectDefinition.isSystem())) {
+				!objectDefinition.isModifiableAndSystem()) {
 
 				continue;
 			}
@@ -265,9 +287,11 @@ public class ObjectEntryEntityModel implements EntityModel {
 
 			entityFieldsMap.put(
 				objectRelationshipERCObjectFieldName,
-				new StringEntityField(
+				new ReferenceStringEntityField(
 					objectRelationshipERCObjectFieldName,
-					locale -> objectFieldName));
+					_getExternalReferenceCodeFunction(),
+					objectFieldName.split(StringPool.UNDERLINE)[1] +
+						"/externalReferenceCode"));
 
 			String relationshipIdName = objectFieldName.substring(
 				objectFieldName.lastIndexOf(StringPool.UNDERLINE) + 1);
@@ -290,5 +314,6 @@ public class ObjectEntryEntityModel implements EntityModel {
 		ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT,
 		ObjectFieldConstants.BUSINESS_TYPE_FORMULA,
 		ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT);
+	private final boolean _useLegacyStatus;
 
 }

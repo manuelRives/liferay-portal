@@ -328,6 +328,9 @@ public interface KBArticleLocalService
 		long groupId, long kbFolderId, String urlTitle, int status);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public PersistedModel fetchPersistedModel(Serializable primaryKeyObj);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -485,6 +488,10 @@ public interface KBArticleLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public KBArticle getLatestKBArticle(long resourcePrimKey, int[] statuses)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public KBArticle getLatestKBArticleByExternalReferenceCode(
 			long groupId, String externalReferenceCode)
 		throws PortalException;
@@ -592,7 +599,10 @@ public interface KBArticleLocalService
 			long userId, long groupId, long resourcePrimKey)
 		throws PortalException;
 
-	public void unlockKBArticle(long resourcePrimKey);
+	public void unlockKBArticle(long userId, long resourcePrimKey);
+
+	public void unlockKBArticle(
+		long userId, long resourcePrimKey, boolean force);
 
 	public void unsubscribeGroupKBArticles(long userId, long groupId)
 		throws PortalException;

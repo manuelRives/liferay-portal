@@ -11,7 +11,7 @@ export default function addWidget({
 	portletId,
 	portletItemId,
 	position,
-	selectItem = () => {},
+	selectItems = () => {},
 }) {
 	return (dispatch, getState) => {
 		return WidgetService.addPortlet({
@@ -31,7 +31,7 @@ export default function addWidget({
 			);
 
 			if (addedItemId) {
-				selectItem(addedItemId);
+				selectItems([addedItemId]);
 			}
 		});
 	};

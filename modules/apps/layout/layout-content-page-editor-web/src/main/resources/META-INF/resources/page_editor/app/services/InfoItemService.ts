@@ -108,7 +108,7 @@ function getInfoItemFieldValue({
 	editableTypeOptions: EditableValue['config'];
 	externalReferenceCode: string;
 	fieldId: string;
-	languageId: string;
+	languageId: Liferay.Language.Locale;
 }) {
 	const body: {
 		classNameId: string;
@@ -116,7 +116,7 @@ function getInfoItemFieldValue({
 		editableTypeOptions: string;
 		externalReferenceCode?: string;
 		fieldId: string;
-		languageId: string;
+		languageId: Liferay.Language.Locale;
 	} = {
 		classNameId,
 		editableTypeOptions: JSON.stringify(editableTypeOptions),
@@ -149,6 +149,32 @@ function getPageContents({
 	});
 }
 
+function getInfoItemRelationships({
+	classNameId,
+	classTypeId,
+}: {
+	classNameId: string;
+	classTypeId?: string;
+}) {
+	const body: {
+		classNameId: string;
+		classTypeId?: string;
+	} = {
+		classNameId,
+	};
+
+	if (classTypeId) {
+		body.classTypeId = classTypeId;
+	}
+
+	return serviceFetch(config.getInfoItemOneToManyRelationshipsURL, {
+		body: {
+			classNameId,
+			classTypeId,
+		},
+	});
+}
+
 export default {
 	getAvailableListItemRenderers,
 	getAvailableListRenderers,
@@ -156,5 +182,6 @@ export default {
 	getAvailableTemplates,
 	getInfoItemActionErrorMessage,
 	getInfoItemFieldValue,
+	getInfoItemRelationships,
 	getPageContents,
 };

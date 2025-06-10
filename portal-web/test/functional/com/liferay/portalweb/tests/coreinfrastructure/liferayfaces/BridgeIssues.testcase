@@ -1,4 +1,4 @@
-@component-name = "core-infrastructure"
+@component-name = "portal-core-infra"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -32,6 +32,8 @@ definition {
 	test Faces1470And1478PortletSmoke {
 
 		// FACES_1470
+
+		property portal.upstream = "quarantine";
 
 		BridgeIssues.addPageAndPortlet(
 			pageURL = "faces-1470",
@@ -106,7 +108,7 @@ definition {
 		// Click the Perform Garbage Collection button and confirm that no AS7Leak class instances appear
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		// FACES-1478
@@ -166,7 +168,7 @@ definition {
 
 		AssertTextEquals(
 			locator1 = "BridgeIssues#RESOURCE2",
-			value1 = "javax.faces:jsf.js");
+			value1 = "jakarta.faces:jsf.js");
 
 		Click(
 			key_pageLink = "go to next view with immediate=",
@@ -186,7 +188,7 @@ definition {
 
 		AssertTextEquals(
 			locator1 = "BridgeIssues#RESOURCE3",
-			value1 = "javax.faces:jsf.js");
+			value1 = "jakarta.faces:jsf.js");
 
 		Click(
 			key_pageLink = "go to previous view with immediate=",
@@ -198,7 +200,7 @@ definition {
 
 		AssertTextEquals(
 			locator1 = "BridgeIssues#RESOURCE2",
-			value1 = "javax.faces:jsf.js");
+			value1 = "jakarta.faces:jsf.js");
 
 		AssertElementNotPresent(locator1 = "BridgeIssues#RESOURCE3");
 
@@ -251,6 +253,8 @@ definition {
 	test Faces1635And1433PortletSmoke {
 
 		// FACES_1635Resources
+
+		property portal.upstream = "quarantine";
 
 		BridgeIssues.addPageAndPortlet(
 			pageURL = "jsf-applicant?p_p_parallel=0",
@@ -324,6 +328,8 @@ definition {
 	test FacesIssuesPortletSmoke {
 
 		// FACES_224
+
+		property portal.upstream = "quarantine";
 
 		BridgeIssues.addPageAndPortlet(
 			pageURL = "faces-224",
@@ -533,6 +539,8 @@ definition {
 	test PrimefacesIssuesSmoke {
 
 		// FACES_1513_2185
+
+		property portal.upstream = "quarantine";
 
 		BridgeIssues.addPageAndPortlet(
 			pageURL = "faces-1513-2185",

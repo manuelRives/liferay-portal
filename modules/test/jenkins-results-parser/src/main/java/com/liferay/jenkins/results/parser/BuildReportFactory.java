@@ -21,6 +21,18 @@ import org.json.JSONObject;
  */
 public class BuildReportFactory {
 
+	public static ControllerBuildReport newControllerBuildReport(
+		JSONObject buildReportJSONObject,
+		TopLevelBuildReport topLevelBuildReport) {
+
+		if (!buildReportJSONObject.has("buildURL")) {
+			return null;
+		}
+
+		return new DefaultControllerBuildReport(
+			buildReportJSONObject, topLevelBuildReport);
+	}
+
 	public static DownstreamBuildReport newDownstreamBuildReport(
 		String batchName, JSONObject buildReportJSONObject,
 		TopLevelBuildReport topLevelBuildReport) {
@@ -41,6 +53,16 @@ public class BuildReportFactory {
 		}
 
 		return new FileTopLevelBuildReport(jenkinsConsoleFile);
+	}
+
+	public static TopLevelBuildReport newTopLevelBuildReport(
+		JSONObject buildReportJSONObject) {
+
+		if (buildReportJSONObject == null) {
+			return null;
+		}
+
+		return new FileTopLevelBuildReport(buildReportJSONObject);
 	}
 
 	public static TopLevelBuildReport newTopLevelBuildReport(

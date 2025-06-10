@@ -10,6 +10,7 @@ type DataDefinition = {
 	dataDefinitionFields: DefinitionField[];
 	defaultDataLayout: DataLayout;
 	defaultLanguageId: Locale;
+	id: string;
 	name: {[keys: string]: string};
 };
 
@@ -18,33 +19,46 @@ type DefinitionField = {
 		dataType: 'string';
 		displayStyle: 'singleline' | 'multiline';
 		fieldReference: string;
+		options?: Options;
 	};
-	fieldType: 'text' | 'select';
+	defaultValue: {[keys: string]: string};
+	fieldType: 'journal_article' | 'select' | 'text';
 	indexType: 'keyword' | 'text' | 'none';
 	label: {[keys: string]: string};
 	localizable: boolean;
 	name: string;
 	repeatable: boolean;
+	required?: boolean;
 	showLabel: boolean;
 };
 
-type DataLayouRow = {
+type DataLayoutRow = {
 	dataLayoutColumns: [
 		{
 			columnSize: number;
 			fieldNames: string[];
-		}
+		},
 	];
 };
 
 type DataLayout = {
 	dataLayoutPages: [
 		{
-			dataLayoutRows: DataLayouRow[];
+			dataLayoutRows: DataLayoutRow[];
 			description: {[keys: string]: string};
 			title: {[keys: string]: string};
-		}
+		},
 	];
 	name: {[keys: string]: string};
 	paginationMode: 'single-page';
+};
+
+type Option = {
+	label: string;
+	reference: string;
+	value: string;
+};
+
+type Options = {
+	[key: string]: Option[];
 };

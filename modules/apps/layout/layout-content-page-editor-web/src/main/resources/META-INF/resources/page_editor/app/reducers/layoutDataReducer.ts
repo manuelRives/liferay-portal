@@ -7,18 +7,26 @@ import {LayoutData} from '../../types/layout_data/LayoutData';
 import addFragmentEntryLinks from '../actions/addFragmentEntryLinks';
 import addItem from '../actions/addItem';
 import addRule from '../actions/addRule';
+import addStepper from '../actions/addStepper';
 import deleteItem from '../actions/deleteItem';
 import deleteRule from '../actions/deleteRule';
 import duplicateItem from '../actions/duplicateItem';
-import moveItem from '../actions/moveItem';
+import moveItems from '../actions/moveItems';
+import moveStepper from '../actions/moveStepper';
+import pasteItems from '../actions/pasteItems';
+import removeFormStep from '../actions/removeFormStep';
 import {
 	ADD_FRAGMENT_ENTRY_LINKS,
 	ADD_ITEM,
 	ADD_RULE,
+	ADD_STEPPER,
 	DELETE_ITEM,
 	DELETE_RULE,
 	DUPLICATE_ITEM,
 	MOVE_ITEM,
+	MOVE_STEPPER,
+	PASTE_ITEM,
+	REMOVE_FORM_STEP,
 	UPDATE_COLLECTION_DISPLAY_COLLECTION,
 	UPDATE_COL_SIZE,
 	UPDATE_FORM_ITEM_CONFIG,
@@ -52,10 +60,14 @@ export default function layoutDataReducer(
 		| ReturnType<typeof addFragmentEntryLinks>
 		| ReturnType<typeof addItem>
 		| ReturnType<typeof addRule>
+		| ReturnType<typeof addStepper>
 		| ReturnType<typeof deleteItem>
 		| ReturnType<typeof deleteRule>
 		| ReturnType<typeof duplicateItem>
-		| ReturnType<typeof moveItem>
+		| ReturnType<typeof pasteItems>
+		| ReturnType<typeof moveItems>
+		| ReturnType<typeof moveStepper>
+		| ReturnType<typeof removeFormStep>
 		| ReturnType<typeof updateCollectionDisplayCollection>
 		| ReturnType<typeof updateColSize>
 		| ReturnType<typeof updateFormItemConfig>
@@ -69,10 +81,14 @@ export default function layoutDataReducer(
 		case ADD_FRAGMENT_ENTRY_LINKS:
 		case ADD_ITEM:
 		case ADD_RULE:
+		case ADD_STEPPER:
 		case DELETE_ITEM:
 		case DELETE_RULE:
 		case DUPLICATE_ITEM:
 		case MOVE_ITEM:
+		case MOVE_STEPPER:
+		case PASTE_ITEM:
+		case REMOVE_FORM_STEP:
 		case UPDATE_COL_SIZE:
 		case UPDATE_COLLECTION_DISPLAY_COLLECTION:
 		case UPDATE_FRAGMENT_ENTRY_LINK_CONFIGURATION:
@@ -80,9 +96,9 @@ export default function layoutDataReducer(
 		case UPDATE_RULE:
 			return action.layoutData;
 
-		case UPDATE_FORM_ITEM_CONFIG:
-		case UPDATE_ITEM_CONFIG: {
-			const {itemId, layoutData: nextLayoutData} = action;
+		case UPDATE_FORM_ITEM_CONFIG: {
+			const {itemIds, layoutData: nextLayoutData} = action;
+			const [itemId] = itemIds;
 
 			const nextItem = nextLayoutData.items[itemId] || {};
 
@@ -91,6 +107,24 @@ export default function layoutDataReducer(
 				['items', itemId, 'config'],
 				nextItem.config
 			);
+		}
+
+		case UPDATE_ITEM_CONFIG: {
+			const {itemIds, layoutData} = action;
+
+			let nextLayoutData = layoutData;
+
+			for (const itemId of itemIds) {
+				const nextItem = nextLayoutData.items[itemId] || {};
+
+				nextLayoutData = setIn(
+					nextLayoutData,
+					['items', itemId, 'config'],
+					nextItem.config
+				);
+			}
+
+			return nextLayoutData;
 		}
 
 		case UPDATE_PREVIEW_IMAGE: {

@@ -4,7 +4,8 @@
  */
 
 import ClayDropDown from '@clayui/drop-down';
-import {openConfirmModal, sub} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useContext} from 'react';
 
 import ChartContext from '../ChartContext';
@@ -85,13 +86,11 @@ export default function AccountMenuContent({
 
 	const actions = [];
 
-	if (Liferay.FeatureFlags['COMMERCE-12192']) {
-		actions.push(
-			<ClayDropDown.Item key="view" onClick={handleView}>
-				{Liferay.Language.get('view')}
-			</ClayDropDown.Item>
-		);
-	}
+	actions.push(
+		<ClayDropDown.Item key="view" onClick={handleView}>
+			{Liferay.Language.get('view')}
+		</ClayDropDown.Item>
+	);
 
 	if (hasPermission(data, ACTION_KEYS.account.REMOVE)) {
 		actions.push(
@@ -109,10 +108,7 @@ export default function AccountMenuContent({
 		);
 	}
 
-	if (
-		Liferay.FeatureFlags['COMMERCE-12192'] &&
-		hasPermission(data, ACTION_KEYS.account.UPDATE)
-	) {
+	if (hasPermission(data, ACTION_KEYS.account.UPDATE)) {
 		actions.push(
 			<ClayDropDown.Item key="edit" onClick={handleEdit}>
 				{Liferay.Language.get('edit')}

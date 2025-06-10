@@ -13,7 +13,6 @@ import com.liferay.frontend.token.definition.internal.FrontendTokenDefinitionImp
 import com.liferay.frontend.token.definition.internal.validator.FrontendTokenDefinitionJSONValidator;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.validator.JSONValidatorException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.language.Language;
@@ -24,6 +23,17 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -33,17 +43,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -74,11 +73,6 @@ public class FrontendTokenDefinitionApplication extends Application {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response validateFile(
 		@Context HttpServletRequest httpServletRequest) {
-
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-10773")) {
-			return Response.serverError(
-			).build();
-		}
 
 		Locale locale = _portal.getLocale(httpServletRequest);
 
@@ -120,7 +114,7 @@ public class FrontendTokenDefinitionApplication extends Application {
 
 		return new FrontendTokenDefinitionImpl(
 			_jsonFactory.createJSONObject(json), _jsonFactory, null,
-			StringPool.BLANK);
+			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK);
 	}
 
 	private Response _getResponse(File file, Locale locale)

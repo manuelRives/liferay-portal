@@ -8,7 +8,7 @@ import {
 	ItemFinder,
 	commerceEvents,
 } from 'commerce-frontend-js';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 export default function ({
 	commerceInventoryWarehouseId,
@@ -16,9 +16,8 @@ export default function ({
 	rootPortletId,
 	warehouseExternalReferenceCode,
 }) {
-	const CommerceInventoryWarehouseResource = CommerceServiceProvider.AdminInventoryAPI(
-		'v1'
-	);
+	const CommerceInventoryWarehouseResource =
+		CommerceServiceProvider.AdminInventoryAPI('v1');
 
 	function selectItem(channel) {
 		const channelData = {

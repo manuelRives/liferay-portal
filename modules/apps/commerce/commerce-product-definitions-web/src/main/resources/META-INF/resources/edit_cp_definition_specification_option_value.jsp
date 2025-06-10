@@ -16,6 +16,8 @@ List<CPOptionCategory> cpOptionCategories = cpDefinitionSpecificationOptionValue
 CPSpecificationOption cpSpecificationOption = cpDefinitionSpecificationOptionValue.getCPSpecificationOption();
 
 long cpOptionCategoryId = BeanParamUtil.getLong(cpDefinitionSpecificationOptionValue, request, "CPOptionCategoryId");
+
+Map<String, List<SelectOption>> selectOptionsMap = cpDefinitionSpecificationOptionValueDisplayContext.getSelectOptionsMap();
 %>
 
 <portlet:actionURL name="/cp_definitions/edit_cp_definition_specification_option_value" var="editProductDefinitionSpecificationOptionValueActionURL" />
@@ -33,12 +35,28 @@ long cpOptionCategoryId = BeanParamUtil.getLong(cpDefinitionSpecificationOptionV
 
 			<liferay-ui:error exception="<%= CPDefinitionSpecificationOptionValueKeyException.class %>" message="please-enter-a-valid-key" />
 
-			<aui:field-wrapper label='<%= LanguageUtil.get(resourceBundle, "value") %>' name="valueFieldWrapper">
-				<liferay-ui:input-localized
-					name="value"
-					xml="<%= (cpDefinitionSpecificationOptionValue == null) ? StringPool.BLANK : cpDefinitionSpecificationOptionValue.getValue() %>"
-				/>
-			</aui:field-wrapper>
+			<c:choose>
+				<c:when test="<%= selectOptionsMap.isEmpty() %>">
+					<aui:field-wrapper label='<%= LanguageUtil.get(resourceBundle, "value") %>' name="valueFieldWrapper">
+						<liferay-ui:input-localized
+							name="value"
+							xml="<%= (cpDefinitionSpecificationOptionValue == null) ? StringPool.BLANK : cpDefinitionSpecificationOptionValue.getValue() %>"
+						/>
+					</aui:field-wrapper>
+				</c:when>
+				<c:otherwise>
+					<div>
+						<react:component
+							module="{CPDefinitionSpecificationOptionValueGroupOption} from commerce-product-definitions-web"
+							props='<%=
+								HashMapBuilder.<String, Object>put(
+									"selectOptionsMap", selectOptionsMap
+								).build()
+							%>'
+						/>
+					</div>
+				</c:otherwise>
+			</c:choose>
 
 			<aui:select label="group" name="CPOptionCategoryId" showEmptyOption="<%= true %>">
 
@@ -66,6 +84,8 @@ long cpOptionCategoryId = BeanParamUtil.getLong(cpDefinitionSpecificationOptionV
 				<aui:validator name="min">[0]</aui:validator>
 				<aui:validator name="number" />
 			</aui:input>
+
+			<aui:input checked="<%= (cpDefinitionSpecificationOptionValue == null) ? cpSpecificationOption.isVisible() : cpDefinitionSpecificationOptionValue.isVisible() %>" inlineLabel="right" label="visible" labelCssClass="simple-toggle-switch" name="visible" type="toggle-switch" />
 
 			<c:if test="<%= cpDefinitionSpecificationOptionValueDisplayContext.hasCustomAttributesAvailable() %>">
 				<liferay-expando:custom-attribute-list

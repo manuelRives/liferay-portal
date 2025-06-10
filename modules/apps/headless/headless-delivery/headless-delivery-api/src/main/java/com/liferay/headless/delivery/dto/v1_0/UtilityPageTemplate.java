@@ -19,7 +19,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,12 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * @author Javier Gamarra
@@ -57,7 +55,7 @@ public class UtilityPageTemplate implements Serializable {
 			UtilityPageTemplate.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Specifies if the utility page template should be the default for the given type."
 	)
 	public Boolean getDefaultTemplate() {
@@ -102,7 +100,9 @@ public class UtilityPageTemplate implements Serializable {
 	@JsonIgnore
 	private Supplier<Boolean> _defaultTemplateSupplier;
 
-	@Schema(description = "The utility page template external reference code.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The utility page template external reference code."
+	)
 	public String getExternalReferenceCode() {
 		if (_externalReferenceCodeSupplier != null) {
 			externalReferenceCode = _externalReferenceCodeSupplier.get();
@@ -145,7 +145,9 @@ public class UtilityPageTemplate implements Serializable {
 	@JsonIgnore
 	private Supplier<String> _externalReferenceCodeSupplier;
 
-	@Schema(description = "The utility page template name.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The utility page template name."
+	)
 	public String getName() {
 		if (_nameSupplier != null) {
 			name = _nameSupplier.get();
@@ -184,8 +186,10 @@ public class UtilityPageTemplate implements Serializable {
 	@JsonIgnore
 	private Supplier<String> _nameSupplier;
 
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The utility page template type."
+	)
 	@JsonGetter("type")
-	@Schema(description = "The utility page template type.")
 	@Valid
 	public Type getType() {
 		if (_typeSupplier != null) {
@@ -328,8 +332,8 @@ public class UtilityPageTemplate implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.UtilityPageTemplate",
 		name = "x-class-name"
 	)
@@ -338,10 +342,10 @@ public class UtilityPageTemplate implements Serializable {
 	@GraphQLName("Type")
 	public static enum Type {
 
-		CREATE_ACCOUNT("CreateAccount"), ERROR("Error"),
-		ERROR_CODE404("ErrorCode404"), ERROR_CODE500("ErrorCode500"),
-		FORGOT_PASSWORD("ForgotPassword"), LOGIN("Login"),
-		TERMS_OF_USE("TermsOfUse");
+		COOKIE_POLICY("CookiePolicy"), CREATE_ACCOUNT("CreateAccount"),
+		ERROR("Error"), ERROR_CODE404("ErrorCode404"),
+		ERROR_CODE500("ErrorCode500"), FORGOT_PASSWORD("ForgotPassword"),
+		LOGIN("Login"), TERMS_OF_USE("TermsOfUse");
 
 		@JsonCreator
 		public static Type create(String value) {
@@ -416,7 +420,10 @@ public class UtilityPageTemplate implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

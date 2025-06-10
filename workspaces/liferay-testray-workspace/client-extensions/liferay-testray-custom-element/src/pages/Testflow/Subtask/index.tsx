@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {useState} from 'react';
 import {useOutletContext} from 'react-router-dom';
 import {KeyedMutator} from 'swr';
 import JiraLink from '~/components/JiraLink';
@@ -18,11 +19,12 @@ import QATable from '../../../components/Table/QATable';
 import i18n from '../../../i18n';
 import {
 	MessageBoardMessage,
-	TestraySubTask,
+	TestraySubtask,
 	TestrayTask,
 } from '../../../services/rest';
-import {testraySubTaskImpl} from '../../../services/rest/TestraySubtask';
+import {testraySubtaskImpl} from '../../../services/rest/TestraySubtask';
 import {getTimeFromNow} from '../../../util/date';
+import SubtaskAlertBar from './SubtaskAlertBar';
 import SubtasksCaseResults from './SubtaskCaseResults';
 import SubtaskHeaderActions from './SubtaskHeaderActions';
 
@@ -31,7 +33,7 @@ type OutletContext = {
 		mbMessage: MessageBoardMessage;
 		mergedSubtaskNames: string;
 		splitSubtaskNames: string;
-		testraySubtask: TestraySubTask & {
+		testraySubtask: TestraySubtask & {
 			actions: {
 				[key: string]: string;
 			};
@@ -39,11 +41,12 @@ type OutletContext = {
 		testrayTask: TestrayTask;
 	};
 	mutate: {
-		mutateSubtask: KeyedMutator<TestraySubTask>;
+		mutateSubtask: KeyedMutator<TestraySubtask>;
 	};
 };
 
 const Subtasks = () => {
+	const [forceRefetch, setForceRefetch] = useState<number>(0);
 	const {
 		data: {
 			mbMessage,
@@ -62,7 +65,11 @@ const Subtasks = () => {
 
 	return (
 		<>
-			{hasSubtaskEditPermission && <SubtaskHeaderActions />}
+			{!hasSubtaskEditPermission || !!testraySubtask.mergedToSubtask ? (
+				<SubtaskAlertBar testraySubtask={testraySubtask} />
+			) : (
+				<SubtaskHeaderActions setForceRefetch={setForceRefetch} />
+			)}
 
 			<Container
 				className="pb-6"
@@ -77,10 +84,10 @@ const Subtasks = () => {
 									value: (
 										<StatusBadge
 											type={
-												testraySubtask.dueStatus.key.toLowerCase() as StatusBadgeType
+												testraySubtask.dueStatus?.key.toLowerCase() as StatusBadgeType
 											}
 										>
-											{testraySubtask.dueStatus.name}
+											{testraySubtask.dueStatus?.name}
 										</StatusBadge>
 									),
 								},
@@ -95,15 +102,22 @@ const Subtasks = () => {
 									) : (
 										<AssignToMe
 											onClick={() =>
-												testraySubTaskImpl
+												testraySubtaskImpl
 													.assignToMe(testraySubtask)
 													.then(mutateSubtask as any)
+													.then(() =>
+														setForceRefetch(
+															new Date().getTime()
+														)
+													)
 											}
 										/>
 									),
+
 									visible:
-										!!testraySubtask.user ||
-										hasSubtaskEditPermission,
+										!testraySubtask.mergedToSubtask &&
+										(!!testraySubtask.user ||
+											hasSubtaskEditPermission),
 								},
 								{
 									title: i18n.translate('updated'),
@@ -179,7 +193,7 @@ const Subtasks = () => {
 			</Container>
 
 			<Container className="mt-5" title={i18n.translate('tests')}>
-				<SubtasksCaseResults />
+				<SubtasksCaseResults forceRefetch={forceRefetch} />
 			</Container>
 		</>
 	);

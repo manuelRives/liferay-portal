@@ -10,6 +10,7 @@ import React, {
 	useRef,
 	useState,
 } from 'react';
+import {flushSync} from 'react-dom';
 import ReactFlow, {
 	Background,
 	Controls,
@@ -30,7 +31,7 @@ import {isIdDuplicated} from './components/sidebar/utils';
 import edgeTypes from './components/transitions/Edge';
 import FloatingConnectionLine from './components/transitions/FloatingConnectionLine';
 import getCollidingElements from './util/collisionDetection';
-import {detectGroovyScript} from './util/detectGroovyScript';
+import {detectGroovyOrJavaScript} from './util/detectGroovyOrJavaScript';
 import populateAssignmentsData from './util/populateAssignmentsData';
 import populateNotificationsData from './util/populateNotificationsData';
 
@@ -55,7 +56,7 @@ export default function DiagramBuilder() {
 		deserialize,
 		elements,
 		functionActionExecutors,
-		hadGroovyScriptBefore,
+		hadGroovyOrJavaScriptBefore,
 		selectedLanguageId,
 		setActive,
 		setBlockingError,
@@ -66,11 +67,11 @@ export default function DiagramBuilder() {
 		setDefinitionTitleTranslations,
 		setDeserialize,
 		setElements,
-		setHadGroovyScriptBefore,
-		setHasGroovyScript,
+		setHadGroovyOrJavaScriptBefore,
+		setHasGroovyOrJavaScript,
 		setShowDefinitionInfo,
 		statuses,
-		version,
+		workflowDefinitionVersions,
 	} = useContext(DefinitionBuilderContext);
 	const reactFlowWrapperRef = useRef(null);
 	const [collidingElements, setCollidingElements] = useState(null);
@@ -79,10 +80,8 @@ export default function DiagramBuilder() {
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [selectedItemNewId, setSelectedItemNewId] = useState(null);
 	const [defaultPosition, setDefaultPosition] = useState(null);
-	const [
-		scriptedReassignmentTimerIndex,
-		setScriptedReassignmentTimerIndex,
-	] = useState(null);
+	const [scriptedReassignmentTimerIndex, setScriptedReassignmentTimerIndex] =
+		useState(null);
 
 	const onConnect = (params) => {
 		if (
@@ -109,9 +108,8 @@ export default function DiagramBuilder() {
 			data: {
 				defaultEdge,
 				label: {
-					[defaultLanguageId]: Liferay.Language.get(
-						'transition-label'
-					),
+					[defaultLanguageId]:
+						Liferay.Language.get('transition-label'),
 				},
 			},
 			id: uuidv4(),
@@ -131,7 +129,8 @@ export default function DiagramBuilder() {
 	};
 
 	const onDragOver = (event) => {
-		const reactFlowBounds = reactFlowWrapperRef.current.getBoundingClientRect();
+		const reactFlowBounds =
+			reactFlowWrapperRef.current.getBoundingClientRect();
 
 		const position = reactFlowInstance.project({
 			x:
@@ -155,7 +154,8 @@ export default function DiagramBuilder() {
 
 	const onDrop = useCallback(
 		(event) => {
-			const reactFlowBounds = reactFlowWrapperRef.current.getBoundingClientRect();
+			const reactFlowBounds =
+				reactFlowWrapperRef.current.getBoundingClientRect();
 
 			const position = reactFlowInstance.project({
 				x:
@@ -199,9 +199,34 @@ export default function DiagramBuilder() {
 		setReactFlowInstance(reactFlowInstance);
 	};
 
+	const onNodeDrag = (event, node) => {
+		const reactFlowBounds =
+			reactFlowWrapperRef.current.getBoundingClientRect();
+
+		const position = reactFlowInstance.project({
+			x:
+				event.clientX -
+				reactFlowBounds.left -
+				elementRectangle.mouseXInRectangle,
+			y:
+				event.clientY -
+				reactFlowBounds.top -
+				elementRectangle.mouseYInRectangle,
+		});
+
+		const filteredElements = elements.filter(
+			(element) => element.id !== node.id
+		);
+
+		setCollidingElements(
+			getCollidingElements(filteredElements, elementRectangle, position)
+		);
+	};
+
 	const onNodeDragStart = (event) => {
 		const elementRectangle = event.currentTarget.getBoundingClientRect();
-		const reactFlowBounds = reactFlowWrapperRef.current.getBoundingClientRect();
+		const reactFlowBounds =
+			reactFlowWrapperRef.current.getBoundingClientRect();
 
 		const position = reactFlowInstance.project({
 			x: elementRectangle.left - reactFlowBounds.left,
@@ -219,7 +244,8 @@ export default function DiagramBuilder() {
 	};
 
 	const onNodeDragStop = (event, node) => {
-		const reactFlowBounds = reactFlowWrapperRef.current.getBoundingClientRect();
+		const reactFlowBounds =
+			reactFlowWrapperRef.current.getBoundingClientRect();
 
 		const position = reactFlowInstance.project({
 			x:
@@ -232,25 +258,28 @@ export default function DiagramBuilder() {
 				elementRectangle.mouseYInRectangle,
 		});
 
-		setElements((elements) =>
-			elements.map((element) => {
-				if (element.id === node.id) {
-					element = {
-						...element,
-						position,
-					};
-				}
+		flushSync(() => {
+			setElements((elements) =>
+				elements.map((element) => {
+					if (element.id === node.id) {
+						element = {
+							...element,
+							position,
+						};
+					}
 
-				return element;
-			})
-		);
+					return element;
+				})
+			);
+		});
 
-		const newElements = elements.filter(
+		const filteredElements = elements.filter(
 			(element) => element.id !== node.id
 		);
 
 		if (
-			getCollidingElements(newElements, elementRectangle, position).length
+			getCollidingElements(filteredElements, elementRectangle, position)
+				.length
 		) {
 			setElements((elements) =>
 				elements.map((element) => {
@@ -261,6 +290,8 @@ export default function DiagramBuilder() {
 					return element;
 				})
 			);
+
+			setCollidingElements(null);
 		}
 	};
 
@@ -346,17 +377,14 @@ export default function DiagramBuilder() {
 
 			setElements(elements);
 
-			if (
-				Liferay.FeatureFlags['LPD-11179'] &&
-				!allowScriptContentToBeExecutedOrIncluded
-			) {
-				const hasGroovyScript = detectGroovyScript(
+			if (!allowScriptContentToBeExecutedOrIncluded) {
+				const hasGroovyOrJavaScript = detectGroovyOrJavaScript(
 					elements,
-					setHasGroovyScript
+					setHasGroovyOrJavaScript
 				);
 
-				if (hasGroovyScript && !hadGroovyScriptBefore) {
-					setHadGroovyScriptBefore(true);
+				if (hasGroovyOrJavaScript && !hadGroovyOrJavaScriptBefore) {
+					setHadGroovyOrJavaScriptBefore(true);
 				}
 			}
 
@@ -370,11 +398,16 @@ export default function DiagramBuilder() {
 
 			setDeserialize(false);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentEditor, deserialize, version]);
+	}, [currentEditor, deserialize, workflowDefinitionVersions]);
 
 	useEffect(() => {
-		if (definitionName && version !== 0 && !deserialize) {
+		if (
+			definitionName &&
+			workflowDefinitionVersions.length !== 0 &&
+			!deserialize
+		) {
 			retrieveDefinitionRequest(definitionName)
 				.then((response) => response.json())
 				.then(
@@ -408,17 +441,18 @@ export default function DiagramBuilder() {
 
 						setElements(elements);
 
-						if (
-							Liferay.FeatureFlags['LPD-11179'] &&
-							!allowScriptContentToBeExecutedOrIncluded
-						) {
-							const hasGroovyScript = detectGroovyScript(
-								elements,
-								setHasGroovyScript
-							);
+						if (!allowScriptContentToBeExecutedOrIncluded) {
+							const hasGroovyOrJavaScript =
+								detectGroovyOrJavaScript(
+									elements,
+									setHasGroovyOrJavaScript
+								);
 
-							if (hasGroovyScript && !hadGroovyScriptBefore) {
-								setHadGroovyScriptBefore(true);
+							if (
+								hasGroovyOrJavaScript &&
+								!hadGroovyOrJavaScriptBefore
+							) {
+								setHadGroovyOrJavaScriptBefore(true);
 							}
 						}
 
@@ -437,7 +471,7 @@ export default function DiagramBuilder() {
 		}
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [definitionName, version]);
+	}, [definitionName, workflowDefinitionVersions]);
 
 	const contextProps = {
 		collidingElements,
@@ -470,6 +504,7 @@ export default function DiagramBuilder() {
 						onDragOver={onDragOver}
 						onDrop={onDrop}
 						onLoad={onLoad}
+						onNodeDrag={onNodeDrag}
 						onNodeDragStart={onNodeDragStart}
 						onNodeDragStop={onNodeDragStop}
 					/>

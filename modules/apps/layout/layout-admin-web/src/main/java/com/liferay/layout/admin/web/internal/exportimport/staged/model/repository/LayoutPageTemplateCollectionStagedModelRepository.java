@@ -49,10 +49,11 @@ public class LayoutPageTemplateCollectionStagedModelRepository
 
 		return _layoutPageTemplateCollectionLocalService.
 			addLayoutPageTemplateCollection(
-				userId, serviceContext.getScopeGroupId(),
+				layoutPageTemplateCollection.getExternalReferenceCode(), userId,
+				serviceContext.getScopeGroupId(),
 				layoutPageTemplateCollection.
 					getParentLayoutPageTemplateCollectionId(),
-				layoutPageTemplateCollection.getName(),
+				null, layoutPageTemplateCollection.getName(),
 				layoutPageTemplateCollection.getDescription(),
 				layoutPageTemplateCollection.getType(), serviceContext);
 	}

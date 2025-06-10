@@ -5,14 +5,20 @@
 
 package com.liferay.customer;
 
-import com.liferay.customer.object.model.TicketAttachment;
-import com.liferay.customer.object.service.TicketAttachmentWebService;
+import com.liferay.client.extension.util.spring.boot3.BaseRestController;
+import com.liferay.client.extension.util.spring.boot3.client.LiferayOAuth2AccessTokenManager;
+import com.liferay.customer.model.TicketAttachment;
+import com.liferay.customer.service.NotificationQueueEntryService;
+import com.liferay.customer.service.TicketAttachmentService;
 import com.liferay.osb.spring.boot.client.zendesk.model.ZendeskUser;
-import com.liferay.osb.spring.boot.client.zendesk.service.ZendeskWebService;
+import com.liferay.osb.spring.boot.client.zendesk.service.ZendeskService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StackTraceUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,6 +30,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +38,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * @author Amos Fong
@@ -48,55 +56,86 @@ public class TicketAttachmentsCompleteUploadRestController
 		throws Exception {
 
 		try {
-			String emailAddress = null;
-
-			String grantType = jwt.getClaimAsString("grant_type");
-
-			if (grantType.equals("authorization_code")) {
-				emailAddress = jwt.getClaimAsString("username");
-			}
-			else {
-				emailAddress = _zendeskAPIEmailAddress;
-			}
-
-			ZendeskUser zendeskUser = _zendeskWebService.fetchZendeskUser(
-				emailAddress);
-
-			if (zendeskUser == null) {
-				return new ResponseEntity<>(
-					"Zendesk user " + jwt.getClaimAsString("username") +
-						" does not exist",
-					HttpStatus.FORBIDDEN);
-			}
-
 			TicketAttachment ticketAttachment =
-				_ticketAttachmentWebService.approveTicketAttachment(
-					jwt, ticketAttachmentId);
+				_ticketAttachmentService.approveTicketAttachment(
+					"Bearer " + jwt.getTokenValue(), ticketAttachmentId);
 			JSONObject jsonObject = new JSONObject(json);
 
 			String zendeskTicketCommentBody = _buildZendeskTicketCommentBody(
 				ticketAttachment,
 				jsonObject.optString("zendeskTicketCommentBody"));
 
-			if (zendeskUser.isEndUser()) {
-				_zendeskWebService.addEndUserZendeskTicketComment(
-					zendeskUser.getEmailAddress(), zendeskTicketCommentBody,
-					ticketAttachment.getZendeskTicketId());
-			}
-			else {
-				_zendeskWebService.addAgentZendeskTicketComment(
-					zendeskTicketCommentBody,
+			try {
+				_postZendeskComment(
+					jwt.getClaimAsString("username"),
 					ticketAttachment.getZendeskTicketId(),
-					zendeskUser.getZendeskUserId());
+					zendeskTicketCommentBody);
+			}
+			catch (Exception exception) {
+				_log.error(exception, exception);
+
+				_ticketAttachmentService.updateTicketAttachmentDraftCommentBody(
+					"Bearer " + jwt.getTokenValue(), ticketAttachmentId,
+					zendeskTicketCommentBody);
+
+				return new ResponseEntity<>(HttpStatus.ACCEPTED);
 			}
 
 			return new ResponseEntity<>(HttpStatus.OK);
 		}
 		catch (Exception exception) {
-			_log.error(exception);
+			_log.error(exception, exception);
 
 			return new ResponseEntity(
 				exception.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@Scheduled(cron = "0 0 */1 * * ?")
+	public void scheduledUpdateTicketAttachmentDraftCommentBody()
+		throws Exception {
+
+		List<TicketAttachment> ticketAttachments =
+			_ticketAttachmentService.searchTicketAttachments(
+				_liferayOAuth2AccessTokenManager.getAuthorization(
+					"liferay-customer-etc-spring-boot-oahs"),
+				"draftCommentBody ne null and draftCommentBody ne '' and " +
+					"(state eq 0 or state eq null) and status/any(s:s eq 0)");
+
+		for (TicketAttachment ticketAttachment : ticketAttachments) {
+			try {
+				JSONObject jsonObject = new JSONObject(
+					get(
+						_liferayOAuth2AccessTokenManager.getAuthorization(
+							"liferay-customer-etc-spring-boot-oahs"),
+						UriComponentsBuilder.fromPath(
+							"/o/headless-admin-user/v1.0/user-accounts/" +
+								ticketAttachment.getUserId()
+						).build(
+						).toUri()));
+
+				_postZendeskComment(
+					jsonObject.getString("emailAddress"),
+					ticketAttachment.getZendeskTicketId(),
+					ticketAttachment.getDraftCommentBody());
+
+				_ticketAttachmentService.updateTicketAttachmentDraftCommentBody(
+					_liferayOAuth2AccessTokenManager.getAuthorization(
+						"liferay-customer-etc-spring-boot-oahs"),
+					ticketAttachment.getTicketAttachmentId(), "");
+			}
+			catch (Exception exception) {
+				_log.error(exception, exception);
+
+				_notificationQueueEntryService.addNotificationQueueEntry(
+					"solutions@liferay.com", "Customer Portal",
+					"is-support@liferay.com",
+					"Customer Portal Error Notification",
+					StringBundler.concat(
+						"<p>There was an error posting a large file uploader ",
+						"comment to Zendesk.</p>",
+						StackTraceUtil.getStackTrace(exception)));
+			}
 		}
 	}
 
@@ -126,16 +165,47 @@ public class TicketAttachmentsCompleteUploadRestController
 		return sb.toString();
 	}
 
+	private void _postZendeskComment(
+			String emailAddress, long zendeskTicketId,
+			String zendeskTicketCommentBody)
+		throws Exception {
+
+		ZendeskUser zendeskUser = _zendeskService.fetchZendeskUser(
+			emailAddress);
+
+		if (zendeskUser == null) {
+			throw new Exception(
+				"Zendesk user " + emailAddress + " does not exist");
+		}
+
+		if (zendeskUser.isEndUser()) {
+			_zendeskService.addEndUserZendeskTicketComment(
+				zendeskUser.getEmailAddress(), zendeskTicketCommentBody,
+				zendeskTicketId);
+		}
+		else {
+			_zendeskService.addAgentZendeskTicketComment(
+				zendeskTicketCommentBody, zendeskTicketId,
+				zendeskUser.getZendeskUserId());
+		}
+	}
+
 	private static final Log _log = LogFactory.getLog(
 		TicketAttachmentsCompleteUploadRestController.class);
 
 	@Autowired
-	private TicketAttachmentWebService _ticketAttachmentWebService;
+	private LiferayOAuth2AccessTokenManager _liferayOAuth2AccessTokenManager;
+
+	@Autowired
+	private NotificationQueueEntryService _notificationQueueEntryService;
+
+	@Autowired
+	private TicketAttachmentService _ticketAttachmentService;
 
 	@Value("${liferay.osb.spring.boot.client.zendesk.api.email.address}")
 	private String _zendeskAPIEmailAddress;
 
 	@Autowired
-	private ZendeskWebService _zendeskWebService;
+	private ZendeskService _zendeskService;
 
 }

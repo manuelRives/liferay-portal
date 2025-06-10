@@ -15,7 +15,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Eudaldo Alonso
  */
 @Component(
-	property = "javax.portlet.name=" + PortletKeys.NESTED_PORTLETS,
+	property = "jakarta.portlet.name=" + PortletKeys.NESTED_PORTLETS,
 	service = PortletManager.class
 )
 public class NestedPortletsPortletManager implements PortletManager {
@@ -26,7 +26,7 @@ public class NestedPortletsPortletManager implements PortletManager {
 			return false;
 		}
 
-		return false;
+		return true;
 	}
 
 }

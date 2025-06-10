@@ -46,10 +46,10 @@ public class FragmentEntryTestUtil {
 				fragmentCollection.getGroupId());
 
 		return FragmentEntryLocalServiceUtil.addFragmentEntry(
-			TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
+			null, TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
 			fragmentCollectionId, StringPool.BLANK, name, StringPool.BLANK,
 			"<div>TEST</div>", StringPool.BLANK, false, StringPool.BLANK, null,
-			0, false, FragmentConstants.TYPE_COMPONENT, null,
+			0, false, false, FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
@@ -69,10 +69,10 @@ public class FragmentEntryTestUtil {
 		serviceContext.setModifiedDate(createDate);
 
 		return FragmentEntryLocalServiceUtil.addFragmentEntry(
-			TestPropsValues.getUserId(), fragmentCollection.getGroupId(),
+			null, TestPropsValues.getUserId(), fragmentCollection.getGroupId(),
 			fragmentCollectionId, StringPool.BLANK, name, StringPool.BLANK,
 			"<div></div>", StringPool.BLANK, false, StringPool.BLANK, null, 0,
-			false, FragmentConstants.TYPE_COMPONENT, null,
+			false, false, FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
@@ -97,10 +97,10 @@ public class FragmentEntryTestUtil {
 				fragmentCollection.getGroupId());
 
 		return FragmentEntryLocalServiceUtil.addFragmentEntry(
-			TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
+			null, TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
 			fragmentCollectionId, StringPool.BLANK, name, StringPool.BLANK,
 			"<div></div>", StringPool.BLANK, false, StringPool.BLANK, null, 0,
-			false, FragmentConstants.TYPE_COMPONENT, null, status,
+			false, false, FragmentConstants.TYPE_COMPONENT, null, status,
 			serviceContext);
 	}
 
@@ -120,10 +120,10 @@ public class FragmentEntryTestUtil {
 		serviceContext.setModifiedDate(createDate);
 
 		return FragmentEntryLocalServiceUtil.addFragmentEntry(
-			TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
+			null, TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
 			fragmentCollectionId, StringPool.BLANK, name, StringPool.BLANK,
 			"<div></div>", StringPool.BLANK, false, StringPool.BLANK, null, 0,
-			false, FragmentConstants.TYPE_COMPONENT, null, status,
+			false, false, FragmentConstants.TYPE_COMPONENT, null, status,
 			serviceContext);
 	}
 
@@ -148,11 +148,11 @@ public class FragmentEntryTestUtil {
 				fragmentCollection.getGroupId());
 
 		return FragmentEntryLocalServiceUtil.addFragmentEntry(
-			TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
+			null, TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
 			fragmentCollection.getFragmentCollectionId(),
 			StringUtil.randomString(), name, RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
-			"{fieldSets: []}", null, 0, false, type, null,
+			"{fieldSets: []}", null, 0, false, false, type, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
@@ -169,11 +169,11 @@ public class FragmentEntryTestUtil {
 				fragmentCollection.getGroupId());
 
 		return FragmentEntryLocalServiceUtil.addFragmentEntry(
-			TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
+			null, TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
 			fragmentCollection.getFragmentCollectionId(),
 			StringUtil.randomString(), name, RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
-			"{fieldSets: []}", null, 0, false, type, null,
+			"{fieldSets: []}", null, 0, false, false, type, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 

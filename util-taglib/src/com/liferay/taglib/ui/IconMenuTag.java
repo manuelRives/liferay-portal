@@ -23,14 +23,14 @@ import com.liferay.taglib.aui.ScriptTag;
 import com.liferay.taglib.util.PortalIncludeUtil;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.tagext.BodyTag;
+
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.tagext.BodyTag;
 
 /**
  * @author Brian Wing Shun Chan
@@ -458,6 +458,12 @@ public class IconMenuTag extends BaseBodyTagSupport implements BodyTag {
 
 		httpServletRequest.removeAttribute(
 			"liferay-ui:icon-menu:showWhenSingleIcon");
+		httpServletRequest.removeAttribute(
+			"liferay-ui:icon-menu:triggerAriaLabel");
+		httpServletRequest.removeAttribute(
+			"liferay-ui:icon-menu:triggerCssClass");
+		httpServletRequest.removeAttribute("liferay-ui:icon-menu:triggerLabel");
+		httpServletRequest.removeAttribute("liferay-ui:icon-menu:triggerType");
 
 		return EVAL_PAGE;
 	}

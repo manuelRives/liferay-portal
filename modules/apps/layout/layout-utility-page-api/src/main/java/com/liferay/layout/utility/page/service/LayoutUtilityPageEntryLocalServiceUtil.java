@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -133,6 +134,14 @@ public class LayoutUtilityPageEntryLocalServiceUtil {
 
 		return getService().deleteLayoutUtilityPageEntry(
 			LayoutUtilityPageEntryId);
+	}
+
+	public static LayoutUtilityPageEntry deleteLayoutUtilityPageEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteLayoutUtilityPageEntry(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -345,6 +354,14 @@ public class LayoutUtilityPageEntryLocalServiceUtil {
 	}
 
 	public static List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String keyword, String[] types, int start, int end,
+		OrderByComparator<LayoutUtilityPageEntry> orderByComparator) {
+
+		return getService().getLayoutUtilityPageEntries(
+			groupId, keyword, types, start, end, orderByComparator);
+	}
+
+	public static List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
 		long groupId, String[] types, int start, int end,
 		OrderByComparator<LayoutUtilityPageEntry> orderByComparator) {
 
@@ -397,6 +414,13 @@ public class LayoutUtilityPageEntryLocalServiceUtil {
 
 	public static int getLayoutUtilityPageEntriesCount(long groupId) {
 		return getService().getLayoutUtilityPageEntriesCount(groupId);
+	}
+
+	public static int getLayoutUtilityPageEntriesCount(
+		long groupId, String keyword, String[] types) {
+
+		return getService().getLayoutUtilityPageEntriesCount(
+			groupId, keyword, types);
 	}
 
 	public static int getLayoutUtilityPageEntriesCount(
@@ -503,13 +527,12 @@ public class LayoutUtilityPageEntryLocalServiceUtil {
 	}
 
 	public static LayoutUtilityPageEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(LayoutUtilityPageEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile LayoutUtilityPageEntryLocalService _service;
+	private static final Snapshot<LayoutUtilityPageEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			LayoutUtilityPageEntryLocalServiceUtil.class,
+			LayoutUtilityPageEntryLocalService.class);
 
 }

@@ -25,8 +25,10 @@ import com.liferay.document.library.web.internal.security.permission.resource.DL
 import com.liferay.document.library.web.internal.security.permission.resource.DLFolderPermission;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
@@ -37,6 +39,8 @@ import com.liferay.portal.kernel.repository.model.RepositoryEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
@@ -48,12 +52,12 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.servlet.BrowserSnifferUtil;
 import com.liferay.portal.util.RepositoryUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -224,14 +228,10 @@ public class DLViewEntriesDisplayContext {
 			DLFileEntryPermission.contains(
 				permissionChecker, fileEntry, ActionKeys.UPDATE)) {
 
-			FileVersion fileVersion = fileEntry.getLatestFileVersion();
-
-			return fileVersion.toEscapedModel();
+			return fileEntry.getLatestFileVersion();
 		}
 
-		FileVersion fileVersion = fileEntry.getFileVersion();
-
-		return fileVersion.toEscapedModel();
+		return fileEntry.getFileVersion();
 	}
 
 	public String getRedirect() {
@@ -291,12 +291,6 @@ public class DLViewEntriesDisplayContext {
 	}
 
 	public boolean hasApprovedVersion(long fileEntryId) {
-		if (!FeatureFlagManagerUtil.isEnabled(
-				_themeDisplay.getCompanyId(), "LPD-10701")) {
-
-			return false;
-		}
-
 		DLFileVersion dlFileVersion =
 			DLFileVersionLocalServiceUtil.fetchLatestFileVersion(
 				fileEntryId, false, WorkflowConstants.STATUS_APPROVED);
@@ -308,12 +302,23 @@ public class DLViewEntriesDisplayContext {
 		return true;
 	}
 
-	public boolean isDescriptiveDisplayStyle() {
-		if (Objects.equals(getDisplayStyle(), "descriptive")) {
-			return true;
+	public boolean hasGuestViewPermission(FileEntry fileEntry)
+		throws PortalException {
+
+		if (_guestRole == null) {
+			_guestRole = RoleLocalServiceUtil.getRole(
+				fileEntry.getCompanyId(), RoleConstants.GUEST);
 		}
 
-		return false;
+		return ResourcePermissionLocalServiceUtil.hasResourcePermission(
+			fileEntry.getCompanyId(), DLFileEntry.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(fileEntry.getFileEntryId()), _guestRole.getRoleId(),
+			ActionKeys.VIEW);
+	}
+
+	public boolean isDescriptiveDisplayStyle() {
+		return Objects.equals(getDisplayStyle(), "descriptive");
 	}
 
 	public boolean isDraggable(FileEntry fileEntry) throws PortalException {
@@ -347,11 +352,7 @@ public class DLViewEntriesDisplayContext {
 	}
 
 	public boolean isIconDisplayStyle() {
-		if (Objects.equals(getDisplayStyle(), "icon")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getDisplayStyle(), "icon");
 	}
 
 	public boolean isRootFolder() {
@@ -429,13 +430,8 @@ public class DLViewEntriesDisplayContext {
 
 		DLFileEntry dlFileEntry = (DLFileEntry)fileEntry.getModel();
 
-		if (_hasWorkflowDefinitionLink(
-				dlFileEntry.getFolderId(), dlFileEntry.getFileEntryTypeId())) {
-
-			return true;
-		}
-
-		return false;
+		return _hasWorkflowDefinitionLink(
+			dlFileEntry.getFolderId(), dlFileEntry.getFileEntryTypeId());
 	}
 
 	private boolean _hasWorkflowDefinitionLink(
@@ -459,6 +455,7 @@ public class DLViewEntriesDisplayContext {
 		_dlPortletInstanceSettingsHelper;
 	private final DLRequestHelper _dlRequestHelper;
 	private final DLTrashHelper _dlTrashHelper;
+	private Role _guestRole;
 	private Boolean _hasValidAssetVocabularies;
 	private final HttpServletRequest _httpServletRequest;
 	private final LiferayPortletRequest _liferayPortletRequest;

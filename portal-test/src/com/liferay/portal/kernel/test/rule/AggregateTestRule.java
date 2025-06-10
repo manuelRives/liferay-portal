@@ -46,10 +46,18 @@ public class AggregateTestRule implements TestRule {
 	@Override
 	public Statement apply(Statement statement, Description description) {
 		for (int i = _testRules.length - 1; i >= 0; i--) {
-			statement = _testRules[i].apply(statement, description);
+			TestRule testRule = _testRules[i];
+
+			if (!_skippedTestRules.contains(testRule)) {
+				statement = testRule.apply(statement, description);
+			}
 		}
 
 		return statement;
+	}
+
+	public void skipTestRule(TestRule testRule) {
+		_skippedTestRules.add(testRule);
 	}
 
 	private static final String[] _ORDERED_RULE_CLASS_NAMES = {
@@ -62,11 +70,13 @@ public class AggregateTestRule implements TestRule {
 		"com.liferay.portal.test.rule.TransactionalTestRule",
 		SynchronousDestinationTestRule.class.getName(),
 		"com.liferay.portal.test.rule.SynchronousMailTestRule",
-		"com.liferay.document.library.webdav.test." +
+		"com.liferay.document.library.webdav.test.rule." +
 			"WebDAVEnvironmentConfigClassTestRule",
 		"com.liferay.portal.test.rule.PermissionCheckerMethodTestRule",
 		InitializeKernelUtilTestRule.class.getName(),
-		"com.liferay.portal.search.test.util.logging.ExpectedLogMethodTestRule"
+		"com.liferay.portal.search.test.rule.logging.ExpectedLogMethodTestRule",
+		"com.liferay.portal.security.script.management.test.rule." +
+			"ScriptManagementConfigurationTestRule"
 	};
 
 	private static final Comparator<TestRule> _testRuleComparator =
@@ -101,6 +111,7 @@ public class AggregateTestRule implements TestRule {
 
 		};
 
+	private final Set<TestRule> _skippedTestRules = new HashSet<>();
 	private final TestRule[] _testRules;
 
 }

@@ -7,7 +7,6 @@ package com.liferay.layout.internal.util;
 
 import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.layout.exception.LayoutConvertException;
-import com.liferay.layout.helper.LayoutCopyHelper;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.util.BulkLayoutConverter;
@@ -51,14 +50,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
+import jakarta.portlet.ReadOnlyException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-
-import javax.portlet.ReadOnlyException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -255,7 +254,7 @@ public class BulkLayoutConverterImpl implements BulkLayoutConverter {
 			Layout layout = _layoutLocalService.getLayout(
 				draftLayout.getClassPK());
 
-			_layoutCopyHelper.copyLayoutContent(draftLayout, layout);
+			_layoutLocalService.copyLayoutContent(draftLayout, layout);
 
 			draftLayout = _layoutLocalService.getLayout(draftLayout.getPlid());
 
@@ -345,7 +344,7 @@ public class BulkLayoutConverterImpl implements BulkLayoutConverter {
 
 		if (draftLayout == null) {
 			draftLayout = _layoutLocalService.addLayout(
-				userId, layout.getGroupId(), layout.isPrivateLayout(),
+				null, userId, layout.getGroupId(), layout.isPrivateLayout(),
 				layout.getParentLayoutId(),
 				_classNameLocalService.getClassNameId(Layout.class),
 				layout.getPlid(), layout.getNameMap(), layout.getTitleMap(),
@@ -356,7 +355,7 @@ public class BulkLayoutConverterImpl implements BulkLayoutConverter {
 		}
 
 		try {
-			return _layoutCopyHelper.copyLayoutContent(layout, draftLayout);
+			return _layoutLocalService.copyLayoutContent(layout, draftLayout);
 		}
 		catch (Exception exception) {
 			throw new PortalException(exception);
@@ -373,7 +372,7 @@ public class BulkLayoutConverterImpl implements BulkLayoutConverter {
 				PortletKeys.PREFS_OWNER_TYPE_LAYOUT, layout.getPlid());
 
 		for (PortletPreferences portletPreferences : portletPreferencesList) {
-			javax.portlet.PortletPreferences jxPortletPreferences =
+			jakarta.portlet.PortletPreferences jxPortletPreferences =
 				_portletPreferenceValueLocalService.getPreferences(
 					portletPreferences);
 
@@ -413,9 +412,6 @@ public class BulkLayoutConverterImpl implements BulkLayoutConverter {
 
 	@Reference
 	private LayoutConverterRegistry _layoutConverterRegistry;
-
-	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

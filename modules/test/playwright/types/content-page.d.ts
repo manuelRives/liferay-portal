@@ -3,6 +3,16 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+type AssetDisplayPageEntry = {
+	assetDisplayPageEntryId: string;
+	groupId: string;
+};
+
+type AssetListEntry = {
+	assetListEntryId: string;
+	groupId: string;
+};
+
 type CollectionConfig = {
 	collectionReference: {
 		className?: string;
@@ -11,21 +21,69 @@ type CollectionConfig = {
 	collectionType?: 'Collection' | 'CollectionProvider';
 };
 
+type CollectionViewport = {
+	collectionViewportDefinition: {
+		numberOfColumns: number;
+	};
+	id: 'landscapeMobile' | 'portraitMobile' | 'tablet';
+};
+
 type FragmentField = {
-	value: {
-		text: {
-			mapping: {
+	id?: string;
+	value?: {
+		fragmentLink?: Record<string, string>;
+		text?: {
+			mapping?: {
 				fieldKey: string;
 				itemReference: {
 					contextSource: string;
 				};
 			};
+			value_i18n?: {
+				en_US: string;
+			};
 		};
 	};
 };
 
+type FormConfig = {
+	formReference: {
+		className: string;
+		classType: number;
+	};
+	formType: 'multistep' | 'simple';
+	numberOfSteps: number;
+};
+
 type Layout = {
+	companyId: string;
+	friendlyURL: string;
 	friendlyUrlPath: string;
+	groupId: string;
+	hidden: boolean;
+	id: string;
+	layoutId: string;
+	nameCurrentValue: string;
+	parentPlid: string;
+	plid: string;
+	privateLayout: boolean;
+	status: number;
+	system: boolean;
+	themeId: string;
+	titleCurrentValue: string;
+	type: string;
+	uuid: string;
+};
+
+type LayoutPageTemplateEntry = {
+	groupId: string;
+	layoutPageTemplateEntryId: string;
+	plid: string;
+};
+
+type LayoutPageTemplateCollection = {
+	groupId: string;
+	layoutPageTemplateCollectionId: string;
 };
 
 type PageDefinition = {
@@ -35,16 +93,24 @@ type PageDefinition = {
 type PageElement = {
 	definition?: {
 		collectionConfig?: CollectionConfig;
+		collectionViewports?: Array<CollectionViewport>;
+		cssClasses?: string[];
+		formConfig?: FormConfig;
 		fragment?: {
 			key: string;
 		};
-		fragmentConfig?: Record<string, string>;
+		fragmentConfig?: Record<string, any>;
+		fragmentDropZoneId?: string;
 		fragmentFields?: FragmentField[];
+		fragmentStyle?: Record<string, string>;
+		gutters?: boolean;
 		layout?: {};
 		listStyle?: string;
 		numberOfColumns?: number;
 		numberOfItems?: number;
+		size?: number;
 		widgetInstance?: {
+			widgetConfig?: Record<string, any>;
 			widgetName: string;
 		};
 	};
@@ -56,6 +122,8 @@ type PageElement = {
 		| 'Column'
 		| 'DropZone'
 		| 'Form'
+		| 'FormStep'
+		| 'FormStepContainer'
 		| 'Fragment'
 		| 'FragmentDropZone'
 		| 'Root'

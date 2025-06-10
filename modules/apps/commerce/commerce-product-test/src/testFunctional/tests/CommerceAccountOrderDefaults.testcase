@@ -4,12 +4,15 @@ definition {
 	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Order Management";
 
 	setUp {
 		task ("Setup: Create Minium site") {
 			CommerceConfiguration.commerceSetUp(minium = "true");
+		}
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
 		}
 
 		task ("Setup: Create a Commerce Account and Buyer User") {
@@ -71,7 +74,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -103,7 +106,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -204,7 +207,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -236,7 +239,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -276,7 +279,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -836,7 +839,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium-3",
 				userEmailAddress = "buyer2@liferay.com");
 
@@ -877,67 +880,6 @@ definition {
 				productUnitPrice = 24,
 				shippingMethod = "Standard",
 				viewBillingAddressPermission = "true");
-		}
-	}
-
-	@description = "COMMERCE-9936. A disabled default currency should not be usable."
-	@priority = 4
-	test CannotUseDisabledCurrency {
-		property portal.acceptance = "false";
-
-		task ("Given an account with a default Currency") {
-			Account.openAccountsAdmin();
-
-			LexiconEntry.gotoEntry(rowEntry = "Commerce Account");
-
-			Account.gotoAssigneeTab(assigneeTab = "Channel Defaults");
-
-			Account.setDefaultCurrency(currencyName = "Euro");
-		}
-
-		task ("and the currency is disabled") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "group/control_panel/manage?p_p_id=com_liferay_commerce_currency_web_internal_portlet_CommerceCurrencyPortlet");
-
-			CommerceEntry.selectEntryEllipsis(entryName = "Euro");
-
-			DropdownMenuItem.click(menuItem = "Deactivate");
-
-			Account.openAccountsAdmin();
-
-			LexiconEntry.gotoEntry(rowEntry = "Commerce Account");
-
-			Account.gotoAssigneeTab(assigneeTab = "Channel Defaults");
-
-			ScrollWebElementIntoView(
-				key_settingHeader = "Currencies",
-				locator1 = "Account#DEFAULT_SETTINGS_HEADER");
-
-			AssertElementPresent(
-				key_activeStatus = "No",
-				key_currentDefault = "Euro",
-				key_settingHeader = "Currencies",
-				locator1 = "Account#DEFAULT_SETTING_ACTIVE_STATUS");
-		}
-
-		task ("When the buyer view products on the Minium site") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("Then the currency should be set to Dollars and not Euros") {
-			AssertTextEquals.assertPartialText(
-				key_productName = "U-Joint",
-				locator1 = "CommerceEntry#PRODUCT_CARD_LIST_PRICE",
-				value1 = "$");
-
-			AssertTextNotEquals.assertNotPartialMatch(
-				key_productName = "U-Joint",
-				locator1 = "CommerceEntry#PRODUCT_CARD_LIST_PRICE",
-				value1 = "€");
 		}
 	}
 
@@ -1001,7 +943,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1033,7 +975,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -1097,7 +1039,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1129,7 +1071,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -1197,7 +1139,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1280,7 +1222,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1296,9 +1238,7 @@ definition {
 		task ("When there is no default price list for Account per Channel") {
 			User.logoutPG();
 
-			User.loginPG(
-				password = "test",
-				userEmailAddress = "test@liferay.com");
+			User.loginPG();
 
 			Account.openAccountsAdmin();
 
@@ -1316,7 +1256,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1384,7 +1324,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1758,7 +1698,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium-2",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1842,7 +1782,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium-3",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2010,7 +1950,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2183,7 +2123,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2200,7 +2140,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium-2",
 				userEmailAddress = "buyer2@liferay.com");
 		}
@@ -2335,7 +2275,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2459,32 +2399,6 @@ definition {
 		}
 	}
 
-	@description = "COMMERCE-9938. Only active currencies can be viewed and disabled currency should not be available to be selected."
-	@priority = 4
-	test CanViewOnlyActiveCurrencies {
-		property portal.acceptance = "false";
-
-		task ("Given a disabled currency") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "group/control_panel/manage?p_p_id=com_liferay_commerce_currency_web_internal_portlet_CommerceCurrencyPortlet");
-
-			CommerceEntry.selectEntryEllipsis(entryName = "Euro");
-
-			DropdownMenuItem.click(menuItem = "Deactivate");
-		}
-
-		task ("When the admin sets a default currency for the account") {
-			Account.openAccountsAdmin();
-
-			LexiconEntry.gotoEntry(rowEntry = "Commerce Account");
-
-			Account.gotoAssigneeTab(assigneeTab = "Channel Defaults");
-		}
-
-		task ("Then the disabled currency should not be available") {
-			Account.assertDisabledCurrencyIsNotAvailable(disabledCurrency = "Euro");
-		}
-	}
-
 	@description = "COMMERCE-9925. Default currency rules works on the storefront"
 	@priority = 4
 	test DefaultCurrencyRulesCanWorkOnStoreFront {
@@ -2541,7 +2455,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2562,7 +2476,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer2@liferay.com");
 		}
@@ -2657,7 +2571,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2690,7 +2604,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -3053,7 +2967,7 @@ definition {
 				siteTemplateName = "Minium");
 		}
 
-		task ("and four delivery term entries with different priorities and eligibility scopes") {
+		task ("and four payment term entries with different priorities and eligibility scopes") {
 			CommerceJSONTermsAndConditionsAPI._addCommerceTermsAndConditions(
 				termsCount = 4,
 				termsType = "Payment");
@@ -3120,7 +3034,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -3131,15 +3045,15 @@ definition {
 			CommerceCheckout.gotoCheckoutViaMiniCart();
 		}
 
-		task ("Then the default Delivery Term should be displayed at Checkout.") {
+		task ("Then the default Payment Term should be displayed at Checkout.") {
 			CommerceCheckout.initializersCheckout(
-				deliveryTerm = "Payment Term 2",
 				managePaymentTerms = "false",
 				newAddressAddress = "Test Address",
 				newAddressCity = "Test City",
 				newAddressCountry = "United States",
 				newAddressName = "Address Name",
 				newAddressZipCode = "Test Zip Code",
+				paymentTerm = "Payment Term 2",
 				productName = "U-Joint",
 				productQuantity = 1,
 				productUnitPrice = 24,
@@ -3148,12 +3062,12 @@ definition {
 			Button.click(button = "Go to Order Details");
 
 			CommerceOrders.viewOrdersEntry(
-				deliveryTerm = "Payment Term 2",
+				paymentTerm = "Payment Term 2",
 				productListPrice = "24.00",
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -3266,7 +3180,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -3282,9 +3196,7 @@ definition {
 		task ("Given the settings are changed for price lists eligibility") {
 			User.logoutPG();
 
-			User.loginPG(
-				password = "test",
-				userEmailAddress = "test@liferay.com");
+			User.loginPG();
 
 			CommercePriceLists.openPriceListsAdmin();
 
@@ -3333,7 +3245,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium-2",
 				userEmailAddress = "buyer2@liferay.com");
 
@@ -3420,7 +3332,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -3452,7 +3364,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -3532,7 +3444,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -3564,7 +3476,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 

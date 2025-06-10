@@ -1165,7 +1165,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 	@Override
 	public User fetchUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		User user = userLocalService.fetchUserByExternalReferenceCode(
@@ -1316,7 +1316,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		}
 
 		return userPersistence.findByGtU_C(
-			gtUserId, companyId, 0, size, new UserIdComparator(true));
+			gtUserId, companyId, 0, size, UserIdComparator.getInstance(true));
 	}
 
 	@Override
@@ -1500,7 +1500,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	@Override
 	public long[] getRoleUserIds(long roleId) throws PortalException {
 		RolePermissionUtil.check(
-			getPermissionChecker(), roleId, ActionKeys.VIEW);
+			getPermissionChecker(), roleId, ActionKeys.ASSIGN_MEMBERS);
 
 		return userLocalService.getRoleUserIds(roleId);
 	}
@@ -1525,16 +1525,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		return user;
 	}
 
-	/**
-	 * Returns the user with the external reference code.
-	 *
-	 * @param  companyId the primary key of the user's company
-	 * @param  externalReferenceCode the user's external reference code
-	 * @return the user with the external reference code
-	 */
 	@Override
 	public User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		User user = userLocalService.getUserByExternalReferenceCode(
@@ -2337,25 +2330,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	}
 
 	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      openId the new OpenID
-	 * @return     the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public User updateOpenId(long userId, String openId)
-		throws PortalException {
-
-		UserPermissionUtil.check(
-			getPermissionChecker(), userId, ActionKeys.UPDATE);
-
-		return userLocalService.updateOpenId(userId, openId);
-	}
-
-	/**
 	 * Sets the organizations that the user is in, removing and adding
 	 * organizations as necessary.
 	 *
@@ -2470,6 +2444,17 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long userId, int status, ServiceContext serviceContext)
 		throws PortalException {
 
+		return updateStatus(
+			userPersistence.findByPrimaryKey(userId), status, serviceContext);
+	}
+
+	@Override
+	public User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException {
+
+		long userId = user.getUserId();
+
 		if ((getUserId() == userId) &&
 			(status != WorkflowConstants.STATUS_APPROVED)) {
 
@@ -2505,7 +2490,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				getPermissionChecker(), userId, ActionKeys.DELETE);
 		}
 
-		return userLocalService.updateStatus(userId, status, serviceContext);
+		return userLocalService.updateStatus(user, status, serviceContext);
 	}
 
 	/**
@@ -3543,6 +3528,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
+		boolean strictAssignment = false;
+
+		if (PropsValues.ORGANIZATIONS_ASSIGNMENT_STRICT ||
+			!permissionChecker.isCompanyAdmin()) {
+
+			strictAssignment = true;
+		}
+
 		if (userId != CompanyConstants.SYSTEM) {
 
 			// Add back any mandatory organizations or organizations that the
@@ -3562,6 +3555,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 					(!OrganizationPermissionUtil.contains(
 						permissionChecker, organization,
 						ActionKeys.ASSIGN_MEMBERS) ||
+					 (strictAssignment &&
+					  !OrganizationPermissionUtil.contains(
+						  permissionChecker, organization,
+						  ActionKeys.MANAGE_USERS)) ||
 					 OrganizationMembershipPolicyUtil.isMembershipProtected(
 						 permissionChecker, userId,
 						 organization.getOrganizationId()) ||
@@ -3591,6 +3588,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 			OrganizationPermissionUtil.check(
 				permissionChecker, organization, ActionKeys.ASSIGN_MEMBERS);
+
+			if (strictAssignment) {
+				OrganizationPermissionUtil.check(
+					permissionChecker, organization, ActionKeys.MANAGE_USERS);
+			}
 		}
 
 		return organizationIds;

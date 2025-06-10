@@ -8,11 +8,12 @@ package com.liferay.jethr0.routine;
 import com.liferay.jethr0.entity.BaseEntity;
 import com.liferay.jethr0.git.branch.GitBranchEntity;
 import com.liferay.jethr0.job.JobEntity;
+import com.liferay.jethr0.util.Jethr0ContextUtil;
 import com.liferay.jethr0.util.StringUtil;
 
-import java.util.Collections;
+import java.net.URL;
+
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -31,33 +32,41 @@ public abstract class BaseRoutineEntity
 	extends BaseEntity implements RoutineEntity {
 
 	@Override
-	public void addGitBranchEntities(Set<GitBranchEntity> gitBranchEntities) {
-		_gitBranchEntities.addAll(gitBranchEntities);
-	}
-
-	@Override
-	public void addGitBranchEntity(GitBranchEntity gitBranchEntity) {
-		addGitBranchEntities(Collections.singleton(gitBranchEntity));
-	}
-
-	@Override
 	public void addJobEntities(Set<JobEntity> jobEntities) {
-		_jobEntities.addAll(jobEntities);
+		addRelatedEntities(jobEntities);
 	}
 
 	@Override
 	public void addJobEntity(JobEntity jobEntity) {
-		addJobEntities(Collections.singleton(jobEntity));
+		addRelatedEntity(jobEntity);
 	}
 
 	@Override
-	public Set<GitBranchEntity> getGitBranchEntities() {
-		return _gitBranchEntities;
+	public Boolean getEnabled() {
+		return _enabled;
+	}
+
+	@Override
+	public URL getEntityURL() {
+		return StringUtil.toURL(
+			StringUtil.combine(
+				Jethr0ContextUtil.getLiferayPortalURL(), "/#/routines/",
+				getId()));
+	}
+
+	@Override
+	public GitBranchEntity getGitBranchEntity() {
+		return _gitBranchEntity;
+	}
+
+	@Override
+	public long getGitBranchEntityId() {
+		return _gitBranchEntityId;
 	}
 
 	@Override
 	public Set<JobEntity> getJobEntities() {
-		return _jobEntities;
+		return getRelatedEntities(JobEntity.class);
 	}
 
 	@Override
@@ -93,6 +102,8 @@ public abstract class BaseRoutineEntity
 		Type type = getType();
 
 		jsonObject.put(
+			"enabled", getEnabled()
+		).put(
 			"jobName", getJobName()
 		).put(
 			"jobParameters", String.valueOf(_getJobParametersJSONArray())
@@ -102,6 +113,8 @@ public abstract class BaseRoutineEntity
 			"jobType", jobType.getJSONObject()
 		).put(
 			"name", getName()
+		).put(
+			"r_gitBranchToRoutines_c_gitBranchId", _gitBranchEntityId
 		).put(
 			"type", type.getJSONObject()
 		);
@@ -120,25 +133,30 @@ public abstract class BaseRoutineEntity
 	}
 
 	@Override
-	public void removeGitBranchEntities(
-		Set<GitBranchEntity> gitBranchEntities) {
-
-		_gitBranchEntities.removeAll(gitBranchEntities);
-	}
-
-	@Override
-	public void removeGitBranchEntity(GitBranchEntity gitBranchEntity) {
-		_gitBranchEntities.remove(gitBranchEntity);
-	}
-
-	@Override
 	public void removeJobEntities(Set<JobEntity> jobEntities) {
-		_jobEntities.removeAll(jobEntities);
+		removeRelatedEntities(jobEntities);
 	}
 
 	@Override
 	public void removeJobEntity(JobEntity jobEntity) {
-		_jobEntities.remove(jobEntity);
+		removeRelatedEntity(jobEntity);
+	}
+
+	@Override
+	public void setEnabled(Boolean enabled) {
+		_enabled = enabled;
+	}
+
+	@Override
+	public void setGitBranchEntity(GitBranchEntity gitBranchEntity) {
+		_gitBranchEntity = gitBranchEntity;
+
+		if (_gitBranchEntity != null) {
+			_gitBranchEntityId = _gitBranchEntity.getId();
+		}
+		else {
+			_gitBranchEntityId = 0;
+		}
 	}
 
 	@Override
@@ -165,6 +183,8 @@ public abstract class BaseRoutineEntity
 	public void setJSONObject(JSONObject jsonObject) {
 		super.setJSONObject(jsonObject);
 
+		_gitBranchEntityId = jsonObject.optLong(
+			"r_gitBranchToRoutines_c_gitBranchId");
 		_name = jsonObject.getString("name");
 		_jobName = jsonObject.getString("jobName");
 		_jobParameters = new HashMap<>();
@@ -184,6 +204,10 @@ public abstract class BaseRoutineEntity
 			for (int i = 0; i < jobParametersJSONArray.length(); i++) {
 				JSONObject jobParameterJSONObject =
 					jobParametersJSONArray.getJSONObject(i);
+
+				if (!jobParameterJSONObject.has("key")) {
+					continue;
+				}
 
 				_jobParameters.put(
 					jobParameterJSONObject.getString("key"),
@@ -237,8 +261,9 @@ public abstract class BaseRoutineEntity
 
 	private static final Log _log = LogFactory.getLog(BaseRoutineEntity.class);
 
-	private final Set<GitBranchEntity> _gitBranchEntities = new HashSet<>();
-	private final Set<JobEntity> _jobEntities = new HashSet<>();
+	private Boolean _enabled;
+	private GitBranchEntity _gitBranchEntity;
+	private long _gitBranchEntityId;
 	private String _jobName;
 	private Map<String, String> _jobParameters;
 	private int _jobPriority;

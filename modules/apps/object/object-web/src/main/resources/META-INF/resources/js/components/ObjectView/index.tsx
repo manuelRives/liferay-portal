@@ -40,7 +40,9 @@ const TABS = [
 	},
 ];
 
-const CustomView: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
+const CustomView: React.FC<
+	{children?: React.ReactNode | undefined} & React.HTMLAttributes<HTMLElement>
+> = () => {
 	const [
 		{
 			isViewOnly,
@@ -67,13 +69,15 @@ const CustomView: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 				`/o/object-admin/v1.0/object-views/${objectViewId}`
 			);
 
-			const objectFields = await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectFields =
+				await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
+					objectDefinitionExternalReferenceCode
+				);
 
-			const objectDefinition = await API.getObjectDefinitionByExternalReferenceCode(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectDefinition =
+				await API.getObjectDefinitionByExternalReferenceCode(
+					objectDefinitionExternalReferenceCode
+				);
 
 			const objectView = {
 				defaultObjectView,
@@ -147,9 +151,8 @@ const CustomView: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 	};
 
 	const handleSaveObjectView = async () => {
-		const newObjectView = removeUnnecessaryPropertiesFromObjectView(
-			objectView
-		);
+		const newObjectView =
+			removeUnnecessaryPropertiesFromObjectView(objectView);
 
 		const {objectViewColumns} = newObjectView;
 
@@ -229,7 +232,9 @@ interface ICustomViewWrapperProps extends React.HTMLAttributes<HTMLElement> {
 	workflowStatuses: TWorkflowStatus[];
 }
 
-const CustomViewWrapper: React.FC<ICustomViewWrapperProps> = ({
+const CustomViewWrapper: React.FC<
+	{children?: React.ReactNode | undefined} & ICustomViewWrapperProps
+> = ({
 	filterOperators,
 	isViewOnly,
 	objectDefinitionExternalReferenceCode,

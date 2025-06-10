@@ -3,180 +3,18 @@ definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Order Management";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
 		CommerceConfiguration.commerceTearDown();
-	}
-
-	@description = "This is a test for COMMERCE-6215. Maximum open order per account"
-	@priority = 3
-	test AccountMaximumOpenOrderActive {
-		property portal.acceptance = "false";
-
-		// TODO Review
-
-		PortalSettings.gotoConfiguration(
-			configurationCategory = "User Authentication",
-			configurationName = "General",
-			configurationScope = "Virtual Instance Scope");
-
-		PortalSettings.uncheckStrangersVerifyEmailCheckbox();
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-		Type(
-			locator1 = "TextInput#NUMBER",
-			value1 = 1);
-
-		Button.clickSave();
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
-
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Test Account");
-
-		CommerceAcceleratorsInitializer.inviteNewMemberWithRoleToAccount(
-			accountName = "Test Account",
-			emailAddress = "buyer@liferay.com",
-			role = "Buyer",
-			userFirstName = "Buyer",
-			userLastName = "User",
-			userScreenName = "buyeruser");
-
-		User.openUsersAdmin();
-
-		CommerceLogin.editPasswordCP(
-			newPassword = "ttest",
-			requirePasswordReset = "true",
-			userScreenName = "buyeruser");
-
-		User.logoutPG();
-
-		CommerceLogin.miniumLogin(
-			newPassword = "test",
-			password = "ttest",
-			urlAppend = "web/minium",
-			userEmailAddress = "buyer@liferay.com");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceAcceleratorsInitializer.createNewOrderFromAccountSelectorDropdown();
-
-		AssertTextEquals.assertText(
-			locator1 = "Message#ERROR",
-			value1 = "Close Error:Unable to create a new order as the open order limit has been reached.");
-	}
-
-	@description = "Verify users can add a minimum order amount rule that applies to order subtotals. Orders that have a subtotal less than the minimum cannot be checked out"
-	@priority = 5
-	test AddAnOrderRuleOfTypeMinimumOrderSubtotalAmount {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "true";
-
-		task ("Given a Minium site with a buyer user") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("When the user creates a new order rule") {
-			CommerceOrders.openOrderRulesAdmin();
-
-			CommerceOrders.addOrderRule(
-				active = "true",
-				orderRuleDescription = "Test Order Rule Description",
-				orderRuleName = "Test Order Rule",
-				orderRuleType = "Minimum Order Amount");
-		}
-
-		task ("Then the order rule is applied to the order total by default") {
-			AssertSelectedLabel(
-				key_selectFieldLabel = "Apply To",
-				locator1 = "Select#ANY",
-				value1 = "Total");
-		}
-
-		task ("When the minimum order amount value is set to 50.00") {
-			Type(
-				key_text = "Minimum Order Amount",
-				locator1 = "TextInput#ANY",
-				value1 = "50.00");
-		}
-
-		task ("And the rule is applied to the order subtotal") {
-			Select(
-				key_selectFieldLabel = "Apply To",
-				locator1 = "Select#ANY",
-				value1 = "Subtotal");
-		}
-
-		task ("And the rule is published") {
-			Button.clickPublish();
-		}
-
-		task ("Then the new minimum order amount for Subtotal is created and with the set values") {
-			CommerceOrders.openOrderRulesAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Test Order Rule");
-
-			CommerceOrders.assertOrderRulesEntry(
-				amount = "50.00",
-				applyTo = "Subtotal",
-				orderRuleDescription = "Test Order Rule Description",
-				orderRuleName = "Test Order Rule",
-				orderRuleType = "Minimum Order Amount");
-		}
-
-		task ("When the buyer adds a product into the cart with a price less than $50.00 and goes to the order details") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-
-			CommerceNavigator.gotoMiniCart();
-
-			Button.click(button = "View Details");
-		}
-
-		task ("Then a warning message is shown that indicates the additional amount to meet the requirement for the order") {
-			AssertTextEquals(
-				locator1 = "Modal#BODY",
-				value1 = "The minimum order amount is $ 50.00. This order needs an additional $ 26.00 to meet the requirement.");
-		}
-
-		task ("And there is no checkout button in that order's order details page") {
-			AssertElementNotPresent(locator1 = "Button#CHECKOUT");
-		}
 	}
 
 	@description = "Verify buyers with the View Billing Address permission can set a new billing address during the checkout process."
@@ -214,7 +52,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -274,7 +112,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1);
 
-			CommerceCheckout.gotoCheckoutViaMiniCart();
+			CommerceCheckout.gotoCheckoutViaMiniCart(asGuest = "true");
 		}
 
 		task ("Then during the checkout process, the guest can set a new billing address which will be visible at the Order Summary") {
@@ -358,7 +196,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -433,7 +271,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -519,7 +357,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -580,7 +418,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -643,7 +481,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1);
 
-			CommerceCheckout.gotoCheckoutViaMiniCart();
+			CommerceCheckout.gotoCheckoutViaMiniCart(asGuest = "true");
 		}
 
 		task ("Then at the Order Summary, the guest can view the billing address of the order") {
@@ -702,62 +540,6 @@ definition {
 			Role.viewPermissionCP(
 				permissionDefinitionValue = "View Billing Address",
 				permissionNavigationValue = "Open Carts > Orders:");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-6912. Bulk delete orders"
-	@priority = 3
-	test BulkDeleteOrders {
-		property portal.acceptance = "false";
-
-		task ("Given a Minium Site with an account is created") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			JSONAccountEntry.addAccountEntry(
-				accountEntryName = "Commerce Account",
-				accountEntryType = "Business");
-		}
-
-		task ("And the admin navigates to the Minium and creates some orders") {
-			ApplicationsMenu.gotoSite(site = "Minium");
-
-			CommerceAcceleratorsInitializer.createNewOrderFromPendingOrders();
-
-			WaitForVisible(locator1 = "CommerceOrders#PENDING_ORDERS_ORDER_ID");
-
-			var getOrderId = selenium.getText("CommerceOrders#PENDING_ORDERS_ORDER_ID");
-
-			CommerceAcceleratorsInitializer.createNewOrderFromPendingOrders();
-
-			CommerceAcceleratorsInitializer.createNewOrderFromPendingOrders();
-
-			CommerceAcceleratorsInitializer.createNewOrderFromPendingOrders();
-
-			CommerceAcceleratorsInitializer.createNewOrderFromPendingOrders();
-		}
-
-		task ("And the admin navigates to the Orders and verifies that the Trash icon is not present in the header") {
-			CommerceOrders.openOrdersAdmin();
-
-			AssertElementNotPresent(locator1 = "Button#TRASH_ENABLED");
-		}
-
-		task ("When the admin selects all the orders using the bulk delete and verifies that the trash icon is present in the header") {
-			if (IsElementPresent(locator1 = "CommerceNavigation#SELECT_ALL_CHECKBOX")) {
-				Click.clickNoMouseOverNoWaitForVisible(locator1 = "CommerceNavigation#SELECT_ALL_CHECKBOX");
-			}
-
-			AssertElementPresent(locator1 = "Button#TRASH_ENABLED");
-		}
-
-		task ("Then the admin can remove all the orders by clicking on the Trash icon") {
-			ClickNoError(locator1 = "Button#TRASH_ENABLED");
-
-			AssertConfirm.assertPartialConfirmation(value1 = "Are you sure you want to delete all selected orders?");
-
-			CommerceUtilities.checkSuccessAlertAppearsAndDisappears();
-
-			AssertElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
 		}
 	}
 
@@ -832,195 +614,6 @@ definition {
 		}
 	}
 
-	@description = "This is a test for the story COMMERCE-9217, with the testplan COMMERCE-9336 and test ticket COMMERCE-9358"
-	@priority = 5
-	test CanButtonRetryPaymentDisappearIfThePaymentMethodIsDisabled {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "true";
-
-		task ("Given the Admin already created a Minium Site and a buyer account") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("Given the Admin has already configured Paypal as an active payment method and is configured into Sandbox with the Client ID and Client Secret") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceChannels.activatePaymentMethod(paymentMethod = "PayPal");
-
-			SelectFrame.selectFrameTop();
-
-			CommerceChannels.configurationPaypal(mode = "Sandbox");
-
-			SelectFrame.selectFrameTop();
-		}
-
-		task ("Given the Admin create an order using API and the Admin change the Payment Status to 'Authorized' but PayPal is disabled") {
-			CommerceJSONOrdersAPI._addCommerceOrder(
-				accountEntryName = "Commerce Account",
-				orderStatus = 2,
-				paymentMethod = "paypal-integration",
-				paymentStatus = 2);
-
-			CommerceJSONOrdersAPI._addCommerceOrderItem(productSKU = "MIN55861");
-
-			CommerceOrders.openOrdersAdmin();
-
-			var orderId = CommerceJSONOrdersAPI._getCommerceOrder();
-
-			CommerceNavigator.gotoEntry(entryName = ${orderId});
-
-			Button.click(button = "Check Out");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Payments");
-
-			AssertElementPresent(
-				locator1 = "CommerceEntry#ORDER_PAYMENT_STATUS",
-				paymentStatus = "Authorized");
-
-			AssertElementPresent(
-				locator1 = "CommerceEntry#ORDER_PAYMENT_METHOD",
-				paymentMethod = "PayPal");
-		}
-
-		task ("When the Buyer goes to Minium") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And goes into the 'Placed Orders' page") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
-		}
-
-		task ("Then the button 'Retry Payment' and 'Reorder' is present because PayPal is active") {
-			Click(
-				key_orderAuthor = "Commerce Account",
-				locator1 = "CommerceAccelerators#ORDERS_ENTRY_VIEW_BUTTON");
-
-			AssertElementPresent(
-				key_orderStatus = "In Progress",
-				locator1 = "CommerceOrders#PENDING_ORDERS_ORDER_STATUS");
-
-			AssertElementPresent(
-				key_text = "Retry Payment",
-				locator1 = "Button#ANY");
-
-			AssertElementPresent(
-				key_text = "Reorder",
-				locator1 = "Button#ANY");
-		}
-
-		task ("When the Admin disable Paypal ") {
-			User.logoutPG();
-
-			User.firstLoginPG();
-
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceChannels.disablePaymentMethod(paymentMethod = "PayPal");
-		}
-
-		task ("And the Buyer goes back to Minium") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And goes into the 'Placed Orders' page") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
-		}
-
-		task ("Then the button 'Retry Payment' is not present because PayPal is disabled") {
-			Click(
-				key_orderAuthor = "Commerce Account",
-				locator1 = "CommerceAccelerators#ORDERS_ENTRY_VIEW_BUTTON");
-
-			AssertElementPresent(
-				key_orderStatus = "In Progress",
-				locator1 = "CommerceOrders#PENDING_ORDERS_ORDER_STATUS");
-
-			AssertElementNotPresent(
-				key_text = "Retry Payment",
-				locator1 = "Button#ANY");
-		}
-
-		task ("But the 'Reorder' is present") {
-			AssertElementPresent(
-				key_text = "Reorder",
-				locator1 = "Button#ANY");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-11386. As admin, I can cancel an order without getting an error in the log."
-	@priority = 5
-	test CanCancelOrder {
-		property portal.acceptance = "true";
-
-		task ("Given a Minium Site with an account is created") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			JSONAccountEntry.addAccountEntry(
-				accountEntryName = "Commerce Account",
-				accountEntryType = "Business");
-		}
-
-		task ("And a payment method is activated") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-		}
-
-		task ("And an order is placed") {
-			CommerceJSONOrdersAPI._addCommerceOrder(
-				accountEntryName = "Commerce Account",
-				orderItems = "MIN55861:1",
-				orderStatus = 1,
-				paymentMethod = "money-order",
-				paymentStatus = 2);
-		}
-
-		task ("When the order is canceled") {
-			CommerceOrders.openOrdersAdmin();
-
-			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
-
-			Click(
-				key_index = "Cancel",
-				locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
-
-			CommerceUtilities.checkSuccessAlertAppearsAndDisappears();
-		}
-
-		task ("Then there is no error in the log") {
-			AssertConsoleTextNotPresent(value1 = "NoSuchInventoryBookedQuantityException");
-		}
-	}
-
 	@description = "This is a test for COMMERCE-6210. Shipment cancelled"
 	@ignore = "true"
 	@priority = 3
@@ -1028,72 +621,6 @@ definition {
 
 		// TODO COMMERCE-6210 CancelShipmentAndCreateNewFromPendingOrder Pending Implementation
 
-	}
-
-	@description = "This is a test for COMMERCE-11716. Can create orders using GoGo Shell command"
-	@priority = 3
-	test CanCreateOrdersUsingOrderGenerator {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "false";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Given a Minium site with an Account is created") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-
-			Account.openAccountsAdmin();
-
-			LexiconEntry.gotoEntry(rowEntry = "Commerce Account");
-
-			Account.gotoAssigneeTab(assigneeTab = "Addresses");
-
-			Account.addAddress(
-				addressCity = "Dalian",
-				addressCountry = "China",
-				addressName = "Liferay Dalian Software Co., Ltd.",
-				addressPostalCode = 116023,
-				addressRegion = "Liaoning Sheng",
-				addressStreet1 = "537 Huangpu Road Taide Building,",
-				addressStreet2 = "1005 High-Tech Zone",
-				phoneNumber = "+86 (0)411 88120855");
-		}
-
-		task ("When the admin uses Gogo Shell to create the orders") {
-			GogoShell.openGogoShellAdmin();
-
-			var siteId = JSONGroupAPI._getGroupIdByName(
-				groupName = "Minium",
-				site = "true");
-
-			GogoShell.executeCommand(commandName = "generateOrders ${siteId} 50");
-		}
-
-		task ("Then the user goes to the order admin page and the orders are generated correctly") {
-			CommerceOrders.openOrdersAdmin();
-
-			var orderIds = CommerceJSONOrdersAPI._getCommerceOrderIds(email = "buyer@liferay.com");
-
-			var firstOrderId = StringUtil.extractLast(${orderIds}, ",");
-
-			AssertElementPresent(
-				key_entryName = ${firstOrderId},
-				locator1 = "CommerceNavigation#ENTRY_NAME");
-
-			Pagination.viewResults(results = "Showing 1 to 20 of 50 entries.");
-		}
 	}
 
 	@description = "This is a test for COMMERCE-8970. As admin, when I try to delete orders one by one, a pop-up confirmation message will appear before removing the order."
@@ -1146,7 +673,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1216,7 +743,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1243,9 +770,7 @@ definition {
 		task ("And the admin goes into orders portlet") {
 			User.logoutPG();
 
-			User.loginUserPG(
-				password = "test",
-				userEmailAddress = "test@liferay.com");
+			User.loginUserPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -1264,7 +789,8 @@ definition {
 					editedName = "${addressType} Address Name",
 					editedRegion = "Lombardia",
 					editedStreet1 = "${addressType} Street 1",
-					editedZipCode = "${addressType} Zip");
+					editedZipCode = "${addressType} Zip",
+					selectOuterButton = "true");
 
 				Refresh();
 
@@ -1316,7 +842,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				password = "ttest",
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
@@ -1340,9 +866,7 @@ definition {
 		}
 
 		task ("When the admin Orders page is reached by the admin") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -1377,7 +901,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = "1 grams",
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 
 		task ("Then the admin edits the UoM by choosing a different one via the opened order item's detail sidebar") {
@@ -1395,7 +919,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = "1 meters",
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -1544,7 +1068,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1674,7 +1198,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1765,7 +1289,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1782,394 +1306,6 @@ definition {
 			AssertElementNotPresent(
 				key_text = "Retry Payment",
 				locator1 = "Button#ANY");
-		}
-	}
-
-	@description = "COMMERCE-10078. As a buyer user I can search an order using product name"
-	@priority = 3
-	test CanSearchAnOrderUsingProductName {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "false";
-
-		var orderIds = ListUtil.newList();
-
-		task ("Given a Minium site with a buyer user") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And a payment method is activated") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-		}
-
-		task ("And there are 3 placed orders") {
-			for (var productSKU : list "MIN55858,MIN55855,MIN38795") {
-				var orderId = CommerceJSONOrdersAPI._addCommerceOrder(
-					accountEntryName = "Commerce Account",
-					orderItems = "${productSKU}:1",
-					orderStatus = 1,
-					paymentMethod = "money-order",
-					paymentStatus = 2);
-
-				ListUtil.add(${orderIds}, ${orderId});
-			}
-		}
-
-		task ("And there is an open order") {
-			ApplicationsMenu.gotoSite(site = "Minium");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-		}
-
-		task ("When the buyer logs in and enters a product name in the Global Search") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			Click(locator1 = "AppBuilder#SEARCH_BUTTON");
-
-			Type(
-				key_text = "Search",
-				locator1 = "TextInput#CUSTOM_CANONICAL_URL_ENABLED",
-				value1 = "U-Joint");
-		}
-
-		task ("Then the buyer can see the active order that contains the product name") {
-			var activeOrderId = selenium.getText("CommerceEntry#ACTIVE_ORDER_ID");
-
-			AssertElementPresent(
-				key_value = ${activeOrderId},
-				locator1 = "CommerceEntry#SUGGESTION_ACTIVE_ORDER_KEY");
-
-			Click(
-				key_value = ${activeOrderId},
-				locator1 = "CommerceEntry#SUGGESTION_ACTIVE_ORDER_KEY");
-		}
-
-		task ("And the product as the order item of the open order") {
-			AssertTextEquals(
-				key_productName = "U-Joint",
-				locator1 = "CommerceAccelerators#ORDER_DETAILS_SKU",
-				value1 = "MIN55861");
-		}
-
-		task ("When the buyer enters a product name in the Placed Orders page Search Bar") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
-
-			CommerceNavigator.searchEntry(entryName = "Drive Shafts");
-		}
-
-		task ("Then only the order that contains this item should be listed") {
-			var firstPlacedOrderId = ListUtil.get(${orderIds}, 0);
-			var secondPlacedOrderId = ListUtil.get(${orderIds}, 1);
-			var thirdPlacedOrderId = ListUtil.get(${orderIds}, 2);
-
-			AssertTextEquals(
-				locator1 = "CommerceOrders#PLACED_ORDERS_ID",
-				value1 = ${secondPlacedOrderId});
-
-			for (var otherOrders : list "${firstPlacedOrderId},${thirdPlacedOrderId}") {
-				AssertTextNotEquals(
-					locator1 = "CommerceOrders#PLACED_ORDERS_ID",
-					value1 = ${otherOrders});
-			}
-		}
-
-		task ("And the product should be listed as the order item of that placed order") {
-			Button.click(button = "View");
-
-			AssertTextEquals(
-				key_productName = "Drive Shafts",
-				locator1 = "CommerceAccelerators#ORDER_DETAILS_SKU",
-				value1 = "MIN55855");
-		}
-	}
-
-	@description = "COMMERCE-10078. As a buyer user I can search an order using SKU"
-	@priority = 3
-	test CanSearchAnOrderUsingSKU {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "false";
-
-		var orderIds = ListUtil.newList();
-
-		task ("Given a Minium site with a buyer user") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And a payment method is activated") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-		}
-
-		task ("And there are 3 placed orders") {
-			for (var productSKU : list "MIN55858,MIN55855,MIN38795") {
-				var orderId = CommerceJSONOrdersAPI._addCommerceOrder(
-					accountEntryName = "Commerce Account",
-					orderItems = "${productSKU}:1",
-					orderStatus = 1,
-					paymentMethod = "money-order",
-					paymentStatus = 2);
-
-				ListUtil.add(${orderIds}, ${orderId});
-			}
-		}
-
-		task ("And there is an open order") {
-			ApplicationsMenu.gotoSite(site = "Minium");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-		}
-
-		task ("When the buyer logs in and enters a product SKU in the Global Search") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			Click(locator1 = "AppBuilder#SEARCH_BUTTON");
-
-			Type(
-				key_text = "Search",
-				locator1 = "TextInput#CUSTOM_CANONICAL_URL_ENABLED",
-				value1 = "MIN55861");
-		}
-
-		task ("Then the buyer can see the active order that contains the SKU") {
-			var activeOrderId = selenium.getText("CommerceEntry#ACTIVE_ORDER_ID");
-
-			AssertElementPresent(
-				key_value = ${activeOrderId},
-				locator1 = "CommerceEntry#SUGGESTION_ACTIVE_ORDER_KEY");
-
-			Click(
-				key_value = ${activeOrderId},
-				locator1 = "CommerceEntry#SUGGESTION_ACTIVE_ORDER_KEY");
-		}
-
-		task ("And the product as the order item of the open order") {
-			AssertTextEquals(
-				key_productName = "U-Joint",
-				locator1 = "CommerceAccelerators#ORDER_DETAILS_SKU",
-				value1 = "MIN55861");
-		}
-
-		task ("When the buyer enters a product SKU in the Placed Orders page Search Bar") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
-
-			CommerceNavigator.searchEntry(entryName = "MIN55855");
-		}
-
-		task ("Then only the order that contains this item should be listed") {
-			var firstPlacedOrderId = ListUtil.get(${orderIds}, 0);
-			var secondPlacedOrderId = ListUtil.get(${orderIds}, 1);
-			var thirdPlacedOrderId = ListUtil.get(${orderIds}, 2);
-
-			AssertTextEquals(
-				locator1 = "CommerceOrders#PLACED_ORDERS_ID",
-				value1 = ${secondPlacedOrderId});
-
-			for (var otherOrders : list "${firstPlacedOrderId},${thirdPlacedOrderId}") {
-				AssertTextNotEquals(
-					locator1 = "CommerceOrders#PLACED_ORDERS_ID",
-					value1 = ${otherOrders});
-			}
-		}
-
-		task ("And the product should be listed as the order item of that placed order") {
-			Button.click(button = "View");
-
-			AssertTextEquals(
-				key_productName = "Drive Shafts",
-				locator1 = "CommerceAccelerators#ORDER_DETAILS_SKU",
-				value1 = "MIN55855");
-		}
-	}
-
-	@description = "COMMERCE-10078. As a buyer user I can search an order using translated product name"
-	@priority = 3
-	test CanSearchAnOrderUsingTranslatedProductName {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "false";
-
-		var orderIds = ListUtil.newList();
-
-		task ("Given a Minium site with a buyer user") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And a payment method is activated") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-		}
-
-		task ("And some product names are translated") {
-			CommerceProducts.openProductsAdmin();
-
-			for (var productName : list "U-Joint:Primero,Wheel Seal - Front:Segundo,Drive Shafts:Tercero,Bushings:Cuarto") {
-				var originalName = StringUtil.extractFirst(${productName}, ":");
-				var translatedName = StringUtil.extractLast(${productName}, ":");
-
-				CommerceNavigator.searchEntry(entryName = ${originalName});
-
-				CommerceNavigator.gotoEntry(entryName = ${originalName});
-
-				PortletEntry.changeLocale(
-					fieldName = "Name",
-					locale = "es-ES");
-
-				Type(
-					locator1 = "TextInput#NAME",
-					value1 = ${translatedName});
-
-				Button.clickPublish();
-
-				Click(locator1 = "Icon#BACK");
-			}
-		}
-
-		task ("And there are 3 placed orders") {
-			for (var productSKU : list "MIN55858,MIN55855,MIN38795") {
-				var orderId = CommerceJSONOrdersAPI._addCommerceOrder(
-					accountEntryName = "Commerce Account",
-					orderItems = "${productSKU}:1",
-					orderStatus = 1,
-					paymentMethod = "money-order",
-					paymentStatus = 2);
-
-				ListUtil.add(${orderIds}, ${orderId});
-			}
-		}
-
-		task ("And there is an open order") {
-			ApplicationsMenu.gotoSite(site = "Minium");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-		}
-
-		task ("When the buyer logs in and enters a translated product name in the Global Search") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			Click(locator1 = "AppBuilder#SEARCH_BUTTON");
-
-			Type(
-				key_text = "Search",
-				locator1 = "TextInput#CUSTOM_CANONICAL_URL_ENABLED",
-				value1 = "Primero");
-		}
-
-		task ("Then the buyer can see the active order that contains this item") {
-			var activeOrderId = selenium.getText("CommerceEntry#ACTIVE_ORDER_ID");
-
-			AssertElementPresent(
-				key_value = ${activeOrderId},
-				locator1 = "CommerceEntry#SUGGESTION_ACTIVE_ORDER_KEY");
-
-			Click(
-				key_value = ${activeOrderId},
-				locator1 = "CommerceEntry#SUGGESTION_ACTIVE_ORDER_KEY");
-		}
-
-		task ("And the product as the order item of the open order") {
-			AssertTextEquals(
-				key_productName = "U-Joint",
-				locator1 = "CommerceAccelerators#ORDER_DETAILS_SKU",
-				value1 = "MIN55861");
-		}
-
-		task ("When the buyer enters a translated product name in the Placed Orders page Search Bar") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
-
-			CommerceNavigator.searchEntry(entryName = "Tercero");
-		}
-
-		task ("Then only the order that contains this item should be listed") {
-			var firstPlacedOrderId = ListUtil.get(${orderIds}, 0);
-			var secondPlacedOrderId = ListUtil.get(${orderIds}, 1);
-			var thirdPlacedOrderId = ListUtil.get(${orderIds}, 2);
-
-			AssertTextEquals(
-				locator1 = "CommerceOrders#PLACED_ORDERS_ID",
-				value1 = ${secondPlacedOrderId});
-
-			for (var otherOrders : list "${firstPlacedOrderId},${thirdPlacedOrderId}") {
-				AssertTextNotEquals(
-					locator1 = "CommerceOrders#PLACED_ORDERS_ID",
-					value1 = ${otherOrders});
-			}
-		}
-
-		task ("And the product should be listed as the order item of that placed order") {
-			Button.click(button = "View");
-
-			AssertTextEquals(
-				key_productName = "Drive Shafts",
-				locator1 = "CommerceAccelerators#ORDER_DETAILS_SKU",
-				value1 = "MIN55855");
 		}
 	}
 
@@ -2211,7 +1347,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				password = "ttest",
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
@@ -2241,9 +1377,7 @@ definition {
 		}
 
 		task ("When the admin Orders page is reached by the admin") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -2267,197 +1401,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = "1.2",
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-10147 The orders can be sorted by Create/Order Date in Pending and Placed Orders Pages"
-	@priority = 3
-	test CanSortOrdersByCreationDateInPendingAndPlacedOrdersPages {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "false";
-
-		task ("Given a Minium site with a buyer user") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And a payment method is activated") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-		}
-
-		task ("And the acccount has a pending and a placed order") {
-			CommerceJSONOrdersAPI._addCommerceOrder(
-				accountEntryName = "Commerce Account",
-				orderItems = "MIN55861:1",
-				orderStatus = 2,
-				paymentMethod = "money-order",
-				paymentStatus = 2);
-
-			CommerceJSONOrdersAPI._addCommerceOrder(
-				accountEntryName = "Commerce Account",
-				orderItems = "MIN55861:1",
-				orderStatus = 1,
-				paymentMethod = "money-order",
-				paymentStatus = 2);
-		}
-
-		task ("And the buyer has also a pending and a placed order") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceAcceleratorsInitializer.createNewOrderFromAccountSelectorDropdown();
-
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-
-			CommerceCheckout.gotoCheckout();
-
-			CommerceCheckout.initializersCheckout(
-				newAddressAddress = "Test Address",
-				newAddressCity = "Test City",
-				newAddressCountry = "United States",
-				newAddressName = "Address Name",
-				newAddressZipCode = "Test Zip Code",
-				productName = "U-Joint",
-				productQuantity = 1,
-				productUnitPrice = 24,
-				shippingMethod = "Standard");
-
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-			CommerceAcceleratorsInitializer.createNewOrderFromPendingOrders();
-		}
-
-		task ("When the buyer goes to the pending orders page") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Pending Orders");
-		}
-
-		task ("Then the orders in the pending orders page are sorted from the last to the first as default") {
-			for (var orderAuthorName : list "Buyer User,Test Test") {
-				ObjectPortlet.assertAuthorColumnDisplaysUserName(
-					authorName = ${orderAuthorName},
-					column = "Created By");
-			}
-
-			var firstDate = CommerceOrders.getOrderCreationDateFromTable(
-				columnIndex = 1,
-				rowIndex = 1);
-			var secondDate = CommerceOrders.getOrderCreationDateFromTable(
-				columnIndex = 1,
-				rowIndex = 2);
-
-			var compareDatesResult = CommerceUtilities.compareDates(
-				date1 = ${firstDate},
-				date2 = ${secondDate});
-
-			TestUtils.assertEquals(
-				actual = ${compareDatesResult},
-				expected = "True");
-		}
-
-		task ("When the buyer clicks Create Date button in the pending orders page") {
-			CommerceNavigator.sortField(sortFieldName = "Create Date");
-		}
-
-		task ("Then the orders are sorted from the first to the last order") {
-			for (var orderAuthorName : list "Test Test,Buyer User") {
-				ObjectPortlet.assertAuthorColumnDisplaysUserName(
-					authorName = ${orderAuthorName},
-					column = "Created By");
-			}
-
-			var firstDate = CommerceOrders.getOrderCreationDateFromTable(
-				columnIndex = 1,
-				rowIndex = 1);
-			var secondDate = CommerceOrders.getOrderCreationDateFromTable(
-				columnIndex = 1,
-				rowIndex = 2);
-
-			var compareDatesResult = CommerceUtilities.compareDates(
-				date1 = ${firstDate},
-				date2 = ${secondDate});
-
-			TestUtils.assertEquals(
-				actual = ${compareDatesResult},
-				expected = "False");
-		}
-
-		task ("When the buyer goes to the placed orders page") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
-		}
-
-		task ("Then the orders are sorted from the last to the first as default") {
-			for (var orderAuthorName : list "Buyer User,Test Test") {
-				ObjectPortlet.assertAuthorColumnDisplaysUserName(
-					authorName = ${orderAuthorName},
-					column = "Submitted By");
-			}
-
-			var firstDate = CommerceOrders.getOrderCreationDateFromTable(
-				columnIndex = 1,
-				rowIndex = 1);
-			var secondDate = CommerceOrders.getOrderCreationDateFromTable(
-				columnIndex = 1,
-				rowIndex = 2);
-
-			var compareDatesResult = CommerceUtilities.compareDates(
-				date1 = ${firstDate},
-				date2 = ${secondDate});
-
-			TestUtils.assertEquals(
-				actual = ${compareDatesResult},
-				expected = "True");
-		}
-
-		task ("When the buyer clicks Order Date button in the placed orders page") {
-			CommerceNavigator.sortField(sortFieldName = "Order Date");
-		}
-
-		task ("Then the orders are sorted from the first to the last order") {
-			for (var orderAuthorName : list "Test Test,Buyer User") {
-				ObjectPortlet.assertAuthorColumnDisplaysUserName(
-					authorName = ${orderAuthorName},
-					column = "Submitted By");
-			}
-
-			var firstDate = CommerceOrders.getOrderCreationDateFromTable(
-				columnIndex = 1,
-				rowIndex = 1);
-			var secondDate = CommerceOrders.getOrderCreationDateFromTable(
-				columnIndex = 1,
-				rowIndex = 2);
-
-			var compareDatesResult = CommerceUtilities.compareDates(
-				date1 = ${firstDate},
-				date2 = ${secondDate});
-
-			TestUtils.assertEquals(
-				actual = ${compareDatesResult},
-				expected = "False");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -2512,118 +1456,6 @@ definition {
 			TestUtils.assertEquals(
 				actual = ${orderItemCustomFieldValue},
 				expected = "NEWVALUE");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-10086. As admin, I can update the status of a Partially Shipped order as Shipped once unshipped order items are deleted. And after clicking Deliver, the status is updated as Completed."
-	@priority = 3
-	test CanUpdateOrderStatusByDeletingUnshippedItems {
-		property portal.acceptance = "false";
-
-		task ("Given a Minium site with a business account is created") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			JSONAccountEntry.addAccountEntry(
-				accountEntryName = "Commerce Account",
-				accountEntryType = "Business");
-
-			CommerceJSONAccountsAPI._addCommerceAccountAddress(
-				accountEntryName = "Commerce Account",
-				city = "Test Address",
-				countryISOCode = "US",
-				name = "Test Name",
-				street1 = "Test Street",
-				zip = "Test Zip Code");
-		}
-
-		task ("And a payment method is activated") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-		}
-
-		task ("And an order is placed with multiple products") {
-			CommerceJSONOrdersAPI._addCommerceOrder(
-				accountEntryName = "Commerce Account",
-				orderItems = "MIN55860:1",
-				orderStatus = 1,
-				paymentMethod = "Money Order",
-				paymentStatus = 0,
-				shippingAddressName = "Test Name",
-				shippingMethod = "Variable Rate",
-				shippingOption = "Standard Option");
-
-			CommerceJSONOrdersAPI._addCommerceOrderItem(productSKU = "MIN55859");
-		}
-
-		task ("When the order is accepted and shipped only partially") {
-			CommerceOrders.openOrdersAdmin();
-
-			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
-
-			Click(
-				key_index = "Accept Order",
-				locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
-
-			CommerceOrders.createShipment(
-				productSkuList = "MIN55860",
-				warehouseName = "Italy");
-		}
-
-		task ("Then the status of the order is Partially Shipped") {
-			CommerceOrders.openOrdersAdmin();
-
-			AssertElementPresent(
-				key_orderStatus = "Partially Shipped",
-				locator1 = "CommerceOrders#ORDER_ELLIPSIS_BY_STATUS");
-		}
-
-		task ("When the remaining order item is deleted from the order") {
-			ClickNoError(
-				key_orderStatus = "Partially Shipped",
-				locator1 = "CommerceOrders#ORDER_ELLIPSIS_BY_STATUS");
-
-			CommerceEntry.clickNoError(menuItem = "View");
-
-			CommerceOrders.deleteOrderItem(orderItemSku = "MIN55859");
-		}
-
-		task ("Then the status of the order is updated as Shipped") {
-			CommerceOrders.openOrdersAdmin();
-
-			AssertElementPresent(
-				key_orderStatus = "Shipped",
-				locator1 = "CommerceOrders#ORDER_ELLIPSIS_BY_STATUS");
-		}
-
-		task ("And the status of the order is Completed after Deliver is clicked") {
-			CommerceNavigator.gotoPortlet(
-				category = "Order Management",
-				portlet = "Shipments");
-
-			Click(
-				key_text = "Shipped",
-				locator1 = "Icon#ANY_VERTICAL_ELLIPSIS");
-
-			MenuItem.clickNoError(menuItem = "Edit");
-
-			Click(
-				key_index = "Deliver",
-				locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
-
-			Click(locator1 = "Icon#BACK");
-
-			AssertElementPresent(
-				key_text = "Delivered",
-				locator1 = "Icon#ANY_VERTICAL_ELLIPSIS");
-
-			CommerceOrders.openOrdersAdmin();
-
-			AssertElementPresent(
-				key_orderStatus = "Completed",
-				locator1 = "CommerceOrders#ORDER_ELLIPSIS_BY_STATUS");
 		}
 	}
 
@@ -2755,7 +1587,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2788,9 +1620,7 @@ definition {
 		}
 
 		task ("When the admin changes the active account on Minium") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
 
@@ -2870,7 +1700,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2889,9 +1719,7 @@ definition {
 		}
 
 		task ("When the admin clicks 'Quote Processed' in the order details") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 
@@ -3139,7 +1967,7 @@ definition {
 
 			CommerceOrders.openOrdersAdmin();
 
-			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
+			CommerceNavigator.gotoOrderEntryViaAdminView(status = "Pending");
 
 			for (var titleName : list "Purchase Order Number,Payment Terms,Delivery Terms,Requested Delivery Date,Printed Note") {
 				AssertElementNotPresent(
@@ -3207,12 +2035,10 @@ definition {
 
 		task ("Then the admin can view the printed note is added in the open order via API") {
 			var printedNote = CommerceJSONOrdersAPI.getOrderField(
-				email = "test@liferay.com",
 				jsonPath = "$.printedNote",
 				orderId = ${orderId},
 				parameter = "fields",
-				parameterValue = "printedNote",
-				password = "test");
+				parameterValue = "printedNote");
 
 			TestUtils.assertEquals(
 				actual = ${printedNote},
@@ -3233,12 +2059,10 @@ definition {
 
 		task ("Then the admin can view the printed note is added in the placed order via API") {
 			var printedNote = CommerceJSONOrdersAPI.getOrderField(
-				email = "test@liferay.com",
 				jsonPath = "$.printedNote",
 				orderId = ${orderId},
 				parameter = "fields",
-				parameterValue = "printedNote",
-				password = "test");
+				parameterValue = "printedNote");
 
 			TestUtils.assertEquals(
 				actual = ${printedNote},
@@ -3270,10 +2094,7 @@ definition {
 		task ("And the admin checks out an order ") {
 			User.logoutPG();
 
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 			FrontStore.addInitializerProductToCart(
 				productName = "U-Joint",
@@ -3302,7 +2123,7 @@ definition {
 		}
 
 		task ("Then the admin can view the Transaction History") {
-			var timestamp = TestUtils.getElementTextContent(element = "//div[@class='dnd-tr']//div[@class='dnd-td'][3]");
+			var timestamp = TestUtils.getElementTextContent(element = "//tr//td[3]");
 
 			TestUtils.assertNotEquals(
 				actual = ${timestamp},
@@ -3440,7 +2261,7 @@ definition {
 			productName = "ABS Sensor",
 			productQuantity = 4,
 			productSku = "MIN93015",
-			productTotalPrice = "100.00");
+			productTotalPrice = "$ 100.00");
 	}
 
 	@description = "This is a workaround for an issue with Minium's sidebar on CI"
@@ -3505,7 +2326,7 @@ definition {
 			productName = "ABS Sensor",
 			productQuantity = 4,
 			productSku = "MIN93015",
-			productTotalPrice = "100.00");
+			productTotalPrice = "$ 100.00");
 	}
 
 	@description = "This is a test for COMMERCE-5980. As an order manager, I want to edit the payment method and payment status of a submitted order"
@@ -3621,8 +2442,8 @@ definition {
 		Click(locator1 = "CommerceEntry#FILTER_DROPDOWN_MENU");
 
 		AssertElementPresent(
-			key_productName = "Commerce Account 1",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME");
+			accountName = "Commerce Account 1",
+			locator1 = "CommerceAccelerators#ACCOUNT_ORDER_NAME");
 
 		Button.click(button = "Reset Filters");
 
@@ -3639,8 +2460,8 @@ definition {
 		Click(locator1 = "CommerceEntry#FILTER_DROPDOWN_MENU");
 
 		AssertElementPresent(
-			key_productName = "Commerce Account 2",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME");
+			accountName = "Commerce Account 2",
+			locator1 = "CommerceAccelerators#ACCOUNT_ORDER_NAME");
 
 		Button.click(button = "Reset Filters");
 
@@ -3661,8 +2482,8 @@ definition {
 			locator1 = "CommerceEntry#ANY_MENU_ITEM");
 
 		AssertElementPresent(
-			key_productName = "Commerce Account 2",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME");
+			accountName = "Commerce Account 2",
+			locator1 = "CommerceAccelerators#ACCOUNT_ORDER_NAME");
 
 		Button.click(button = "Reset Filters");
 
@@ -3677,8 +2498,8 @@ definition {
 			locator1 = "CommerceEntry#ANY_MENU_ITEM");
 
 		AssertElementNotPresent(
-			key_productName = "Commerce Account 2",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME");
+			accountName = "Commerce Account 2",
+			locator1 = "CommerceAccelerators#ACCOUNT_ORDER_NAME");
 
 		Button.click(button = "Reset Filters");
 
@@ -3701,8 +2522,8 @@ definition {
 		Click(locator1 = "CommerceEntry#FILTER_DROPDOWN_MENU");
 
 		AssertElementPresent(
-			key_productName = "Commerce Account 2",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME");
+			accountName = "Commerce Account 2",
+			locator1 = "CommerceAccelerators#ACCOUNT_ORDER_NAME");
 
 		Button.click(button = "Reset Filters");
 
@@ -3719,8 +2540,8 @@ definition {
 		Click(locator1 = "CommerceEntry#FILTER_DROPDOWN_MENU");
 
 		AssertElementPresent(
-			key_productName = "Commerce Account 1",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME");
+			accountName = "Commerce Account 1",
+			locator1 = "CommerceAccelerators#ACCOUNT_ORDER_NAME");
 	}
 
 	@description = "This is a test for COMMERCE-5997. As an order manager, I want to filter orders by Channel, Account, Order Data Range and Order Status"
@@ -3815,7 +2636,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.miniumLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
@@ -3840,10 +2661,7 @@ definition {
 
 		User.logoutPG();
 
-		CommerceLogin.miniumLogin(
-			password = "test",
-			urlAppend = "web/minium",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Pending Orders");
 
@@ -3863,7 +2681,7 @@ definition {
 
 		CommerceLogin.miniumLogin(
 			newPassword = "ttest",
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
 
@@ -3940,7 +2758,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.miniumLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
@@ -3966,10 +2784,7 @@ definition {
 
 		User.logoutPG();
 
-		CommerceLogin.miniumLogin(
-			password = "test",
-			urlAppend = "web/minium",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 		CommerceOrders.openOrdersAdmin();
 
@@ -4051,7 +2866,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -4185,7 +3000,7 @@ definition {
 
 		CommerceOrders.openOrdersAdmin();
 
-		Button.click(button = "Order Date");
+		Click(locator1 = "//div[contains(@class,'autofit-col')]//button[@title='Sortable Column']");
 
 		var index = 1;
 

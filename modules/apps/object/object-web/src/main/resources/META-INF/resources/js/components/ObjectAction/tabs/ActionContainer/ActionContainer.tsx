@@ -61,9 +61,8 @@ export function ActionContainer({
 		AddObjectEntryDefinitions[]
 	>([]);
 
-	const [creationLanguageId, setCreationLanguageId] = useState<
-		Liferay.Language.Locale
-	>();
+	const [creationLanguageId, setCreationLanguageId] =
+		useState<Liferay.Language.Locale>();
 
 	const isValidField = (
 		{businessType, name, objectFieldSettings, system}: ObjectField,
@@ -95,7 +94,7 @@ export function ActionContainer({
 					!system;
 	};
 
-	const updateParameters = useCallback(
+	const updateObjectDefinitionParameters = useCallback(
 		async (value: ObjectOptionsListItem) => {
 			const {
 				isSystemObjectDefinition,
@@ -123,9 +122,10 @@ export function ActionContainer({
 			if (object?.related) {
 				parameters.relatedObjectEntries = false;
 			}
-			const items = await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
-				objectDefinitionExternalReferenceCode
-			);
+			const items =
+				await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
+					objectDefinitionExternalReferenceCode
+				);
 
 			const validFields: ObjectField[] = [];
 
@@ -178,6 +178,7 @@ export function ActionContainer({
 				),
 			}));
 		},
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[
 			addObjectEntryDefinitions,
@@ -188,7 +189,7 @@ export function ActionContainer({
 
 	useEffect(() => {
 		if (values.objectActionExecutorKey === 'update-object-entry') {
-			updateParameters({
+			updateObjectDefinitionParameters({
 				isSystemObjectDefinition: systemObject,
 				objectDefinitionExternalReferenceCode,
 				objectDefinitionId,
@@ -203,6 +204,7 @@ export function ActionContainer({
 				setValues
 			);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		objectDefinitionId,
@@ -214,9 +216,10 @@ export function ActionContainer({
 
 	useEffect(() => {
 		const makeFetch = async () => {
-			const objectDefinition = await API.getObjectDefinitionByExternalReferenceCode(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectDefinition =
+				await API.getObjectDefinitionByExternalReferenceCode(
+					objectDefinitionExternalReferenceCode
+				);
 
 			setCreationLanguageId(objectDefinition.defaultLanguageId);
 		};
@@ -245,7 +248,9 @@ export function ActionContainer({
 				}
 				setValues={setValues}
 				systemObject={systemObject}
-				updateParameters={updateParameters}
+				updateObjectDefinitionParameters={
+					updateObjectDefinitionParameters
+				}
 				values={values}
 			/>
 

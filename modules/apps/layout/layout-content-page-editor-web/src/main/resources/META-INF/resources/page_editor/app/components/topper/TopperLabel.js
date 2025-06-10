@@ -11,11 +11,12 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {useGlobalContext} from '../../contexts/GlobalContext';
 import {useSelector} from '../../contexts/StoreContext';
 import selectLanguageId from '../../selectors/selectLanguageId';
+import useIsSmallResolution from '../../utils/useIsSmallResolution';
 
 const TOPPER_BAR_HEIGHT = 24;
 const TOPPER_BAR_BORDER_WIDTH = 2;
 
-export function TopperLabel({children, itemElement, style}) {
+export function TopperLabel({children, isDragging, isHovered, itemElement}) {
 	const globalContext = useGlobalContext();
 	const languageId = useSelector(selectLanguageId);
 	const layoutData = useSelector((state) => state.layoutData);
@@ -29,11 +30,18 @@ export function TopperLabel({children, itemElement, style}) {
 		[globalContext]
 	);
 
+	const [visible, setVisible] = useState(false);
+
+	const isSmallResolution = useIsSmallResolution();
+
+	useEffect(() => {
+		setTimeout(() => setVisible(true), 1);
+	}, [isHovered]);
+
 	useEffect(() => {
 		if (itemElement) {
-			const pageEditorWrapper = globalContext.document.getElementById(
-				'page-editor'
-			);
+			const pageEditorWrapper =
+				globalContext.document.getElementById('page-editor');
 
 			let itemElementLeft = 0;
 			let itemElementRight = 0;
@@ -76,21 +84,31 @@ export function TopperLabel({children, itemElement, style}) {
 			};
 
 			const handleScroll = () => {
-				scrollY = wrapper.scrollTop;
+				scrollY = isSmallResolution
+					? globalContext.window.scrollY
+					: wrapper.scrollTop;
+
 				updatePosition();
 			};
 
 			const updateItemElementSize = (itemElement) => {
 				const boundingClientRect = itemElement.getBoundingClientRect();
-				const computedStyle = globalContext.window.getComputedStyle(
-					itemElement
-				);
+				const computedStyle =
+					globalContext.window.getComputedStyle(itemElement);
 
 				itemElementMarginRight =
 					parseInt(computedStyle.marginRight, 10) || 0;
 
 				itemElementMarginLeft =
 					parseInt(computedStyle.marginLeft, 10) || 0;
+
+				if (itemElement.classList.contains('page-editor__col')) {
+					itemElementMarginRight -=
+						parseInt(computedStyle.paddingRight, 10) || 0;
+
+					itemElementMarginLeft -=
+						parseInt(computedStyle.paddingLeft, 10) || 0;
+				}
 
 				itemElementLeft =
 					boundingClientRect.left -
@@ -103,10 +121,12 @@ export function TopperLabel({children, itemElement, style}) {
 						wrapper.offsetLeft +
 						wrapper.scrollLeft);
 
+				const scrollTop = isSmallResolution
+					? globalContext.window.scrollY
+					: wrapper.scrollTop;
+
 				itemElementTop =
-					boundingClientRect.top -
-					wrapper.offsetTop +
-					wrapper.scrollTop;
+					boundingClientRect.top - wrapper.offsetTop + scrollTop;
 			};
 
 			const resizeObserver = globalContext.window.ResizeObserver
@@ -122,7 +142,7 @@ export function TopperLabel({children, itemElement, style}) {
 						});
 
 						updatePosition();
-				  })
+					})
 				: null;
 
 			let resizeIntervalId = null;
@@ -142,12 +162,16 @@ export function TopperLabel({children, itemElement, style}) {
 				}, 500);
 			}
 
-			wrapper.addEventListener('scroll', handleScroll);
+			const scrollElement = isSmallResolution
+				? globalContext.window
+				: wrapper;
+
+			scrollElement.addEventListener('scroll', handleScroll);
 			updateItemElementSize(itemElement);
 			updatePosition();
 
 			return () => {
-				wrapper.removeEventListener('scroll', handleScroll);
+				scrollElement.removeEventListener('scroll', handleScroll);
 
 				if (resizeObserver) {
 					resizeObserver.disconnect();
@@ -157,7 +181,14 @@ export function TopperLabel({children, itemElement, style}) {
 				}
 			};
 		}
-	}, [globalContext, itemElement, languageId, layoutData, wrapper]);
+	}, [
+		globalContext,
+		isSmallResolution,
+		itemElement,
+		languageId,
+		layoutData,
+		wrapper,
+	]);
 
 	return (
 		<ReactPortal container={wrapper} wrapper={false}>
@@ -166,9 +197,18 @@ export function TopperLabel({children, itemElement, style}) {
 					'cadmin',
 					'page-editor__topper__bar',
 					'tbar',
-					{'page-editor__topper__bar--inset': positionConfig.isInset}
+					{
+						'page-editor__topper__bar--hovered': isHovered,
+						'page-editor__topper__bar--inset':
+							positionConfig.isInset,
+					}
 				)}
-				style={{...style, ...positionConfig.style}}
+				onClick={(event) => event.stopPropagation()}
+				onMouseOver={(event) => event.stopPropagation()}
+				style={{
+					...((isDragging || !visible) && {opacity: 0}),
+					...positionConfig.style,
+				}}
 			>
 				{children}
 			</div>

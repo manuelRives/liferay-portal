@@ -14,8 +14,8 @@ import com.liferay.portal.monitoring.internal.statistics.portal.PortalRequestDat
 import com.liferay.portal.monitoring.internal.statistics.portlet.PortletRequestDataSample;
 import com.liferay.portal.monitoring.internal.statistics.service.ServiceRequestDataSample;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -23,7 +23,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Michael C. Han
  */
-@Component(enabled = false, service = DataSampleFactory.class)
+@Component(service = DataSampleFactory.class)
 public class DataSampleFactoryImpl implements DataSampleFactory {
 
 	@Override

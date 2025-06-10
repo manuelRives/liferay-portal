@@ -132,72 +132,67 @@ AUI.add(
 						fullScreenDialog.show();
 					}
 					else {
-						Liferay.Util.openWindow(
-							{
-								dialog: {
-									'constrain': true,
-									'cssClass':
-										'lfr-fulscreen-source-editor-dialog modal-full-screen',
-									'modal': true,
-									'toolbars.footer': [
-										{
-											label: strings.cancel,
-											on: {
-												click() {
-													fullScreenDialog.hide();
-												},
-											},
-										},
-										{
-											cssClass: 'btn-primary',
-											label: strings.done,
-											on: {
-												click() {
-													fullScreenDialog.hide();
-													instance._switchMode({
-														content: fullScreenEditor.get(
-															'value'
-														),
-													});
-												},
-											},
-										},
-									],
+						Liferay.Util.openModal({
+							buttons: [
+								{
+									label: strings.cancel,
+									onClick: () => {
+										fullScreenDialog.hide();
+									},
 								},
-								title: strings.editContent,
-							},
-							(dialog) => {
-								fullScreenDialog = dialog;
+								{
+									displayType: 'primary',
+									label: strings.done,
+									onClick: () => {
+										fullScreenDialog.hide();
+										instance._switchMode({
+											content:
+												fullScreenEditor.get('value'),
+										});
+									},
+								},
+							],
+							className:
+								'lfr-fulscreen-source-editor-dialog modal-full-screen',
+							containerProps: {},
+							onOpen: ({container}) => {
+								fullScreenDialog = container;
 
 								Liferay.Util.getTop()
 									.AUI()
 									.use(
 										'liferay-fullscreen-source-editor',
 										(A) => {
-											fullScreenEditor = new A.LiferayFullScreenSourceEditor(
-												{
-													boundingBox: dialog
-														.getStdModNode(
-															A.WidgetStdMod.BODY
-														)
-														.appendChild(
-															'<div></div>'
-														),
-													dataProcessor: host.getNativeEditor()
-														.dataProcessor,
-													previewCssClass:
-														'alloy-editor alloy-editor-placeholder',
-													value: host.getHTML(),
-												}
-											).render();
+											fullScreenEditor =
+												new A.LiferayFullScreenSourceEditor(
+													{
+														boundingBox: container
+															.getStdModNode(
+																A.WidgetStdMod
+																	.BODY
+															)
+															.appendChild(
+																'<div></div>'
+															),
+														dataProcessor:
+															host.getNativeEditor()
+																.dataProcessor,
+														previewCssClass:
+															'alloy-editor alloy-editor-placeholder',
+														value: host.getHTML(),
+													}
+												).render();
 
-											instance._fullScreenDialog = fullScreenDialog;
+											instance._fullScreenDialog =
+												fullScreenDialog;
 
-											instance._fullScreenEditor = fullScreenEditor;
+											instance._fullScreenEditor =
+												fullScreenEditor;
 										}
 									);
-							}
-						);
+							},
+							title: strings.editContent,
+						});
 					}
 				},
 
@@ -295,9 +290,8 @@ AUI.add(
 					editorFullscreen.toggleClass('hide');
 					editorSwitchTheme.toggleClass('hide');
 
-					instance._isVisible = editorWrapper.hasClass(
-						CSS_SHOW_SOURCE
-					);
+					instance._isVisible =
+						editorWrapper.hasClass(CSS_SHOW_SOURCE);
 
 					editorSwitch
 						.one('.lexicon-icon')

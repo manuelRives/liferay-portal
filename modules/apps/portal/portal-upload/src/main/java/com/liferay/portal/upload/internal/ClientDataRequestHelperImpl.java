@@ -9,7 +9,13 @@ import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.ClientDataRequestHelper;
 import com.liferay.portal.kernel.upload.FileItem;
 import com.liferay.portal.kernel.upload.UploadRequest;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletException;
+
+import jakarta.servlet.ServletRequestWrapper;
+import jakarta.servlet.http.Part;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,11 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletException;
-
-import javax.servlet.ServletRequestWrapper;
-import javax.servlet.http.Part;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -50,7 +51,7 @@ public class ClientDataRequestHelperImpl implements ClientDataRequestHelper {
 
 		FileItem[] fileItems = multipartParameterMap.get(name);
 
-		if ((fileItems == null) || (fileItems.length == 0)) {
+		if (ArrayUtil.isEmpty(fileItems)) {
 			return null;
 		}
 

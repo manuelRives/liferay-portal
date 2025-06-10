@@ -7,12 +7,20 @@ import {evaluate, mergePages} from '../../utils/evaluation.es';
 import {PagesVisitor} from '../../utils/visitors.es';
 import {EVENT_TYPES} from '../actions/eventTypes.es';
 import {disableSubmitButton} from '../utils/submitButtonController.es';
-
 let REVALIDATE_UPDATES = [];
 
 const skipPageEvaluationFieldNames = ['name', 'requiredErrorMessage'];
 
-const needsPageEvaluation = (fieldName) => {
+const needsPageEvaluation = (
+	containerId,
+	defaultLanguageId,
+	editingLanguageId,
+	fieldName
+) => {
+	if (containerId === 'editObjectEntry') {
+		return editingLanguageId === defaultLanguageId;
+	}
+
 	return !skipPageEvaluationFieldNames.includes(fieldName);
 };
 
@@ -59,8 +67,10 @@ const getEditedPages = ({
 let lastEditedPages = [];
 
 export default function fieldChange({
+	containerId,
 	defaultLanguageId,
 	editingLanguageId,
+	focusedField,
 	formId,
 	objectFields,
 	pages,
@@ -89,7 +99,33 @@ export default function fieldChange({
 
 		dispatch({payload: editedPages, type: EVENT_TYPES.PAGE.UPDATE});
 
-		if (evaluable && (viewMode || needsPageEvaluation(fieldName))) {
+		if (Liferay.FeatureFlags['LPD-11228']) {
+			if (
+				(fieldInstance.type === 'color' ||
+					fieldInstance.type === 'image' ||
+					fieldInstance.type === 'numeric' ||
+					fieldInstance.type === 'rich_text' ||
+					fieldInstance.type === 'text') &&
+				document.activeElement.name !== 'journal_undo_redo' &&
+				document.body !== document.activeElement
+			) {
+				dispatch({type: EVENT_TYPES.HISTORY.MARK});
+			}
+			else {
+				dispatch({type: EVENT_TYPES.HISTORY.UNMARK});
+			}
+		}
+
+		if (
+			evaluable &&
+			(viewMode ||
+				needsPageEvaluation(
+					containerId,
+					defaultLanguageId,
+					editingLanguageId,
+					fieldName
+				))
+		) {
 			try {
 				disableSubmitButton(submitButtonId);
 
@@ -104,7 +140,10 @@ export default function fieldChange({
 					viewMode,
 				});
 
-				dispatch({payload: properties, type: EVENT_TYPES.FIELD.CHANGE});
+				dispatch({
+					payload: {...properties, focusedField},
+					type: EVENT_TYPES.FIELD.CHANGE,
+				});
 
 				if (REVALIDATE_UPDATES.length) {
 
@@ -154,13 +193,37 @@ export default function fieldChange({
 			}
 		}
 		else {
-			dispatch({payload: properties, type: EVENT_TYPES.FIELD.CHANGE});
+			dispatch({
+				payload: {...properties, focusedField},
+				type: EVENT_TYPES.FIELD.CHANGE,
+			});
 
 			REVALIDATE_UPDATES.push({
 				editingLanguageId,
 				name: fieldInstance.name,
 				value,
 			});
+		}
+
+		if (Liferay.FeatureFlags['LPD-11228']) {
+			if (
+				fieldInstance.type !== 'color' &&
+				fieldInstance.type !== 'image' &&
+				fieldInstance.type !== 'numeric' &&
+				fieldInstance.type !== 'rich_text' &&
+				fieldInstance.type !== 'text'
+			) {
+				setTimeout(
+					() =>
+						Liferay.fire('journal:storeState', {
+							fieldName:
+								Liferay.Language.get('edit') +
+								' ' +
+								fieldInstance.label,
+						}),
+					0
+				);
+			}
 		}
 	};
 }

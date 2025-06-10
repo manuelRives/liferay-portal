@@ -247,6 +247,15 @@ public class OrganizationServiceWrapper
 			gtOrganizationId, companyId, parentOrganizationId, size);
 	}
 
+	@Override
+	public Organization getOrAddIncompleteOrganization(
+			String externalReferenceCode, String name)
+		throws Exception {
+
+		return _organizationService.getOrAddIncompleteOrganization(
+			externalReferenceCode, name);
+	}
+
 	/**
 	 * Returns the organization with the primary key.
 	 *
@@ -262,11 +271,11 @@ public class OrganizationServiceWrapper
 
 	@Override
 	public Organization getOrganizationByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _organizationService.getOrganizationByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**

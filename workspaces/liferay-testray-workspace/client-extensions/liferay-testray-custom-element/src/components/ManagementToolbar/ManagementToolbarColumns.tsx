@@ -35,12 +35,11 @@ const ManagementToolbarColumns: React.FC<ManagementToolbarColumnsProps> = ({
 
 		setIsVisible((isVisible) => !isVisible);
 	};
-	const [{columns: contextColumns, columnsFixed}, dispatch] = useContext(
-		ListViewContext
-	);
+	const [{columns: contextColumns, columnsFixed}, dispatch] =
+		useContext(ListViewContext);
 
 	const columnsNotFixed = columns?.filter(
-		({key}) => !columnsFixed.includes(key)
+		({key, value}) => !columnsFixed.includes(key) && value !== ''
 	);
 
 	const [selectedColumns, setSelectedColumns] = useState<ColumnsState>(() => {
@@ -88,24 +87,28 @@ const ManagementToolbarColumns: React.FC<ManagementToolbarColumnsProps> = ({
 					</ClayDropDown.Section>
 
 					<div className="dropdown-columns-content">
-						{columnsNotFixed?.map((column, index) => (
-							<Form.Checkbox
-								checked={selectedColumns[column.key]}
-								key={index}
-								label={column.value}
-								onChange={(event) =>
-									setSelectedColumns({
-										...selectedColumns,
-										[column.key]: event.target.checked,
-									})
-								}
-								value={
-									(selectedColumns[
-										column.key
-									] as unknown) as string
-								}
-							/>
-						))}
+						{columnsNotFixed?.map(
+							(column, index) =>
+								column.value !== '' && (
+									<Form.Checkbox
+										checked={selectedColumns[column.key]}
+										key={index}
+										label={column.value}
+										onChange={(event) =>
+											setSelectedColumns({
+												...selectedColumns,
+												[column.key]:
+													event.target.checked,
+											})
+										}
+										value={
+											selectedColumns[
+												column.key
+											] as unknown as string
+										}
+									/>
+								)
+						)}
 					</div>
 
 					<ClayDropDown.Section className="dropdown-footer">

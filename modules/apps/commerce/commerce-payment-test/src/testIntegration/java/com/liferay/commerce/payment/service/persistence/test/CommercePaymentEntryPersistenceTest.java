@@ -157,6 +157,8 @@ public class CommercePaymentEntryPersistenceTest {
 
 		newCommercePaymentEntry.setNote(RandomTestUtil.randomString());
 
+		newCommercePaymentEntry.setPayload(RandomTestUtil.randomString());
+
 		newCommercePaymentEntry.setPaymentIntegrationKey(
 			RandomTestUtil.randomString());
 
@@ -240,6 +242,9 @@ public class CommercePaymentEntryPersistenceTest {
 			existingCommercePaymentEntry.getNote(),
 			newCommercePaymentEntry.getNote());
 		Assert.assertEquals(
+			existingCommercePaymentEntry.getPayload(),
+			newCommercePaymentEntry.getPayload());
+		Assert.assertEquals(
 			existingCommercePaymentEntry.getPaymentIntegrationKey(),
 			newCommercePaymentEntry.getPaymentIntegrationKey());
 		Assert.assertEquals(
@@ -312,6 +317,16 @@ public class CommercePaymentEntryPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByC_C_C_T(0L, 0L, 0L, 0);
+	}
+
+	@Test
+	public void testCountByC_C_C_P_T() throws Exception {
+		_persistence.countByC_C_C_P_T(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			RandomTestUtil.nextLong(), RandomTestUtil.nextInt(),
+			RandomTestUtil.nextInt());
+
+		_persistence.countByC_C_C_P_T(0L, 0L, 0L, 0, 0);
 	}
 
 	@Test
@@ -706,6 +721,8 @@ public class CommercePaymentEntryPersistenceTest {
 		commercePaymentEntry.setLanguageId(RandomTestUtil.randomString());
 
 		commercePaymentEntry.setNote(RandomTestUtil.randomString());
+
+		commercePaymentEntry.setPayload(RandomTestUtil.randomString());
 
 		commercePaymentEntry.setPaymentIntegrationKey(
 			RandomTestUtil.randomString());

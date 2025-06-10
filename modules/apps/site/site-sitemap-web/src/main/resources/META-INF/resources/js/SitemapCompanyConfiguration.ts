@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {delegate, openSelectionModal, sub} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {delegate, sub} from 'frontend-js-web';
 
 interface Props {
 	groupSelectorURL: string;
@@ -69,9 +70,8 @@ export default function ({
 						'c-ml-2 text-secondary text-4'
 					);
 
-					const removeIcon = Liferay.Util.getLexiconIconTpl(
-						'times-circle'
-					);
+					const removeIcon =
+						Liferay.Util.getLexiconIconTpl('times-circle');
 
 					let siteName;
 
@@ -155,7 +155,7 @@ export default function ({
 
 	return {
 		dispose() {
-			onRemoveSite.dispose();
+			onRemoveSite.detach();
 			selectDelegate.dispose();
 		},
 	};

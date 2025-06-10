@@ -9,7 +9,10 @@ import React from 'react';
 
 import '@testing-library/jest-dom/extend-expect';
 
-import FieldBase from '../../../src/main/resources/META-INF/resources/FieldBase/ReactFieldBase.es';
+import FieldBase, {
+	normalizeInputValue,
+	updateFieldNameLocale,
+} from '../../../src/main/resources/META-INF/resources/js/api/FieldBase/ReactFieldBase';
 
 const spritemap = 'icons.svg';
 
@@ -22,6 +25,7 @@ const FieldBaseWithProvider = (props) => (
 );
 
 describe('ReactFieldBase', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
@@ -41,6 +45,7 @@ describe('ReactFieldBase', () => {
 	});
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 	});
@@ -114,7 +119,7 @@ describe('ReactFieldBase', () => {
 	});
 
 	it('renders the FieldBase with tooltip', () => {
-		const {container} = render(
+		const {findByTestId} = render(
 			<FieldBaseWithProvider spritemap={spritemap} tooltip="Tooltip" />
 		);
 
@@ -122,7 +127,7 @@ describe('ReactFieldBase', () => {
 			jest.runAllTimers();
 		});
 
-		expect(container.querySelector('.ddm-tooltip')).not.toBeNull();
+		expect(findByTestId('tooltip')).not.toBeNull();
 	});
 
 	it('does not render the label if showLabel is false', () => {
@@ -191,19 +196,17 @@ describe('ReactFieldBase', () => {
 	});
 
 	it('shows the popover for Format field when hovering over the tooltip icon', async () => {
-		const {container, findByTestId, getByRole, getByText} = render(
+		const {findByTestId, getByRole, getByText} = render(
 			<FieldBaseWithProvider
 				fieldName="inputMaskFormat"
 				popover={{
 					alignPosition: 'right-bottom',
 					content: 'Tooltip Description',
 					header: 'input-mask-format',
-					hideOnTriggerOut: true,
 					image: {
 						alt: 'input-mask-format',
 						height: 170,
-						src:
-							'http://localhost:8080/forms/input_mask_format.png',
+						src: 'http://localhost:8080/forms/input_mask_format.png',
 						width: 232,
 					},
 				}}
@@ -212,9 +215,9 @@ describe('ReactFieldBase', () => {
 			/>
 		);
 
-		const tooltipIcon = container.querySelector('.ddm-tooltip');
+		const tooltipIcon = await findByTestId('tooltip');
 
-		fireEvent.mouseOver(tooltipIcon);
+		fireEvent.click(tooltipIcon);
 
 		const clayPopover = await findByTestId('clayPopover');
 
@@ -232,8 +235,6 @@ describe('ReactFieldBase', () => {
 	});
 
 	it('renders the hidden inputs with data-languageid and data-field-name', () => {
-		Liferay.FeatureFlags['LPS-114700'] = true;
-
 		const localizedValue = {ca_ES: 'test_ca_ES', en_US: 'test_en_US'};
 
 		render(
@@ -257,13 +258,9 @@ describe('ReactFieldBase', () => {
 				Object.keys(localizedValue)[i]
 			);
 		});
-
-		Liferay.FeatureFlags['LPS-114700'] = false;
 	});
 
 	it('renders the label with info icon and its corresponding styles when the field is non-localizable', () => {
-		Liferay.FeatureFlags['LPS-114700'] = true;
-
 		const {getByLabelText, getByTitle} = render(
 			<FieldBaseWithProvider
 				editOnlyInDefaultLanguage
@@ -277,8 +274,6 @@ describe('ReactFieldBase', () => {
 		).toBeInTheDocument();
 
 		expect(getByLabelText('my-label')).toHaveClass('text-muted');
-
-		Liferay.FeatureFlags['LPS-114700'] = false;
 	});
 
 	describe('Hide Field', () => {
@@ -320,6 +315,70 @@ describe('ReactFieldBase', () => {
 			expect(getByText('hidden').parentNode).toHaveAttribute(
 				'class',
 				'label ml-1 label-secondary'
+			);
+		});
+	});
+
+	describe('updateFieldNameLocale function', () => {
+		it('checks if the name only changes the language id at the end even when using a custom language', () => {
+
+			// en_US -> language out-of-the-box
+			// co -> language customized
+
+			const customLanguageFieldName = 'com_liferay_fieldname$$co';
+			const defaultLanguageFieldName = 'com_liferay_fieldname$$en_US';
+
+			expect(
+				updateFieldNameLocale('co', 'en_US', customLanguageFieldName)
+			).toBe(defaultLanguageFieldName);
+
+			expect(
+				updateFieldNameLocale('en_US', 'co', defaultLanguageFieldName)
+			).toBe(customLanguageFieldName);
+		});
+	});
+
+	describe('normalizeInputValue function', () => {
+		it('checks if the value is being formatted according to their fieldType', () => {
+
+			// no value and any fieldType
+
+			expect(normalizeInputValue('text', null)).toBe('');
+
+			// text fieldType
+
+			const textValue = 'this is a text';
+
+			expect(normalizeInputValue('text', textValue)).toBe(textValue);
+
+			// date and date_time fieldType
+
+			const dateValue = '2024-12-25';
+			const dateTimeValue = '2024-12-25 21:00';
+
+			expect(normalizeInputValue('date', dateValue)).toBe(dateValue);
+
+			expect(normalizeInputValue('date_time', dateTimeValue)).toBe(
+				dateTimeValue
+			);
+
+			// image fieldType
+
+			const imageValue = {
+				alt: 'this is an alt text',
+				classNameId: 22222,
+				description: 'this is a description',
+				fileEntryId: '33333',
+				groupId: '10000',
+				height: 900,
+				title: 'my_image',
+				type: 'document',
+				url: '/documents/images/my_image',
+				width: 900,
+			};
+
+			expect(normalizeInputValue('image', imageValue)).toBe(
+				JSON.stringify(imageValue)
 			);
 		});
 	});

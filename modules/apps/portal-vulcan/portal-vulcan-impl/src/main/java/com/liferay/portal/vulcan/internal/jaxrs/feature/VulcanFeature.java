@@ -5,8 +5,8 @@
 
 package com.liferay.portal.vulcan.internal.jaxrs.feature;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
+import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.jakarta.rs.xml.JacksonXMLProvider;
 
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.portal.kernel.language.Language;
@@ -71,12 +71,14 @@ import com.liferay.portal.vulcan.internal.jaxrs.validation.BeanValidationInterce
 import com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor.EntityExtensionWriterInterceptor;
 import com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor.NestedFieldsWriterInterceptor;
 import com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor.PageEntityExtensionWriterInterceptor;
+import com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor.ProblemWriterInterceptor;
 import com.liferay.portal.vulcan.internal.param.converter.provider.DateParamConverterProvider;
+import com.liferay.portal.vulcan.jaxrs.context.ContextDataInjectorBuilderFactory;
 import com.liferay.portal.vulcan.pagination.provider.PaginationProvider;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Feature;
-import javax.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -139,6 +141,7 @@ public class VulcanFeature implements Feature {
 		featureContext.register(ObjectMapperContextResolver.class);
 		featureContext.register(PageEntityExtensionWriterInterceptor.class);
 		featureContext.register(PrincipalExceptionMapper.class);
+		featureContext.register(ProblemWriterInterceptor.class);
 		featureContext.register(RestrictFieldsQueryParamContextProvider.class);
 		featureContext.register(
 			SQLIntegrityConstraintViolationExceptionMapper.class);
@@ -160,10 +163,11 @@ public class VulcanFeature implements Feature {
 		featureContext.register(new CompanyContextProvider(_portal));
 		featureContext.register(
 			new ContextContainerRequestFilter(
-				_configurationAdmin, _expressionConvert, _filterParserProvider,
-				_groupLocalService, _language, _portal,
-				_resourceActionLocalService, _resourcePermissionLocalService,
-				_roleLocalService, _getScopeChecker(), _sortParserProvider,
+				_configurationAdmin, _contextDataInjectorBuilderFactory,
+				_expressionConvert, _filterParserProvider, _groupLocalService,
+				_language, _portal, _resourceActionLocalService,
+				_resourcePermissionLocalService, _roleLocalService,
+				_getScopeChecker(), _sortParserProvider,
 				_vulcanBatchEngineExportTaskResourceFactory,
 				_vulcanBatchEngineImportTaskResourceFactory));
 		featureContext.register(
@@ -219,6 +223,10 @@ public class VulcanFeature implements Feature {
 
 	@Reference
 	private ConfigurationAdmin _configurationAdmin;
+
+	@Reference
+	private ContextDataInjectorBuilderFactory
+		_contextDataInjectorBuilderFactory;
 
 	@Reference
 	private DepotEntryLocalService _depotEntryLocalService;

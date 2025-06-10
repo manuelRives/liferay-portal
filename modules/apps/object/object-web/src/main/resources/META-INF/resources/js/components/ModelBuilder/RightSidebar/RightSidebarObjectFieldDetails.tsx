@@ -6,12 +6,13 @@
 import {ClayButtonWithIcon} from '@clayui/button';
 import {Text} from '@clayui/core';
 import ClayPanel from '@clayui/panel';
-import {API, openToast, stringUtils} from '@liferay/object-js-components-web';
+import {API, stringUtils} from '@liferay/object-js-components-web';
+import {openToast} from 'frontend-js-components-web';
 import {sub} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 import {useStore} from 'react-flow-renderer';
 
-import ModalObjectFieldDeletionNotAllowed from '../../ModalObjectFieldDeletionNotAllowed';
+import ModalDeletionNotAllowed from '../../ModalDeletionNotAllowed';
 import {objectFieldInitialValues} from '../../ObjectField/EditObjectField';
 import {EditObjectFieldContent} from '../../ObjectField/EditObjectFieldContent';
 import {ModalDeleteObjectField} from '../../ObjectField/ModalDeleteObjectField';
@@ -23,14 +24,13 @@ import './RightSidebarObjectFieldDetails.scss';
 import {handleTriggerDeleteObjectField} from '../../ObjectField/deleteObjectFieldUtil';
 
 export function RightSidebarObjectFieldDetails() {
-	const [objectFieldDeleteInfo, setObjectFieldDeleteInfo] = useState<
-		ObjectFieldDeleteInfoProps
-	>({
-		deleteLastPublishedObjectDefinitionObjectField: false,
-		deleteObjectFieldObjectValidationRuleSetting: false,
-		showObjectFieldDeletionConfirmationModal: false,
-		showObjectFieldDeletionNotAllowedModal: false,
-	});
+	const [objectFieldDeleteInfo, setObjectFieldDeleteInfo] =
+		useState<ObjectFieldDeleteInfoProps>({
+			deleteLastPublishedObjectDefinitionObjectField: false,
+			deleteObjectFieldObjectValidationRuleSetting: false,
+			showObjectFieldDeletionConfirmationModal: false,
+			showObjectFieldDeletionNotAllowedModal: false,
+		});
 
 	const [
 		{
@@ -51,21 +51,17 @@ export function RightSidebarObjectFieldDetails() {
 
 	const {edges, nodes} = store.getState();
 
-	const objectDefinitionNodeData = selectedObjectDefinitionNode?.data as ObjectDefinitionNodeData;
+	const objectDefinitionNodeData =
+		selectedObjectDefinitionNode?.data as ObjectDefinitionNodeData;
 
-	const {
-		errors,
-		handleChange,
-		handleValidate,
-		setValues,
-		values,
-	} = useObjectFieldForm({
-		forbiddenChars,
-		forbiddenLastChars,
-		forbiddenNames,
-		initialValues: objectFieldInitialValues,
-		onSubmit: () => {},
-	});
+	const {errors, handleChange, handleValidate, setValues, values} =
+		useObjectFieldForm({
+			forbiddenChars,
+			forbiddenLastChars,
+			forbiddenNames,
+			initialValues: objectFieldInitialValues,
+			onSubmit: () => {},
+		});
 
 	const onSubmit = async (editedObjectField?: Partial<ObjectField>) => {
 		const validationErrors = handleValidate(editedObjectField ?? values);
@@ -110,7 +106,8 @@ export function RightSidebarObjectFieldDetails() {
 							objectDefinitionNodes: nodes,
 							objectRelationshipEdges: edges,
 							selectedObjectDefinitionNode,
-							updatedObjectField: updatedObjectFieldResponse as ObjectField,
+							updatedObjectField:
+								updatedObjectFieldResponse as ObjectField,
 						},
 						type: TYPES.UPDATE_OBJECT_FIELD_NODE_ROW,
 					});
@@ -125,6 +122,7 @@ export function RightSidebarObjectFieldDetails() {
 			}
 			catch (error) {
 				openToast({
+					autoClose: 15000,
 					message: (error as Error).message,
 					type: 'danger',
 				});
@@ -149,43 +147,49 @@ export function RightSidebarObjectFieldDetails() {
 				<span>{Liferay.Language.get('field-details')}</span>
 
 				<div className="lfr-objects__model-builder-right-sidebar-definition-node-title-buttons-container">
-					{!values.system && values.businessType !== 'Relationship' && (
-						<ClayButtonWithIcon
-							aria-label={Liferay.Language.get('delete')}
-							className="lfr-objects__model-builder-right-sidebar-definition-node-title-delete-button"
-							displayType="secondary"
-							onClick={() =>
-								handleTriggerDeleteObjectField({
-									baseResourceURL,
-									objectFieldId: selectedObjectField?.id!,
-									objectFieldLabel: stringUtils.getLocalizableLabel(
-										objectDefinitionNodeData.defaultLanguageId,
-										objectDefinitionNodeData.label,
-										objectDefinitionNodeData.name
-									),
-									onAfterDelete: () => {
-										if (
-											selectedObjectField &&
-											selectedObjectDefinitionNode
-										) {
-											dispatch({
-												payload: {
-													objectDefinitionNodes: nodes,
-													objectRelationshipEdges: edges,
-													selectedObjectDefinitionNode,
-													selectedObjectField,
-												},
-												type: TYPES.DELETE_OBJECT_FIELD,
-											});
-										}
-									},
-									setObjectFieldDeleteInfo,
-								})
-							}
-							symbol="trash"
-							title={Liferay.Language.get('delete')}
-						/>
-					)}
+					{!values.system &&
+						values.businessType !== 'Relationship' && (
+							<ClayButtonWithIcon
+								aria-label={Liferay.Language.get('delete')}
+								className="lfr-objects__model-builder-right-sidebar-definition-node-title-delete-button"
+								displayType="secondary"
+								onClick={() =>
+									handleTriggerDeleteObjectField({
+										baseResourceURL,
+										objectFieldId: selectedObjectField?.id!,
+										objectFieldLabel:
+											stringUtils.getLocalizableLabel({
+												fallbackLabel:
+													objectDefinitionNodeData.name,
+												fallbackLanguageId:
+													objectDefinitionNodeData.defaultLanguageId,
+												labels: objectDefinitionNodeData.label,
+											}),
+										onAfterDelete: () => {
+											if (
+												selectedObjectField &&
+												selectedObjectDefinitionNode
+											) {
+												dispatch({
+													payload: {
+														objectDefinitionNodes:
+															nodes,
+														objectRelationshipEdges:
+															edges,
+														selectedObjectDefinitionNode,
+														selectedObjectField,
+													},
+													type: TYPES.DELETE_OBJECT_FIELD,
+												});
+											}
+										},
+										setObjectFieldDeleteInfo,
+									})
+								}
+								symbol="trash"
+								title={Liferay.Language.get('delete')}
+							/>
+						)}
 				</div>
 			</div>
 
@@ -255,7 +259,7 @@ export function RightSidebarObjectFieldDetails() {
 			)}
 
 			{objectFieldDeleteInfo?.showObjectFieldDeletionNotAllowedModal && (
-				<ModalObjectFieldDeletionNotAllowed
+				<ModalDeletionNotAllowed
 					content={
 						objectFieldDeleteInfo?.deleteObjectFieldObjectValidationRuleSetting ? (
 							<Text>
@@ -263,11 +267,12 @@ export function RightSidebarObjectFieldDetails() {
 									Liferay.Language.get(
 										'the-object-field-x-cannot-be-deleted-because-it-is-the-only-custom-object-field-of-the-published-object-definition'
 									),
-									`${stringUtils.getLocalizableLabel(
-										objectDefinitionNodeData.defaultLanguageId as Liferay.Language.Locale,
-										values.label,
-										values.name
-									)}`
+									`${stringUtils.getLocalizableLabel({
+										fallbackLabel: values.name,
+										fallbackLanguageId:
+											objectDefinitionNodeData.defaultLanguageId as Liferay.Language.Locale,
+										labels: values.label,
+									})}`
 								)}
 							</Text>
 						) : (
@@ -276,16 +281,17 @@ export function RightSidebarObjectFieldDetails() {
 									Liferay.Language.get(
 										'the-object-field-x-cannot-be-deleted-because-it-is-used-in-a-unique-composite-key-validation'
 									),
-									`${stringUtils.getLocalizableLabel(
-										objectDefinitionNodeData.defaultLanguageId as Liferay.Language.Locale,
-										values.label,
-										values.name
-									)}`
+									`${stringUtils.getLocalizableLabel({
+										fallbackLabel: values.name,
+										fallbackLanguageId:
+											objectDefinitionNodeData.defaultLanguageId as Liferay.Language.Locale,
+										labels: values.label,
+									})}`
 								)}
 							</Text>
 						)
 					}
-					onVisibilityChange={() =>
+					onModalClose={() =>
 						setObjectFieldDeleteInfo({
 							...objectFieldDeleteInfo,
 							showObjectFieldDeletionNotAllowedModal: false,

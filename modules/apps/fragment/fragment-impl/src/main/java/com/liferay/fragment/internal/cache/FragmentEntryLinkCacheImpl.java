@@ -12,13 +12,17 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 
 import java.util.Locale;
 import java.util.Set;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -46,6 +50,10 @@ public class FragmentEntryLinkCacheImpl implements FragmentEntryLinkCache {
 	public void removeFragmentEntryLinkCache(
 		FragmentEntryLink fragmentEntryLink) {
 
+		if (!CTCollectionThreadLocal.isProductionMode()) {
+			return;
+		}
+
 		Set<Locale> availableLocales = _language.getAvailableLocales(
 			fragmentEntryLink.getGroupId());
 
@@ -56,15 +64,32 @@ public class FragmentEntryLinkCacheImpl implements FragmentEntryLinkCache {
 
 	@Override
 	public void removeFragmentEntryLinkCache(long fragmentEntryLinkId) {
-		removeFragmentEntryLinkCache(
+		FragmentEntryLink fragmentEntryLink =
 			_fragmentEntryLinkLocalService.fetchFragmentEntryLink(
-				fragmentEntryLinkId));
+				fragmentEntryLinkId);
+
+		if (fragmentEntryLink == null) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"No fragment entry link exists with the fragment entry " +
+						"link ID " + fragmentEntryLinkId);
+			}
+
+			return;
+		}
+
+		removeFragmentEntryLinkCache(fragmentEntryLink);
 	}
 
 	@Activate
 	protected void activate() {
 		_portalCache = (PortalCache<String, String>)_multiVMPool.getPortalCache(
 			FragmentEntryLink.class.getName());
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_multiVMPool.removePortalCache(FragmentEntryLink.class.getName());
 	}
 
 	private String _getPortalCacheKey(
@@ -80,6 +105,9 @@ public class FragmentEntryLinkCacheImpl implements FragmentEntryLinkCache {
 
 		return sb.toString();
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		FragmentEntryLinkCacheImpl.class);
 
 	@Reference
 	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;

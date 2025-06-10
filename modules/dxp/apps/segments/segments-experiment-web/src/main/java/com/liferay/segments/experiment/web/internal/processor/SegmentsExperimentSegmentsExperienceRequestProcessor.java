@@ -27,11 +27,11 @@ import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.segments.service.SegmentsExperimentLocalService;
 import com.liferay.segments.service.SegmentsExperimentRelLocalService;
 
-import java.util.List;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -87,7 +87,9 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessor
 				_segmentsExperimentLocalService.fetchSegmentsExperiment(
 					themeDisplay.getScopeGroupId(), segmentsExperimentKey);
 
-			if (segmentsExperiment != null) {
+			if ((segmentsExperiment != null) &&
+				(segmentsExperiment.getPlid() == themeDisplay.getPlid())) {
+
 				return new long[] {
 					segmentsExperiment.getSegmentsExperienceId()
 				};
@@ -100,7 +102,8 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessor
 		if (segmentsExperienceId != -1) {
 			SegmentsExperiment segmentsExperiment =
 				_segmentsExperimentLocalService.fetchSegmentsExperiment(
-					themeDisplay.getScopeGroupId(), segmentsExperienceId, plid);
+					themeDisplay.getScopeGroupId(),
+					_getSegmentsExperienceKey(segmentsExperienceId), plid);
 
 			if (segmentsExperiment != null) {
 				httpServletRequest.setAttribute(
@@ -134,7 +137,8 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessor
 
 		SegmentsExperiment segmentsExperiment =
 			_segmentsExperimentLocalService.fetchSegmentsExperiment(
-				themeDisplay.getScopeGroupId(), segmentsExperienceId, plid);
+				themeDisplay.getScopeGroupId(),
+				_getSegmentsExperienceKey(segmentsExperienceId), plid);
 
 		if (segmentsExperiment == null) {
 			if (_log.isDebugEnabled()) {
@@ -259,7 +263,9 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessor
 				_segmentsExperienceLocalService.fetchSegmentsExperience(
 					selectedSegmentsExperienceId);
 
-			if (segmentsExperience != null) {
+			if ((segmentsExperience != null) &&
+				(segmentsExperience.getPlid() == themeDisplay.getPlid())) {
+
 				return selectedSegmentsExperienceId;
 			}
 		}

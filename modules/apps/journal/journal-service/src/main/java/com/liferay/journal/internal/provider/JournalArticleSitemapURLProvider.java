@@ -8,20 +8,25 @@ package com.liferay.journal.internal.provider;
 import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
+import com.liferay.depot.group.provider.SiteConnectedGroupGroupProvider;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.internal.util.JournalUtil;
 import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.model.JournalArticleResource;
 import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.journal.service.JournalArticleResourceLocalService;
 import com.liferay.journal.service.JournalArticleService;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
@@ -34,6 +39,7 @@ import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Element;
@@ -67,13 +73,8 @@ public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
 	public boolean isInclude(long companyId, long groupId)
 		throws PortalException {
 
-		if (_sitemapConfigurationManager.includeWebContentGroupEnabled(
-				companyId, groupId)) {
-
-			return true;
-		}
-
-		return false;
+		return _sitemapConfigurationManager.includeWebContentGroupEnabled(
+			companyId, groupId);
 	}
 
 	@Override
@@ -128,8 +129,8 @@ public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
 			element, null, layoutSet, themeDisplay, journalArticles, true);
 	}
 
-	protected List<JournalArticle> getDisplayPageTemplateArticles(
-		Layout layout) {
+	protected List<JournalArticle> getDisplayPageTemplateArticles(Layout layout)
+		throws PortalException {
 
 		List<JournalArticle> journalArticles = new ArrayList<>();
 
@@ -176,11 +177,26 @@ public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
 
 			resourcePrimKeys = new ArrayList<>(resourcePrimKeys);
 
-			resourcePrimKeys.addAll(
-				_journalArticleLocalService.
-					getArticlesClassPKsWithDefaultDisplayPage(
-						layoutPageTemplateEntry.getGroupId(),
-						layoutPageTemplateEntry.getClassTypeId()));
+			for (long groupId :
+					_siteConnectedGroupGroupProvider.
+						getCurrentAndAncestorSiteAndDepotGroupIds(
+							layout.getGroupId())) {
+
+				if (groupId == layout.getGroupId()) {
+					resourcePrimKeys.addAll(
+						_journalArticleLocalService.
+							getArticlesClassPKsWithDefaultDisplayPage(
+								groupId,
+								layoutPageTemplateEntry.getClassTypeId()));
+				}
+				else {
+					resourcePrimKeys.addAll(
+						TransformUtil.transform(
+							_journalArticleResourceLocalService.
+								getArticleResources(groupId),
+							JournalArticleResource::getResourcePrimKey));
+				}
+			}
 		}
 
 		for (Long resourcePrimKey : resourcePrimKeys) {
@@ -248,9 +264,10 @@ public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
 			return;
 		}
 
-		Set<String> processedArticleIds = new HashSet<>();
-
 		String portalURL = _portal.getPortalURL(layoutSet, themeDisplay);
+		Set<String> processedArticleIds = new HashSet<>();
+		Set<Locale> siteAvailableLocales = _language.getAvailableLocales(
+			themeDisplay.getScopeGroupId());
 
 		for (JournalArticle journalArticle : journalArticles) {
 			if (processedArticleIds.contains(journalArticle.getArticleId()) ||
@@ -309,7 +326,7 @@ public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
 
 			Map<Locale, String> alternateURLs = _portal.getAlternateURLs(
 				articleURL, themeDisplay, articleLayout,
-				_getAvailableLocales(journalArticle));
+				_getAvailableLocales(journalArticle, siteAvailableLocales));
 
 			for (String alternateURL : alternateURLs.values()) {
 				_sitemapManager.addURLElement(
@@ -322,14 +339,23 @@ public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
 		}
 	}
 
-	private Set<Locale> _getAvailableLocales(JournalArticle journalArticle) {
+	private Set<Locale> _getAvailableLocales(
+		JournalArticle journalArticle, Set<Locale> siteAvailableLocales) {
+
 		Set<Locale> availableLocales = new HashSet<>();
+
+		if (SetUtil.isEmpty(siteAvailableLocales)) {
+			return availableLocales;
+		}
 
 		for (String availableLanguageId :
 				journalArticle.getAvailableLanguageIds()) {
 
-			availableLocales.add(
-				LocaleUtil.fromLanguageId(availableLanguageId));
+			Locale locale = LocaleUtil.fromLanguageId(availableLanguageId);
+
+			if (siteAvailableLocales.contains(locale)) {
+				availableLocales.add(locale);
+			}
 		}
 
 		return availableLocales;
@@ -377,7 +403,14 @@ public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
 	private JournalArticleLocalService _journalArticleLocalService;
 
 	@Reference
+	private JournalArticleResourceLocalService
+		_journalArticleResourceLocalService;
+
+	@Reference
 	private JournalArticleService _journalArticleService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
@@ -391,6 +424,9 @@ public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private SiteConnectedGroupGroupProvider _siteConnectedGroupGroupProvider;
 
 	@Reference
 	private SitemapConfigurationManager _sitemapConfigurationManager;

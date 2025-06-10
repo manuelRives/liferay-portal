@@ -5,6 +5,7 @@
 
 package com.liferay.style.book.web.internal.portlet.action;
 
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -14,9 +15,10 @@ import com.liferay.style.book.constants.StyleBookPortletKeys;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
 import com.liferay.style.book.service.StyleBookEntryService;
+import com.liferay.style.book.util.DefaultStyleBookEntryUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -26,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + StyleBookPortletKeys.STYLE_BOOK,
+		"jakarta.portlet.name=" + StyleBookPortletKeys.STYLE_BOOK,
 		"mvc.command.name=/style_book/update_style_book_entry_default"
 	},
 	service = MVCActionCommand.class
@@ -55,9 +57,20 @@ public class UpdateStyleBookEntryDefaultMVCActionCommand
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		StyleBookEntry styleBookEntry =
-			_styleBookEntryLocalService.fetchDefaultStyleBookEntry(
-				themeDisplay.getScopeGroupId());
+		StyleBookEntry styleBookEntry = null;
+
+		if (FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-30204")) {
+
+			styleBookEntry =
+				_styleBookEntryLocalService.fetchDefaultStyleBookEntry(
+					themeDisplay.getScopeGroupId(),
+					ParamUtil.getString(actionRequest, "themeId"));
+		}
+		else {
+			styleBookEntry = DefaultStyleBookEntryUtil.getDefaultStyleBookEntry(
+				themeDisplay.getLayout());
+		}
 
 		if (styleBookEntry != null) {
 			_styleBookEntryService.updateDefaultStyleBookEntry(

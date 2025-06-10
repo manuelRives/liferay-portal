@@ -72,8 +72,8 @@ public class ObjectLayoutLocalServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			_objectDefinitionLocalService);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 	}
 
 	@Test
@@ -98,12 +98,12 @@ public class ObjectLayoutLocalServiceTest {
 				"Test", null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				ObjectDefinitionConstants.SCOPE_SITE, null, 1,
-				_objectDefinitionLocalService,
 				Collections.singletonList(
 					ObjectFieldUtil.createObjectField(
 						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
 						ObjectFieldConstants.DB_TYPE_STRING,
-						RandomTestUtil.randomString(), StringUtil.randomId())));
+						RandomTestUtil.randomString(),
+						"x" + RandomTestUtil.randomString())));
 
 		AssertUtils.assertFailure(
 			ObjectDefinitionModifiableException.class,
@@ -117,8 +117,8 @@ public class ObjectLayoutLocalServiceTest {
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			_objectDefinition.getObjectDefinitionId());
 
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			_objectDefinitionLocalService);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 
 		_objectDefinition.setStorageType(RandomTestUtil.randomString());
 
@@ -153,8 +153,8 @@ public class ObjectLayoutLocalServiceTest {
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			_objectDefinition.getObjectDefinitionId());
 
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			_objectDefinitionLocalService);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 
 		_objectDefinition.setEnableCategorization(false);
 
@@ -188,8 +188,8 @@ public class ObjectLayoutLocalServiceTest {
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			_objectDefinition.getObjectDefinitionId());
 
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			_objectDefinitionLocalService);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 
 		AssertUtils.assertFailure(
 			ObjectLayoutBoxCategorizationTypeException.class,
@@ -223,8 +223,8 @@ public class ObjectLayoutLocalServiceTest {
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			_objectDefinition.getObjectDefinitionId());
 
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			_objectDefinitionLocalService);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 
 		AssertUtils.assertFailure(
 			ObjectLayoutBoxCategorizationTypeException.class,
@@ -284,8 +284,8 @@ public class ObjectLayoutLocalServiceTest {
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			_objectDefinition.getObjectDefinitionId());
 
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			_objectDefinitionLocalService);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 
 		AssertUtils.assertFailure(
 			ObjectLayoutBoxCategorizationTypeException.class,
@@ -358,17 +358,17 @@ public class ObjectLayoutLocalServiceTest {
 
 		_objectDefinition =
 			ObjectDefinitionTestUtil.addModifiableSystemObjectDefinition(
-				TestPropsValues.getUserId(), null,
+				TestPropsValues.getUserId(), null, false,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				"Test", null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				ObjectDefinitionConstants.SCOPE_SITE, null, 1,
-				_objectDefinitionLocalService,
 				Collections.singletonList(
 					ObjectFieldUtil.createObjectField(
 						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
 						ObjectFieldConstants.DB_TYPE_STRING,
-						RandomTestUtil.randomString(), StringUtil.randomId())));
+						RandomTestUtil.randomString(),
+						"x" + RandomTestUtil.randomString())));
 
 		objectLayout = _addObjectLayout();
 
@@ -503,8 +503,9 @@ public class ObjectLayoutLocalServiceTest {
 				ObjectFieldConstants.BUSINESS_TYPE_TEXT, null, null,
 				ObjectFieldConstants.DB_TYPE_STRING, false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				StringUtil.randomId(), ObjectFieldConstants.READ_ONLY_FALSE,
-				null, false, false, Collections.emptyList());
+				false, "x" + RandomTestUtil.randomString(),
+				ObjectFieldConstants.READ_ONLY_FALSE, null, false, false,
+				Collections.emptyList());
 		}
 		else {
 			objectField = ObjectFieldUtil.addCustomObjectField(
@@ -515,7 +516,7 @@ public class ObjectLayoutLocalServiceTest {
 					LocalizedMapUtil.getLocalizedMap(
 						RandomTestUtil.randomString())
 				).name(
-					StringUtil.randomId()
+					"x" + RandomTestUtil.randomString()
 				).objectDefinitionId(
 					_objectDefinition.getObjectDefinitionId()
 				).required(

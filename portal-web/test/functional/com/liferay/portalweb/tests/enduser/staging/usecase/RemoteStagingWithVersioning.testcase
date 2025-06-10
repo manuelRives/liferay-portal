@@ -1,4 +1,4 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
 	property app.server.bundles.size = "1";
@@ -14,6 +14,10 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
@@ -62,7 +66,7 @@ definition {
 				webContentContent = "WC WebContent Content",
 				webContentTitle = "WC WebContent Title");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 
 			Navigator.openSiteURL(siteName = "Site Name");
 
@@ -83,7 +87,7 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://localhost:9080",
 				userEmailAddress = "test@liferay.com");
 
@@ -92,11 +96,17 @@ definition {
 				pageName = "Staging Test Page",
 				siteName = "Remote Site");
 
-			AssetPublisherPortlet.configureDynamicAssetSelectionPG(portletName = "Asset Publisher");
+			AssetPublisherPortlet.gotoSelectCollection(portletName = "Asset Publisher");
 
-			Refresh();
+			Navigator.gotoNavTab(navTab = "Asset Selection");
 
-			Alert.viewInfoMessageSpecific(infoMessage = "There are no results.");
+			Click(locator1 = "APConfiguration#ASSET_SELECTION_BASIC");
+
+			IFrame.selectModalFrame();
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#EMPTY_INFO",
+				value1 = "There are no collections.");
 		}
 	}
 
@@ -135,7 +145,7 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://localhost:9080",
 				userEmailAddress = "test@liferay.com");
 

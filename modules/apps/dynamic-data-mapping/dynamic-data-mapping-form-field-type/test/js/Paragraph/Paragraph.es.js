@@ -7,7 +7,7 @@ import {act, cleanup, render} from '@testing-library/react';
 import {PageProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import Paragraph from '../../../src/main/resources/META-INF/resources/Paragraph/Paragraph.es';
+import Paragraph from '../../../src/main/resources/META-INF/resources/js/Paragraph/Paragraph.es';
 
 const spritemap = 'icons.svg';
 
@@ -23,10 +23,12 @@ const ParagraphWithProvider = (props) => (
 );
 
 describe('Field Paragraph', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
 	beforeAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = (...args) => {
 			if (/DataProvider: Trying/.test(args[0])) {
@@ -37,6 +39,7 @@ describe('Field Paragraph', () => {
 	});
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 	});

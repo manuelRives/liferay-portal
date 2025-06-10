@@ -6,11 +6,14 @@
 package com.liferay.jethr0.routine.repository;
 
 import com.liferay.jethr0.entity.repository.BaseEntityRepository;
+import com.liferay.jethr0.git.repository.GitBranchEntityRepository;
 import com.liferay.jethr0.job.JobEntity;
 import com.liferay.jethr0.job.repository.JobEntityRepository;
 import com.liferay.jethr0.routine.RoutineEntity;
 import com.liferay.jethr0.routine.dalo.RoutineEntityDALO;
 import com.liferay.jethr0.routine.dalo.RoutineToJobsEntityRelationshipDALO;
+
+import org.json.JSONObject;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +24,32 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RoutineEntityRepository
 	extends BaseEntityRepository<RoutineEntity> {
+
+	@Override
+	public RoutineEntity add(RoutineEntity routineEntity) {
+		long gitBranchEntityId = routineEntity.getGitBranchEntityId();
+
+		if (gitBranchEntityId > 0) {
+			routineEntity.setGitBranchEntity(
+				_gitBranchEntityRepository.getById(gitBranchEntityId));
+		}
+
+		return super.add(routineEntity);
+	}
+
+	@Override
+	public RoutineEntity create(JSONObject jsonObject) {
+		RoutineEntity routineEntity = super.create(jsonObject);
+
+		long gitBranchEntityId = routineEntity.getGitBranchEntityId();
+
+		if (gitBranchEntityId > 0) {
+			routineEntity.setGitBranchEntity(
+				_gitBranchEntityRepository.getById(gitBranchEntityId));
+		}
+
+		return routineEntity;
+	}
 
 	@Override
 	public RoutineEntityDALO getEntityDALO() {
@@ -38,6 +67,12 @@ public class RoutineEntityRepository
 		routineEntity.addJobEntity(jobEntity);
 
 		jobEntity.setRoutineEntity(routineEntity);
+	}
+
+	public void setGitBranchEntityRepository(
+		GitBranchEntityRepository gitBranchEntityRepository) {
+
+		_gitBranchEntityRepository = gitBranchEntityRepository;
 	}
 
 	public void setJobEntityRepository(
@@ -75,6 +110,7 @@ public class RoutineEntityRepository
 				jobEntity));
 	}
 
+	private GitBranchEntityRepository _gitBranchEntityRepository;
 	private JobEntityRepository _jobEntityRepository;
 
 	@Autowired

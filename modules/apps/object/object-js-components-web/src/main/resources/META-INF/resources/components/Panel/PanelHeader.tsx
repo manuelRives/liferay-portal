@@ -41,7 +41,8 @@ export function PanelHeader({
 				className={classNames(
 					'object-admin-panel__header__content-left',
 					{
-						'object-admin-panel__header__content-left--disabled': disabled,
+						'object-admin-panel__header__content-left--disabled':
+							disabled,
 					}
 				)}
 			>
@@ -63,7 +64,7 @@ export function PanelHeader({
 						>
 							<ClayIcon
 								className="object-admin-panel__tooltip-icon"
-								symbol="info-panel-open"
+								symbol="info-circle-open"
 							/>
 						</span>
 					</ClayTooltipProvider>

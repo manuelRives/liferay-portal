@@ -38,9 +38,9 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.exception.RequiredSegmentsExperienceException;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,7 +50,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/delete_layout"
 	},
 	service = MVCActionCommand.class
@@ -156,22 +156,25 @@ public class DeleteLayoutMVCActionCommand extends BaseMVCActionCommand {
 		try {
 			_layoutService.deleteLayout(selPlid, serviceContext);
 
-			JSONPortletResponseUtil.writeJSON(
-				actionRequest, actionResponse,
-				JSONUtil.put(
-					"redirectURL",
-					() -> {
-						String redirect = ParamUtil.getString(
-							actionRequest, "redirect");
+			if (!layout.isDraftLayout()) {
+				JSONPortletResponseUtil.writeJSON(
+					actionRequest, actionResponse,
+					JSONUtil.put(
+						"redirectURL",
+						() -> {
+							String redirect = ParamUtil.getString(
+								actionRequest, "redirect");
 
-						if (redirect != null) {
-							return redirect;
-						}
+							if (redirect != null) {
+								return redirect;
+							}
 
-						return _portal.getControlPanelPortletURL(
-							actionRequest, LayoutAdminPortletKeys.GROUP_PAGES,
-							PortletRequest.RENDER_PHASE);
-					}));
+							return _portal.getControlPanelPortletURL(
+								actionRequest,
+								LayoutAdminPortletKeys.GROUP_PAGES,
+								PortletRequest.RENDER_PHASE);
+						}));
+			}
 		}
 		catch (Exception exception) {
 			Throwable throwable = exception.getCause();

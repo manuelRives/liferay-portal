@@ -12,8 +12,7 @@ import {
 	constantsUtils,
 	invalidateRequired,
 } from '@liferay/object-js-components-web';
-import {InputLocalized} from 'frontend-js-components-web';
-import {openToast} from 'frontend-js-web';
+import {InputLocalized, openToast} from 'frontend-js-components-web';
 import React, {useEffect, useState} from 'react';
 
 import {defaultLanguageId} from '../../utils/constants';
@@ -66,7 +65,7 @@ function ListTypeEntriesModal() {
 		}
 		setState((previousValues) => ({
 			...previousValues,
-			itemKey: toCamelCase(value),
+			itemKey: toCamelCase(value, false, true),
 		}));
 	};
 
@@ -76,6 +75,7 @@ function ListTypeEntriesModal() {
 		if (modalType !== 'edit' && keyChanged === false) {
 			newItemKey = toCamelCase(
 				newName_i18n[defaultLanguageId] as string,
+				true,
 				true
 			);
 		}
@@ -126,6 +126,7 @@ function ListTypeEntriesModal() {
 
 		return () =>
 			Liferay.detach('openListTypeEntriesModal', openModal as () => void);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -155,7 +156,7 @@ function ListTypeEntriesModal() {
 			errors.name = constantsUtils.REQUIRED_MSG;
 		}
 
-		if (specialCharactersInString(key as string)) {
+		if (key && specialCharactersInString(key)) {
 			errors.key = Liferay.Language.get(
 				'key-must-only-contain-letters-and-digits'
 			);
@@ -228,6 +229,7 @@ function ListTypeEntriesModal() {
 				)}
 
 				<InputLocalized
+					aria-label={Liferay.Language.get('item-name')}
 					disabled={readOnly}
 					error={errors.name_i18n}
 					id="locale"
@@ -238,8 +240,10 @@ function ListTypeEntriesModal() {
 				/>
 
 				<Input
+					aria-label={Liferay.Language.get('item-key')}
 					disabled={modalType === 'edit'}
 					error={errors.name}
+					id="listTypeEntriesModalKeyInputField"
 					label={Liferay.Language.get('key')}
 					name="name"
 					onChange={({target}) => handleKeyChange(target.value)}
@@ -251,6 +255,7 @@ function ListTypeEntriesModal() {
 					<Input
 						disabled={system}
 						error={errors.externalReferenceCode}
+						id="externalReferenceCodeInput"
 						label={Liferay.Language.get('external-reference-code')}
 						name="externalReferenceCode"
 						onChange={({target}) =>

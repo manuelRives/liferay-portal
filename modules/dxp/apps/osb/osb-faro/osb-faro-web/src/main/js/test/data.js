@@ -73,6 +73,7 @@ export function mockIndividual(seed = 0, properties) {
 		activitiesCount: 1000,
 		colorId: String(seed),
 		dateCreated: getTimestamp(-2),
+		firstActivityDate: getTimestamp(-1),
 		id: String(seed),
 		image: '/path/to/portrait.png',
 		lastActivityDate: getTimestamp(),
@@ -792,6 +793,8 @@ export function mockActivityHistory(data = {}) {
 
 export function mockEvent(seed = 0) {
 	return {
+		applicationId: 'Page',
+		assetTitle: 'Page Title',
 		canonicalUrl: `https://www.liferay${seed}.com`,
 		createDate: seed + 100000,
 		name: `Asset ${seed}`,

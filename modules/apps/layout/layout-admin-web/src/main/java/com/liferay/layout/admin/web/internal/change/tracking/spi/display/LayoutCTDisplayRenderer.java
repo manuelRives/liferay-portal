@@ -29,12 +29,12 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -160,6 +160,8 @@ public class LayoutCTDisplayRenderer extends BaseCTDisplayRenderer<Layout> {
 
 		url = HttpComponentsUtil.addParameter(url, "persistState", "false");
 		url = HttpComponentsUtil.addParameter(
+			url, "previewCTCollectionId", layout.getCtCollectionId());
+		url = HttpComponentsUtil.addParameter(
 			url, "showUserLocaleOptionsMessage", "false");
 
 		return StringBundler.concat(
@@ -221,17 +223,19 @@ public class LayoutCTDisplayRenderer extends BaseCTDisplayRenderer<Layout> {
 			() -> {
 				long styleBookEntryId = layout.getStyleBookEntryId();
 
-				if (styleBookEntryId > 0) {
-					StyleBookEntry styleBookEntry =
-						_styleBookEntryLocalService.fetchStyleBookEntry(
-							layout.getStyleBookEntryId());
-
-					if (styleBookEntry != null) {
-						return styleBookEntry.getName();
-					}
+				if (styleBookEntryId <= 0) {
+					return null;
 				}
 
-				return null;
+				StyleBookEntry styleBookEntry =
+					_styleBookEntryLocalService.fetchStyleBookEntry(
+						layout.getStyleBookEntryId());
+
+				if (styleBookEntry == null) {
+					return null;
+				}
+
+				return styleBookEntry.getName();
 			}
 		).display(
 			"type", layout.getType()

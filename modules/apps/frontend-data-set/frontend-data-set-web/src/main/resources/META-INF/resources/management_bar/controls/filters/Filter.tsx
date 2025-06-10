@@ -17,7 +17,7 @@ import dateRangeFilterImplementation from './implementation/DateRangeFilter';
 import selectionFilterImplementation from './implementation/SelectionFilter';
 
 export interface FilterImplementation<
-	T extends FilterImplementationArgs<unknown>
+	T extends FilterImplementationArgs<unknown>,
 > {
 	Component: (args: T) => ReactElement;
 	getOdataString: (args: T) => string;
@@ -25,6 +25,7 @@ export interface FilterImplementation<
 }
 
 export interface FilterImplementationArgs<T> {
+	active: boolean;
 	id: string;
 	selectedData: T;
 	setFilter: (args: SetFilterArgs) => void;
@@ -44,6 +45,7 @@ interface FilterConfiguration {
 interface FilterComponentArgs {
 	id: string;
 	moduleURL: string;
+	onClose: () => void;
 	type: 'clientExtension' | 'dateRange' | 'selection';
 }
 
@@ -53,25 +55,13 @@ const FILTER_IMPLEMENTATIONS = {
 	selection: selectionFilterImplementation,
 };
 
-// @ts-ignore
-
-const getComponent = Liferay.Loader?.require ? loadModule : getFakeComponent;
-
-function getFakeComponent() {
-	return new Promise((resolve) => {
-		setTimeout(
-			() =>
-				resolve(() => (
-					<div className="custom-component">
-						fakely fetched component
-					</div>
-				)),
-			3000
-		);
-	});
-}
-
-const Filter = ({id, moduleURL, type, ...otherProps}: FilterComponentArgs) => {
+const Filter = ({
+	id,
+	moduleURL,
+	onClose,
+	type,
+	...otherProps
+}: FilterComponentArgs) => {
 	const [{filters}, viewsDispatch] = useContext(ViewsContext);
 
 	const filterImplementation = FILTER_IMPLEMENTATIONS[type];
@@ -86,7 +76,7 @@ const Filter = ({id, moduleURL, type, ...otherProps}: FilterComponentArgs) => {
 
 	useEffect(() => {
 		if (moduleURL) {
-			getComponent(moduleURL).then((FetchedComponent: React.Component) =>
+			loadModule(moduleURL).then((FetchedComponent: React.Component) =>
 				setComponent(() => FetchedComponent)
 			);
 		}
@@ -109,12 +99,10 @@ const Filter = ({id, moduleURL, type, ...otherProps}: FilterComponentArgs) => {
 			...otherProps,
 		};
 
-		newFilter.odataFilterString = filterImplementation.getOdataString(
-			newFilter
-		);
-		newFilter.selectedItemsLabel = filterImplementation.getSelectedItemsLabel(
-			newFilter
-		);
+		newFilter.odataFilterString =
+			filterImplementation.getOdataString(newFilter);
+		newFilter.selectedItemsLabel =
+			filterImplementation.getSelectedItemsLabel(newFilter);
 
 		viewsDispatch({
 			type: VIEWS_ACTION_TYPES.UPDATE_FILTERS,
@@ -126,7 +114,12 @@ const Filter = ({id, moduleURL, type, ...otherProps}: FilterComponentArgs) => {
 
 	return Component ? (
 		<div className="data-set-filter">
-			<Component id={id} setFilter={setFilter} {...otherProps} />
+			<Component
+				id={id}
+				onClose={onClose}
+				setFilter={setFilter}
+				{...otherProps}
+			/>
 		</div>
 	) : (
 		<ClayLoadingIndicator size="sm" />

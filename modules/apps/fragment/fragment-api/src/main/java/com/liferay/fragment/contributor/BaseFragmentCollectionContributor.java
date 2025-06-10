@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -29,6 +30,8 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.ServletContext;
 
 import java.io.InputStream;
 
@@ -44,8 +47,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -218,11 +219,11 @@ public abstract class BaseFragmentCollectionContributor
 
 					FragmentEntry fragmentEntry = _getFragmentEntry(url);
 
-					List<FragmentEntry> fragmentEntryList =
+					List<FragmentEntry> fragmentEntries =
 						_fragmentEntries.computeIfAbsent(
 							fragmentEntry.getType(), type -> new ArrayList<>());
 
-					fragmentEntryList.add(fragmentEntry);
+					fragmentEntries.add(fragmentEntry);
 				}
 			}
 
@@ -305,6 +306,7 @@ public abstract class BaseFragmentCollectionContributor
 		FragmentComposition fragmentComposition =
 			fragmentCompositionLocalService.createFragmentComposition(0L);
 
+		fragmentComposition.setCompanyId(CompanyConstants.SYSTEM);
 		fragmentComposition.setFragmentCompositionKey(fragmentCompositionKey);
 		fragmentComposition.setName(name);
 		fragmentComposition.setData(definition);
@@ -395,6 +397,7 @@ public abstract class BaseFragmentCollectionContributor
 		FragmentEntry fragmentEntry =
 			fragmentEntryLocalService.createFragmentEntry(0L);
 
+		fragmentEntry.setCompanyId(CompanyConstants.SYSTEM);
 		fragmentEntry.setFragmentEntryKey(fragmentEntryKey);
 		fragmentEntry.setName(name);
 		fragmentEntry.setCss(css);

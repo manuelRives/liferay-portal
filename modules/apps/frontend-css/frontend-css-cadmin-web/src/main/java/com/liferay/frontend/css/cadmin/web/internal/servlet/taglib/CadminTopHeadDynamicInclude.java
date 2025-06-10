@@ -5,6 +5,7 @@
 
 package com.liferay.frontend.css.cadmin.web.internal.servlet.taglib;
 
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
@@ -12,13 +13,13 @@ import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
@@ -45,7 +46,7 @@ public class CadminTopHeadDynamicInclude extends BaseDynamicInclude {
 
 		PrintWriter printWriter = httpServletResponse.getWriter();
 
-		printWriter.print("<link data-senna-track=\"temporary\" href=\"");
+		printWriter.write("<link data-senna-track=\"temporary\" href=\"");
 
 		AbsolutePortalURLBuilder absolutePortalURLBuilder =
 			_absolutePortalURLBuilderFactory.getAbsolutePortalURLBuilder(
@@ -56,8 +57,11 @@ public class CadminTopHeadDynamicInclude extends BaseDynamicInclude {
 				_bundleContext.getBundle(), "clay_admin.css"
 			).build());
 
-		printWriter.println("\" id=\"liferayCadminCSS\" rel=\"stylesheet\"");
-		printWriter.println(" type=\"text/css\" />");
+		printWriter.println("\" id=\"liferayCadminCSS\"");
+		printWriter.write(
+			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+				httpServletRequest));
+		printWriter.println(" rel=\"stylesheet\" type=\"text/css\" />");
 	}
 
 	@Override

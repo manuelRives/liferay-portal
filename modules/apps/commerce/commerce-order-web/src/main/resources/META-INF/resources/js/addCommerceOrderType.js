@@ -4,24 +4,25 @@
  */
 
 import {CommerceServiceProvider, commerceEvents} from 'commerce-frontend-js';
-import {createPortletURL, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {createPortletURL} from 'frontend-js-web';
 
 export default function ({
 	defaultLanguageId,
 	editCommerceOrderTypePortletURL,
 	namespace,
 }) {
-	const CommerceOrderTypeResource = CommerceServiceProvider.AdminOrderAPI(
-		'v1'
-	);
+	const CommerceOrderTypeResource =
+		CommerceServiceProvider.AdminOrderAPI('v1');
 
 	const form = document.getElementById(`${namespace}fm`);
 
 	form.addEventListener('submit', (event) => {
 		event.preventDefault();
 
-		const description = form.querySelector(`#${namespace}description`)
-			.value;
+		const description = form.querySelector(
+			`#${namespace}description`
+		).value;
 		const name = form.querySelector(`#${namespace}name`).value;
 
 		if (!name) {

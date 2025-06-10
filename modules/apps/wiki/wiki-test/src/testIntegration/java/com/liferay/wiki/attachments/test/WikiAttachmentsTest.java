@@ -29,7 +29,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.wiki.model.WikiNode;
@@ -319,7 +319,7 @@ public class WikiAttachmentsTest {
 			addWikiPage();
 		}
 
-		WikiTestUtil.addWikiAttachment(
+		WikiTestUtil.addPageAttachment(
 			_page.getUserId(), _page.getNodeId(), _page.getTitle(), getClass());
 	}
 
@@ -342,7 +342,7 @@ public class WikiAttachmentsTest {
 			addWikiPage();
 		}
 
-		WikiTestUtil.addWikiAttachment(
+		WikiTestUtil.addPageAttachment(
 			_page.getUserId(), _page.getNodeId(), _page.getTitle(), fileName,
 			getClass());
 	}
@@ -371,7 +371,7 @@ public class WikiAttachmentsTest {
 
 		String fileName = RandomTestUtil.randomString() + ".docx";
 
-		WikiTestUtil.addWikiAttachment(
+		WikiTestUtil.addPageAttachment(
 			TestPropsValues.getUserId(), _node.getNodeId(), _page.getTitle(),
 			fileName, getClass());
 

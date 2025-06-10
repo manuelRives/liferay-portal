@@ -6,7 +6,8 @@
 import {TreeView as ClayTreeView} from '@clayui/core';
 import ClayIcon from '@clayui/icon';
 import classnames from 'classnames';
-import {fetch, navigate, objectToFormData, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, navigate, objectToFormData} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useMemo, useState} from 'react';
 
@@ -36,17 +37,14 @@ export default function NavigationPanel({
 		() => normalizeItems(initialItems, portletNamespace),
 		[initialItems, portletNamespace]
 	);
-	const searchItems = useMemo(() => getSearchItems(initialItems), [
-		initialItems,
-	]);
+	const searchItems = useMemo(
+		() => getSearchItems(initialItems),
+		[initialItems]
+	);
 
 	const [searchActive, setSearchActive] = useState(false);
 
 	const handleClickItem = (event, item) => {
-		if (event.defaultPrevented) {
-			return;
-		}
-
 		event.stopPropagation();
 		event.preventDefault();
 
@@ -74,7 +72,8 @@ export default function NavigationPanel({
 				[`${portletNamespace}position`]: index?.next ?? -1,
 				[`${portletNamespace}resourceClassNameId`]: item.classNameId,
 				[`${portletNamespace}resourcePrimKey`]: item.id,
-				[`${portletNamespace}parentResourceClassNameId`]: parentItem.classNameId,
+				[`${portletNamespace}parentResourceClassNameId`]:
+					parentItem.classNameId,
 				[`${portletNamespace}parentResourcePrimKey`]: parentItem.id,
 			}),
 			method: 'POST',

@@ -6,7 +6,11 @@
 package com.liferay.journal.web.internal.layout.display.page.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.friendly.url.configuration.FriendlyURLSeparatorCompanyConfiguration;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
@@ -28,15 +32,20 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.sites.kernel.util.Sites;
+
+import jakarta.portlet.PortletPreferences;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -67,6 +76,40 @@ public class JournalArticleLayoutDisplayPageProviderTest {
 	@After
 	public void tearDown() throws Exception {
 		ServiceContextThreadLocal.popServiceContext();
+	}
+
+	@Test
+	public void testGetLayoutDisplayPageObjectProviderJournalArticleWithExpiredArticleVersionInfoItemReference()
+		throws Exception {
+
+		JournalArticle originalArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		JournalTestUtil.updateArticle(originalArticle);
+
+		JournalTestUtil.expireArticle(
+			originalArticle.getGroupId(), originalArticle,
+			originalArticle.getVersion());
+
+		AssetRendererFactory<?> assetRendererFactory =
+			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClass(
+				JournalArticle.class);
+
+		AssetEntry assetEntry = assetRendererFactory.getAssetEntry(
+			JournalArticle.class.getName(),
+			originalArticle.getResourcePrimKey());
+
+		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+			new ClassPKInfoItemIdentifier(assetEntry.getClassPK());
+
+		classPKInfoItemIdentifier.setVersion(
+			String.valueOf(originalArticle.getVersion()));
+
+		Assert.assertNull(
+			_layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+				new InfoItemReference(
+					assetEntry.getClassName(), classPKInfoItemIdentifier)));
 	}
 
 	@Test
@@ -173,7 +216,75 @@ public class JournalArticleLayoutDisplayPageProviderTest {
 				_group.getGroupId(), _journalArticle.getUrlTitle()));
 	}
 
-	@FeatureFlags("LPS-203351")
+	@Test
+	public void testGetLayoutDisplayPageObjectProviderParentJournalArticleContentSharingWithChildrenDisabled()
+		throws Exception {
+
+		PortletPreferences portletPreferences = PrefsPropsUtil.getPreferences(
+			_group.getCompanyId());
+
+		String originalSitesContentSharingWithChildrenEnabledValue =
+			portletPreferences.getValue(
+				PropsKeys.SITES_CONTENT_SHARING_WITH_CHILDREN_ENABLED, null);
+
+		try {
+			portletPreferences.setValue(
+				PropsKeys.SITES_CONTENT_SHARING_WITH_CHILDREN_ENABLED,
+				String.valueOf(Sites.CONTENT_SHARING_WITH_CHILDREN_DISABLED));
+
+			portletPreferences.store();
+
+			Group childGroup = GroupTestUtil.addGroupToCompany(
+				_group.getCompanyId(), _group.getGroupId());
+
+			Assert.assertNull(
+				_layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+					childGroup.getGroupId(), _journalArticle.getUrlTitle()));
+		}
+		finally {
+			portletPreferences.setValue(
+				PropsKeys.SITES_CONTENT_SHARING_WITH_CHILDREN_ENABLED,
+				originalSitesContentSharingWithChildrenEnabledValue);
+
+			portletPreferences.store();
+		}
+	}
+
+	@Test
+	public void testGetLayoutDisplayPageObjectProviderParentJournalArticleContentSharingWithChildrenEnabledByDefault()
+		throws Exception {
+
+		PortletPreferences portletPreferences = PrefsPropsUtil.getPreferences(
+			_group.getCompanyId());
+
+		String originalSitesContentSharingWithChildrenEnabledValue =
+			portletPreferences.getValue(
+				PropsKeys.SITES_CONTENT_SHARING_WITH_CHILDREN_ENABLED, null);
+
+		try {
+			portletPreferences.setValue(
+				PropsKeys.SITES_CONTENT_SHARING_WITH_CHILDREN_ENABLED,
+				String.valueOf(
+					Sites.CONTENT_SHARING_WITH_CHILDREN_ENABLED_BY_DEFAULT));
+
+			portletPreferences.store();
+
+			Group childGroup = GroupTestUtil.addGroupToCompany(
+				_group.getCompanyId(), _group.getGroupId());
+
+			Assert.assertNotNull(
+				_layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+					childGroup.getGroupId(), _journalArticle.getUrlTitle()));
+		}
+		finally {
+			portletPreferences.setValue(
+				PropsKeys.SITES_CONTENT_SHARING_WITH_CHILDREN_ENABLED,
+				originalSitesContentSharingWithChildrenEnabledValue);
+
+			portletPreferences.store();
+		}
+	}
+
 	@Test
 	public void testGetURLSeparator() {
 		Assert.assertEquals(
@@ -181,7 +292,7 @@ public class JournalArticleLayoutDisplayPageProviderTest {
 			_layoutDisplayPageProvider.getURLSeparator());
 	}
 
-	@FeatureFlags("LPS-203351")
+	@Ignore
 	@Test
 	public void testGetURLSeparatorWithConfiguredURLSeparator()
 		throws Exception {

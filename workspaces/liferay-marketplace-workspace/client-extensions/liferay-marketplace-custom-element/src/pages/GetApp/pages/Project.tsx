@@ -7,20 +7,19 @@ import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {useContext, useMemo} from 'react';
-
-import './index.scss';
-
 import {useNavigate, useOutletContext} from 'react-router-dom';
 
 import RadioCardList from '../../../components/RadioCardList/RadioCardList';
 import {MarketplaceContext} from '../../../context/MarketplaceContext';
 import i18n from '../../../i18n';
 import {Liferay} from '../../../liferay/liferay';
-import {ConsoleUserProject} from '../../../services/oauth/MarketplaceSpringBootOAuth2';
+import {ConsoleUserProject} from '../../../services/oauth/types';
+import {convertSize} from '../../../utils/filesize';
 import {useGetAppContext} from '../GetAppContextProvider';
 import {GetAppOutletContext} from '../GetAppOutlet';
 import Container from '../containers/Container';
-import {convertMegabyteToGigabyte} from '../hooks/useGetResourceInfo';
+
+import './index.scss';
 
 const getCardContent = (project: ConsoleUserProject) => {
 	const cpu =
@@ -29,12 +28,12 @@ const getCardContent = (project: ConsoleUserProject) => {
 
 	const environment = project.environments.length;
 
-	const memory = convertMegabyteToGigabyte({
-		inverseOperation: true,
-		value:
-			project.rootProjectPlanUsage.memory.limit -
+	const memory = convertSize(
+		project.rootProjectPlanUsage.memory.limit -
 			project.rootProjectPlanUsage.memory.used,
-	});
+		'MB',
+		'GB'
+	);
 
 	return `${environment} Environments , ${cpu} CPUs, ${memory} GB Ram`;
 };
@@ -58,15 +57,15 @@ const ProjectSelection = () => {
 		dispatch,
 	] = useGetAppContext();
 
-	const {handleGetApp, isFreeApp, loading} = useOutletContext<
-		GetAppOutletContext
-	>();
+	const {handleGetApp, isFreeApp, loading} =
+		useOutletContext<GetAppOutletContext>();
 
 	const {properties} = useContext(MarketplaceContext);
 
-	const userProjects = useMemo(() => resourceRequest?.userProjects ?? [], [
-		resourceRequest?.userProjects,
-	]);
+	const userProjects = useMemo(
+		() => resourceRequest?.userProjects ?? [],
+		[resourceRequest?.userProjects]
+	);
 
 	if (isLoading) {
 		return <ClayLoadingIndicator />;
@@ -147,11 +146,11 @@ const ProjectSelection = () => {
 						title: (
 							<div className="d-flex">
 								<div>
-									<h5 className="m-0 project-selection-page-title-text">
+									<div className="h5 m-0 project-selection-page-title-text">
 										{project.rootProjectId.toUpperCase()}
-									</h5>
+									</div>
 
-									<p className="m-0 project-selection-page-description-text">
+									<p className="m-0 project-selection-page-description-text text-nowrap">
 										{getCardContent(project)}
 									</p>
 								</div>
@@ -174,7 +173,7 @@ const ProjectSelection = () => {
 				leftRadio
 				onSelect={(radioOption: RadioOption<ConsoleUserProject>) =>
 					dispatch({
-						payload: (radioOption.value as unknown) as string,
+						payload: radioOption.value as unknown as string,
 						type: 'SET_PROJECT',
 					})
 				}
@@ -185,7 +184,8 @@ const ProjectSelection = () => {
 				{`${i18n.translate('not-seeing-a-specific-project')} `}
 				<a
 					className="font-weight-bold project-selection-page-link"
-					href={properties.contactSupportUrl}
+					href={properties.contactSupportURL}
+					target="_blank"
 				>
 					{i18n.translate('contact-support')}
 				</a>

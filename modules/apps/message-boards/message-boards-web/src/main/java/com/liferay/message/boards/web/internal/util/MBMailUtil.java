@@ -16,9 +16,9 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsValues;
 
-import java.util.Map;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.PortletRequest;
+import java.util.Map;
 
 /**
  * @author Sergio González
@@ -59,17 +59,17 @@ public class MBMailUtil {
 		).put(
 			"[$MAILING_LIST_ADDRESS$]",
 			() -> {
-				if (PrefsPropsUtil.getBoolean(
+				if (!PrefsPropsUtil.getBoolean(
 						themeDisplay.getCompanyId(),
 						PropsKeys.POP_SERVER_NOTIFICATIONS_ENABLED,
 						PropsValues.POP_SERVER_NOTIFICATIONS_ENABLED)) {
 
-					return LanguageUtil.get(
-						themeDisplay.getLocale(),
-						"the-email-address-of-the-mailing-list");
+					return null;
 				}
 
-				return null;
+				return LanguageUtil.get(
+					themeDisplay.getLocale(),
+					"the-email-address-of-the-mailing-list");
 			}
 		).put(
 			"[$MESSAGE_BODY$]",
@@ -169,17 +169,17 @@ public class MBMailUtil {
 		).put(
 			"[$MAILING_LIST_ADDRESS$]",
 			() -> {
-				if (PrefsPropsUtil.getBoolean(
+				if (!PrefsPropsUtil.getBoolean(
 						themeDisplay.getCompanyId(),
 						PropsKeys.POP_SERVER_NOTIFICATIONS_ENABLED,
 						PropsValues.POP_SERVER_NOTIFICATIONS_ENABLED)) {
 
-					return LanguageUtil.get(
-						themeDisplay.getLocale(),
-						"the-email-address-of-the-mailing-list");
+					return null;
 				}
 
-				return null;
+				return LanguageUtil.get(
+					themeDisplay.getLocale(),
+					"the-email-address-of-the-mailing-list");
 			}
 		).put(
 			"[$MESSAGE_USER_ADDRESS$]",

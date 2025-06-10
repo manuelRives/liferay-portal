@@ -4,10 +4,11 @@
  */
 
 import ClayLabel from '@clayui/label';
+import classNames from 'classnames';
 
 import purchasedAppIcon from '../../../assets/icons/purchased_app_icon.svg';
 import OrderStatus from '../../../components/OrderStatus';
-import {OrderType} from '../../../enums/OrderType';
+import {OrderTypes} from '../../../enums/Order';
 
 enum OrderAppTypeEnum {
 	DXPAPP = 'DXP APP',
@@ -19,37 +20,55 @@ type OrderDetailsStatusDescriptionProps = {
 	productOwner?: string;
 };
 
-const getOrderDetailsType = (orderTypeExternalReferenceCode: string) =>
-	orderTypeExternalReferenceCode === OrderType.DXP
-		? OrderAppTypeEnum.DXPAPP
-		: OrderAppTypeEnum.CLOUDAPP;
+const getOrderDetailsType = (orderTypeExternalReferenceCode: string) => {
+	if (orderTypeExternalReferenceCode === OrderTypes.DXPAPP) {
+		return OrderAppTypeEnum.DXPAPP;
+	}
+
+	if (orderTypeExternalReferenceCode === OrderTypes.CLOUDAPP) {
+		return OrderAppTypeEnum.CLOUDAPP;
+	}
+};
 
 const OrderDetailsStatusDescription = ({
 	order,
 	productOwner,
-}: OrderDetailsStatusDescriptionProps) => (
-	<div className="align-items-center d-flex">
-		<div className="order-details-publisher">{productOwner}</div>
+}: OrderDetailsStatusDescriptionProps) => {
+	const orderType = getOrderDetailsType(
+		order?.orderTypeExternalReferenceCode as string
+	);
 
-		<div className="align-items-center app-details-status d-flex mx-3">
-			<OrderStatus orderStatus={order?.orderStatusInfo.label}>
-				{order?.orderStatusInfo.label}
-			</OrderStatus>
-		</div>
-
-		<ClayLabel className="rounded" displayType="info" large>
-			<div className="align-items-center d-flex">
-				<img
-					alt="Purchased Order Icon"
-					className="mr-1"
-					src={purchasedAppIcon}
-				/>
-				{getOrderDetailsType(
-					order?.orderTypeExternalReferenceCode as string
-				)}
+	return (
+		<div className="align-items-center d-flex">
+			<div
+				className={classNames(classNames, {
+					'order-details-publisher mr-3': productOwner,
+				})}
+			>
+				{productOwner}
 			</div>
-		</ClayLabel>
-	</div>
-);
+
+			<div className="align-items-center app-details-status d-flex mr-3">
+				<OrderStatus orderStatus={order?.orderStatusInfo.label}>
+					{order?.orderStatusInfo.label}
+				</OrderStatus>
+			</div>
+
+			{orderType && (
+				<ClayLabel className="rounded" displayType="info" large>
+					<div className="align-items-center d-flex">
+						<img
+							alt="Purchased Order Icon"
+							className="mr-1"
+							src={purchasedAppIcon}
+						/>
+
+						{orderType}
+					</div>
+				</ClayLabel>
+			)}
+		</div>
+	);
+};
 
 export default OrderDetailsStatusDescription;

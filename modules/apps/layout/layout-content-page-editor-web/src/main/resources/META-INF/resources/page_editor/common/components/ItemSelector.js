@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ClayButtonWithIcon} from '@clayui/button';
+import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import {ClayDropDownWithItems} from '@clayui/drop-down';
 import ClayForm, {ClayInput} from '@clayui/form';
 import classNames from 'classnames';
@@ -16,6 +16,7 @@ import {config} from '../../app/config/index';
 import findPageContent from '../../app/utils/findPageContent';
 import getEditableId from '../../app/utils/getEditableId';
 import {getPageContentDropdownItems} from '../../app/utils/getPageContentDropdownItems';
+import {ITEM_SELECTOR_VARIANTS} from '../../app/utils/itemSelectorVariants';
 import usePageContents from '../../app/utils/usePageContents';
 import {openItemSelector} from '../openItemSelector';
 
@@ -40,6 +41,7 @@ export default function ItemSelector({
 	showEditControls = true,
 	showMappedItems = true,
 	transformValueCallback,
+	variant = ITEM_SELECTOR_VARIANTS.input,
 }) {
 	const helpTextId = useId();
 	const itemSelectorInputId = useId();
@@ -62,6 +64,7 @@ export default function ItemSelector({
 			eventName: eventName || `${config.portletNamespace}selectInfoItem`,
 			itemSelectorURL: itemSelectorURL || config.infoItemSelectorURL,
 			modalProps,
+			selectedItem,
 			transformValueCallback,
 		});
 	}, [
@@ -70,6 +73,7 @@ export default function ItemSelector({
 		modalProps,
 		onItemSelect,
 		onBeforeItemSelect,
+		selectedItem,
 		transformValueCallback,
 	]);
 
@@ -89,12 +93,16 @@ export default function ItemSelector({
 		});
 
 		if (quickMappedInfoItems.length) {
-			transformedMappedItems = quickMappedInfoItems.map(
-				transformMappedItem
-			);
+			transformedMappedItems =
+				quickMappedInfoItems.map(transformMappedItem);
 		}
 		else if (pageContents.length) {
-			transformedMappedItems = pageContents.map(transformMappedItem);
+			transformedMappedItems = pageContents
+				.filter(
+					(pageContent) =>
+						pageContent.type !== Liferay.Language.get('collection')
+				)
+				.map(transformMappedItem);
 		}
 
 		if (transformedMappedItems.length) {
@@ -181,6 +189,14 @@ export default function ItemSelector({
 		label
 	);
 
+	if (variant === ITEM_SELECTOR_VARIANTS.button) {
+		return (
+			<ClayButton displayType="secondary" onClick={openModal} size="sm">
+				{label}
+			</ClayButton>
+		);
+	}
+
 	return (
 		<ClayForm.Group className={className}>
 			<label htmlFor={itemSelectorInputId}>{label}</label>
@@ -190,7 +206,8 @@ export default function ItemSelector({
 					<ClayInput
 						aria-describedby={helpText ? helpTextId : null}
 						className={classNames({
-							'page-editor__item-selector__content-input': showEditControls,
+							'page-editor__item-selector__content-input':
+								showEditControls,
 						})}
 						id={itemSelectorInputId}
 						placeholder={sub(

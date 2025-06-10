@@ -25,8 +25,8 @@ List<DropdownItem> dropdownItems = inputAssetLinksDisplayContext.getActionDropdo
 			"removeIcon", removeLinkIcon
 		).build()
 	%>'
-	alignmentByViewport='<%= true %>'
-	alignmentPosition='<%= 6 %>'
+	alignmentByViewport="<%= true %>"
+	alignmentPosition="<%= 6 %>"
 	aria-label='<%= LanguageUtil.get(request, "select-items") %>'
 	cssClass="btn btn-secondary"
 	dropdownItems="<%= dropdownItems %>"
@@ -58,9 +58,9 @@ List<DropdownItem> dropdownItems = inputAssetLinksDisplayContext.getActionDropdo
 		<liferay-ui:search-container-column-text
 			name="title"
 		>
-			<h4 class="list-group-title">
+			<div class="list-group-title">
 				<%= HtmlUtil.escape(assetLinkEntry.getTitle(locale)) %>
-			</h4>
+			</div>
 
 			<p class="list-group-subtitle">
 				<%= inputAssetLinksDisplayContext.getAssetType(assetLinkEntry) %>

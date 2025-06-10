@@ -4,7 +4,7 @@
  */
 
 import {useEffect, useMemo, useState} from 'react';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useSearchParams} from 'react-router-dom';
 import i18n from '~/i18n';
 import {APIResponse} from '~/services/rest';
 import {chartColors} from '~/util/constants';
@@ -37,6 +37,37 @@ const chartSelectData = [
 const useCaseResultsChart = ({buildId}: {buildId: number}) => {
 	const [entity, setEntity] = useState('');
 	const {pathname} = useLocation();
+	const [searchParams] = useSearchParams();
+
+	const serializedFilter = useMemo(() => {
+		const filterString = searchParams.get('filter') as string;
+		if (!filterString) {
+			return '';
+		}
+
+		const filterObject = JSON.parse(filterString);
+
+		for (const key in filterObject) {
+			if (Array.isArray(filterObject[key])) {
+				filterObject[key] = (filterObject[key] as string[]).join(',');
+			}
+		}
+
+		return filterObject;
+	}, [searchParams]);
+
+	const params = serializedFilter
+		? {
+				params: {
+					pageSize: -1,
+					...serializedFilter,
+				},
+			}
+		: {
+				params: {
+					pageSize: -1,
+				},
+			};
 
 	useEffect(() => {
 		const path = pathname.split('/').at(-1) as string;
@@ -50,11 +81,7 @@ const useCaseResultsChart = ({buildId}: {buildId: number}) => {
 
 	const {data, loading} = useFetch<APIResponse<any>>(
 		`/testray-status-metrics/by-testray-buildId/${buildId}/testray-${entity}-metrics`,
-		{
-			params: {
-				pageSize: -1,
-			},
-		}
+		{...params, swrConfig: {shouldFetch: !!entity}}
 	);
 
 	const responseItems = useMemo(() => data?.items || [], [data?.items]);
@@ -65,8 +92,8 @@ const useCaseResultsChart = ({buildId}: {buildId: number}) => {
 				key,
 				...responseItems.map(({testrayStatusMetric}) =>
 					key === 'INCOMPLETE'
-						? (testrayStatusMetric.untested || 0) +
-						  (testrayStatusMetric.inProgress || 0)
+						? (testrayStatusMetric.incomplete || 0) +
+							(testrayStatusMetric.untested || 0)
 						: testrayStatusMetric[value] ?? getRandom(1000)
 				),
 			];
@@ -81,12 +108,21 @@ const useCaseResultsChart = ({buildId}: {buildId: number}) => {
 		[entity, responseItems]
 	);
 
+	const testrayRunNumber = useMemo(() => {
+		if (entity === 'runs') {
+			return responseItems.map((item) => item['testrayRunNumber']);
+		}
+
+		return [];
+	}, [responseItems, entity]);
+
 	return {
 		chart: {
 			colors: chartColors,
 			columnNames,
 			columns: chartData,
 			statuses: Object.keys(statususes),
+			testrayRunNumber,
 		},
 		entity,
 		loading,

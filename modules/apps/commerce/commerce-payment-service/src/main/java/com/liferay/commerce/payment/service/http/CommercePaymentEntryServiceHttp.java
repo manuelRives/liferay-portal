@@ -46,9 +46,9 @@ public class CommercePaymentEntryServiceHttp {
 				HttpPrincipal httpPrincipal, long classNameId, long classPK,
 				long commerceChannelId, java.math.BigDecimal amount,
 				String callbackURL, String cancelURL, String currencyCode,
-				String languageId, String note, String paymentIntegrationKey,
-				int paymentIntegrationType, String reasonKey,
-				String transactionCode, int type,
+				String languageId, String note, String payload,
+				String paymentIntegrationKey, int paymentIntegrationType,
+				String reasonKey, String transactionCode, int type,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -60,7 +60,7 @@ public class CommercePaymentEntryServiceHttp {
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, classNameId, classPK, commerceChannelId, amount,
-				callbackURL, cancelURL, currencyCode, languageId, note,
+				callbackURL, cancelURL, currencyCode, languageId, note, payload,
 				paymentIntegrationKey, paymentIntegrationType, reasonKey,
 				transactionCode, type, serviceContext);
 
@@ -99,9 +99,10 @@ public class CommercePaymentEntryServiceHttp {
 				long classNameId, long classPK, long commerceChannelId,
 				java.math.BigDecimal amount, String callbackURL,
 				String cancelURL, String currencyCode, String errorMessages,
-				String languageId, String note, String paymentIntegrationKey,
-				int paymentIntegrationType, int paymentStatus, String reasonKey,
-				String redirectURL, String transactionCode, int type,
+				String languageId, String note, String payload,
+				String paymentIntegrationKey, int paymentIntegrationType,
+				int paymentStatus, String reasonKey, String redirectURL,
+				String transactionCode, int type,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -114,7 +115,7 @@ public class CommercePaymentEntryServiceHttp {
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, externalReferenceCode, classNameId, classPK,
 				commerceChannelId, amount, callbackURL, cancelURL, currencyCode,
-				errorMessages, languageId, note, paymentIntegrationKey,
+				errorMessages, languageId, note, payload, paymentIntegrationKey,
 				paymentIntegrationType, paymentStatus, reasonKey, redirectURL,
 				transactionCode, type, serviceContext);
 
@@ -378,6 +379,48 @@ public class CommercePaymentEntryServiceHttp {
 		}
 	}
 
+	public static int getCommercePaymentEntriesCount(
+			HttpPrincipal httpPrincipal, long companyId, long classNameId,
+			long classPK, int type)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommercePaymentEntryServiceUtil.class,
+				"getCommercePaymentEntriesCount",
+				_getCommercePaymentEntriesCountParameterTypes7);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, companyId, classNameId, classPK, type);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return ((Integer)returnObj).intValue();
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static com.liferay.commerce.payment.model.CommercePaymentEntry
 			getCommercePaymentEntry(
 				HttpPrincipal httpPrincipal, long commercePaymentEntryId)
@@ -387,7 +430,7 @@ public class CommercePaymentEntryServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentEntryServiceUtil.class,
 				"getCommercePaymentEntry",
-				_getCommercePaymentEntryParameterTypes7);
+				_getCommercePaymentEntryParameterTypes8);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commercePaymentEntryId);
@@ -421,6 +464,47 @@ public class CommercePaymentEntryServiceHttp {
 		}
 	}
 
+	public static java.math.BigDecimal getRefundedAmount(
+			HttpPrincipal httpPrincipal, long companyId, long classNameId,
+			long classPK)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommercePaymentEntryServiceUtil.class, "getRefundedAmount",
+				_getRefundedAmountParameterTypes9);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, companyId, classNameId, classPK);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (java.math.BigDecimal)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static java.util.List
 		<com.liferay.commerce.payment.model.CommercePaymentEntry> search(
 				HttpPrincipal httpPrincipal, long companyId,
@@ -433,7 +517,7 @@ public class CommercePaymentEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentEntryServiceUtil.class, "search",
-				_searchParameterTypes8);
+				_searchParameterTypes10);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId, classNameIds, classPKs, currencyCodes,
@@ -476,21 +560,22 @@ public class CommercePaymentEntryServiceHttp {
 				long commercePaymentEntryId, long commerceChannelId,
 				java.math.BigDecimal amount, String callbackURL,
 				String cancelURL, String currencyCode, String errorMessages,
-				String languageId, String note, String paymentIntegrationKey,
-				int paymentIntegrationType, int paymentStatus, String reasonKey,
-				String redirectURL, String transactionCode, int type)
+				String languageId, String note, String payload,
+				String paymentIntegrationKey, int paymentIntegrationType,
+				int paymentStatus, String reasonKey, String redirectURL,
+				String transactionCode, int type)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentEntryServiceUtil.class,
 				"updateCommercePaymentEntry",
-				_updateCommercePaymentEntryParameterTypes9);
+				_updateCommercePaymentEntryParameterTypes11);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, externalReferenceCode, commercePaymentEntryId,
 				commerceChannelId, amount, callbackURL, cancelURL, currencyCode,
-				errorMessages, languageId, note, paymentIntegrationKey,
+				errorMessages, languageId, note, payload, paymentIntegrationKey,
 				paymentIntegrationType, paymentStatus, reasonKey, redirectURL,
 				transactionCode, type);
 
@@ -533,7 +618,7 @@ public class CommercePaymentEntryServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentEntryServiceUtil.class,
 				"updateExternalReferenceCode",
-				_updateExternalReferenceCodeParameterTypes10);
+				_updateExternalReferenceCodeParameterTypes12);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commercePaymentEntryId, externalReferenceCode);
@@ -576,7 +661,7 @@ public class CommercePaymentEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentEntryServiceUtil.class, "updateNote",
-				_updateNoteParameterTypes11);
+				_updateNoteParameterTypes13);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commercePaymentEntryId, note);
@@ -619,7 +704,7 @@ public class CommercePaymentEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentEntryServiceUtil.class, "updateReasonKey",
-				_updateReasonKeyParameterTypes12);
+				_updateReasonKeyParameterTypes14);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commercePaymentEntryId, reasonKey);
@@ -660,16 +745,17 @@ public class CommercePaymentEntryServiceHttp {
 		new Class[] {
 			long.class, long.class, long.class, java.math.BigDecimal.class,
 			String.class, String.class, String.class, String.class,
-			String.class, String.class, int.class, String.class, String.class,
-			int.class, com.liferay.portal.kernel.service.ServiceContext.class
+			String.class, String.class, String.class, int.class, String.class,
+			String.class, int.class,
+			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[]
 		_addOrUpdateCommercePaymentEntryParameterTypes1 = new Class[] {
 			String.class, long.class, long.class, long.class,
 			java.math.BigDecimal.class, String.class, String.class,
 			String.class, String.class, String.class, String.class,
-			String.class, int.class, int.class, String.class, String.class,
-			String.class, int.class,
+			String.class, String.class, int.class, int.class, String.class,
+			String.class, String.class, int.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[] _deleteCommercePaymentEntryParameterTypes2 =
@@ -689,28 +775,34 @@ public class CommercePaymentEntryServiceHttp {
 			long.class, long.class, long.class, int.class, int.class,
 			com.liferay.portal.kernel.util.OrderByComparator.class
 		};
-	private static final Class<?>[] _getCommercePaymentEntryParameterTypes7 =
+	private static final Class<?>[]
+		_getCommercePaymentEntriesCountParameterTypes7 = new Class[] {
+			long.class, long.class, long.class, int.class
+		};
+	private static final Class<?>[] _getCommercePaymentEntryParameterTypes8 =
 		new Class[] {long.class};
-	private static final Class<?>[] _searchParameterTypes8 = new Class[] {
+	private static final Class<?>[] _getRefundedAmountParameterTypes9 =
+		new Class[] {long.class, long.class, long.class};
+	private static final Class<?>[] _searchParameterTypes10 = new Class[] {
 		long.class, long[].class, long[].class, String[].class, String.class,
 		String[].class, int[].class, boolean.class, int.class, int.class,
 		com.liferay.portal.kernel.search.Sort.class
 	};
-	private static final Class<?>[] _updateCommercePaymentEntryParameterTypes9 =
-		new Class[] {
+	private static final Class<?>[]
+		_updateCommercePaymentEntryParameterTypes11 = new Class[] {
 			String.class, long.class, long.class, java.math.BigDecimal.class,
 			String.class, String.class, String.class, String.class,
-			String.class, String.class, String.class, int.class, int.class,
-			String.class, String.class, String.class, int.class
+			String.class, String.class, String.class, String.class, int.class,
+			int.class, String.class, String.class, String.class, int.class
 		};
 	private static final Class<?>[]
-		_updateExternalReferenceCodeParameterTypes10 = new Class[] {
+		_updateExternalReferenceCodeParameterTypes12 = new Class[] {
 			long.class, String.class
 		};
-	private static final Class<?>[] _updateNoteParameterTypes11 = new Class[] {
+	private static final Class<?>[] _updateNoteParameterTypes13 = new Class[] {
 		long.class, String.class
 	};
-	private static final Class<?>[] _updateReasonKeyParameterTypes12 =
+	private static final Class<?>[] _updateReasonKeyParameterTypes14 =
 		new Class[] {long.class, String.class};
 
 }

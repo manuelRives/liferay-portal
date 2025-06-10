@@ -66,10 +66,12 @@
 
 		List<KeyValuePair> leftList = new ArrayList<>();
 
-		String[] currentLanguageIds = PrefsPropsUtil.getStringArray(company.getCompanyId(), PropsKeys.LOCALES, StringPool.COMMA, PropsValues.LOCALES_ENABLED);
+		String[] currentLanguageIds = ArrayUtil.unique(PrefsPropsUtil.getStringArray(company.getCompanyId(), PropsKeys.LOCALES, StringPool.COMMA, PropsValues.LOCALES_ENABLED));
 
-		for (Locale currentLocale : LocaleUtil.fromLanguageIds(currentLanguageIds)) {
-			leftList.add(new KeyValuePair(LanguageUtil.getLanguageId(currentLocale), currentLocale.getDisplayName(locale)));
+		for (String currentLanguageId : currentLanguageIds) {
+			Locale currentLocale = LocaleUtil.fromLanguageId(currentLanguageId);
+
+			leftList.add(new KeyValuePair(currentLanguageId, currentLocale.getDisplayName(locale)));
 		}
 
 		// Right list
@@ -121,20 +123,25 @@
 	}
 
 	function <portlet:namespace />saveLocales() {
-		var form = document.<portlet:namespace />fm;
 
-		var currentLanguageIdsElement = Liferay.Util.getFormElement(
-			form,
-			'currentLanguageIds'
-		);
+		// Wrapping in a timeout to deal with React's async rendering
 
-		if (currentLanguageIdsElement) {
-			Liferay.Util.setFormValues(form, {
-				<%= PropsKeys.LOCALES %>: Liferay.Util.getSelectedOptionValues(
-					currentLanguageIdsElement
-				),
-			});
-		}
+		setTimeout(() => {
+			var form = document.<portlet:namespace />fm;
+
+			var currentLanguageIdsElement = Liferay.Util.getFormElement(
+				form,
+				'currentLanguageIds'
+			);
+
+			if (currentLanguageIdsElement) {
+				Liferay.Util.setFormValues(form, {
+					<%= PropsKeys.LOCALES %>: Liferay.Util.getSelectedOptionValues(
+						currentLanguageIdsElement
+					),
+				});
+			}
+		});
 	}
 
 	Liferay.after(

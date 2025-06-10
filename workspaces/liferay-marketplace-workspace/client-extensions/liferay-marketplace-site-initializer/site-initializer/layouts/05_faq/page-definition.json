@@ -1,0 +1,91 @@
+{
+	"pageElement": {
+		"pageElements": [
+			{
+				"definition": {
+					"indexed": true,
+					"layout": {
+						"widthType": "Fluid"
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"fragment": {
+								"key": "faq-headline",
+								"siteKey": "[$GROUP_KEY$]"
+							},
+							"fragmentStyle": {
+								"marginBottom": "4",
+								"marginTop": "6"
+							},
+							"indexed": true
+						},
+						"id": "e1ed6610-7bbb-8e0a-5609-87cb1307a23b",
+						"type": "Fragment"
+					}
+				],
+				"type": "Section"
+			},
+			{
+				"definition": {
+					"fragment": {
+						"key": "BASIC_COMPONENT-separator"
+					},
+					"indexed": true
+				},
+				"id": "885b967f-0214-ee38-8a4e-2ab11060339b",
+				"type": "Fragment"
+			},
+			{
+				"definition": {
+					"fragment": {
+						"key": "BASIC_COMPONENT-heading"
+					},
+					"fragmentConfig": {
+						"headingLevel": "h3"
+					},
+					"fragmentFields": [
+						{
+							"id": "element-text",
+							"value": {
+								"fragmentLink": {
+								},
+								"text": {
+									"value_i18n": {
+										"en_US": "This FAQ guide covers the most common topics and questions related to the App creation/submission on the Liferay Marketplace"
+									}
+								}
+							}
+						}
+					],
+					"fragmentStyle": {
+						"textAlign": "center"
+					},
+					"indexed": true
+				},
+				"id": "885b967f-0214-ee38-8a4e-2ab11060337b",
+				"type": "Fragment"
+			},
+			{
+				"definition": {
+					"fragmentStyle": {
+						"paddingBottom": "5",
+						"paddingTop": "5"
+					},
+					"indexed": true,
+					"layout": {
+						"widthType": "Fluid"
+					}
+				},
+				"type": "Section"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"masterPage": {
+			"key": "marketplace-master"
+		}
+	}
+}

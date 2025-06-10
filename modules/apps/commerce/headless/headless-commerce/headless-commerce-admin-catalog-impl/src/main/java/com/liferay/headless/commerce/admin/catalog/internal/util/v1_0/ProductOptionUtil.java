@@ -5,19 +5,23 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.util.v1_0;
 
+import com.liferay.commerce.product.exception.NoSuchCPOptionException;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelService;
 import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOption;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 
+import java.io.Serializable;
+
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -31,8 +35,22 @@ public class ProductOptionUtil {
 			long cpDefinitionId, ServiceContext serviceContext)
 		throws PortalException {
 
-		CPOption cpOption = cpOptionService.getCPOption(
-			productOption.getOptionId());
+		CPOption cpOption = null;
+
+		long optionId = GetterUtil.getLong(productOption.getOptionId());
+
+		if (optionId > 0) {
+			cpOption = cpOptionService.getCPOption(optionId);
+		}
+		else {
+			cpOption = cpOptionService.fetchCPOptionByExternalReferenceCode(
+				productOption.getOptionExternalReferenceCode(),
+				serviceContext.getCompanyId());
+
+			if (cpOption == null) {
+				throw new NoSuchCPOptionException();
+			}
+		}
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
 			cpDefinitionOptionRelService.fetchCPDefinitionOptionRel(
@@ -52,11 +70,17 @@ public class ProductOptionUtil {
 				cpDefinitionOptionRel.getDescriptionMap());
 		}
 
-		serviceContext.setExpandoBridgeAttributes(
+		Map<String, Serializable> expandoBridgeAttributes =
 			CustomFieldsUtil.toMap(
 				CPDefinitionOptionRel.class.getName(),
 				serviceContext.getCompanyId(), productOption.getCustomFields(),
-				serviceContext.getLocale()));
+				serviceContext.getLocale());
+
+		if (expandoBridgeAttributes == null) {
+			expandoBridgeAttributes = new HashMap<>();
+		}
+
+		serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
 
 		if (cpDefinitionOptionRel == null) {
 			cpDefinitionOptionRel =

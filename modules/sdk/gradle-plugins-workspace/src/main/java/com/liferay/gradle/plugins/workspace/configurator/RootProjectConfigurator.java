@@ -30,7 +30,6 @@ import com.liferay.gradle.plugins.workspace.WorkspacePlugin;
 import com.liferay.gradle.plugins.workspace.docker.DockerPruneImage;
 import com.liferay.gradle.plugins.workspace.internal.configurator.TargetPlatformRootProjectConfigurator;
 import com.liferay.gradle.plugins.workspace.internal.util.GradleUtil;
-import com.liferay.gradle.plugins.workspace.internal.util.ReleaseUtil;
 import com.liferay.gradle.plugins.workspace.internal.util.StringUtil;
 import com.liferay.gradle.plugins.workspace.task.CreateTokenTask;
 import com.liferay.gradle.plugins.workspace.task.InitBundleTask;
@@ -39,6 +38,8 @@ import com.liferay.gradle.plugins.workspace.task.VerifyProductTask;
 import com.liferay.gradle.util.ArrayUtil;
 import com.liferay.gradle.util.OSDetector;
 import com.liferay.gradle.util.Validator;
+import com.liferay.release.util.ReleaseEntry;
+import com.liferay.release.util.ReleaseUtil;
 
 import de.undercouch.gradle.tasks.download.Download;
 
@@ -72,6 +73,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.DirectoryProperty;
@@ -232,6 +234,9 @@ public class RootProjectConfigurator implements Plugin<Project> {
 			GradleUtil.addDefaultRepositories(project);
 		}
 
+		Configuration bundleSupportConfiguration =
+			_addConfigurationBundleSupport(project);
+
 		Configuration providedModulesConfiguration =
 			_addConfigurationProvidedModules(project);
 
@@ -249,15 +254,17 @@ public class RootProjectConfigurator implements Plugin<Project> {
 
 		_addTaskInitBundle(
 			project, downloadBundleTask, workspaceExtension,
-			providedModulesConfiguration, INIT_BUNDLE_TASK_NAME);
+			bundleSupportConfiguration, providedModulesConfiguration,
+			INIT_BUNDLE_TASK_NAME);
 
 		Copy distBundleTask = _addTaskDistBundle(
 			project, downloadBundleTask, DIST_BUNDLE_TASK_NAME,
-			workspaceExtension, null, providedModulesConfiguration);
+			workspaceExtension, bundleSupportConfiguration, null,
+			providedModulesConfiguration);
 
 		_addTasksDistBundleEnvironments(
 			project, downloadBundleTask, workspaceExtension,
-			providedModulesConfiguration);
+			bundleSupportConfiguration, providedModulesConfiguration);
 
 		_addTasksDistBundleArchive(project, distBundleTask, workspaceExtension);
 
@@ -276,6 +283,29 @@ public class RootProjectConfigurator implements Plugin<Project> {
 		_defaultRepositoryEnabled = defaultRepositoryEnabled;
 	}
 
+	private Configuration _addConfigurationBundleSupport(
+		final Project project) {
+
+		Configuration configuration = GradleUtil.addConfiguration(
+			project, BUNDLE_SUPPORT_CONFIGURATION_NAME);
+
+		configuration.defaultDependencies(
+			new Action<DependencySet>() {
+
+				@Override
+				public void execute(DependencySet dependencySet) {
+					_addDependenciesBundleSupport(project);
+				}
+
+			});
+
+		configuration.setDescription(
+			"Configures Liferay Bundle Support for this project.");
+		configuration.setVisible(false);
+
+		return configuration;
+	}
+
 	private Configuration _addConfigurationProvidedModules(Project project) {
 		Configuration configuration = GradleUtil.addConfiguration(
 			project, PROVIDED_MODULES_CONFIGURATION_NAME);
@@ -288,6 +318,12 @@ public class RootProjectConfigurator implements Plugin<Project> {
 		return configuration;
 	}
 
+	private void _addDependenciesBundleSupport(Project project) {
+		GradleUtil.addDependency(
+			project, BUNDLE_SUPPORT_CONFIGURATION_NAME, "com.liferay",
+			"com.liferay.portal.tools.bundle.support", "latest.release");
+	}
+
 	private void _addDockerTasks(
 		Project project, WorkspaceExtension workspaceExtension,
 		Configuration providedModulesConfiguration,
@@ -297,8 +333,7 @@ public class RootProjectConfigurator implements Plugin<Project> {
 			project, workspaceExtension, providedModulesConfiguration);
 
 		Dockerfile dockerfile = _addTaskCreateDockerfile(
-			project, CREATE_DOCKERFILE_TASK_NAME, workspaceExtension,
-			dockerDeploy, verifyProductTask);
+			project, workspaceExtension, dockerDeploy, verifyProductTask);
 
 		DockerBuildImage dockerBuildImage = _addTaskBuildDockerImage(
 			dockerfile, workspaceExtension, verifyProductTask);
@@ -547,12 +582,11 @@ public class RootProjectConfigurator implements Plugin<Project> {
 	}
 
 	private Dockerfile _addTaskCreateDockerfile(
-		Project project, String taskName,
-		final WorkspaceExtension workspaceExtension, Copy dockerDeploy,
-		VerifyProductTask verifyProductTask) {
+		Project project, final WorkspaceExtension workspaceExtension,
+		Copy dockerDeploy, VerifyProductTask verifyProductTask) {
 
 		Dockerfile dockerfile = GradleUtil.addTask(
-			project, taskName, Dockerfile.class);
+			project, CREATE_DOCKERFILE_TASK_NAME, Dockerfile.class);
 
 		dockerfile.dependsOn(verifyProductTask, dockerDeploy);
 		dockerfile.mustRunAfter(verifyProductTask);
@@ -687,12 +721,14 @@ public class RootProjectConfigurator implements Plugin<Project> {
 
 	private Copy _addTaskDistBundle(
 		Project project, Download downloadBundleTask, String taskName,
-		WorkspaceExtension workspaceExtension, String environment,
+		WorkspaceExtension workspaceExtension,
+		Configuration bundleSupportConfiguration, String environment,
 		Configuration providedModulesConfiguration) {
 
 		InitBundleTask initBundleTask = _addTaskInitBundle(
 			project, downloadBundleTask, workspaceExtension,
-			providedModulesConfiguration, taskName + "InitBundle");
+			bundleSupportConfiguration, providedModulesConfiguration,
+			taskName + "InitBundle");
 
 		initBundleTask.setConfigEnvironment(
 			new Callable<String>() {
@@ -708,7 +744,9 @@ public class RootProjectConfigurator implements Plugin<Project> {
 
 			});
 		initBundleTask.setDestinationDir(
-			new File(project.getBuildDir(), "dist"));
+			new File(
+				project.getBuildDir(),
+				"dist" + StringUtil.capitalize(environment)));
 		initBundleTask.setGroup("hidden");
 
 		initBundleTask.doFirst(
@@ -1009,6 +1047,7 @@ public class RootProjectConfigurator implements Plugin<Project> {
 	private InitBundleTask _addTaskInitBundle(
 		Project project, Download downloadBundleTask,
 		final WorkspaceExtension workspaceExtension,
+		Configuration bundleSupportConfiguration,
 		Configuration osgiModulesConfiguration, String taskName) {
 
 		InitBundleTask initBundleTask = GradleUtil.addTask(
@@ -1022,6 +1061,7 @@ public class RootProjectConfigurator implements Plugin<Project> {
 			initBundleTask::getDestinationDir, initBundleTask);
 
 		initBundleTask.mustRunAfter(VERIFY_PRODUCT_TASK_NAME);
+		initBundleTask.setClasspath(bundleSupportConfiguration);
 		initBundleTask.setConfigEnvironment(
 			new Callable<String>() {
 
@@ -1312,6 +1352,7 @@ public class RootProjectConfigurator implements Plugin<Project> {
 	private void _addTasksDistBundleEnvironments(
 		Project project, Download downloadBundleTask,
 		WorkspaceExtension workspaceExtension,
+		Configuration bundleSupportConfiguration,
 		Configuration providedModulesConfiguration) {
 
 		long buildTime = System.currentTimeMillis();
@@ -1362,8 +1403,8 @@ public class RootProjectConfigurator implements Plugin<Project> {
 							project, downloadBundleTask,
 							DIST_BUNDLE_TASK_NAME +
 								StringUtil.capitalize(environment),
-							workspaceExtension, environment,
-							providedModulesConfiguration);
+							workspaceExtension, bundleSupportConfiguration,
+							environment, providedModulesConfiguration);
 
 						Tar distBundleTarTask = _addTaskDistBundle(
 							project,
@@ -1490,15 +1531,11 @@ public class RootProjectConfigurator implements Plugin<Project> {
 				public boolean isSatisfiedBy(Task task) {
 					if (!Objects.equals(
 							workspaceExtension.getBundleUrl(),
-							ReleaseUtil.getFromReleaseProperties(
+							ReleaseUtil.getFromReleaseEntry(
 								workspaceExtension.getProduct(),
-								ReleaseUtil.ReleaseProperties::getBundleUrl))) {
+								ReleaseEntry::getBundleURL))) {
 
-						if (Objects.nonNull(_bundleCheckSumSHA512)) {
-							return true;
-						}
-
-						return false;
+						return Objects.nonNull(_bundleCheckSumSHA512);
 					}
 
 					return Validator.isNotNull(verifyBundleTask.getChecksum());

@@ -1,4 +1,4 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -15,7 +15,9 @@ definition {
 	@description = "This is for LPS-121422. The elements are still shown in edit mode after executing reset changes."
 	@priority = 3
 	test SitesTemplatePermissionPersistence {
-		property testray.component.names = "Permissions,Site Templates";
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		task ("Add a new site template") {
 			JSONSiteTemplate.addSiteTemplate(siteTemplateName = "Site Template Name");
@@ -156,7 +158,7 @@ definition {
 		task ("Remove guest view permissions of Message Boards") {
 			SignIn.signIn(
 				userEmailAddress = "test@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 
 			ContentPagesNavigator.openEditContentPage(
 				pageName = "Home",

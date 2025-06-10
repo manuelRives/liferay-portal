@@ -47,11 +47,6 @@ public interface FreeMarkerEngineConfiguration {
 	public int loopCountThreshold();
 
 	@Meta.AD(
-		deflt = "60000", name = "resource-modification-check", required = false
-	)
-	public int resourceModificationCheck();
-
-	@Meta.AD(
 		deflt = "true", name = "include-navigation-items-in-the-context",
 		required = false
 	)
@@ -67,7 +62,7 @@ public interface FreeMarkerEngineConfiguration {
 	public String[] restrictedClasses();
 
 	@Meta.AD(
-		deflt = "com.liferay.portal.model.impl.CompanyImpl#getKey",
+		deflt = "com.liferay.portal.model.impl.CompanyImpl#getKey|com.liferay.portal.model.impl.UserImpl#getLastFailedLoginDate|com.liferay.portal.model.impl.UserImpl#getLastLoginDate|com.liferay.portal.model.impl.UserImpl#getLastLoginIP|com.liferay.portal.model.impl.UserImpl#getLoginDate|com.liferay.portal.model.impl.UserImpl#getLoginIP|com.liferay.portal.model.impl.UserImpl#getPassword|com.liferay.portal.model.impl.UserImpl#getPasswordEncrypted|com.liferay.portal.model.impl.UserImpl#getPasswordReset|com.liferay.portal.model.impl.UserImpl#getReminderQueryAnswer|com.liferay.portal.model.impl.UserImpl#getReminderQueryQuestion|com.liferay.portal.model.impl.UserImpl#toString",
 		name = "restricted-methods", required = false
 	)
 	public String[] restrictedMethods();

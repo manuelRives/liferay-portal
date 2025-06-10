@@ -8,6 +8,7 @@ definition {
 			groupName = ${groupName},
 			portalURL = ${baseURL});
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		if (!(isSet(parentCommentId))) {
 			var parentCommentId = 0;
@@ -16,9 +17,10 @@ definition {
 		var curl = '''
 			${portalURL}/o/headless-delivery/v1.0/documents/${fileEntryId}/comments \
 				-H 'Content-Type: application/json' \
-				-u 'test@liferay.com:test'
+				-u 'test@liferay.com:${userPassword}'
 				-d '{
-					"creator": {},
+					"creator": {
+					},
 					"parentCommentId": "${parentCommentId}",
 					"text": "${commentBody}"
 				}'
@@ -99,7 +101,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addFileWithUploadedFile(fileName = null, dmDocumentDescription = null, mimeType = null, dmDocumentTitle = null, assetTagNames = null, increaseMinutes = null, workflowAction = null, parentFolderName = null, groupName = null, assetCategoryIds = null, folderName = null) {
+	macro addFileWithUploadedFile(fileName = null, dmDocumentDescription = null, mimeType = null, dmDocumentTitle = null, assetTagNames = null, increaseMinutes = null, workflowAction = null, parentFolderName = null, groupName = null, assetCategoryIds = null, folderName = null, site = null) {
 		Variables.assertDefined(parameterList = "${mimeType},${sourceFileName}");
 
 		var portalURL = JSONCompany.getPortalURL();
@@ -180,16 +182,29 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
-		var serviceContext = JSONDocumentSetter.setServiceContext(
-			addGroupPermissions = ${groupPermissions},
-			addGuestPermissions = ${guestPermissions},
-			assetCategoryIds = ${assetCategoryIds},
-			assetTagNames = ${assetTagNames},
-			serviceContext = ${serviceContext},
-			workflowAction = ${workflowAction});
+		if (isSet(site)) {
+			var serviceContext = JSONDocumentSetter.setServiceContext(
+				addGroupPermissions = ${groupPermissions},
+				addGuestPermissions = ${guestPermissions},
+				assetCategoryIds = ${assetCategoryIds},
+				assetTagNames = ${assetTagNames},
+				groupName = ${groupName},
+				serviceContext = ${serviceContext},
+				site = ${site},
+				workflowAction = ${workflowAction});
+		}
+		else {
+			var serviceContext = JSONDocumentSetter.setServiceContext(
+				addGroupPermissions = ${groupPermissions},
+				addGuestPermissions = ${guestPermissions},
+				assetCategoryIds = ${assetCategoryIds},
+				assetTagNames = ${assetTagNames},
+				serviceContext = ${serviceContext},
+				workflowAction = ${workflowAction});
+		}
 
 		if (isSet(reviewDate)) {
 			var curl = '''
@@ -288,7 +303,6 @@ definition {
 
 		var portalURL = JSONCompany.getPortalURL();
 		var targetRepositoryId = JSONGroupAPI._getSiteIdByGroupKey(groupName = ${targetGroupName});
-		var sourceRepositoryId = JSONGroupAPI._getSiteIdByGroupKey(groupName = ${sourceGroupName});
 
 		if (isSet(sourceFolderName)) {
 			Variables.assertDefined(parameterList = ${sourceFolderName});
@@ -338,13 +352,18 @@ definition {
 			var targetFolderId = 0;
 		}
 
+		var externalReferenceCode = StringUtil.randomString(12);
 		var userLoginInfo = JSONUtil2.formatJSONUser();
+		var targetGroupId = JSONGroupAPI._getGroupIdByName(
+			groupName = ${targetGroupName},
+			site = "true");
 
 		var curl = '''
 			${portalURL}/api/jsonws/dlfileshortcut/add-file-shortcut  \
 				-u ${userLoginInfo} \
-				-d groupId=${targetRepositoryId} \
-				-d repositoryId=${sourceRepositoryId} \
+				-d externalReferenceCode=${externalReferenceCode} \
+				-d groupId=${targetGroupId} \
+				-d repositoryId=${targetRepositoryId} \
 				-d folderId=${targetFolderId} \
 				-d toFileEntryId=${fileEntryId}
 		''';
@@ -664,7 +683,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''

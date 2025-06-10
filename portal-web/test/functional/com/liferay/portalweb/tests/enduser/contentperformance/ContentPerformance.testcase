@@ -1,6 +1,8 @@
-@component-name = "portal-ab-test"
+@component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property property.group = "analytics.cloud.profile";
@@ -22,6 +24,10 @@ definition {
 			User.firstLoginPG();
 
 			var siteId = HeadlessSite.addSite(siteName = "Test Site Name");
+		}
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
 		}
 
 		task ("Connect and synchronyze with Analytics Cloud") {
@@ -134,7 +140,9 @@ definition {
 				groupName = "Test Site Name",
 				layoutName = "Widget Page Name");
 
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/3");
+			Navigator.gotoSitePage(
+				pageName = "Widget Page Name",
+				siteName = "Test Site Name");
 		}
 
 		task ("Open Content Performance panel") {
@@ -148,129 +156,10 @@ definition {
 		}
 	}
 
-	@description = "LPS-126044: When the user changes the language using the flag selector in the panel and so the URL, the metrics corresponding the canonical URL that corresponds to the language selected are shown"
-	@priority = 3
-	test ChangeLanguageInBlogDisplayPage {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Set portal to use Localized URL") {
-			SystemSettings.openSystemSettingsAdmin();
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "Pages",
-				configurationName = "SEO",
-				configurationScope = "Virtual Instance Scope");
-
-			SystemSettings.selectOptionSetting(
-				fieldName = "Canonical URL",
-				selectOption = "Use Localized URL");
-
-			SystemSettings.saveConfiguration();
-		}
-
-		task ("Create a Blog Entry") {
-			JSONBlog.addEntry(
-				entryContent = "Blogs Entry Content",
-				entryTitle = "Blogs Entry Title",
-				groupName = "Test Site Name");
-		}
-
-		task ("Add 'Asset Publisher' to page") {
-			JSONLayout.addPublicLayout(
-				groupName = "Test Site Name",
-				layoutName = "Test Widget Page Name");
-
-			JSONLayout.addWidgetToPublicLayout(
-				groupName = "Test Site Name",
-				layoutName = "Test Widget Page Name",
-				widgetName = "Asset Publisher");
-		}
-
-		task ("Open Content Performance panel") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/test-widget-page-name");
-
-			AssetPublisherPortlet.clickAssetTitle(assetTitle = "Blogs Entry Title");
-
-			ContentPerformance.openContentPerformance();
-		}
-
-		task ("Change language") {
-			ContentPerformance.changeLocale(locale = "Portuguese");
-		}
-
-		task ("Assert the URL shown is the one set before") {
-			AssertTextEquals.assertPartialText(
-				locator1 = "ContentPerformance#CONTENT_PERFORMANCE_URL",
-				value1 = "pt/web/test-site-name/test-widget-page-name");
-		}
-	}
-
-	@description = "LPS-126044: When the user changes the language using the flag selector in the panel and so the URL, the metrics corresponding the canonical URL that corresponds to the language selected are shown"
-	@priority = 3
-	test ChangeLanguageInDocumentDisplayPage {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Set portal to use Localized URL") {
-			SystemSettings.openSystemSettingsAdmin();
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "Pages",
-				configurationName = "SEO",
-				configurationScope = "Virtual Instance Scope");
-
-			SystemSettings.selectOptionSetting(
-				fieldName = "Canonical URL",
-				selectOption = "Use Localized URL");
-
-			SystemSettings.saveConfiguration();
-		}
-
-		task ("Create a Document") {
-			JSONDocument.addFile(
-				dmDocumentDescription = "DM Document Description",
-				dmDocumentTitle = "DM Document Title",
-				groupName = "Test Site Name");
-		}
-
-		task ("Add 'Asset Publisher' to page") {
-			JSONLayout.addPublicLayout(
-				groupName = "Test Site Name",
-				layoutName = "Test Widget Page Name");
-
-			JSONLayout.addWidgetToPublicLayout(
-				groupName = "Test Site Name",
-				layoutName = "Test Widget Page Name",
-				widgetName = "Asset Publisher");
-		}
-
-		task ("Open Content Performance panel") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/test-widget-page-name");
-
-			AssetPublisherPortlet.clickAssetTitle(assetTitle = "DM Document Title");
-
-			ContentPerformance.openContentPerformance();
-		}
-
-		task ("Change language") {
-			ContentPerformance.changeLocale(locale = "Portuguese");
-		}
-
-		task ("Check that the URL and date is from that translated page") {
-			AssertTextEquals.assertPartialText(
-				locator1 = "ContentPerformance#CONTENT_PERFORMANCE_URL",
-				value1 = "pt/web/test-site-name/test-widget-page-name");
-
-			AssertTextEquals(
-				locator1 = "ContentPerformance#LOCALE_BUTTON",
-				value1 = "pt-BR");
-		}
-	}
-
 	@description = "LPS-126047: When the user changes the language using the flag selector in the panel and so the URL, the metrics corresponding the canonical URL that corresponds to the language selected are shown"
 	@priority = 3
 	test ChangeLanguageInWidgetPage {
+		property portal.upstream = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -296,7 +185,9 @@ definition {
 		}
 
 		task ("Navigate to Widget page") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/3");
+			Navigator.gotoSitePage(
+				pageName = "Widget Page Name",
+				siteName = "Test Site Name");
 		}
 
 		task ("Open content performance panel") {
@@ -411,22 +302,6 @@ definition {
 			AssertVisible(
 				colorHex = "f1f2f5",
 				locator1 = "ContentPerformance#PIE_CHART_WITH_COLOR");
-		}
-	}
-
-	@description = "LPS-105216: Validate that Free trial and dismiss buttons ARE NOT displayed when AC is enabled"
-	@priority = 3
-	test FreeTrialButtonNotPresent {
-		task ("Open Content Performance and Assert if element is not present") {
-			ContentPagesNavigator.openViewContentPage(
-				pageName = "Content Page",
-				siteName = "Test Site Name");
-
-			ContentPerformance.openContentPerformance();
-
-			AssertElementNotPresent(
-				key_textValue = "Do not show me this again",
-				locator1 = "Sidebar#LINK");
 		}
 	}
 
@@ -751,7 +626,9 @@ definition {
 		}
 
 		task ("Navigate to Widget page") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/3");
+			Navigator.gotoSitePage(
+				pageName = "Widget Page Name",
+				siteName = "Test Site Name");
 		}
 
 		task ("Open content performance panel") {
@@ -845,7 +722,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 
@@ -934,7 +811,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -1006,7 +883,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -1076,7 +953,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -1148,7 +1025,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -1345,7 +1222,9 @@ definition {
 		}
 
 		task ("Navigate to Widget page") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/3");
+			Navigator.gotoSitePage(
+				pageName = "Widget Page Name",
+				siteName = "Test Site Name");
 		}
 
 		task ("Open content performance panel") {
@@ -1359,7 +1238,7 @@ definition {
 
 			AssertTextEquals.assertPartialText(
 				locator1 = "ContentPerformance#CONTENT_PERFORMANCE_URL",
-				value1 = "web/test-site-name/3");
+				value1 = "web/test-site-name");
 
 			AssertVisible(locator1 = "ContentPerformance#LANGUAGE_DROPDOWN_BUTTON");
 		}

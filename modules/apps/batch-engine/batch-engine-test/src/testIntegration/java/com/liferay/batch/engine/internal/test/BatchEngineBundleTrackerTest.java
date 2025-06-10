@@ -17,17 +17,22 @@ import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ClassUtil;
-import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.zip.ZipWriter;
 import com.liferay.portal.kernel.zip.ZipWriterFactory;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.tools.DBUpgrader;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -42,9 +47,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
+import org.apache.commons.lang.time.StopWatch;
+
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,6 +79,18 @@ public class BatchEngineBundleTrackerTest {
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
+	@BeforeClass
+	public static void setUpClass() {
+		_originalStopWatch = ReflectionTestUtil.getAndSetFieldValue(
+			DBUpgrader.class, "_stopWatch", null);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		ReflectionTestUtil.setFieldValue(
+			DBUpgrader.class, "_stopWatch", _originalStopWatch);
+	}
+
 	@Before
 	public void setUp() {
 		_bundle = FrameworkUtil.getBundle(BatchEngineBundleTrackerTest.class);
@@ -78,43 +100,85 @@ public class BatchEngineBundleTrackerTest {
 
 	@Test
 	public void testProcessBatchEngineBundle() throws Exception {
-		_testProcessBatchEngineBundle("batch1", "/batch1/export.json");
-		_testProcessBatchEngineBundle("batch2");
+		_testProcessBatchEngineBundle(null, "batch1", "/batch1/export.json");
+		_testProcessBatchEngineBundle(null, "batch2");
 		_testProcessBatchEngineBundle(
-			"batch3", "/batch3/batch1/export.json",
+			null, "batch3", "/batch3/batch1/export.json",
 			"/batch3/batch2/export.json");
 		_testProcessBatchEngineBundle(
-			"batch4", "/batch4/batch1/export.json",
+			null, "batch4", "/batch4/batch1/export.json",
 			"/batch4/batch2/export.json", "/batch4/batch2/batch3/export.json");
 		_testProcessBatchEngineBundle(
-			"batch5", "/batch5/data.batch-engine-data.json");
+			null, "batch5", "/batch5/data.batch-engine-data.json");
 		_testProcessBatchEngineBundle(
-			"batch6", "/batch6/1data.batch-engine-data.json",
+			null, "batch6", "/batch6/1data.batch-engine-data.json",
 			"/batch6/2data.batch-engine-data.json");
-		_testProcessBatchEngineBundle("batch7", "/batch7/export.json");
+		_testProcessBatchEngineBundle(null, "batch7", "/batch7/export.json");
 		_testProcessBatchEngineBundle(
-			"batch8", "/batch8/1data.batch-engine-data.json",
+			null, "batch8", "/batch8/1data.batch-engine-data.json",
 			"/batch8/2data.batch-engine-data.json",
 			"/batch8/10data.batch-engine-data.json");
 		_testProcessBatchEngineBundle(
-			"batch9", "/batch9/data.batch-engine-data.json");
+			null, "batch9", "/batch9/data.batch-engine-data.json");
 
 		_company = CompanyTestUtil.addCompany(true);
 
+		List<User> users = _userLocalService.getUsersByRoleName(
+			_company.getCompanyId(), RoleConstants.ADMINISTRATOR, 0, 1);
+
+		User user = users.get(0);
+
+		user.setScreenName(RandomTestUtil.randomString());
+
+		_userLocalService.updateUser(user);
+
 		_testProcessBatchEngineBundle(
-			"batch9", "/batch9/data.batch-engine-data.json",
+			null, "batch9", "/batch9/data.batch-engine-data.json",
 			"/batch9/data.batch-engine-data.json");
+	}
+
+	@Test
+	public void testProcessBatchEngineBundleOnUpgrade() throws Exception {
+		boolean upgradeClient = ReflectionTestUtil.getAndSetFieldValue(
+			DBUpgrader.class, "_upgradeClient", false);
+
+		try {
+			ReflectionTestUtil.setFieldValue(
+				DBUpgrader.class, "_upgradeClient", true);
+
+			_testProcessBatchEngineBundle(null, "batch1");
+		}
+		finally {
+			ReflectionTestUtil.setFieldValue(
+				DBUpgrader.class, "_upgradeClient", upgradeClient);
+		}
+	}
+
+	@Test
+	public void testProcessBatchEngineBundleVirtualInstanceId()
+		throws Exception {
+
+		String webId = "batch10.liferay.virtual.instance.id";
+
+		Company company = CompanyLocalServiceUtil.addCompany(
+			null, webId, webId, webId, 0, true, true, null, null, null, null,
+			null, null);
+
+		_testProcessBatchEngineBundle(
+			batchEngineImportTask -> Assert.assertEquals(
+				batchEngineImportTask.getCompanyId(), company.getCompanyId()),
+			"batch10", "/batch10/data.batch-engine-data.json");
 	}
 
 	private String _getDataFileName(
 		BatchEngineImportTask batchEngineImportTask) {
 
-		return MapUtil.getString(
-			batchEngineImportTask.getParameters(), "dataFileName", null);
+		return batchEngineImportTask.getParameterValue("dataFileName");
 	}
 
 	private void _testProcessBatchEngineBundle(
-			String dirName, String... expectedDataFileNames)
+			Consumer<BatchEngineImportTask> consumer, String dirName,
+			String... expectedDataFileNames)
 		throws Exception {
 
 		ComponentDescriptionDTO componentDescriptionDTO1 =
@@ -149,6 +213,10 @@ public class BatchEngineBundleTrackerTest {
 					public void execute(
 						BatchEngineImportTask batchEngineImportTask) {
 
+						if (consumer != null) {
+							consumer.accept(batchEngineImportTask);
+						}
+
 						String dataFileName = _getDataFileName(
 							batchEngineImportTask);
 
@@ -163,6 +231,10 @@ public class BatchEngineBundleTrackerTest {
 						BatchEngineTaskItemDelegate<?>
 							batchEngineTaskItemDelegate,
 						boolean checkPermissions) {
+
+						if (consumer != null) {
+							consumer.accept(batchEngineImportTask);
+						}
 
 						String dataFileName = _getDataFileName(
 							batchEngineImportTask);
@@ -264,6 +336,8 @@ public class BatchEngineBundleTrackerTest {
 		return new FileInputStream(zipWriter.getFile());
 	}
 
+	private static StopWatch _originalStopWatch;
+
 	@Inject
 	private BatchEngineImportTaskExecutor _batchEngineImportTaskExecutor;
 
@@ -278,6 +352,9 @@ public class BatchEngineBundleTrackerTest {
 
 	@Inject
 	private ServiceComponentRuntime _serviceComponentRuntime;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 	@Inject
 	private ZipWriterFactory _zipWriterFactory;

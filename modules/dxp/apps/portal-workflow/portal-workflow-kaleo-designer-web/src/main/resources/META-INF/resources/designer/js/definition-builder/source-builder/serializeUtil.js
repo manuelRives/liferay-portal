@@ -92,7 +92,7 @@ function appendXMLActions(
 				);
 			}
 
-			if (isValidValue(status, index)) {
+			if (isValidValue(status, index) && status[index]) {
 				buffer.push(
 					createTagWithEscapedContent('status', status[index])
 				);
@@ -207,14 +207,14 @@ function appendXMLAssignments(
 			const xmlRole = XMLUtil.createObj('role');
 
 			dataAssignments.roleType.forEach((item, index) => {
-				const roleKey = dataAssignments.roleKey[index];
+				const roleName = dataAssignments.roleName[index];
 				const roleType = dataAssignments.roleType[index];
 
-				if (roleKey) {
+				if (roleName) {
 					buffer.push(
 						xmlRole.open,
 						createTagWithEscapedContent('roleType', roleType),
-						createTagWithEscapedContent('name', roleKey)
+						createTagWithEscapedContent('name', roleName)
 					);
 
 					let autoCreate = dataAssignments.autoCreate?.[index];
@@ -242,9 +242,8 @@ function appendXMLAssignments(
 			assignmentType === 'scriptedAssignment' &&
 			dataAssignments.script?.length
 		) {
-			const xmlScriptedAssignment = XMLUtil.createObj(
-				'scriptedAssignment'
-			);
+			const xmlScriptedAssignment =
+				XMLUtil.createObj('scriptedAssignment');
 
 			dataAssignments.script.forEach((item) => {
 				buffer.push(

@@ -30,8 +30,8 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -82,6 +82,8 @@ public class TaxonomyCategoryDTOConverter
 
 		return new ParentTaxonomyCategory() {
 			{
+				setExternalReferenceCode(
+					parentAssetCategory::getExternalReferenceCode);
 				setId(parentAssetCategory::getCategoryId);
 				setName(
 					() -> parentAssetCategory.getTitle(
@@ -163,6 +165,8 @@ public class TaxonomyCategoryDTOConverter
 
 						return new ParentTaxonomyVocabulary() {
 							{
+								setExternalReferenceCode(
+									assetVocabulary::getExternalReferenceCode);
 								setId(assetCategory::getVocabularyId);
 								setName(
 									() -> assetVocabulary.getTitle(
@@ -226,6 +230,8 @@ public class TaxonomyCategoryDTOConverter
 
 		return new TaxonomyCategoryProperty() {
 			{
+				setExternalReferenceCode(
+					assetCategoryProperty::getExternalReferenceCode);
 				setKey(assetCategoryProperty::getKey);
 				setValue(assetCategoryProperty::getValue);
 			}

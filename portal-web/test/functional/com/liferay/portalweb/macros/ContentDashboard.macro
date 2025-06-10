@@ -77,7 +77,7 @@ definition {
 	macro clearFilters() {
 		Click(
 			key_text = "Clear",
-			locator1 = "Link#ANY");
+			locator1 = "Button#ANY");
 	}
 
 	@summary = "Default summary"
@@ -184,6 +184,9 @@ definition {
 			PortletEntry.saveAsDraft();
 
 			Click(locator1 = "Icon#BACK");
+		}
+		else if (isSet(isWebContent)) {
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 		else {
 			Button.clickPublish();

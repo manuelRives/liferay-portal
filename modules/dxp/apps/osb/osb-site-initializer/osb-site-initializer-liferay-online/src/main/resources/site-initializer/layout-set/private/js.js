@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {fetch, getOpener, openModal} from 'frontend-js-web';
+import {openModal} from 'frontend-js-components-web';
+import {fetch, getOpener} from 'frontend-js-web';
 
 let copySaved = '';
 
@@ -96,8 +97,8 @@ function openItem(
 						id: 'selectStarterkit',
 					});
 
-					var siteDomain = document.getElementById('siteDomain')
-						.value;
+					var siteDomain =
+						document.getElementById('siteDomain').value;
 					var siteName = document.getElementById('siteName').value;
 
 					createOrder(

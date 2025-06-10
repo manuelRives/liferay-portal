@@ -35,9 +35,9 @@ import com.liferay.portal.util.PropsValues;
 import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuConfiguration;
 import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuConfigurationRegistry;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -159,7 +159,7 @@ public class PersonalApplicationURLUtil {
 					group.getCtCollectionId())) {
 
 			Layout layout = LayoutLocalServiceUtil.addLayout(
-				userId, group.getGroupId(), privateLayout,
+				null, userId, group.getGroupId(), privateLayout,
 				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 				PropsValues.CONTROL_PANEL_LAYOUT_NAME, StringPool.BLANK,
 				StringPool.BLANK, LayoutConstants.TYPE_PORTLET, true, true,

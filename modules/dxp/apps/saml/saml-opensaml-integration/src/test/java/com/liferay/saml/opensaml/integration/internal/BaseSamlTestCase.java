@@ -12,6 +12,7 @@ import com.liferay.portal.kernel.configuration.ConfigurationFactory;
 import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortletClassLoaderUtil;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
@@ -28,6 +29,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.saml.constants.SamlProviderConfigurationKeys;
 import com.liferay.saml.opensaml.integration.internal.binding.SamlBindingProvider;
 import com.liferay.saml.opensaml.integration.internal.credential.FileSystemKeyStoreManagerImpl;
@@ -47,6 +49,8 @@ import com.liferay.saml.runtime.configuration.SamlProviderConfiguration;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.util.PortletPropsKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.UnsupportedEncodingException;
 
 import java.net.URLDecoder;
@@ -58,8 +62,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.servlet.http.HttpServletRequest;
-
 import net.shibboleth.utilities.java.support.resolver.CriteriaSet;
 import net.shibboleth.utilities.java.support.resolver.ResolverException;
 import net.shibboleth.utilities.java.support.security.IdentifierGenerationStrategy;
@@ -70,6 +72,7 @@ import org.apache.http.client.HttpClient;
 import org.junit.After;
 import org.junit.Before;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
@@ -114,8 +117,15 @@ public abstract class BaseSamlTestCase {
 		identifiers.clear();
 
 		for (Class<?> serviceUtilClass : serviceUtilClasses) {
-			ReflectionTestUtil.setFieldValue(
-				serviceUtilClass, "_service", null);
+			try {
+				ReflectionTestUtil.setFieldValue(
+					serviceUtilClass, "_service", null);
+			}
+			catch (Exception exception) {
+				ReflectionTestUtil.setFieldValue(
+					serviceUtilClass, "_serviceSnapshot",
+					_snapshots.remove(serviceUtilClass));
+			}
 		}
 
 		ClassLoaderPool.unregister("saml-portlet");
@@ -468,8 +478,24 @@ public abstract class BaseSamlTestCase {
 
 		T serviceMock = Mockito.mock(serviceClass);
 
-		ReflectionTestUtil.setFieldValue(
-			serviceUtilClass, "_service", serviceMock);
+		try {
+			ReflectionTestUtil.setFieldValue(
+				serviceUtilClass, "_service", serviceMock);
+		}
+		catch (Exception exception) {
+			_snapshots.put(
+				serviceUtilClass,
+				ReflectionTestUtil.getAndSetFieldValue(
+					serviceUtilClass, "_serviceSnapshot",
+					new Snapshot<T>(serviceUtilClass, serviceClass) {
+
+						@Override
+						public T get() {
+							return serviceMock;
+						}
+
+					}));
+		}
 
 		return serviceMock;
 	}
@@ -575,6 +601,19 @@ public abstract class BaseSamlTestCase {
 
 				String identifier = samlIdentifierGenerator.generateIdentifier(
 					xmlSafe);
+
+				identifiers.add(identifier);
+
+				return identifier;
+			}
+		);
+
+		_portalUUIDUtilMockedStatic.when(
+			PortalUUIDUtil::generate
+		).thenAnswer(
+			(Answer<String>)invocationOnMock -> {
+				String identifier =
+					samlIdentifierGenerator.generateIdentifier();
 
 				identifiers.add(identifier);
 
@@ -741,7 +780,11 @@ public abstract class BaseSamlTestCase {
 		);
 	}
 
+	private static final MockedStatic<PortalUUIDUtil>
+		_portalUUIDUtilMockedStatic = Mockito.mockStatic(PortalUUIDUtil.class);
+
 	private final Map<Long, SamlPeerBinding> _samlPeerBindings =
 		new HashMap<>();
+	private final Map<Class<?>, Snapshot<?>> _snapshots = new HashMap<>();
 
 }

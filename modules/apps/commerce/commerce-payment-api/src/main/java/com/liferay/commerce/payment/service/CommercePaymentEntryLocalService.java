@@ -79,7 +79,7 @@ public interface CommercePaymentEntryLocalService
 	public CommercePaymentEntry addCommercePaymentEntry(
 			long userId, long classNameId, long classPK, long commerceChannelId,
 			BigDecimal amount, String callbackURL, String cancelURL,
-			String currencyCode, String languageId, String note,
+			String currencyCode, String languageId, String note, String payload,
 			String paymentIntegrationKey, int paymentIntegrationType,
 			String reasonKey, String transactionCode, int type,
 			ServiceContext serviceContext)
@@ -90,9 +90,10 @@ public interface CommercePaymentEntryLocalService
 			long classPK, long commerceChannelId, BigDecimal amount,
 			String callbackURL, String cancelURL, String currencyCode,
 			String errorMessages, String languageId, String note,
-			String paymentIntegrationKey, int paymentIntegrationType,
-			int paymentStatus, String reasonKey, String redirectURL,
-			String transactionCode, int type, ServiceContext serviceContext)
+			String payload, String paymentIntegrationKey,
+			int paymentIntegrationType, int paymentStatus, String reasonKey,
+			String redirectURL, String transactionCode, int type,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -315,6 +316,18 @@ public interface CommercePaymentEntryLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePaymentEntry> getRefundCommercePaymentEntries(
+		long companyId, long classNameId, long classPK, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getRefundCommercePaymentEntriesCount(
+		long companyId, long classNameId, long classPK);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public BigDecimal getRefundedAmount(
+		long companyId, long classNameId, long classPK);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<CommercePaymentEntry>
 		searchCommercePaymentEntries(
 			long companyId, String keywords,
@@ -340,9 +353,10 @@ public interface CommercePaymentEntryLocalService
 			String externalReferenceCode, long commercePaymentEntryId,
 			long commerceChannelId, BigDecimal amount, String callbackURL,
 			String cancelURL, String currencyCode, String errorMessages,
-			String languageId, String note, String paymentIntegrationKey,
-			int paymentIntegrationType, int paymentStatus, String reasonKey,
-			String redirectURL, String transactionCode, int type)
+			String languageId, String note, String payload,
+			String paymentIntegrationKey, int paymentIntegrationType,
+			int paymentStatus, String reasonKey, String redirectURL,
+			String transactionCode, int type)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)

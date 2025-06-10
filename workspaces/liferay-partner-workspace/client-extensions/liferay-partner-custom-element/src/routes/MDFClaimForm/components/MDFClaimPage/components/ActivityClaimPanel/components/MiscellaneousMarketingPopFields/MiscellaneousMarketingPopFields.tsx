@@ -39,15 +39,15 @@ const MiscellaneousMarketingPopFields = ({
 				description="Only files with the following extensions wil be accepted: doc, docx, jpg, jpeg, png, tif, tiff, pdf"
 				displayType="secondary"
 				label="Telemarketing Script"
-				name={`activities[${currentActivityIndex}].telemarketingScript`}
+				name={`activities[${currentActivityIndex}].telemarketingScriptFile`}
 				onAccept={async (liferayFile: LiferayFile) => {
-					if (activity.telemarketingScript?.documentId) {
+					if (activity.telemarketingScriptFile?.documentId) {
 						deleteDocument(
-							activity.telemarketingScript?.documentId
+							activity.telemarketingScriptFile?.documentId
 						);
 					}
 					setFieldValue(
-						`activities[${currentActivityIndex}].telemarketingScript`,
+						`activities[${currentActivityIndex}].telemarketingScriptFile`,
 						liferayFile
 					);
 				}}
@@ -66,7 +66,7 @@ const MiscellaneousMarketingPopFields = ({
 						activity.proofOfPerformance?.images
 							? activity.proofOfPerformance.images.concat(
 									liferayFiles as LiferayFile[]
-							  )
+								)
 							: liferayFiles
 					)
 				}
@@ -85,7 +85,7 @@ const MiscellaneousMarketingPopFields = ({
 						activity.proofOfPerformance?.allContents
 							? activity.proofOfPerformance.allContents.concat(
 									liferayFiles as LiferayFile[]
-							  )
+								)
 							: liferayFiles
 					)
 				}

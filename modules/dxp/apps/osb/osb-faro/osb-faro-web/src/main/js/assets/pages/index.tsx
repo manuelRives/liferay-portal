@@ -62,6 +62,7 @@ const NAV_ITEMS = [
 		route: Routes.ASSETS_WEB_CONTENT
 	},
 	{
+		deprecated: true,
 		exact: true,
 		label: Liferay.Language.get('custom'),
 		route: Routes.ASSETS_CUSTOM
@@ -135,7 +136,7 @@ const Assets: React.FC<IAssetsProps> = ({className, router}) => {
 					<div className='d-flex justify-content-end w-100'>
 						<DownloadCSVReport
 							disabled={dataSourceStates.empty}
-							type={CSVType.Forms}
+							type={CSVType.Form}
 							typeLang={Liferay.Language.get('forms')}
 						/>
 					</div>
@@ -164,9 +165,13 @@ const Assets: React.FC<IAssetsProps> = ({className, router}) => {
 							<StatesRenderer.Empty
 								description={
 									<>
-										{Liferay.Language.get(
-											'connect-a-data-source-with-sites-data'
-										)}
+										{authorized
+											? Liferay.Language.get(
+													'connect-a-data-source-with-sites-data'
+											  )
+											: Liferay.Language.get(
+													'please-contact-your-workspace-administrator-to-add-data-sources'
+											  )}
 
 										<ClayLink
 											className='d-block mb-3'

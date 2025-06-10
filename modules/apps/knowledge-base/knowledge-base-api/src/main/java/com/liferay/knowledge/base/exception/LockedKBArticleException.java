@@ -61,15 +61,19 @@ public class LockedKBArticleException extends PortalException {
 		_cmd = cmd;
 	}
 
-	private Lock _getLock(Throwable throwable) {
-		if (throwable instanceof DuplicateLockException) {
-			DuplicateLockException duplicateLockException =
-				(DuplicateLockException)throwable;
+	public void setLock(Lock lock) {
+		_lock = lock;
+	}
 
-			return duplicateLockException.getLock();
+	private Lock _getLock(Throwable throwable) {
+		if (!(throwable instanceof DuplicateLockException)) {
+			return null;
 		}
 
-		return null;
+		DuplicateLockException duplicateLockException =
+			(DuplicateLockException)throwable;
+
+		return duplicateLockException.getLock();
 	}
 
 	private String _actionURL;

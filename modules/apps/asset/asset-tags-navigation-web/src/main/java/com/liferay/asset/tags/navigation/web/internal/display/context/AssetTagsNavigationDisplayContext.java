@@ -14,11 +14,11 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.RenderRequest;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.RenderRequest;
 
 /**
  * @author Vendel Toreki
@@ -51,12 +51,12 @@ public class AssetTagsNavigationDisplayContext {
 		if (showAssetCount && (_classNameId > 0)) {
 			_assetTags = AssetTagServiceUtil.getTags(
 				PortalUtil.getSiteGroupId(_scopeGroupId), _classNameId, null, 0,
-				maxAssetTags, new AssetTagCountComparator());
+				maxAssetTags, AssetTagCountComparator.getInstance(false));
 		}
 		else {
 			_assetTags = AssetTagServiceUtil.getGroupTags(
 				PortalUtil.getSiteGroupId(_scopeGroupId), 0, maxAssetTags,
-				new AssetTagCountComparator());
+				AssetTagCountComparator.getInstance(false));
 		}
 
 		_assetTags = ListUtil.sort(_assetTags);

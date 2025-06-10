@@ -37,7 +37,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
-import javax.portlet.Portlet;
+import jakarta.portlet.Portlet;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -160,10 +160,10 @@ public class MentionsPortletTest {
 			StringPool.SLASH + FriendlyURLNormalizerUtil.normalize(name);
 
 		return _layoutLocalService.addLayout(
-			userId, groupId, false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			name, null, RandomTestUtil.randomString(),
-			LayoutConstants.TYPE_PORTLET, false, friendlyURL,
-			ServiceContextTestUtil.getServiceContext());
+			null, userId, groupId, false,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name, null,
+			RandomTestUtil.randomString(), LayoutConstants.TYPE_PORTLET, false,
+			friendlyURL, ServiceContextTestUtil.getServiceContext());
 	}
 
 	private User _addUser(String screenName) throws Exception {
@@ -179,10 +179,10 @@ public class MentionsPortletTest {
 			String query)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = _getThemeDisplay();
-
 		MockLiferayResourceRequest mockLiferayResourceRequest =
 			new MockLiferayResourceRequest();
+
+		ThemeDisplay themeDisplay = _getThemeDisplay();
 
 		mockLiferayResourceRequest.setAttribute(
 			WebKeys.THEME_DISPLAY, themeDisplay);
@@ -243,7 +243,7 @@ public class MentionsPortletTest {
 	@Inject
 	private LayoutLocalService _layoutLocalService;
 
-	@Inject(filter = "javax.portlet.name=" + MentionsPortletKeys.MENTIONS)
+	@Inject(filter = "jakarta.portlet.name=" + MentionsPortletKeys.MENTIONS)
 	private Portlet _portlet;
 
 	@Inject

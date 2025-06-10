@@ -30,6 +30,8 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.InputStream;
 
 import java.util.Arrays;
@@ -38,8 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -96,7 +96,7 @@ public class AMImageRequestHandlerTest {
 		Mockito.when(
 			_amImageFinder.getAdaptiveMedias(Mockito.any(Function.class))
 		).thenThrow(
-			AMException.class
+			AMException.AMNotFound.class
 		);
 
 		_amImageRequestHandler.handleRequest(httpServletRequest);
@@ -147,7 +147,7 @@ public class AMImageRequestHandlerTest {
 		Mockito.when(
 			_pathInterpreter.interpretPath(Mockito.anyString())
 		).thenThrow(
-			AMRuntimeException.class
+			AMRuntimeException.IOException.class
 		);
 
 		HttpServletRequest httpServletRequest = Mockito.mock(
@@ -334,7 +334,7 @@ public class AMImageRequestHandlerTest {
 					return fileVersion.getContentStream(false);
 				}
 				catch (PortalException portalException) {
-					throw new AMRuntimeException(portalException);
+					throw new AMRuntimeException.IOException(portalException);
 				}
 			},
 			AMImageAttributeMapping.fromProperties(properties), null);

@@ -13,10 +13,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collection;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -46,11 +46,6 @@ public interface CETFactory {
 
 	public final Map<String, String> FEATURE_FLAG_KEYS = HashMapBuilder.put(
 
-		// feature.flag.LPD-15804
-
-		ClientExtensionEntryConstants.TYPE_COMMERCE_CHECKOUT_STEP, "LPD-15804"
-	).put(
-
 		// feature.flag.LPS-164563
 
 		ClientExtensionEntryConstants.TYPE_FDS_CELL_RENDERER, "LPS-164563"
@@ -64,12 +59,6 @@ public interface CETFactory {
 		// feature.flag.LPS-177027
 
 		ClientExtensionEntryConstants.TYPE_STATIC_CONTENT, "LPS-177027"
-	).put(
-
-		// feature.flag.LPS-186870
-
-		ClientExtensionEntryConstants.TYPE_EDITOR_CONFIG_CONTRIBUTOR,
-		"LPS-186870"
 	).build();
 
 }

@@ -23,11 +23,11 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.site.display.context.GroupDisplayContextHelper;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Péter Alius
@@ -122,7 +122,7 @@ public class ExportTemplatesToolbarDisplayContext
 
 		searchContainer.setOrderByCol("name");
 		searchContainer.setOrderByComparator(
-			new ExportImportConfigurationNameComparator(
+			ExportImportConfigurationNameComparator.getInstance(
 				Objects.equals(getOrderByType(), "asc")));
 		searchContainer.setOrderByType(getOrderByType());
 		searchContainer.setResultsAndTotal(

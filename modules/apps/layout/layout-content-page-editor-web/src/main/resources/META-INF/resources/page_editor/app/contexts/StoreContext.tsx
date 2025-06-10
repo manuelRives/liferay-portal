@@ -70,7 +70,7 @@ class EventEmitter<Data> {
 }
 
 const DEFAULT_DISPATCH: Dispatch = () => {};
-const DEFAULT_GET_STATE: GetState = () => ({} as State);
+const DEFAULT_GET_STATE: GetState = () => ({}) as State;
 
 const StoreDispatchContext = React.createContext(DEFAULT_DISPATCH);
 const StoreGetStateContext = React.createContext(DEFAULT_GET_STATE);
@@ -101,7 +101,7 @@ export function StoreAPIContextProvider({
 	const state = getState();
 
 	const subscribe = useCallback(
-		(subscriber) => emitter.addListener(subscriber),
+		(subscriber: any) => emitter.addListener(subscriber),
 		[emitter]
 	);
 
@@ -177,7 +177,7 @@ export function useSelectorCallback<Result>(
 
 		// We really want to call selector here just on component mount.
 		// This provides an initial value that will be recalculated when
-		// store suscription has been called.
+		// store subscription has been called.
 		// eslint-disable-next-line
 		[]
 	);

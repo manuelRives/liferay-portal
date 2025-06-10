@@ -1,63 +1,31 @@
 {
+	"enableIndexSearch": false,
 	"label": {
 		"en_US": "Testray Build"
 	},
 	"name": "Build",
 	"objectFields": [
 		{
-			"DBType": "Long",
-			"indexed": false,
-			"indexedAsKeyword": false,
-			"label": {
-				"en_US": "Template Testray Build Id"
-			},
-			"name": "templateTestrayBuildId",
-			"required": false,
-			"type": "Long"
-		},
-		{
-			"DBType": "String",
-			"indexed": true,
-			"indexedAsKeyword": true,
-			"label": {
-				"en_US": "Name"
-			},
-			"name": "name",
-			"required": false,
-			"type": "String"
-		},
-		{
-			"DBType": "String",
-			"indexed": false,
-			"indexedAsKeyword": false,
-			"label": {
-				"en_US": "Description"
-			},
-			"name": "description",
-			"required": false,
-			"type": "String"
-		},
-		{
 			"DBType": "Boolean",
-			"indexed": true,
+			"indexed": false,
 			"indexedAsKeyword": false,
 			"label": {
-				"en_US": "Template"
+				"en_US": "Archived"
 			},
-			"name": "template",
+			"name": "archived",
 			"required": false,
 			"type": "Boolean"
 		},
 		{
-			"DBType": "Date",
-			"indexed": false,
+			"DBType": "String",
+			"indexed": true,
 			"indexedAsKeyword": false,
 			"label": {
-				"en_US": "Date"
+				"en_US": "CPU Use Time"
 			},
-			"name": "dueDate",
+			"name": "cpuUseTime",
 			"required": false,
-			"type": "Date"
+			"type": "String"
 		},
 		{
 			"DBType": "DateTime",
@@ -75,6 +43,47 @@
 			],
 			"required": false,
 			"type": "DateTime"
+		},
+		{
+			"DBType": "String",
+			"indexed": false,
+			"indexedAsKeyword": false,
+			"label": {
+				"en_US": "Description"
+			},
+			"name": "description",
+			"required": false,
+			"type": "String"
+		},
+		{
+			"DBType": "DateTime",
+			"indexed": false,
+			"indexedAsKeyword": false,
+			"label": {
+				"en_US": "Date"
+			},
+			"name": "dueDate",
+			"objectFieldSettings": [
+				{
+					"name": "timeStorage",
+					"value": "convertToUTC"
+				}
+			],
+			"required": false,
+			"type": "DateTime"
+		},
+		{
+			"DBType": "String",
+			"businessType": "Picklist",
+			"indexed": true,
+			"indexedAsKeyword": true,
+			"label": {
+				"en_US": "Due Status"
+			},
+			"listTypeDefinitionId": "[$LIST_TYPE_DEFINITION_ID:Build Statuses$]",
+			"name": "dueStatus",
+			"required": false,
+			"type": "String"
 		},
 		{
 			"DBType": "String",
@@ -99,6 +108,42 @@
 			"type": "String"
 		},
 		{
+			"DBType": "String",
+			"businessType": "Picklist",
+			"defaultValue": "PENDING",
+			"indexed": true,
+			"indexedAsKeyword": true,
+			"label": {
+				"en_US": "Import Status"
+			},
+			"listTypeDefinitionId": "[$LIST_TYPE_DEFINITION_ID:Build Import Statuses$]",
+			"name": "importStatus",
+			"required": false,
+			"type": "String"
+		},
+		{
+			"DBType": "String",
+			"indexed": true,
+			"indexedAsKeyword": true,
+			"label": {
+				"en_US": "Name"
+			},
+			"name": "name",
+			"required": false,
+			"type": "String"
+		},
+		{
+			"DBType": "Clob",
+			"indexed": false,
+			"indexedAsKeyword": false,
+			"label": {
+				"en_US": "Playwright Reports"
+			},
+			"name": "playwrightReports",
+			"required": false,
+			"type": "Clob"
+		},
+		{
 			"DBType": "Boolean",
 			"indexed": false,
 			"indexedAsKeyword": false,
@@ -110,30 +155,30 @@
 			"type": "Boolean"
 		},
 		{
-			"DBType": "String",
-			"businessType": "Picklist",
+			"DBType": "Boolean",
 			"indexed": true,
-			"indexedAsKeyword": true,
+			"indexedAsKeyword": false,
 			"label": {
-				"en_US": "Due Status"
+				"en_US": "Template"
 			},
-			"listTypeDefinitionId": "[$LIST_TYPE_DEFINITION_ID:Build Statuses$]",
-			"name": "dueStatus",
+			"name": "template",
 			"required": false,
-			"type": "String"
+			"type": "Boolean"
 		},
 		{
-			"DBType": "Boolean",
+			"DBType": "Long",
 			"indexed": false,
 			"indexedAsKeyword": false,
 			"label": {
-				"en_US": "Archived"
+				"en_US": "Template Testray Build ID"
 			},
-			"name": "archived",
+			"name": "templateTestrayBuildId",
 			"required": false,
-			"type": "Boolean"
+			"type": "Long"
 		}
 	],
+	"objectFolderExternalReferenceCode": "TESTRAY",
+	"panelCategoryKey": "control_panel.object",
 	"pluralLabel": {
 		"en_US": "Testray Builds"
 	},

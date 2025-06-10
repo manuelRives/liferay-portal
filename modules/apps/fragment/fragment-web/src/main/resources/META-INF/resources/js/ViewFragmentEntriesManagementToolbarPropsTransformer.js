@@ -4,7 +4,8 @@
  */
 
 import {render} from '@liferay/frontend-js-react-web';
-import {getCheckedCheckboxes, openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {getCheckedCheckboxes} from 'frontend-js-web';
 
 import AddFragmentModal from './AddFragmentModal';
 import openDeleteFragmentModal from './openDeleteFragmentModal';
@@ -132,9 +133,10 @@ export default function propsTransformer({
 						);
 					}
 
-					const fragmentCompositionIdsElement = document.getElementById(
-						`${portletNamespace}fragmentCompositionIds`
-					);
+					const fragmentCompositionIdsElement =
+						document.getElementById(
+							`${portletNamespace}fragmentCompositionIds`
+						);
 
 					if (fragmentCompositionIdsElement) {
 						fragmentCompositionIdsElement.setAttribute(

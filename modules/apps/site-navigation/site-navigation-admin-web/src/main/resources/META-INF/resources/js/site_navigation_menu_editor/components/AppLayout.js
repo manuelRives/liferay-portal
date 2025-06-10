@@ -74,7 +74,7 @@ export function AppLayout({
 	return (
 		<>
 			<div className="bg-white component-tbar tbar">
-				<div className="container-fluid container-fluid-max-xl">
+				<div className="container-fluid">
 					<div className="cadmin px-1 tbar-nav">
 						{toolbarChildren}
 					</div>
@@ -83,7 +83,8 @@ export function AppLayout({
 
 			<div
 				className={classNames(APP_LAYOUT_CONTENT_CLASS_NAME, {
-					[`${APP_LAYOUT_CONTENT_CLASS_NAME}--with-sidebar`]: !!SidebarPanel,
+					[`${APP_LAYOUT_CONTENT_CLASS_NAME}--with-sidebar`]:
+						!!SidebarPanel,
 				})}
 				ref={appLayoutContentRef}
 			>
@@ -96,7 +97,8 @@ export function AppLayout({
 					className={classNames(
 						'site_navigation_menu_editor_AppLayout-sidebar',
 						{
-							'site_navigation_menu_editor_AppLayout-sidebar--visible': !!SidebarPanel,
+							'site_navigation_menu_editor_AppLayout-sidebar--visible':
+								!!SidebarPanel,
 						}
 					)}
 					ref={sidebarPanelRef}

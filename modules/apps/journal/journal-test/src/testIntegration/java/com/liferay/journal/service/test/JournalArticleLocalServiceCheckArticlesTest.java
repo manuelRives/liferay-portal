@@ -6,6 +6,7 @@
 package com.liferay.journal.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
@@ -108,6 +109,27 @@ public class JournalArticleLocalServiceCheckArticlesTest {
 	}
 
 	@Test
+	public void testExpireJournalArticleWithExpirationErrors()
+		throws Exception {
+
+		JournalArticle journalArticle = addArticle(
+			_group.getGroupId(), false, true, false);
+
+		Date date = new Date(System.currentTimeMillis() - Time.HOUR);
+
+		journalArticle.setExpirationDate(date);
+
+		journalArticle = _journalArticleLocalService.updateJournalArticle(
+			journalArticle);
+
+		_assetEntryLocalService.deleteEntry(
+			JournalArticle.class.getName(),
+			journalArticle.getResourcePrimKey());
+
+		_assertCheckArticles(date, date, WorkflowConstants.STATUS_EXPIRED);
+	}
+
+	@Test
 	public void testExpireScheduledJournalArticleDisplayDateAndExpirationDateWithinTheSameInterval()
 		throws Exception {
 
@@ -129,6 +151,27 @@ public class JournalArticleLocalServiceCheckArticlesTest {
 		Date date = new Date(now - Time.HOUR);
 
 		_assertCheckArticles(date, date, WorkflowConstants.STATUS_EXPIRED);
+	}
+
+	@Test
+	public void testScheduleJournalArticleWithSchedulingErrors()
+		throws Exception {
+
+		JournalArticle journalArticle = addArticle(
+			_group.getGroupId(), true, true, true);
+
+		Date date = new Date(System.currentTimeMillis() - Time.HOUR);
+
+		journalArticle.setDisplayDate(date);
+
+		journalArticle = _journalArticleLocalService.updateJournalArticle(
+			journalArticle);
+
+		_assetEntryLocalService.deleteEntry(
+			JournalArticle.class.getName(),
+			journalArticle.getResourcePrimKey());
+
+		_assertCheckArticles(date, null, WorkflowConstants.STATUS_APPROVED);
 	}
 
 	@Test
@@ -246,6 +289,14 @@ public class JournalArticleLocalServiceCheckArticlesTest {
 		JournalArticle article = addArticle(
 			_group.getGroupId(), false, approved, false);
 
+		article = updateArticle(article, mode);
+
+		Calendar calendar = getExpirationCalendar(Time.HOUR, -2);
+
+		article.setExpirationDate(calendar.getTime());
+
+		article = _journalArticleLocalService.updateJournalArticle(article);
+
 		// Add a version of the article, changing expire date
 
 		article = updateArticle(article, mode);
@@ -349,6 +400,9 @@ public class JournalArticleLocalServiceCheckArticlesTest {
 	private static final int _MODE_DEFAULT = 0;
 
 	private static final int _MODE_POSTPONE_EXPIRATION = 1;
+
+	@Inject
+	private AssetEntryLocalService _assetEntryLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;

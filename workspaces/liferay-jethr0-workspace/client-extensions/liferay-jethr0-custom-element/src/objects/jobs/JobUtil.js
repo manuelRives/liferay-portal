@@ -23,12 +23,6 @@ export async function createJob({data, redirect}) {
 
 	const jobsResult = JSON.parse(await jobsResponse.text());
 
-	await liferayRequest({
-		headers,
-		method: 'PUT',
-		urlPath: `/o/c/jobs/${jobsResult.id}/object-actions/Jethr0EtcSpringBootAddJob`,
-	});
-
 	if (jobsResult && redirect) {
 		redirect(jobsResult);
 	}
@@ -65,8 +59,9 @@ export async function getJobById({id, setJob}) {
 						}
 					}
 				}
-				jobs(filter: \\"id eq '${id}'\\") {
+				jobs (filter: \\"id eq '${id}'\\") {
 					items {
+						blessed
 						dateCreated
 						dateModified
 						id
@@ -129,7 +124,11 @@ export function getJobParameter({jobParameters, key}) {
 	}
 }
 
-export async function getJobQueueOrderedJobs({setJobs}) {
+export async function getJobQueueOrderedJobsPage({
+	page,
+	pageSize,
+	setJobsPage,
+}) {
 	const response = await liferayRequest({
 		urlPath: '/o/c/jobprioritizers',
 		urlSearchParams: new URLSearchParams({
@@ -140,21 +139,120 @@ export async function getJobQueueOrderedJobs({setJobs}) {
 
 	const result = JSON.parse(await response.text());
 
-	const jobs = [];
-
 	const jobPrioritizer = result.items[0];
 
 	if (jobPrioritizer?.prioritizedJobIds) {
-		for (const id of JSON.parse(jobPrioritizer.prioritizedJobIds)) {
-			const job = await getJobById({id});
+		getJobsPage({
+			orderedJobIds: JSON.parse(jobPrioritizer.prioritizedJobIds),
+			page,
+			pageSize,
+			setJobsPage,
+		});
+	}
+}
+
+export async function getJobsPage({
+	orderedJobIds,
+	page,
+	pageSize,
+	setJobs,
+	setJobsPage,
+}) {
+	let filter = '';
+
+	if (orderedJobIds) {
+		for (let i = 0; i < orderedJobIds.length; i++) {
+			if (i > 0) {
+				filter += ' or ';
+			}
+
+			filter += `id eq '${orderedJobIds[i]}'`;
+		}
+	}
+
+	if (!page) {
+		page = 1;
+	}
+
+	if (!pageSize) {
+		pageSize = 25;
+	}
+
+	const response = await liferayRequest({
+		graphqlQuery: `{
+			c {
+				jobs (filter: \\"${filter}\\", page: ${page}, pageSize: ${pageSize}) {
+					items {
+						blessed
+						dateCreated
+						dateModified
+						id
+						name
+						parameters
+						priority
+						startDate
+						state {
+							key
+							name
+						}
+						type {
+							key
+							name
+						}
+					}
+					page
+					pageSize
+					totalCount
+				}
+			}
+		}`,
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		method: 'POST',
+		urlPath: '/o/graphql',
+	});
+
+	const result = JSON.parse(await response.text());
+
+	const jobsMap = new Map();
+
+	let jobs = [];
+
+	result.data.c.jobs.items.forEach((item) => {
+		const job = new Job(item);
+
+		jobs.push(job);
+
+		jobsMap.set(job.id, job);
+	});
+
+	if (orderedJobIds) {
+		jobs = [];
+
+		for (const jobId of orderedJobIds) {
+			const job = jobsMap.get(jobId);
 
 			if (job) {
-				jobs.push(job);
+				jobs.push(jobsMap.get(jobId));
 			}
 		}
 	}
 
-	setJobs(jobs);
+	if (setJobs) {
+		setJobs(jobs);
+	}
+
+	const jobsPage = {
+		jobs,
+		page: result.data.c.jobs.page,
+		pageSize: result.data.c.jobs.pageSize,
+		totalCount: result.data.c.jobs.totalCount,
+	};
+
+	if (setJobsPage) {
+		setJobsPage(jobsPage);
+	}
 }
 
 export async function getJobs({orderedJobIds, setJobs}) {
@@ -232,4 +330,24 @@ export function getUpdatedJobParameters({jobParameters, key, value}) {
 	}
 
 	return updatedJobParameters;
+}
+
+export async function updateJob({data, id, redirect}) {
+	const headers = {
+		'Content-Type': 'application/json',
+		'accept': 'application/json',
+	};
+
+	const jobsResponse = await liferayRequest({
+		body: JSON.stringify(data),
+		headers,
+		method: 'PUT',
+		urlPath: '/o/c/jobs/' + id,
+	});
+
+	const jobsResult = JSON.parse(await jobsResponse.text());
+
+	if (jobsResult && redirect) {
+		redirect(jobsResult);
+	}
 }

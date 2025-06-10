@@ -21,6 +21,7 @@ import com.liferay.jenkins.results.parser.failure.message.generator.SemanticVers
 import com.liferay.jenkins.results.parser.failure.message.generator.ServiceBuilderFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.SourceFormatFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.StartupFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.UpgradeFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.test.clazz.FunctionalTestClass;
 import com.liferay.jenkins.results.parser.test.clazz.JUnitTestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
@@ -580,6 +581,14 @@ public class DownstreamBuild extends BaseBuild {
 		return warningMessages;
 	}
 
+	@Override
+	public void saveBuildURLInBuildDatabase() {
+		BuildDatabase buildDatabase = getBuildDatabase();
+
+		buildDatabase.putProperty(
+			BUILD_URLS_PROPERTIES_KEY, getAxisName(), getBuildURL(), false);
+	}
+
 	protected DownstreamBuild(String url, TopLevelBuild topLevelBuild) {
 		super(url, topLevelBuild);
 	}
@@ -1001,7 +1010,6 @@ public class DownstreamBuild extends BaseBuild {
 		new CompileFailureMessageGenerator(),
 		new IntegrationTestTimeoutFailureMessageGenerator(),
 		new JSUnitTestFailureMessageGenerator(),
-		new LocalGitMirrorFailureMessageGenerator(),
 		new PMDFailureMessageGenerator(),
 		new PlaywrightCompilationFailureMessageGenerator(),
 		new PluginGitIDFailureMessageGenerator(),
@@ -1009,8 +1017,10 @@ public class DownstreamBuild extends BaseBuild {
 		new ServiceBuilderFailureMessageGenerator(),
 		new SourceFormatFailureMessageGenerator(),
 		new StartupFailureMessageGenerator(),
+		new UpgradeFailureMessageGenerator(),
 		//
 		new GradleTaskFailureMessageGenerator(),
+		new LocalGitMirrorFailureMessageGenerator(),
 		//
 		new CIFailureMessageGenerator(),
 		new GenericFailureMessageGenerator()

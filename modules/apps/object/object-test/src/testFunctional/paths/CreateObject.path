@@ -42,7 +42,7 @@
 	</tr>
 	<tr>
 		<td>FIELD_ADDED_ON_BLOCK</td>
-		<td>//div[contains(@class,'object-admin-panel__simple-body__content-left')]//div//h5[contains(text(),'${key_fieldLabelName}')]</td>
+		<td>//div[contains(@class,'object-admin-panel__simple-body__content-left')]//div//div[contains(@class,'h5') and contains(text(),'${key_fieldLabelName}')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -82,7 +82,7 @@
 	</tr>
 	<tr>
 		<td>DISABLED_TAB_TYPE_RELATIONSHIPS</td>
-		<td>//div[@class = 'layout-tab__tab-types disabled']//h4[@class = 'layout-tab__tab-types__title' and contains(text(),'Relationships')]</td>
+		<td>//div[@class = 'layout-tab__tab-types disabled']//div[contains(@class,'layout-tab__tab-types__title') and contains(text(),'Relationships')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -122,7 +122,7 @@
 	</tr>
 	<tr>
 		<td>VIEW_ENTRY_FIELD_BY_INDEX</td>
-		<td>//div[@class='dnd-tr'][${key_tableRow}]//div[@class='dnd-td'][${key_tableCell}]//span[contains(.,'${key_tableValue}')]|//div[@class='dnd-tr'][${key_tableRow}]//div[@class='dnd-td'][${key_tableCell}]//a[contains(.,'${key_tableValue}')]</td>
+		<td>//tr[${key_tableRow}]//td[${key_tableCell}]//span[contains(.,'${key_tableValue}')] | //tr[${key_tableRow}]//td[${key_tableCell}]//a[contains(.,'${key_tableValue}')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -132,7 +132,7 @@
 	</tr>
 	<tr>
 		<td>VIEW_RELATED_OBJECT_ON_RELATIONSHIP_FIELD</td>
-		<td>//div[contains(@class,'dnd-tbody')]//div[contains(@class, 'dnd-tr')]//div[contains(text(),'${key_relatedObject}') and contains(@class, 'dnd-td')][1]</td>
+		<td>//td[contains(text(),'${key_relatedObject}')]</td>
 		<td></td>
 	</tr>
 	<tr>

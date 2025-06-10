@@ -12,7 +12,8 @@ import {
 	useCommerceAccount,
 	useCommerceCart,
 } from 'commerce-frontend-js';
-import {openToast, sub} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 
@@ -59,11 +60,12 @@ function formatCpInstances(cpInstances, quantities) {
 }
 
 function DiagramTable({
-	cartId: initialCartId,
+	cartId,
 	channelGroupId,
 	channelId,
 	commerceAccountId: initialAccountId,
 	commerceCurrencyCode,
+	guestOrderEnabled,
 	isAdmin,
 	orderUUID,
 	productId,
@@ -76,7 +78,10 @@ function DiagramTable({
 	const [query, setQuery] = useState('');
 	const [refreshTrigger, setRefreshTrigger] = useState(false);
 	const commerceAccount = useCommerceAccount({id: initialAccountId});
-	const commerceCart = useCommerceCart({id: initialCartId});
+	const commerceCart = useCommerceCart({
+		guestOrderEnabled,
+		initialCart: {id: cartId},
+	});
 	const wrapperRef = useRef();
 
 	const handleDiagramUpdated = useCallback(
@@ -229,7 +234,7 @@ function DiagramTable({
 					(counter, product) =>
 						product.selected ? counter + 1 : counter,
 					0
-			  )
+				)
 			: 0;
 
 	return (
@@ -276,13 +281,13 @@ function DiagramTable({
 							selectedProductsCounter === 1
 								? Liferay.Language.get(
 										'the-product-was-successfully-added-to-the-cart'
-								  )
+									)
 								: sub(
 										Liferay.Language.get(
 											'x-products-were-successfully-added-to-the-cart'
 										),
 										selectedProductsCounter
-								  );
+									);
 
 						openToast({
 							message,

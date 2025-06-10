@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {Outlet} from 'react-router-dom';
+import {Outlet, useOutletContext} from 'react-router-dom';
 
 import {DashboardNavigation} from '../../components/DashboardNavigation/DashboardNavigation';
 
@@ -30,7 +30,7 @@ const PublisherDashboardOutlet: React.FC<PublisherDashboardOutletProps> = ({
 				<DashboardNavigation
 					accountIcon={getAccountImage(selectedAccount?.logoURL)}
 					accountsSearch={accountsSearch}
-					currentAccount={(selectedAccount as unknown) as Account}
+					currentAccount={selectedAccount as unknown as Account}
 					dashboardNavigationItems={[
 						{
 							itemTitle: i18n.translate('apps'),
@@ -60,5 +60,16 @@ const PublisherDashboardOutlet: React.FC<PublisherDashboardOutletProps> = ({
 		</PageRenderer>
 	);
 };
+
+const usePublisherDashboardOutletContext = () => {
+	const context = useOutletContext<{
+		catalogId: number;
+		selectedAccount: UserAccount;
+	}>();
+
+	return context;
+};
+
+export {usePublisherDashboardOutletContext};
 
 export default PublisherDashboardOutlet;

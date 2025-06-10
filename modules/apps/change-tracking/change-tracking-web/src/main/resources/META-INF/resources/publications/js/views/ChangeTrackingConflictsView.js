@@ -12,7 +12,8 @@ import ClayList from '@clayui/list';
 import ClayModal, {useModal} from '@clayui/modal';
 import {ClayPaginationBarWithBasicItems} from '@clayui/pagination-bar';
 import ClayPanel from '@clayui/panel';
-import {navigate, openConfirmModal} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {navigate} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 import ChangeTrackingBaseScheduleView from './ChangeTrackingBaseScheduleView';
@@ -24,13 +25,14 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 
 		const {
 			hasUnapprovedChanges,
+			isEmpty,
 			learnLink,
+			learnResolvingConflictsLink,
 			publishURL,
 			redirect,
 			resolvedConflicts,
 			schedule,
 			scheduleURL,
-			showPageOverwriteWarning,
 			spritemap,
 			timeZone,
 			unapprovedChangesAllowed,
@@ -39,13 +41,14 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 		} = props;
 
 		this.hasUnapprovedChanges = hasUnapprovedChanges;
+		this.isEmpty = isEmpty;
 		this.learnLink = learnLink;
+		this.learnResolvingConflictsLink = learnResolvingConflictsLink;
 		this.publishURL = publishURL;
 		this.redirect = redirect;
 		this.resolvedConflicts = resolvedConflicts;
 		this.schedule = schedule;
 		this.scheduleURL = scheduleURL;
-		this.showPageOverwriteWarning = showPageOverwriteWarning;
 		this.spritemap = spritemap;
 		this.timeZone = timeZone;
 		this.unapprovedChangesAllowed = unapprovedChangesAllowed;
@@ -56,8 +59,9 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 			date: null,
 			dateError: '',
 			formError: null,
-			scheduleButtonDisabled:
+			publishButtonDisabled:
 				!!this.unresolvedConflicts.length ||
+				isEmpty ||
 				(this.hasUnapprovedChanges && !this.unapprovedChangesAllowed)
 					? true
 					: false,
@@ -70,6 +74,8 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 	handleSubmit() {
 		if (!this.schedule) {
 			submitForm(document.hrefFm, this.publishURL);
+
+			this.setState({publishButtonDisabled: true});
 
 			return;
 		}
@@ -93,10 +99,10 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 								this.unapprovedChangesAllowed
 									? Liferay.Language.get(
 											'this-publication-contains-unapproved-changes'
-									  )
+										)
 									: Liferay.Language.get(
 											'this-publication-contains-unapproved-changes-that-must-be-approved-before-publishing'
-									  )
+										)
 							}
 						/>
 					)}
@@ -110,10 +116,10 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 								{this.unscheduleURL
 									? Liferay.Language.get(
 											'this-scheduled-publication-contains-conflicting-changes-that-must-be-manually-resolved-before-publishing'
-									  )
+										)
 									: Liferay.Language.get(
 											'this-publication-contains-conflicting-changes-that-must-be-manually-resolved-before-publishing'
-									  )}
+										)}
 							</span>
 
 							<a href={this.learnLink.url}>
@@ -135,15 +141,17 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 							/>
 						)}
 
-					{this.showPageOverwriteWarning && (
-						<ClayAlert
-							displayType="info"
-							spritemap={this.spritemap}
-							title={Liferay.Language.get(
-								"this-publication-contains-changes-to-a-content-page.-publishing-these-changes-will-fully-overwrite-the-page's-content-and-layout-in-production"
-							)}
-						/>
-					)}
+					<ClayAlert
+						displayType="info"
+						spritemap={this.spritemap}
+						title={Liferay.Language.get(
+							'publishing-may-overwrite-changes-made-in-production-after-this-publication-was-created'
+						)}
+					>
+						<a href={this.learnResolvingConflictsLink.url}>
+							{this.learnResolvingConflictsLink.message}
+						</a>
+					</ClayAlert>
 				</div>
 
 				<div className="sheet-section">
@@ -276,7 +284,7 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 							) : (
 								<button
 									className="btn btn-primary"
-									disabled={this.state.scheduleButtonDisabled}
+									disabled={this.state.publishButtonDisabled}
 									onClick={() => this.handleSubmit()}
 									type="button"
 								>

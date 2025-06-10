@@ -4,7 +4,7 @@
  */
 
 import {drag as d3drag, event as d3event, select as d3select} from 'd3';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 import DiagramZoomHandler from '../utilities/DiagramZoomHandler';
 import {
@@ -67,7 +67,8 @@ class D3Handler extends DiagramZoomHandler {
 	}
 
 	_printImage() {
-		const wrapperBoundingClientRect = this._diagramWrapper.getBoundingClientRect();
+		const wrapperBoundingClientRect =
+			this._diagramWrapper.getBoundingClientRect();
 
 		this._image = this._d3zoomWrapper
 			.append('image')

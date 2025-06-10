@@ -191,12 +191,13 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addObjectFieldViaAPI(isRequired = null, userPassword = null, fieldName = null, indexed = null, outputOption = null, fileSource = null, showFilesInDocumentsAndMedia = null, userEmailAddress = null, fieldBusinessType = null, readOnlyExpression = null, picklistName = null, indexedAsKeyword = null, isReadOnly = null, formulaScript = null, fieldLabelName = null, indexedLanguageId = null, objectName = null, fieldType = null, timeStorageOption = null) {
+	macro addObjectFieldViaAPI(externalReferenceCode = null, fieldName = null, fieldBusinessType = null, fieldLabelName = null, fieldType = null, fileSource = null, formulaScript = null, indexed = null, indexedAsKeyword = null, indexedLanguageId = null, isReadOnly = null, isRequired = null, objectName = null, outputOption = null, picklistName = null, readOnlyExpression = null, showFilesInDocumentsAndMedia = null, timeStorageOption = null, userEmailAddress = null, userPassword = null) {
 		if ((${fieldBusinessType} == "Formula") || (${fieldBusinessType} == "Aggregation")) {
 			var indexed = "false";
 		}
 
 		JSONObject.addObjectField(
+			externalReferenceCode = ${externalReferenceCode},
 			fieldBusinessType = ${fieldBusinessType},
 			fieldLabelName = ${fieldLabelName},
 			fieldName = ${fieldName},
@@ -222,7 +223,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addObjectFieldViaUI(prefixValue = null, initialValue = null, suffixValue = null, fieldTimeStorage = null, fieldName = null, acceptUniqueValuesOnly = null, formulaFieldOption = null, fieldPicklist = null, itemName = null, field = null, fieldLabel = null, sorting = null, markAsState = null, fieldAttachment = null, functionType = null, relationship = null, fieldType = null, isMandatory = null) {
+	macro addObjectFieldViaUI(prefixValue = null, initialValue = null, suffixValue = null, fieldTimeStorage = null, fieldName = null, acceptUniqueValuesOnly = null, formulaFieldOption = null, fieldPicklist = null, itemName = null, field = null, fieldLabel = null, sorting = null, markAsState = null, fieldAttachment = null, functionType = null, relationship = null, fieldType = null, isMandatory = null, enableEntryTranslations = null) {
 		LexiconEntry.gotoAdd();
 
 		Type(
@@ -299,6 +300,10 @@ definition {
 			}
 		}
 
+		if (${enableEntryTranslations} == "true") {
+			ObjectField.checkToggleEnableEntryTranslations();
+		}
+
 		if (${isMandatory} == "true") {
 			ObjectField.checkToggleMandatory();
 		}
@@ -369,7 +374,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addObjectMultiPicklistFieldEntryViaUI(picklistOptionList = null) {
+	macro addObjectMultiselectPicklistFieldEntryViaUI(picklistOptionList = null) {
 		LexiconEntry.gotoAdd();
 
 		Click(locator1 = "ObjectAdmin#ENTRY_CHOOSE_OPTIONS_MULTIPICKLIST");
@@ -929,27 +934,27 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro deleteAllCustomObjectRelationships() {
+		var objectDefinitionIds = JSONObject.getAllObjectDefinitionsId();
+
+		for (var objectDefinitionId : list ${objectDefinitionIds}) {
+			var customObjectRelationshipIds = JSONObject.getCustomObjectRelationshipIds(objectDefinitionId = ${objectDefinitionId});
+
+			if (${customObjectRelationshipIds} != "") {
+				for (var customObjectRelationshipId : list ${customObjectRelationshipIds}) {
+					JSONObject.deleteObjectRelationship(objectRelationshipId = ${customObjectRelationshipId});
+				}
+			}
+		}
+	}
+
+	@summary = "Default summary"
 	macro deleteAllCustomObjectsViaAPI(userPassword = null, userEmailAddress = null) {
-		ObjectAdmin.deleteAllRelationships();
+		ObjectAdmin.deleteAllCustomObjectRelationships();
 
 		JSONObject.deleteAllCustomObjects(
 			userEmailAddress = ${userEmailAddress},
 			userPassword = ${userPassword});
-	}
-
-	@summary = "Default summary"
-	macro deleteAllRelationships() {
-		var objectDefinitionIdList = JSONObject.getAllObjectDefinitionsId();
-
-		for (var objectDefinitionId : list ${objectDefinitionIdList}) {
-			var relationshipIdList = JSONObject.getObjectRelationships(objectDefinitionId = ${objectDefinitionId});
-
-			if (${relationshipIdList} != "") {
-				for (var relationshipId : list ${relationshipIdList}) {
-					JSONObject.deleteRelationship(objectRelationshipId = ${relationshipId});
-				}
-			}
-		}
 	}
 
 	@summary = "Default summary"
@@ -1425,7 +1430,9 @@ definition {
 			userEmailAddress = ${userEmailAddress},
 			userPassword = ${userPassword});
 
-		Navigator.openSpecificURL(url = "/group/guest/~/control_panel/manage?p_p_id=com_liferay_object_web_internal_object_definitions_portlet_ObjectDefinitionsPortlet_${objectId}");
+		var objectDefinitionPortletId = ObjectDefinitionAPI._getObjectDefinitionPortletId(objectDefinitionId = ${objectId});
+
+		Navigator.openSpecificURL(url = "/group/guest/~/control_panel/manage?p_p_id=${objectDefinitionPortletId}");
 	}
 
 	@summary = "Default summary"

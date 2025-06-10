@@ -7,16 +7,19 @@ package com.liferay.saml.internal.servlet.filter;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.util.PortalInstances;
 import com.liferay.saml.helper.SamlHttpRequestHelper;
 import com.liferay.saml.persistence.model.SamlSpSession;
+import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.runtime.servlet.profile.SingleLogoutProfile;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -26,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"before-filter=Session Id Filter", "dispatcher=FORWARD",
+		"before-filter=Absolute Redirects Filter", "dispatcher=FORWARD",
 		"dispatcher=REQUEST",
 		"init-param.url-regex-ignore-pattern=^/html/.+\\.(css|gif|html|ico|jpg|js|png)(\\?.*)?$",
 		"servlet-context-name=",
@@ -45,16 +48,17 @@ public class SpSessionTerminationSamlPortalFilter extends BaseSamlPortalFilter {
 	}
 
 	@Override
-	public boolean isFilterEnabled() {
-		return true;
-	}
-
-	@Override
 	public boolean isFilterEnabled(
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse) {
 
-		if (httpServletRequest.getSession(false) != null) {
+		if (httpServletRequest.getAttribute(WebKeys.COMPANY_ID) == null) {
+			PortalInstances.getCompanyId(httpServletRequest);
+		}
+
+		if (_samlProviderConfigurationHelper.isEnabled() &&
+			(httpServletRequest.getSession(false) != null)) {
+
 			return true;
 		}
 
@@ -98,6 +102,9 @@ public class SpSessionTerminationSamlPortalFilter extends BaseSamlPortalFilter {
 
 	@Reference
 	private SamlHttpRequestHelper _samlHttpRequestHelper;
+
+	@Reference
+	private SamlProviderConfigurationHelper _samlProviderConfigurationHelper;
 
 	private ServletContext _servletContext;
 

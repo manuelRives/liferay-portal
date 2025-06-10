@@ -37,13 +37,13 @@ import com.liferay.search.experiences.rest.internal.resource.v1_0.util.TitleMapU
 import com.liferay.search.experiences.rest.resource.v1_0.SXPBlueprintResource;
 import com.liferay.search.experiences.service.SXPBlueprintService;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
-
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -238,7 +238,8 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 					contextAcceptLanguage.getPreferredLocale(),
 					sxpBlueprint.getDescription(),
 					sxpBlueprint.getDescription_i18n()),
-				_getElementInstancesJSON(sxpBlueprint), _getSchemaVersion(),
+				_getElementInstancesJSON(sxpBlueprint),
+				_getSchemaVersion(sxpBlueprint),
 				LocalizedMapUtil.getLocalizedMap(
 					contextAcceptLanguage.getPreferredLocale(),
 					sxpBlueprint.getTitle(), sxpBlueprint.getTitle_i18n()),
@@ -334,8 +335,12 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 			ElementInstanceUtil.unpack(sxpBlueprint.getElementInstances()));
 	}
 
-	private String _getSchemaVersion() {
-		return "1.0";
+	private String _getSchemaVersion(SXPBlueprint sxpBlueprint) {
+		if (sxpBlueprint.getSchemaVersion() != null) {
+			return sxpBlueprint.getSchemaVersion();
+		}
+
+		return "1.1";
 	}
 
 	private SXPBlueprint _updateSXPBlueprint(
@@ -358,7 +363,8 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 					contextAcceptLanguage.getPreferredLocale(),
 					sxpBlueprint.getDescription(),
 					sxpBlueprint.getDescription_i18n()),
-				_getElementInstancesJSON(sxpBlueprint), _getSchemaVersion(),
+				_getElementInstancesJSON(sxpBlueprint),
+				_getSchemaVersion(sxpBlueprint),
 				LocalizedMapUtil.getLocalizedMap(
 					contextAcceptLanguage.getPreferredLocale(),
 					sxpBlueprint.getTitle(), sxpBlueprint.getTitle_i18n()),

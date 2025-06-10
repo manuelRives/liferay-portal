@@ -24,7 +24,6 @@ import com.liferay.portal.kernel.plugin.Version;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.ClearThreadLocalUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.IntegerWrapper;
@@ -361,13 +360,6 @@ public class ServiceBuilder {
 			}
 
 			ArgumentsUtil.processMainException(arguments, exception);
-		}
-
-		try {
-			ClearThreadLocalUtil.clearThreadLocal();
-		}
-		catch (Throwable throwable) {
-			throwable.printStackTrace();
 		}
 
 		Introspector.flushCaches();
@@ -1783,6 +1775,29 @@ public class ServiceBuilder {
 		return false;
 	}
 
+	public boolean isCacheFieldPermanent(JavaField javaField) {
+		if (isVersionLTE_7_3_0()) {
+			return false;
+		}
+
+		List<JavaAnnotation> javaAnnotations = javaField.getAnnotations();
+
+		for (JavaAnnotation javaAnnotation : javaAnnotations) {
+			JavaClass type = javaAnnotation.getType();
+
+			String className = type.getFullyQualifiedName();
+
+			if (!className.equals(CacheField.class.getName())) {
+				continue;
+			}
+
+			return GetterUtil.getBoolean(
+				javaAnnotation.getNamedParameter("permanent"));
+		}
+
+		throw new IllegalArgumentException(javaField + " is not a cache field");
+	}
+
 	public boolean isCustomMethod(JavaMethod method) {
 		String methodName = method.getName();
 
@@ -2024,11 +2039,7 @@ public class ServiceBuilder {
 			return false;
 		}
 
-		if (txRequiredMethodNames.contains(javaMethod.getName())) {
-			return true;
-		}
-
-		return false;
+		return txRequiredMethodNames.contains(javaMethod.getName());
 	}
 
 	public boolean isVersionGTE_7_0_0() {
@@ -2605,8 +2616,9 @@ public class ServiceBuilder {
 			}
 
 			if (entity.hasEntityColumns()) {
-				if (entity.hasExternalReferenceCode() ||
-					entity.hasEntityColumn("externalReferenceCode")) {
+				if ((entity.hasExternalReferenceCode() ||
+					 entity.hasEntityColumn("externalReferenceCode")) &&
+					(entity.getVersionedEntity() == null)) {
 
 					exceptions.add(
 						getDuplicateEntityExternalReferenceCodeException(
@@ -4142,8 +4154,10 @@ public class ServiceBuilder {
 				continue;
 			}
 
+			String tableName = entity.getTable();
+
 			List<IndexMetadata> indexMetadatas = indexMetadatasMap.get(
-				entity.getTable());
+				tableName);
 
 			if ((indexMetadatas != null) && _optimizeDBIndexes) {
 				indexMetadatas.clear();
@@ -4201,12 +4215,18 @@ public class ServiceBuilder {
 
 				IndexMetadata indexMetadata =
 					IndexMetadataFactoryUtil.createIndexMetadata(
-						unique, entity.getTable(),
-						dbNames.toArray(new String[0]));
+						unique, tableName, dbNames.toArray(new String[0]));
 
 				_addIndexMetadata(
 					indexMetadatasMap, indexMetadata.getTableName(),
 					entity.getPKEntityColumnDBNames(), indexMetadata);
+			}
+
+			indexMetadatas = indexMetadatasMap.get(tableName);
+
+			if (_optimizeDBIndexes && (indexMetadatas != null)) {
+				indexMetadatasMap.put(
+					tableName, _optimizeForBTreeIndexes(indexMetadatas));
 			}
 		}
 
@@ -4215,16 +4235,14 @@ public class ServiceBuilder {
 
 			EntityMapping entityMapping = entry.getValue();
 
+			indexMetadatasMap.remove(entityMapping.getTableName());
+
 			_getCreateMappingTableIndex(entityMapping, indexMetadatasMap);
 		}
 
 		StringBundler sb = new StringBundler();
 
 		for (List<IndexMetadata> indexMetadatas : indexMetadatasMap.values()) {
-			if (_optimizeDBIndexes) {
-				indexMetadatas = _optimizeForBTreeIndexes(indexMetadatas);
-			}
-
 			Collections.sort(indexMetadatas);
 
 			for (IndexMetadata indexMetadata : indexMetadatas) {
@@ -4932,12 +4950,12 @@ public class ServiceBuilder {
 			return _configuration;
 		}
 
-		_configuration = new Configuration(Configuration.VERSION_2_3_32);
+		_configuration = new Configuration(Configuration.VERSION_2_3_33);
 
 		_configuration.setNumberFormat("computer");
 
 		DefaultObjectWrapperBuilder defaultObjectWrapperBuilder =
-			new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32);
+			new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_33);
 
 		_configuration.setObjectWrapper(defaultObjectWrapperBuilder.build());
 
@@ -5610,6 +5628,8 @@ public class ServiceBuilder {
 	private List<JavaMethod> _getMethods(
 		JavaClass javaClass, boolean superclasses) {
 
+		List<JavaMethod> methods = new ArrayList<>();
+
 		List<String> cacheFieldMethods = new ArrayList<>();
 
 		for (JavaField javaField : javaClass.getFields()) {
@@ -5650,8 +5670,6 @@ public class ServiceBuilder {
 				break;
 			}
 		}
-
-		List<JavaMethod> methods = new ArrayList<>();
 
 		for (JavaMethod javaMethod : javaClass.getMethods(superclasses)) {
 			if (!cacheFieldMethods.contains(javaMethod.getName())) {
@@ -6128,39 +6146,33 @@ public class ServiceBuilder {
 	private List<IndexMetadata> _optimizeForBTreeIndexes(
 		List<IndexMetadata> indexMetadatas) {
 
-		while (true) {
-			Map<String, IntegerWrapper> frequencyMap = new HashMap<>();
+		Map<String, IntegerWrapper> frequencyMap = new HashMap<>();
 
-			for (IndexMetadata indexMetadata : indexMetadatas) {
-				for (String columnName : indexMetadata.getColumnNames()) {
-					IntegerWrapper count = frequencyMap.computeIfAbsent(
-						columnName, key -> new IntegerWrapper());
+		for (IndexMetadata indexMetadata : indexMetadatas) {
+			for (String columnName : indexMetadata.getColumnNames()) {
+				IntegerWrapper count = frequencyMap.computeIfAbsent(
+					columnName, key -> new IntegerWrapper());
 
-					if (columnName.endsWith("Date")) {
-						count.setValue(0);
-					}
-					else {
-						count.increment();
-					}
+				if (columnName.endsWith("Date")) {
+					count.setValue(0);
+				}
+				else {
+					count.increment();
 				}
 			}
-
-			for (IndexMetadata indexMetadata : indexMetadatas) {
-				indexMetadata.optimizeColumns(frequencyMap);
-			}
-
-			List<IndexMetadata> optimizedIndexMetadatas = new ArrayList<>();
-
-			for (IndexMetadata indexMetadata : indexMetadatas) {
-				_addIndexMetadata(optimizedIndexMetadatas, indexMetadata);
-			}
-
-			if (optimizedIndexMetadatas.size() == indexMetadatas.size()) {
-				return optimizedIndexMetadatas;
-			}
-
-			indexMetadatas = optimizedIndexMetadatas;
 		}
+
+		for (IndexMetadata indexMetadata : indexMetadatas) {
+			indexMetadata.optimizeColumns(frequencyMap);
+		}
+
+		List<IndexMetadata> optimizedIndexMetadatas = new ArrayList<>();
+
+		for (IndexMetadata indexMetadata : indexMetadatas) {
+			_addIndexMetadata(optimizedIndexMetadatas, indexMetadata);
+		}
+
+		return optimizedIndexMetadatas;
 	}
 
 	private Entity _parseEntity(Element entityElement) throws Exception {
@@ -6333,6 +6345,8 @@ public class ServiceBuilder {
 		if (uuid) {
 			Element columnElement = DocumentHelper.createElement("column");
 
+			columnElement.addAttribute(
+				"change-tracking-resolution-type", "STRICT");
 			columnElement.addAttribute("name", "uuid");
 			columnElement.addAttribute("type", "String");
 
@@ -6348,6 +6362,8 @@ public class ServiceBuilder {
 		if (!StringUtil.equals(externalReferenceCode, "none")) {
 			Element columnElement = DocumentHelper.createElement("column");
 
+			columnElement.addAttribute(
+				"change-tracking-resolution-type", "STRICT");
 			columnElement.addAttribute("name", "externalReferenceCode");
 			columnElement.addAttribute("type", "String");
 
@@ -6357,6 +6373,8 @@ public class ServiceBuilder {
 		if (versioned) {
 			Element columnElement = DocumentHelper.createElement("column");
 
+			columnElement.addAttribute(
+				"change-tracking-resolution-type", "STRICT");
 			columnElement.addAttribute("name", "headId");
 			columnElement.addAttribute("type", "long");
 
@@ -6369,6 +6387,8 @@ public class ServiceBuilder {
 		if (localizedEntityElement != null) {
 			Element columnElement = DocumentHelper.createElement("column");
 
+			columnElement.addAttribute(
+				"change-tracking-resolution-type", "STRICT");
 			columnElement.addAttribute("name", "defaultLanguageId");
 			columnElement.addAttribute("type", "String");
 
@@ -6451,10 +6471,21 @@ public class ServiceBuilder {
 			boolean colJsonEnabled = GetterUtil.getBoolean(
 				columnElement.attributeValue("json-enabled"), jsonEnabled);
 
-			String changeTrackingResolutionType = "strict";
+			String changeTrackingResolutionType = "merge";
 
 			if (primary) {
 				changeTrackingResolutionType = "pk";
+			}
+			else if (columnName.equals("classNameId") ||
+					 columnName.equals("classPK") ||
+					 columnName.equals("companyId") ||
+					 columnName.equals("createDate") ||
+					 columnName.equals("creatorUserId") ||
+					 columnName.equals("groupId") ||
+					 columnName.equals("userId") ||
+					 columnName.equals("userName")) {
+
+				changeTrackingResolutionType = "strict";
 			}
 			else if (columnName.equals("modifiedDate") &&
 					 columnType.equals("Date")) {
@@ -6767,9 +6798,23 @@ public class ServiceBuilder {
 			String finderName = finderElement.attributeValue("name");
 			String finderPluralName = finderElement.attributeValue(
 				"plural-name");
+			boolean finderPretouch = GetterUtil.getBoolean(
+				finderElement.attributeValue("pretouch"));
 			String finderReturn = finderElement.attributeValue("return-type");
 			boolean finderUnique = GetterUtil.getBoolean(
 				finderElement.attributeValue("unique"));
+
+			if (isVersionGTE_7_4_0() &&
+				!Objects.equals(finderReturn, "Collection") && !finderUnique &&
+				ArrayUtil.contains(
+					_FORCE_UNIQUE_FINDER_PACKAGE_PATHS, _packagePath)) {
+
+				throw new IllegalArgumentException(
+					StringBundler.concat(
+						"Finder \"", finderName, "\" defined by entity \"",
+						entityName, "\" must set unique=\"true\" as its ",
+						"return type is the name of the entity"));
+			}
 
 			String finderWhere = finderElement.attributeValue("where");
 
@@ -6851,9 +6896,9 @@ public class ServiceBuilder {
 
 			entityFinders.add(
 				new EntityFinder(
-					this, finderName, finderPluralName, finderReturn,
-					finderUnique, finderWhere, finderDBWhere, finderDBIndex,
-					finderEntityColumns));
+					this, finderName, finderPluralName, finderPretouch,
+					finderReturn, finderUnique, finderWhere, finderDBWhere,
+					finderDBIndex, finderEntityColumns));
 		}
 
 		String uadOutputPath =
@@ -7066,9 +7111,9 @@ public class ServiceBuilder {
 				listIterator.set(
 					new EntityFinder(
 						this, entityFinder.getName(),
-						entityFinder.getPluralName(), "Collection", false,
-						entityFinder.getWhere(), entityFinder.getDBWhere(),
-						entityFinder.isDBIndex(),
+						entityFinder.getPluralName(), entityFinder.isPretouch(),
+						"Collection", false, entityFinder.getWhere(),
+						entityFinder.getDBWhere(), entityFinder.isDBIndex(),
 						new ArrayList<>(entityFinder.getEntityColumns())));
 
 				List<EntityColumn> finderEntityColumns =
@@ -7081,9 +7126,10 @@ public class ServiceBuilder {
 				listIterator.add(
 					new EntityFinder(
 						this, entityFinder.getName() + "_Head", null,
-						entityFinder.getReturnType(), entityFinder.isUnique(),
-						entityFinder.getWhere(), entityFinder.getDBWhere(),
-						entityFinder.isDBIndex(), finderEntityColumns));
+						entityFinder.isPretouch(), entityFinder.getReturnType(),
+						entityFinder.isUnique(), entityFinder.getWhere(),
+						entityFinder.getDBWhere(), entityFinder.isDBIndex(),
+						finderEntityColumns));
 			}
 		}
 
@@ -7522,7 +7568,7 @@ public class ServiceBuilder {
 		for (EntityFinder entityFinder : entity.getEntityFinders()) {
 			finderName = entityFinder.getName();
 
-			if (finderName.equals("HeadId")) {
+			if (finderName.equals("HeadId") || finderName.startsWith("ERC")) {
 				continue;
 			}
 
@@ -8065,8 +8111,18 @@ public class ServiceBuilder {
 				startIndex = index + 5;
 			}
 			else {
-				throw new ServiceBuilderException(
-					"Unable to parse package path from " + fileName);
+
+				// Older branches still have integration tests in portal-impl
+
+				index = fileName.indexOf("/test/integration/");
+
+				if (index > 0) {
+					startIndex = index + 18;
+				}
+				else {
+					throw new ServiceBuilderException(
+						"Unable to parse package path from " + fileName);
+				}
 			}
 		}
 
@@ -8083,6 +8139,10 @@ public class ServiceBuilder {
 	}
 
 	private static final int _DEFAULT_COLUMN_MAX_LENGTH = 75;
+
+	private static final String[] _FORCE_UNIQUE_FINDER_PACKAGE_PATHS = {
+		"com.liferay.counter", "com.liferay.portal"
+	};
 
 	private static final String _HIBERNATE_3_HBM_NAMESPACE =
 		"\"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd\"";

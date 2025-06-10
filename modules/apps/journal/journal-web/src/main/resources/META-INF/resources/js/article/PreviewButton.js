@@ -4,7 +4,7 @@
  */
 
 import ClayButton from '@clayui/button';
-import {openModal, openToast} from 'frontend-js-web';
+import {openModal, openToast} from 'frontend-js-components-web';
 import React from 'react';
 
 export default function PreviewButton({
@@ -22,10 +22,12 @@ export default function PreviewButton({
 			disabled={disabled}
 			displayType="secondary"
 			onClick={() => {
+				const futureDate = new Date(new Date().getTime() + 1000);
+
 				updateJournalInput({
 					name: 'formDate',
 					namespace,
-					value: Date.now().toString(),
+					value: futureDate.getTime(),
 				});
 
 				const form = document.getElementById(`${namespace}fm1`);
@@ -47,12 +49,8 @@ export default function PreviewButton({
 				})
 					.then((response) => response.json())
 					.then((response) => {
-						const {
-							articleId,
-							error,
-							friendlyUrlMap,
-							version,
-						} = response;
+						const {articleId, error, friendlyUrlMap, version} =
+							response;
 
 						if (error) {
 							openToast({

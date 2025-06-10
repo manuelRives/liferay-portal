@@ -8,6 +8,7 @@ package com.liferay.object.web.internal.info.item.creator;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.creator.InfoItemCreator;
 import com.liferay.info.item.provider.InfoItemFormProvider;
+import com.liferay.object.info.item.util.ObjectEntryInfoItemUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.rest.dto.v1_0.Status;
@@ -24,6 +25,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+
+import java.util.Map;
 
 /**
  * @author Rubén Pulido
@@ -47,7 +50,8 @@ public class ObjectEntryInfoItemCreator
 
 	@Override
 	public ObjectEntry createFromInfoItemFieldValues(
-			long groupId, InfoItemFieldValues infoItemFieldValues, int status)
+			long groupId, InfoItemFieldValues infoItemFieldValues,
+			int statusInt)
 		throws InfoFormException {
 
 		try {
@@ -60,7 +64,8 @@ public class ObjectEntryInfoItemCreator
 
 			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
 
-			int objectEntryStatus = status;
+			Map<String, Object> curProperties = ObjectEntryUtil.toProperties(
+				themeDisplay.getCompanyId(), infoItemFieldValues);
 
 			com.liferay.object.rest.dto.v1_0.ObjectEntry objectEntry =
 				objectEntryManager.addObjectEntry(
@@ -70,14 +75,19 @@ public class ObjectEntryInfoItemCreator
 					_objectDefinition,
 					new com.liferay.object.rest.dto.v1_0.ObjectEntry() {
 						{
+							setFriendlyUrlPath(
+								() -> GetterUtil.getString(
+									curProperties.get("objectEntryFriendlyURL"),
+									null));
+							setFriendlyUrlPath_i18n(
+								() -> (Map<String, String>)curProperties.get(
+									"objectEntryFriendlyURL_i18n"));
 							setKeywords(serviceContext::getAssetTagNames);
-							setProperties(
-								() -> ObjectEntryUtil.toProperties(
-									infoItemFieldValues));
+							setProperties(() -> curProperties);
 							setStatus(
 								() -> new Status() {
 									{
-										setCode(() -> objectEntryStatus);
+										setCode(() -> statusInt);
 									}
 								});
 							setTaxonomyCategoryIds(
@@ -85,7 +95,7 @@ public class ObjectEntryInfoItemCreator
 									serviceContext.getAssetCategoryIds()));
 						}
 					},
-					ObjectEntryUtil.getScopeKey(
+					ObjectEntryInfoItemUtil.getScopeKey(
 						groupId, _objectDefinition,
 						_objectScopeProviderRegistry));
 

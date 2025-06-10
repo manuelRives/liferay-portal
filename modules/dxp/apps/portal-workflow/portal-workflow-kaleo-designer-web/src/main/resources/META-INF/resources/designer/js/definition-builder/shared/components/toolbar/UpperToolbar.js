@@ -16,7 +16,7 @@ import {isEdge, isNode} from 'react-flow-renderer';
 
 import {DefinitionBuilderContext} from '../../../DefinitionBuilderContext';
 import {defaultLanguageId} from '../../../constants';
-import {detectGroovyScript} from '../../../diagram-builder/util/detectGroovyScript';
+import {detectGroovyOrJavaScript} from '../../../diagram-builder/util/detectGroovyOrJavaScript';
 import {xmlNamespace} from '../../../source-builder/constants';
 import DeserializeUtil from '../../../source-builder/deserializeUtil';
 import {serializeDefinition} from '../../../source-builder/serializeUtil';
@@ -58,22 +58,20 @@ export default function UpperToolbar({
 		setDefinitionTitleTranslations,
 		setDeserialize,
 		setElements,
-		setHadGroovyScriptBefore,
-		setHasGroovyScript,
+		setHadGroovyOrJavaScriptBefore,
+		setHasGroovyOrJavaScript,
 		setSelectedLanguageId,
 		setShowAlert,
 		setShowDefinitionInfo,
 		setSourceView,
-		setVersion,
+		setWorkflowDefinitionVersions,
 		showAlert,
 		sourceView,
-		version,
+		workflowDefinitionVersions,
 	} = useContext(DefinitionBuilderContext);
 
-	const [
-		showGroovyScriptWarningModal,
-		setShowGroovyScriptWarningModal,
-	] = useState(false);
+	const [showGroovyScriptWarningModal, setShowGroovyScriptWarningModal] =
+		useState(false);
 
 	const [translations, setTranslations] = useState(
 		definitionTitleTranslations
@@ -125,7 +123,7 @@ export default function UpperToolbar({
 				{
 					description: definitionDescription,
 					name: definitionName,
-					version,
+					version: workflowDefinitionVersions.length,
 				},
 				elements.filter(isNode),
 				elements.filter(isEdge)
@@ -136,7 +134,7 @@ export default function UpperToolbar({
 					metadata: {
 						description: definitionDescription,
 						name: definitionName,
-						version,
+						version: workflowDefinitionVersions.length,
 					},
 					xmlDefinition,
 				}
@@ -180,7 +178,8 @@ export default function UpperToolbar({
 		}
 	};
 
-	const definitionNotPublished = version === 0 || !active;
+	const definitionNotPublished =
+		!workflowDefinitionVersions.length || !active;
 
 	const redirectToSavedDefinition = (name, version) => {
 		const definitionURL = new URL(window.location.href);
@@ -194,11 +193,95 @@ export default function UpperToolbar({
 		window.location.replace(definitionURL);
 	};
 
-	const publishDefinition = () => {
+	const saveOrPublishDefinition = async (
+		localStorageKeyName,
+		saveOrPublishDefinitionRequest,
+		successAlertMessage
+	) => {
+		if (blockingError.errorType !== '') {
+			setAlert(blockingError.errorMessage, 'danger', true);
+
+			return;
+		}
+
+		const validXMLDefinition = getXMLContent();
+
+		if (!validXMLDefinition) {
+			handleInvalidXMLBlockingError();
+
+			return;
+		}
+
+		const {
+			metadata: {name, version},
+			xmlDefinition,
+		} = validXMLDefinition;
+
+		const publishedOrSavedDefinitionResponse =
+			await saveOrPublishDefinitionRequest({
+				active,
+				content: xmlDefinition,
+				name,
+				title: definitionTitle,
+				title_i18n: definitionTitleTranslations,
+				version,
+			});
+
+		const publishedOrSavedDefinitionResponseJSON =
+			await publishedOrSavedDefinitionResponse.json();
+
+		if (!publishedOrSavedDefinitionResponse.ok) {
+			setAlert(
+				publishedOrSavedDefinitionResponseJSON.title,
+				'danger',
+				true
+			);
+
+			return;
+		}
+
+		if (!allowScriptContentToBeExecutedOrIncluded) {
+			setHadGroovyOrJavaScriptBefore(false);
+		}
+
+		setDefinitionName(publishedOrSavedDefinitionResponseJSON.name);
+
+		setWorkflowDefinitionVersions((prevValues) => [
+			{
+				creatorName:
+					publishedOrSavedDefinitionResponseJSON.creator?.name,
+				dateCreated:
+					publishedOrSavedDefinitionResponseJSON.dateModified,
+				version: String(
+					parseInt(publishedOrSavedDefinitionResponseJSON.version, 10)
+				),
+			},
+			...prevValues,
+		]);
+
+		if (publishedOrSavedDefinitionResponseJSON.version === '1') {
+			localStorage.setItem(
+				localStorageKeyName,
+				true,
+				localStorage.TYPES.FUNCTIONAL
+			);
+			redirectToSavedDefinition(
+				publishedOrSavedDefinitionResponseJSON.name,
+				publishedOrSavedDefinitionResponseJSON.version
+			);
+
+			return;
+		}
+
+		setAlert(successAlertMessage, 'success', true);
+
+		return;
+	};
+
+	const publishDefinition = async () => {
 		if (
-			Liferay.FeatureFlags['LPD-11179'] &&
 			!allowScriptContentToBeExecutedOrIncluded &&
-			detectGroovyScript(elements, setHasGroovyScript)
+			detectGroovyOrJavaScript(elements, setHasGroovyOrJavaScript)
 		) {
 			setShowGroovyScriptWarningModal(true);
 
@@ -215,142 +298,30 @@ export default function UpperToolbar({
 			return;
 		}
 
-		if (blockingError.errorType !== '') {
-			setAlert(blockingError.errorMessage, 'danger', true);
-
-			return;
-		}
-
-		const validXMLDefinition = getXMLContent();
-
-		if (!validXMLDefinition) {
-			handleInvalidXMLBlockingError();
-
-			return;
-		}
-
-		const {
-			metadata: {name, version},
-			xmlDefinition,
-		} = validXMLDefinition;
-
-		publishDefinitionRequest({
-			active,
-			content: xmlDefinition,
-			name,
-			title: definitionTitle,
-			title_i18n: definitionTitleTranslations,
-			version,
-		}).then((response) => {
-			if (response.ok) {
-				if (
-					Liferay.FeatureFlags['LPD-11179'] &&
-					!allowScriptContentToBeExecutedOrIncluded
-				) {
-					setHadGroovyScriptBefore(false);
-				}
-
-				response.json().then(({name, version}) => {
-					setDefinitionName(name);
-					setVersion(parseInt(version, 10));
-					if (version === '1') {
-						localStorage.setItem(
-							'firstPublished',
-							true,
-							localStorage.TYPES.FUNCTIONAL
-						);
-						redirectToSavedDefinition(name, version);
-					}
-					else {
-						setAlert(
-							definitionNotPublished
-								? Liferay.Language.get(
-										'workflow-published-successfully'
-								  )
-								: Liferay.Language.get(
-										'workflow-updated-successfully'
-								  ),
-							'success',
-							true
-						);
-					}
-				});
-			}
-			else {
-				response.json().then(({title}) => {
-					setAlert(title, 'danger', true);
-				});
-			}
-		});
+		saveOrPublishDefinition(
+			'firstPublished',
+			publishDefinitionRequest,
+			definitionNotPublished
+				? Liferay.Language.get('workflow-published-successfully')
+				: Liferay.Language.get('workflow-updated-successfully')
+		);
 	};
 
-	const saveDefinition = () => {
+	const saveDefinition = async () => {
 		if (
-			Liferay.FeatureFlags['LPD-11179'] &&
 			!allowScriptContentToBeExecutedOrIncluded &&
-			detectGroovyScript(elements, setHasGroovyScript)
+			detectGroovyOrJavaScript(elements, setHasGroovyOrJavaScript)
 		) {
 			setShowGroovyScriptWarningModal(true);
 
 			return;
 		}
 
-		if (blockingError.errorType !== '') {
-			setAlert(blockingError.errorMessage, 'danger', true);
-
-			return;
-		}
-
-		const validXMLDefinition = getXMLContent();
-
-		if (!validXMLDefinition) {
-			handleInvalidXMLBlockingError();
-
-			return;
-		}
-
-		const {
-			metadata: {name, version},
-			xmlDefinition,
-		} = validXMLDefinition;
-
-		saveDefinitionRequest({
-			active,
-			content: xmlDefinition,
-			name,
-			title: definitionTitle,
-			title_i18n: definitionTitleTranslations,
-			version,
-		}).then((response) => {
-			if (response.ok) {
-				if (
-					Liferay.FeatureFlags['LPD-11179'] &&
-					!allowScriptContentToBeExecutedOrIncluded
-				) {
-					setHadGroovyScriptBefore(false);
-				}
-
-				response.json().then(({name, version}) => {
-					setDefinitionName(name);
-					setVersion(parseInt(version, 10));
-					if (version === '1') {
-						localStorage.setItem(
-							'firstSaved',
-							true,
-							localStorage.TYPES.FUNCTIONAL
-						);
-						redirectToSavedDefinition(name, version);
-					}
-					else {
-						setAlert(
-							Liferay.Language.get('workflow-saved'),
-							'success',
-							true
-						);
-					}
-				});
-			}
-		});
+		saveOrPublishDefinition(
+			'firstSaved',
+			saveDefinitionRequest,
+			Liferay.Language.get('workflow-saved')
+		);
 	};
 
 	useEffect(() => {
@@ -399,6 +370,7 @@ export default function UpperToolbar({
 				}));
 			}
 		});
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [definitionTitle, elements]);
 
@@ -420,6 +392,7 @@ export default function UpperToolbar({
 			);
 			localStorage.removeItem('firstPublished');
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -430,6 +403,7 @@ export default function UpperToolbar({
 		else if (blockingError.errorType === 'invalidXML') {
 			setAlert(blockingError.errorMessage, 'danger', true);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [blockingError]);
 
@@ -479,9 +453,12 @@ export default function UpperToolbar({
 							/>
 						</ClayToolbar.Item>
 
-						{version !== 0 && (
+						{workflowDefinitionVersions.length !== 0 && (
 							<ClayToolbar.Item>
 								<ClayButtonWithIcon
+									aria-label={Liferay.Language.get(
+										'definition-info'
+									)}
 									displayType="secondary"
 									onClick={() =>
 										setShowDefinitionInfo(
@@ -489,16 +466,21 @@ export default function UpperToolbar({
 										)
 									}
 									symbol="info-circle-open"
+									title={Liferay.Language.get(
+										'definition-info'
+									)}
 								/>
 							</ClayToolbar.Item>
 						)}
 
 						<ClayToolbar.Item>
 							<ClayButton
+								aria-label={Liferay.Language.get('cancel')}
 								displayType="secondary"
 								onClick={() => {
 									window.history.back();
 								}}
+								title={Liferay.Language.get('cancel')}
 							>
 								{Liferay.Language.get('cancel')}
 							</ClayButton>
@@ -507,9 +489,11 @@ export default function UpperToolbar({
 						{definitionNotPublished && (
 							<ClayToolbar.Item>
 								<ClayButton
+									aria-label={Liferay.Language.get('save')}
 									disabled={isView}
 									displayType="secondary"
 									onClick={saveDefinition}
+									title={Liferay.Language.get('save')}
 								>
 									{Liferay.Language.get('save')}
 								</ClayButton>
@@ -518,9 +502,19 @@ export default function UpperToolbar({
 
 						<ClayToolbar.Item>
 							<ClayButton
+								aria-label={
+									definitionNotPublished
+										? Liferay.Language.get('publish')
+										: Liferay.Language.get('update')
+								}
 								disabled={isView}
 								displayType="primary"
 								onClick={publishDefinition}
+								title={
+									definitionNotPublished
+										? Liferay.Language.get('publish')
+										: Liferay.Language.get('update')
+								}
 							>
 								{definitionNotPublished
 									? Liferay.Language.get('publish')
@@ -531,6 +525,9 @@ export default function UpperToolbar({
 						<ClayToolbar.Item>
 							{sourceView ? (
 								<ClayButtonWithIcon
+									aria-label={Liferay.Language.get(
+										'diagram-view'
+									)}
 									displayType="secondary"
 									onClick={() => {
 										if (
@@ -550,6 +547,9 @@ export default function UpperToolbar({
 								/>
 							) : (
 								<ClayButtonWithIcon
+									aria-label={Liferay.Language.get(
+										'source-view'
+									)}
 									displayType="secondary"
 									onClick={() => setSourceView(true)}
 									symbol="code"

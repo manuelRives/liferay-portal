@@ -7,6 +7,7 @@ package com.liferay.change.tracking.service;
 
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -53,6 +54,14 @@ public class CTCollectionServiceUtil {
 	}
 
 	public static void discardCTEntry(
+			long ctCollectionId,
+			List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws PortalException {
+
+		getService().discardCTEntry(ctCollectionId, ctEntries);
+	}
+
+	public static void discardCTEntry(
 			long ctCollectionId, long modelClassNameId, long modelClassPK)
 		throws PortalException {
 
@@ -92,6 +101,15 @@ public class CTCollectionServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
+	public static void moveCTEntries(
+			long fromCTCollectionId, long toCTCollectionId,
+			List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws PortalException {
+
+		getService().moveCTEntries(
+			fromCTCollectionId, toCTCollectionId, ctEntries);
+	}
+
 	public static void moveCTEntry(
 			long fromCTCollectionId, long toCTCollectionId,
 			long modelClassNameId, long modelClassPK)
@@ -125,13 +143,11 @@ public class CTCollectionServiceUtil {
 	}
 
 	public static CTCollectionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CTCollectionService service) {
-		_service = service;
-	}
-
-	private static volatile CTCollectionService _service;
+	private static final Snapshot<CTCollectionService> _serviceSnapshot =
+		new Snapshot<>(
+			CTCollectionServiceUtil.class, CTCollectionService.class);
 
 }

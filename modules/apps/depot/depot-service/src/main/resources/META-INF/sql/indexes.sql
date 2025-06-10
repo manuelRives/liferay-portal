@@ -3,8 +3,12 @@ create unique index IX_2CE1592A on DepotAppCustomization (depotEntryId, portletI
 
 create unique index IX_E3EB2C84 on DepotEntry (groupId, ctCollectionId);
 
-create unique index IX_F1E19412 on DepotEntryGroupRel (ctCollectionId, uuid_[$COLUMN_LENGTH:75$], groupId);
 create index IX_146497CB on DepotEntryGroupRel (depotEntryId);
 create index IX_7CA33F81 on DepotEntryGroupRel (toGroupId, ddmStructuresAvailable);
 create unique index IX_1DD0EA9C on DepotEntryGroupRel (toGroupId, depotEntryId, ctCollectionId);
 create index IX_BA106967 on DepotEntryGroupRel (toGroupId, searchable);
+create unique index IX_A83D9516 on DepotEntryGroupRel (uuid_[$COLUMN_LENGTH:75$], ctCollectionId, groupId);
+
+create index IX_B423314A on DepotEntryPin (depotEntryId);
+create unique index IX_D51E5D62 on DepotEntryPin (userId, depotEntryId, ctCollectionId);
+create unique index IX_F06E6CD5 on DepotEntryPin (uuid_[$COLUMN_LENGTH:75$], ctCollectionId, groupId);

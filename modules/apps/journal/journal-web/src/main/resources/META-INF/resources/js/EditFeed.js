@@ -38,7 +38,7 @@ export default function ({isNewJournalFeed, namespace, renderedWebContent}) {
 
 	const saveFeed = () => {
 		const actionInput = document.getElementById(
-			`${namespace}javax-portlet-action`
+			`${namespace}jakarta-portlet-action`
 		);
 
 		let feed = '/journal/update_feed';
@@ -46,9 +46,8 @@ export default function ({isNewJournalFeed, namespace, renderedWebContent}) {
 		if (isNewJournalFeed) {
 			feed = '/journal/add_feed';
 
-			document.getElementById(
-				`${namespace}feedId`
-			).value = document.getElementById(`${namespace}newFeedId`).value;
+			document.getElementById(`${namespace}feedId`).value =
+				document.getElementById(`${namespace}newFeedId`).value;
 		}
 		actionInput.value = feed;
 		submitForm(form);

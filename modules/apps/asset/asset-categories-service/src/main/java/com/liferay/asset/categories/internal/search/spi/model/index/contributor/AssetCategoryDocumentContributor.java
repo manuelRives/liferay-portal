@@ -13,10 +13,17 @@ import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentContributor;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -44,6 +51,13 @@ public class AssetCategoryDocumentContributor
 	public void contribute(
 		Document document, BaseModel<AssetCategory> baseModel) {
 
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if ((serviceContext != null) && serviceContext.isStrictAdd()) {
+			return;
+		}
+
 		String className = document.get(Field.ENTRY_CLASS_NAME);
 		long classPK = GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK));
 
@@ -59,28 +73,32 @@ public class AssetCategoryDocumentContributor
 				_getAssetVocabularyVisibilityTypeMap(assetCategories);
 
 		_addAssetCategoriesFields(
-			document, Field.ASSET_CATEGORY_IDS, Field.ASSET_CATEGORY_TITLES,
+			document, "groupAssetCategoryExternalReferenceCodes",
+			Field.ASSET_CATEGORY_IDS, Field.ASSET_CATEGORY_TITLES,
 			Field.ASSET_VOCABULARY_IDS,
 			assetVocabularyVisibilityTypeMap.get(
 				AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC));
 		_addAssetCategoriesFields(
-			document, Field.ASSET_INTERNAL_CATEGORY_IDS,
+			document, "groupAssetInternalCategoryExternalReferenceCodes",
+			Field.ASSET_INTERNAL_CATEGORY_IDS,
 			Field.ASSET_INTERNAL_CATEGORY_TITLES,
 			Field.ASSET_INTERNAL_VOCABULARY_IDS,
 			assetVocabularyVisibilityTypeMap.get(
 				AssetVocabularyConstants.VISIBILITY_TYPE_INTERNAL));
 		_addAssetVocabularyCategoriesFields(
-			document, "assetVocabularyCategoryIds",
+			document,
 			assetVocabularyVisibilityTypeMap.get(
 				AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC));
 	}
 
 	private void _addAssetCategoriesFields(
-		Document document, String assetCategoryIdsFieldName,
-		String assetCategoryTitlesFieldName, String assetVocabularyIdsFieldName,
+		Document document, String assetCategoryExternalReferenceCodeFieldName,
+		String assetCategoryIdsFieldName, String assetCategoryTitlesFieldName,
+		String assetVocabularyIdsFieldName,
 		Map<Long, List<AssetCategory>> assetVocabularyMap) {
 
 		List<AssetCategory> assetCategories = new ArrayList<>();
+		List<String> assetCategoryExternalReferenceCodes = new ArrayList<>();
 		long[] assetVocabularyIds = {};
 
 		if (MapUtil.isNotEmpty(assetVocabularyMap)) {
@@ -89,10 +107,20 @@ public class AssetCategoryDocumentContributor
 
 				assetCategories.addAll(entry.getValue());
 
+				for (AssetCategory assetCategory : entry.getValue()) {
+					assetCategoryExternalReferenceCodes.add(
+						_getGroupAssetCategoryExternalReferenceCode(
+							assetCategory));
+				}
+
 				assetVocabularyIds = ArrayUtil.append(
 					assetVocabularyIds, entry.getKey());
 			}
 		}
+
+		document.addKeyword(
+			assetCategoryExternalReferenceCodeFieldName,
+			ArrayUtil.toStringArray(assetCategoryExternalReferenceCodes));
 
 		long[] assetCategoryIds = ListUtil.toLongArray(
 			assetCategories, AssetCategory.CATEGORY_ID_ACCESSOR);
@@ -145,10 +173,10 @@ public class AssetCategoryDocumentContributor
 	}
 
 	private void _addAssetVocabularyCategoriesFields(
-		Document document, String assetVocabularyCategoryIdsFieldName,
-		Map<Long, List<AssetCategory>> assetVocabularyMap) {
+		Document document, Map<Long, List<AssetCategory>> assetVocabularyMap) {
 
 		String[] assetVocabularyCategories = {};
+		String[] assetVocabularyCategoryExternalReferenceCodes = {};
 
 		if (MapUtil.isNotEmpty(assetVocabularyMap)) {
 			for (Map.Entry<Long, List<AssetCategory>> entry :
@@ -162,11 +190,24 @@ public class AssetCategoryDocumentContributor
 							assetCategory.getVocabularyId() + StringPool.DASH +
 								assetCategory.getCategoryId(),
 						String.class));
+
+				assetVocabularyCategoryExternalReferenceCodes =
+					ArrayUtil.append(
+						assetVocabularyCategoryExternalReferenceCodes,
+						TransformUtil.transformToArray(
+							entry.getValue(),
+							assetCategory ->
+								_getGroupAssetVocabularyCategoryExternalReferenceCode(
+									assetCategory),
+							String.class));
 			}
 		}
 
 		document.addKeyword(
-			assetVocabularyCategoryIdsFieldName, assetVocabularyCategories);
+			"assetVocabularyCategoryIds", assetVocabularyCategories);
+		document.addKeyword(
+			"groupAssetVocabularyCategoryExternalReferenceCodes",
+			assetVocabularyCategoryExternalReferenceCodes);
 	}
 
 	private Map<Integer, Map<Long, List<AssetCategory>>>
@@ -175,6 +216,7 @@ public class AssetCategoryDocumentContributor
 
 		Map<Integer, Map<Long, List<AssetCategory>>>
 			assetVocabularyVisibilityTypeMap = new HashMap<>();
+
 		Map<Long, Integer> assetVocabularyMap = new HashMap<>();
 
 		for (AssetCategory assetCategory : assetCategories) {
@@ -184,6 +226,11 @@ public class AssetCategoryDocumentContributor
 					AssetVocabulary assetVocabulary =
 						_assetVocabularyLocalService.fetchAssetVocabulary(
 							assetCategory.getVocabularyId());
+
+					if (assetVocabulary == null) {
+						return AssetVocabularyConstants.
+							VISIBILITY_TYPE_INCOMPLETE;
+					}
 
 					return assetVocabulary.getVisibilityType();
 				});
@@ -202,10 +249,76 @@ public class AssetCategoryDocumentContributor
 		return assetVocabularyVisibilityTypeMap;
 	}
 
+	private String _getGroupAssetCategoryExternalReferenceCode(
+		AssetCategory assetCategory) {
+
+		return StringBundler.concat(
+			_getGroupExternalReferenceCode(assetCategory.getGroupId()),
+			_DELIMITER, assetCategory.getExternalReferenceCode());
+	}
+
+	private String _getGroupAssetVocabularyCategoryExternalReferenceCode(
+		AssetCategory assetCategory) {
+
+		String assetVocabularyExternalReferenceCode = StringPool.BLANK;
+
+		try {
+			AssetVocabulary assetVocabulary =
+				_assetVocabularyLocalService.getAssetVocabulary(
+					assetCategory.getVocabularyId());
+
+			assetVocabularyExternalReferenceCode =
+				assetVocabulary.getExternalReferenceCode();
+		}
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get asset vocabulary " +
+						assetCategory.getVocabularyId() +
+							" while indexing document",
+					portalException);
+			}
+		}
+
+		return StringBundler.concat(
+			_getGroupExternalReferenceCode(assetCategory.getGroupId()),
+			_DELIMITER, assetVocabularyExternalReferenceCode, _DELIMITER,
+			assetCategory.getExternalReferenceCode());
+	}
+
+	private String _getGroupExternalReferenceCode(long groupId) {
+		String groupExternalReferenceCode = StringPool.BLANK;
+
+		try {
+			Group group = _groupLocalService.getGroup(groupId);
+
+			groupExternalReferenceCode = group.getExternalReferenceCode();
+		}
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get group " + groupId +
+						" while indexing document",
+					portalException);
+			}
+		}
+
+		return groupExternalReferenceCode;
+	}
+
+	private static final String _DELIMITER =
+		StringPool.AMPERSAND + StringPool.AMPERSAND;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AssetCategoryDocumentContributor.class);
+
 	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;
 
 	@Reference
 	private AssetVocabularyLocalService _assetVocabularyLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 }

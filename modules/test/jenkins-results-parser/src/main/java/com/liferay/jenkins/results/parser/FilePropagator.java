@@ -41,6 +41,14 @@ public class FilePropagator {
 
 		_timeout = timeout;
 
+		synchronized (_instanceCount) {
+			Thread thread = Thread.currentThread();
+
+			_id = JenkinsResultsParserUtil.combine(
+				String.valueOf(thread.getId()), "-",
+				String.valueOf(_instanceCount++));
+		}
+
 		for (String fileName : fileNames) {
 			_filePropagatorTasks.add(
 				new FilePropagatorTask(
@@ -83,31 +91,44 @@ public class FilePropagator {
 		ExecutorService executorService = Executors.newFixedThreadPool(
 			threadCount);
 
-		System.out.println(
-			"File propagation starting with " + threadCount + " threads.");
+		log("File propagation starting with " + threadCount + " threads.");
 
 		try {
 			String previousString = null;
 			long start = JenkinsResultsParserUtil.getCurrentTimeMillis();
 
-			while (!_targetSlaves.isEmpty() || !_busySlaves.isEmpty()) {
-				synchronized (this) {
-					for (String mirrorSlave : _mirrorSlaves) {
-						if (_targetSlaves.isEmpty()) {
-							break;
+			long duration = 0;
+
+			while ((!_targetSlaves.isEmpty() || !_busySlaves.isEmpty()) &&
+				   !executorService.isShutdown()) {
+
+				duration =
+					JenkinsResultsParserUtil.getCurrentTimeMillis() - start;
+
+				if (duration >= _timeout) {
+					log("Timeout limit exceeded.");
+
+					executorService.shutdownNow();
+				}
+				else {
+					synchronized (this) {
+						for (String mirrorSlave : _mirrorSlaves) {
+							if (_targetSlaves.isEmpty()) {
+								break;
+							}
+
+							String targetSlave = _targetSlaves.remove(0);
+
+							executorService.execute(
+								new FilePropagatorThread(
+									this, mirrorSlave, targetSlave));
+
+							_busySlaves.add(mirrorSlave);
+							_busySlaves.add(targetSlave);
 						}
 
-						String targetSlave = _targetSlaves.remove(0);
-
-						executorService.execute(
-							new FilePropagatorThread(
-								this, mirrorSlave, targetSlave));
-
-						_busySlaves.add(mirrorSlave);
-						_busySlaves.add(targetSlave);
+						_mirrorSlaves.removeAll(_busySlaves);
 					}
-
-					_mirrorSlaves.removeAll(_busySlaves);
 				}
 
 				StringBuffer sb = new StringBuffer();
@@ -118,6 +139,8 @@ public class FilePropagator {
 						getAverageThreadDuration()));
 				sb.append("\nBusy slaves:");
 				sb.append(_busySlaves.size());
+				sb.append("\nError slaves:");
+				sb.append(_errorSlaves.size());
 				sb.append("\nMirror slaves:");
 				sb.append(_mirrorSlaves.size());
 				sb.append("\nTarget slaves:");
@@ -125,32 +148,41 @@ public class FilePropagator {
 
 				String currentString = sb.toString();
 
-				if (Objects.equals(previousString, currentString)) {
-					continue;
+				if (!Objects.equals(previousString, currentString) ||
+					executorService.isShutdown()) {
+
+					sb.append("\nTotal duration: ");
+
+					sb.append(
+						JenkinsResultsParserUtil.toDurationString(duration));
+
+					sb.append("\n");
+
+					log(sb.toString());
+
+					previousString = currentString;
 				}
+				else {
+					long millisSinceLastMessage =
+						System.currentTimeMillis() - _lastMessageTime;
 
-				sb.append("\nTotal duration: ");
-
-				long currentTime =
-					JenkinsResultsParserUtil.getCurrentTimeMillis();
-
-				sb.append(
-					JenkinsResultsParserUtil.toDurationString(
-						currentTime - start));
-
-				sb.append("\n");
-
-				System.out.println(sb.toString());
-
-				previousString = currentString;
+					if (millisSinceLastMessage > (1000 * 60 * 5)) {
+						log(
+							JenkinsResultsParserUtil.combine(
+								"No change in ",
+								JenkinsResultsParserUtil.toDurationString(
+									millisSinceLastMessage),
+								". Timeout will occur in ",
+								JenkinsResultsParserUtil.toDurationString(
+									_timeout - duration),
+								"."));
+					}
+				}
 
 				JenkinsResultsParserUtil.sleep(5000);
 			}
 
-			long duration =
-				JenkinsResultsParserUtil.getCurrentTimeMillis() - start;
-
-			System.out.println(
+			log(
 				JenkinsResultsParserUtil.combine(
 					"File propagation completed in ",
 					JenkinsResultsParserUtil.toDurationString(duration), "."));
@@ -162,8 +194,42 @@ public class FilePropagator {
 			}
 		}
 		finally {
-			executorService.shutdown();
+			if (!executorService.isShutdown()) {
+				executorService.shutdown();
+			}
 		}
+
+		int totalSlaveCount =
+			_busySlaves.size() + _errorSlaves.size() + _mirrorSlaves.size() +
+				_targetSlaves.size();
+
+		if ((totalSlaveCount > 0) &&
+			((_mirrorSlaves.size() / (float)totalSlaveCount) < 0.5F)) {
+
+			throw new FilePropagatorRuntimeException(
+				this,
+				JenkinsResultsParserUtil.combine(
+					"Unable to propagate to ",
+					String.valueOf(totalSlaveCount - _mirrorSlaves.size()),
+					" out of ", String.valueOf(totalSlaveCount),
+					" slave nodes"));
+		}
+	}
+
+	protected void log(String message) {
+		_lastMessageTime = System.currentTimeMillis();
+
+		System.out.print("File propagator ID: ");
+		System.out.print(_id);
+
+		if (message.contains("\n")) {
+			System.out.print("\n");
+		}
+		else {
+			System.out.print(" - ");
+		}
+
+		System.out.println(message);
 	}
 
 	private void _copyFromSource() {
@@ -176,7 +242,7 @@ public class FilePropagator {
 		for (FilePropagatorTask filePropagatorTask : _filePropagatorTasks) {
 			String sourceFileName = filePropagatorTask._sourceFileName;
 
-			System.out.println("Copying from source " + sourceFileName);
+			log("Copying from source " + sourceFileName);
 
 			String targetFileName = filePropagatorTask._targetFileName;
 
@@ -202,8 +268,8 @@ public class FilePropagator {
 					}
 				}
 				catch (IOException ioException) {
-					throw new RuntimeException(
-						"Unable to get jenkins-admin user credentials",
+					throw new FilePropagatorRuntimeException(
+						this, "Unable to get jenkins-admin user credentials",
 						ioException);
 				}
 
@@ -225,33 +291,54 @@ public class FilePropagator {
 			commands.add("ls -al " + targetDirName);
 		}
 
-		String targetSlave = _targetSlaves.remove(0);
+		synchronized (this) {
+			String targetSlave = _targetSlaves.remove(0);
 
-		try {
-			if (_executeBashCommands(commands, targetSlave) != 0) {
-				_errorSlaves.add(targetSlave);
+			_busySlaves.add(targetSlave);
 
-				_copyFromSource();
+			try {
+				Process process = _executeBashCommands(commands, targetSlave);
+
+				int result = process.exitValue();
+
+				_busySlaves.remove(targetSlave);
+
+				if (result != 0) {
+					_errorSlaves.add(targetSlave);
+
+					log(
+						JenkinsResultsParserUtil.readInputStream(
+							process.getErrorStream(), true));
+
+					_copyFromSource();
+				}
+				else {
+					_mirrorSlaves.add(targetSlave);
+				}
 			}
-			else {
-				_mirrorSlaves.add(targetSlave);
+			catch (Exception exception) {
+				_busySlaves.remove(targetSlave);
+
+				if (!_errorSlaves.contains(targetSlave)) {
+					_errorSlaves.add(targetSlave);
+				}
+
+				throw new FilePropagatorRuntimeException(
+					this, "Unable to copy from source. Executed: " + commands,
+					exception);
 			}
 		}
-		catch (Exception exception) {
-			throw new RuntimeException(
-				"Unable to copy from source. Executed: " + commands, exception);
-		}
 
-		System.out.println("Finished copying from source.");
+		log("Finished copying from source.");
 	}
 
-	private int _executeBashCommands(List<String> commands, String targetSlave)
+	private Process _executeBashCommands(
+			List<String> commands, String targetSlave)
 		throws IOException, TimeoutException {
 
 		StringBuffer sb = new StringBuffer();
 
-		sb.append("ssh -o ConnectTimeout=");
-		sb.append(_timeout / (60 * 1000));
+		sb.append("ssh -o ConnectTimeout=60");
 		sb.append(" -o NumberOfPasswordPrompts=0 ");
 		sb.append(targetSlave);
 		sb.append(" '");
@@ -276,10 +363,7 @@ public class FilePropagator {
 
 		sb.append("'");
 
-		Process process = JenkinsResultsParserUtil.executeBashCommands(
-			_timeout * 60 * 1000, sb.toString());
-
-		return process.exitValue();
+		return JenkinsResultsParserUtil.executeBashCommands(sb.toString());
 	}
 
 	private String _getMkdirCommand(String fileName) {
@@ -288,12 +372,16 @@ public class FilePropagator {
 		return "mkdir -p " + dirName;
 	}
 
-	private static final long _TIMEOUT_DEFAULT = 15 * 60 * 1000;
+	private static final long _TIMEOUT_DEFAULT = 1000 * 60 * 60 * 2;
+
+	private static Integer _instanceCount = 0;
 
 	private final List<String> _busySlaves = new ArrayList<>();
 	private final List<String> _errorSlaves = new ArrayList<>();
 	private final List<FilePropagatorTask> _filePropagatorTasks =
 		new ArrayList<>();
+	private final String _id;
+	private long _lastMessageTime = System.currentTimeMillis();
 	private final List<String> _mirrorSlaves = new ArrayList<>();
 	private String _postDistCommand;
 	private String _preDistCommand;
@@ -301,6 +389,24 @@ public class FilePropagator {
 	private int _threadsCompletedCount;
 	private long _threadsDurationTotal;
 	private final long _timeout;
+
+	private static class FilePropagatorRuntimeException
+		extends RuntimeException {
+
+		public FilePropagatorRuntimeException(
+			FilePropagator filePropagator, String message) {
+
+			this(filePropagator, message, null);
+		}
+
+		public FilePropagatorRuntimeException(
+			FilePropagator filePropagator, String message,
+			Exception exception) {
+
+			super(filePropagator._id + " - " + message, exception);
+		}
+
+	}
 
 	private static class FilePropagatorTask {
 
@@ -332,7 +438,8 @@ public class FilePropagator {
 			List<FilePropagatorTask> filePropagatorTasks =
 				_filePropagator._filePropagatorTasks;
 
-			List<String> commands = new ArrayList<>(filePropagatorTasks.size());
+			List<String> commands = new ArrayList<>(
+				filePropagatorTasks.size() * 2);
 
 			for (FilePropagatorTask filePropagatorTask : filePropagatorTasks) {
 				commands.add(
@@ -345,17 +452,51 @@ public class FilePropagator {
 							filePropagatorTask._targetFileName);
 			}
 
-			try {
-				int value = _filePropagator._executeBashCommands(
-					commands, _targetSlave);
+			String errorMessage = null;
 
-				_successful = value == 0;
-			}
-			catch (Exception exception) {
+			Thread currentThread = Thread.currentThread();
+
+			if (currentThread.isInterrupted()) {
 				_successful = false;
+			}
+			else {
+				try {
+					Process process = _filePropagator._executeBashCommands(
+						commands, _targetSlave);
+
+					int exitValue = process.exitValue();
+
+					errorMessage = JenkinsResultsParserUtil.readInputStream(
+						process.getErrorStream(), true);
+
+					_successful = exitValue == 0;
+				}
+				catch (Exception exception) {
+					_successful = false;
+				}
 			}
 
 			_duration = JenkinsResultsParserUtil.getCurrentTimeMillis() - start;
+
+			String durationString = JenkinsResultsParserUtil.toDurationString(
+				_duration);
+
+			if (_successful) {
+				_filePropagator.log(
+					JenkinsResultsParserUtil.combine(
+						"Propagated to ", _targetSlave, " from ", _mirrorSlave,
+						" in ", durationString, "."));
+			}
+			else {
+				_filePropagator.log(
+					JenkinsResultsParserUtil.combine(
+						"Unable to propagate to ", _targetSlave, " from ",
+						_mirrorSlave, "."));
+
+				if (!JenkinsResultsParserUtil.isNullOrEmpty(errorMessage)) {
+					_filePropagator.log(errorMessage);
+				}
+			}
 
 			synchronized (_filePropagator) {
 				_filePropagator._busySlaves.remove(_mirrorSlave);

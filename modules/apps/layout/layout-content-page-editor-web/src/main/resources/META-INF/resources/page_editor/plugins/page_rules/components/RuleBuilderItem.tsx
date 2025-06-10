@@ -83,7 +83,9 @@ export default function RuleBuilderItem({
 			tabIndex={0}
 			{...otherProps}
 		>
-			<div className="c-gap-2 d-flex flex-grow-1">{children}</div>
+			<div className="c-gap-2 d-flex flex-grow-1 flex-wrap">
+				{children}
+			</div>
 
 			{showDeleteButton ? (
 				<ClayButtonWithIcon
@@ -92,14 +94,14 @@ export default function RuleBuilderItem({
 							? sub(
 									Liferay.Language.get('delete-action-x'),
 									description
-							  )
+								)
 							: sub(
 									Liferay.Language.get('delete-condition-x'),
 									description
-							  )
+								)
 					}
 					borderless
-					className="lfr-portal-tooltip page-editor__rule-builder-delete-button"
+					className="align-self-baseline lfr-portal-tooltip page-editor__rule-builder-delete-button"
 					displayType="secondary"
 					onClick={() => onDeleteButtonClick()}
 					size="sm"

@@ -20,13 +20,13 @@ import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Lourdes Fernández Besada
@@ -88,9 +88,9 @@ public class AlternateURLMapperProvider {
 				Set<Locale> locales)
 			throws PortalException {
 
-			String portalURL = _getPortalURL(themeDisplay);
-
 			Map<Locale, String> alternateURLs = new HashMap<>();
+
+			String portalURL = _getPortalURL(themeDisplay);
 
 			for (Locale locale : locales) {
 				alternateURLs.put(

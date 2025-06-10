@@ -27,14 +27,15 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -85,14 +86,32 @@ public class AssetPublisherConfigurationFormNavigatorTest {
 		ServiceContextThreadLocal.popServiceContext();
 	}
 
+	@FeatureFlag(enable = false, value = "LPD-13311")
 	@Test
-	public void testViewOrderOfFieldsetsInAssetSelectionWhenSelectionStyleIsDynamic()
+	public void testViewOrderOfFieldsetsInAssetSelectionWhenSelectionStyleIsDynamic1()
 		throws PortalException {
 
-		String[] formNavigatorEntryKeys = {
-			"asset-selection", "scope", "source", "filter",
-			"custom-user-attributes", "ordering", "create-asset-list"
-		};
+		_assertFormNavigatorEntryKeys(
+			new String[] {
+				"asset-selection", "scope", "source", "filter", "ordering",
+				"create-asset-list"
+			});
+	}
+
+	@FeatureFlag("LPD-13311")
+	@Test
+	public void testViewOrderOfFieldsetsInAssetSelectionWhenSelectionStyleIsDynamic2()
+		throws PortalException {
+
+		_assertFormNavigatorEntryKeys(
+			new String[] {
+				"asset-selection", "scope", "source", "filter",
+				"custom-user-attributes", "ordering", "create-asset-list"
+			});
+	}
+
+	private void _assertFormNavigatorEntryKeys(String[] formNavigatorEntryKeys)
+		throws PortalException {
 
 		List<FormNavigatorCategory> formNavigatorCategories =
 			_formNavigatorCategoryProvider.getFormNavigatorCategories(

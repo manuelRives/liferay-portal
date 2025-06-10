@@ -19,7 +19,6 @@ import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.model.CommerceShippingEngine;
 import com.liferay.commerce.model.CommerceShippingMethod;
-import com.liferay.commerce.model.CommerceShippingOption;
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
 import com.liferay.commerce.order.CommerceOrderValidatorRegistry;
 import com.liferay.commerce.order.CommerceOrderValidatorResult;
@@ -33,13 +32,13 @@ import com.liferay.commerce.price.CommerceProductPriceCalculation;
 import com.liferay.commerce.price.CommerceProductPriceImpl;
 import com.liferay.commerce.price.CommerceProductPriceRequest;
 import com.liferay.commerce.product.constants.CPConstants;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.option.CommerceOptionValue;
 import com.liferay.commerce.product.option.CommerceOptionValueHelper;
 import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
-import com.liferay.commerce.product.util.CPInstanceHelper;
 import com.liferay.commerce.term.model.CommerceTermEntry;
 import com.liferay.commerce.term.service.CommerceTermEntryLocalService;
 import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
@@ -48,7 +47,11 @@ import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
@@ -61,6 +64,8 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -69,8 +74,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marco Leo
@@ -91,7 +94,7 @@ public class OrderSummaryCheckoutStepDisplayContext {
 		CommerceTermEntryLocalService commerceTermEntryLocalService,
 		CPInstanceHelper cpInstanceHelper,
 		CPInstanceUnitOfMeasureLocalService cpInstanceUnitOfMeasureLocalService,
-		HttpServletRequest httpServletRequest,
+		HttpServletRequest httpServletRequest, JSONFactory jsonFactory,
 		PercentageFormatter percentageFormatter, Portal portal,
 		PortletResourcePermission portletResourcePermission) {
 
@@ -111,6 +114,7 @@ public class OrderSummaryCheckoutStepDisplayContext {
 		_cpInstanceUnitOfMeasureLocalService =
 			cpInstanceUnitOfMeasureLocalService;
 		_httpServletRequest = httpServletRequest;
+		_jsonFactory = jsonFactory;
 		_percentageFormatter = percentageFormatter;
 		_portal = portal;
 		_portletResourcePermission = portletResourcePermission;
@@ -239,6 +243,21 @@ public class OrderSummaryCheckoutStepDisplayContext {
 		return commerceTermEntry.getLabel(LanguageUtil.getLanguageId(locale));
 	}
 
+	public String getJSONOptionValue(String json, String key) {
+		try {
+			JSONObject jsonObject = _jsonFactory.createJSONObject(json);
+
+			return jsonObject.getString(key);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
 	public List<KeyValuePair> getKeyValuePairs(
 			long cpDefinitionId, String json, Locale locale)
 		throws PortalException {
@@ -287,21 +306,14 @@ public class OrderSummaryCheckoutStepDisplayContext {
 		return commerceTermEntry.getLabel(LanguageUtil.getLanguageId(locale));
 	}
 
-	public String getShippingOptionName(String shippingOptionKey, Locale locale)
-		throws PortalException {
-
+	public String getShippingOptionName(Locale locale) throws PortalException {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
-		if (shippingOptionKey.isEmpty() || (locale == null) ||
-			(commerceOrder == null) ||
+		if ((commerceOrder == null) ||
 			Validator.isNull(commerceOrder.getShippingOptionName())) {
 
 			return StringPool.BLANK;
 		}
-
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)_httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
 
 		CommerceShippingMethod commerceShippingMethod =
 			commerceOrder.getCommerceShippingMethod();
@@ -310,27 +322,8 @@ public class OrderSummaryCheckoutStepDisplayContext {
 			_commerceShippingEngineRegistry.getCommerceShippingEngine(
 				commerceShippingMethod.getEngineKey());
 
-		CommerceContext commerceContext =
-			(CommerceContext)_httpServletRequest.getAttribute(
-				CommerceWebKeys.COMMERCE_CONTEXT);
-
-		List<CommerceShippingOption> commerceShippingOptions =
-			commerceShippingEngine.getCommerceShippingOptions(
-				commerceContext, commerceOrder, themeDisplay.getLocale());
-
-		for (CommerceShippingOption commerceShippingOption :
-				commerceShippingOptions) {
-
-			String commerceShippingOptionKey = commerceShippingOption.getKey();
-
-			if (commerceShippingOptionKey.equals(
-					commerceOrder.getShippingOptionName())) {
-
-				return commerceShippingOption.getName();
-			}
-		}
-
-		return StringPool.BLANK;
+		return commerceShippingEngine.getCommerceShippingOptionLabel(
+			commerceOrder.getShippingOptionName(), locale);
 	}
 
 	public boolean hasViewBillingAddressPermission(
@@ -556,6 +549,9 @@ public class OrderSummaryCheckoutStepDisplayContext {
 
 	private static final BigDecimal _ONE_HUNDRED = BigDecimal.valueOf(100);
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		OrderSummaryCheckoutStepDisplayContext.class);
+
 	private final CommerceChannelLocalService _commerceChannelLocalService;
 	private final CommerceContext _commerceContext;
 	private final CommerceOptionValueHelper _commerceOptionValueHelper;
@@ -577,6 +573,7 @@ public class OrderSummaryCheckoutStepDisplayContext {
 	private final CPInstanceUnitOfMeasureLocalService
 		_cpInstanceUnitOfMeasureLocalService;
 	private final HttpServletRequest _httpServletRequest;
+	private final JSONFactory _jsonFactory;
 	private final PercentageFormatter _percentageFormatter;
 	private final Portal _portal;
 	private final PortletResourcePermission _portletResourcePermission;

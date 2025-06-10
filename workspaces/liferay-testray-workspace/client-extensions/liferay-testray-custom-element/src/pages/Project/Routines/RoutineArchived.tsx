@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {DisplayType as AlertDisplayType} from '@clayui/alert';
 import ClayIcon from '@clayui/icon';
+import ClayLabel from '@clayui/label';
 import classNames from 'classnames';
 import {useParams} from 'react-router-dom';
 import Container from '~/components/Layout/Container';
@@ -12,6 +14,7 @@ import ProgressBar from '~/components/ProgressBar';
 import useSearchBuilder from '~/hooks/useSearchBuilder';
 import i18n from '~/i18n';
 import {TestrayBuild, testrayBuildImpl} from '~/services/rest';
+import {testrayBuildAlertProperties} from '~/util/constants';
 import dayjs from '~/util/date';
 
 import BuildAddButton from './Builds/BuildAddButton';
@@ -88,8 +91,9 @@ const RoutineArchived = () => {
 													className={classNames(
 														'label-chart symbol',
 														{
-															[task.dueStatus.key.toLowerCase()]: task
-																.dueStatus.key,
+															[task.dueStatus.key.toLowerCase()]:
+																task.dueStatus
+																	.key,
 														}
 													)}
 													symbol="circle"
@@ -99,7 +103,7 @@ const RoutineArchived = () => {
 									</>
 								);
 							},
-							value: i18n.translate('status'),
+							value: i18n.translate('build-status'),
 						},
 						{
 							clickable: true,
@@ -107,12 +111,17 @@ const RoutineArchived = () => {
 							render: (dateCreated) =>
 								dayjs(dateCreated).format('lll'),
 							size: 'sm',
-							value: i18n.translate('create-date'),
+							value: i18n.translate('execution-date'),
 						},
 						{
 							clickable: true,
 							key: 'gitHash',
 							value: i18n.translate('git-hash'),
+						},
+						{
+							clickable: true,
+							key: 'cpuUseTime',
+							value: i18n.translate('cpu-use-time'),
 						},
 						{
 							clickable: true,
@@ -125,6 +134,32 @@ const RoutineArchived = () => {
 							clickable: true,
 							key: 'name',
 							value: i18n.translate('build'),
+						},
+						{
+							key: 'importStatus',
+							render: (_, {importStatus}: TestrayBuild) => (
+								<>
+									{importStatus && (
+										<>
+											<ClayLabel
+												displayType={
+													testrayBuildAlertProperties[
+														importStatus.key
+													]
+														.displayType as AlertDisplayType
+												}
+											>
+												{
+													testrayBuildAlertProperties[
+														importStatus.key
+													].label
+												}
+											</ClayLabel>
+										</>
+									)}
+								</>
+							),
+							value: i18n.translate('import-status'),
 						},
 						{
 							clickable: true,
@@ -189,11 +224,14 @@ const RoutineArchived = () => {
 										'incomplete',
 									]}
 									items={{
-										blocked: build.caseResultBlocked as number,
+										blocked:
+											build.caseResultBlocked as number,
 										failed: build.caseResultFailed as number,
-										incomplete: build.caseResultIncomplete as number,
+										incomplete:
+											build.caseResultIncomplete as number,
 										passed: build.caseResultPassed as number,
-										test_fix: build.caseResultTestFix as number,
+										test_fix:
+											build.caseResultTestFix as number,
 									}}
 								/>
 							),

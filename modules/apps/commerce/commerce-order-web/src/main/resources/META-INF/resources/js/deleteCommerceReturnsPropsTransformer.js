@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {fetch, openConfirmModal, openToast, sub} from 'frontend-js-web';
+import {openConfirmModal, openToast} from 'frontend-js-components-web';
+import {fetch, sub} from 'frontend-js-web';
 
+import CommerceCurrencyDataRenderer from './CommerceCurrencyDataRenderer';
 import {CommerceReturnStatusDataRenderer} from './CommerceReturnStatusDataRenderer';
-import {CommerceStatusDataRenderer} from './CommerceStatusDataRenderer';
+import CommerceStatusDataRenderer from './CommerceStatusDataRenderer';
 
 export default function propsTransformer({...otherProps}) {
 	const handleDelete = (confirm, itemData, loadData) => {
@@ -42,6 +44,7 @@ export default function propsTransformer({...otherProps}) {
 	return {
 		...otherProps,
 		customDataRenderers: {
+			commerceCurrencyDataRenderer: CommerceCurrencyDataRenderer,
 			commerceReturnStatusDataRenderer: CommerceReturnStatusDataRenderer,
 			commerceStatusDataRenderer: CommerceStatusDataRenderer,
 		},

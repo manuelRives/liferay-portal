@@ -16,17 +16,36 @@ import java.io.Closeable;
  */
 public class ScriptManagementConfigurationTestUtil {
 
-	public static Closeable disable() throws Exception {
+	public static void delete() {
+		try {
+			ConfigurationTestUtil.deleteConfiguration(
+				ScriptManagementConfiguration.class.getName());
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+	}
+
+	public static void save(boolean allowScriptContentToBeExecutedOrIncluded)
+		throws Exception {
+
 		ConfigurationTestUtil.saveConfiguration(
 			ScriptManagementConfiguration.class.getName(),
 			HashMapDictionaryBuilder.<String, Object>put(
-				"allowScriptContentToBeExecutedOrIncluded", false
+				"allowScriptContentToBeExecutedOrIncluded",
+				allowScriptContentToBeExecutedOrIncluded
 			).build());
+	}
+
+	public static Closeable saveWithCloseable(
+			boolean allowScriptContentToBeExecutedOrIncluded)
+		throws Exception {
+
+		save(allowScriptContentToBeExecutedOrIncluded);
 
 		return () -> {
 			try {
-				ConfigurationTestUtil.deleteConfiguration(
-					ScriptManagementConfiguration.class.getName());
+				save(!allowScriptContentToBeExecutedOrIncluded);
 			}
 			catch (Exception exception) {
 				throw new RuntimeException(exception);

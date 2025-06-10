@@ -8,9 +8,9 @@ package com.liferay.frontend.data.set.sample.web.internal.display.context;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 /**
  * @author Eduardo Allegrini
@@ -31,7 +31,7 @@ public class EmptyFDSDisplayContext {
 			LanguageUtil.get(
 				_httpServletRequest, "start-creating-one-to-show-your-data")
 		).put(
-			"image", "/states/empty_state.gif"
+			"image", "/states/empty_state.svg"
 		).put(
 			"title",
 			LanguageUtil.get(_httpServletRequest, "no-data-sets-created")

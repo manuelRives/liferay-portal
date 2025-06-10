@@ -4,7 +4,8 @@
  */
 
 import * as d3 from 'd3';
-import {openConfirmModal, openToast, sub} from 'frontend-js-web';
+import {openConfirmModal, openToast} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 
 import {getAccount} from './data/accounts';
 import {getOrganization} from './data/organizations';
@@ -488,14 +489,14 @@ class D3OrganizationChart {
 									),
 									nodesToBeMoved[0].data.name,
 									target.data.name
-							  )
+								)
 							: sub(
 									Liferay.Language.get(
 										'x-items-will-be-moved-into-x'
 									),
 									nodesToBeMoved.length,
 									target.data.name
-							  );
+								);
 
 					openConfirmModal({
 						message,
@@ -753,8 +754,8 @@ class D3OrganizationChart {
 			type === MODEL_TYPE_MAP.organization
 				? getOrganization
 				: type === MODEL_TYPE_MAP.account
-				? getAccount
-				: getUser;
+					? getAccount
+					: getUser;
 
 		return getData(id)
 			.then((rawData) => formatItem(rawData, type))

@@ -6,7 +6,7 @@
 import {useCallback, useEffect, useState} from 'react';
 
 import {useMarketplaceContext} from '../context/MarketplaceContext';
-import HeadlessCommerceDeliveryCatalogImpl from '../services/rest/HeadlessCommerceDeliveryCatalog';
+import HeadlessCommerceDeliveryCatalog from '../services/rest/HeadlessCommerceDeliveryCatalog';
 import {getUrlParam} from '../utils/getUrlParam';
 
 const useGetProduct = (
@@ -21,18 +21,19 @@ const useGetProduct = (
 		setProductId(selectedProduct?.productId || urlProductId);
 
 		if (productId) {
-			const fetchProduct = await HeadlessCommerceDeliveryCatalogImpl.getProduct(
-				channel.id,
-				productId,
-				new URLSearchParams({
-					'accountId': '-1',
-					'attachments.accountId': '-1',
-					'images.accountId': '-1',
-					'nestedFields':
-						'attachments,images,productSpecifications,skus',
-					'skus.accountId': '-1',
-				})
-			);
+			const fetchProduct =
+				await HeadlessCommerceDeliveryCatalog.getProduct(
+					channel.id,
+					productId,
+					new URLSearchParams({
+						'accountId': '-1',
+						'attachments.accountId': '-1',
+						'images.accountId': '-1',
+						'nestedFields':
+							'attachments,images,productSpecifications,skus',
+						'skus.accountId': '-1',
+					})
+				);
 
 			setProduct(fetchProduct);
 		}

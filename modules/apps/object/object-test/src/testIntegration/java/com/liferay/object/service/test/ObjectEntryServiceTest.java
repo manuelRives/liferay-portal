@@ -12,6 +12,7 @@ import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.object.configuration.ObjectConfiguration;
 import com.liferay.object.constants.ObjectActionKeys;
+import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
 import com.liferay.object.exception.ObjectEntryCountException;
@@ -30,12 +31,10 @@ import com.liferay.object.test.util.TreeTestUtil;
 import com.liferay.object.tree.Edge;
 import com.liferay.object.tree.Node;
 import com.liferay.object.tree.Tree;
-import com.liferay.object.tree.TreeFactory;
 import com.liferay.object.tree.constants.TreeConstants;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
-import com.liferay.portal.kernel.exception.NoSuchResourceActionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -65,8 +64,9 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
@@ -96,7 +96,7 @@ import org.junit.runner.RunWith;
 /**
  * @author Marco Leo
  */
-@FeatureFlags({"LPS-187142", "LPS-192957"})
+@FeatureFlag("LPD-34594")
 @RunWith(Arquillian.class)
 public class ObjectEntryServiceTest {
 
@@ -112,7 +112,7 @@ public class ObjectEntryServiceTest {
 			TestPropsValues.getCompanyId());
 
 		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			false, _objectDefinitionLocalService,
+			false,
 			Arrays.asList(
 				ObjectFieldUtil.createObjectField(
 					ObjectFieldConstants.BUSINESS_TYPE_TEXT,
@@ -132,27 +132,34 @@ public class ObjectEntryServiceTest {
 			PermissionThreadLocal.getPermissionChecker();
 		_tree = TreeTestUtil.createObjectDefinitionTree(
 			_objectDefinitionLocalService, _objectRelationshipLocalService,
-			_treeFactory);
-		_user = UserTestUtil.addUser();
-
-		ObjectDefinition rootObjectDefinition =
-			_objectDefinitionLocalService.fetchObjectDefinition(
-				TestPropsValues.getCompanyId(), "C_A");
+			true,
+			LinkedHashMapBuilder.put(
+				"A", new String[] {"AA", "AB"}
+			).put(
+				"AA", new String[] {"AAA", "AAB"}
+			).put(
+				"AB", new String[0]
+			).put(
+				"AAA", new String[0]
+			).put(
+				"AAB", new String[0]
+			).build());
 
 		_rootObjectDefinition =
-			_objectDefinitionLocalService.publishCustomObjectDefinition(
-				_adminUser.getUserId(),
-				rootObjectDefinition.getObjectDefinitionId());
+			_objectDefinitionLocalService.getObjectDefinition(
+				TestPropsValues.getCompanyId(), "C_A");
+
+		_user = UserTestUtil.addUser();
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		PermissionThreadLocal.setPermissionChecker(_originalPermissionChecker);
+		_setUser(_adminUser);
 
 		TreeTestUtil.deleteObjectDefinitionHierarchy(
 			_objectDefinitionLocalService,
-			new String[] {"C_AAB", "C_AAA", "C_AB", "C_AA", "C_A"},
-			_objectEntryLocalService);
+			new String[] {"C_A", "C_AA", "C_AB", "C_AAA", "C_AAB"},
+			_objectEntryLocalService, _objectRelationshipLocalService);
 	}
 
 	@Test
@@ -162,6 +169,9 @@ public class ObjectEntryServiceTest {
 		Assert.assertNotNull(
 			_objectEntryService.addObjectEntry(
 				0, _objectDefinition.getObjectDefinitionId(),
+				ObjectEntryFolderConstants.
+					PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+				null,
 				HashMapBuilder.<String, Serializable>put(
 					"firstName", RandomStringUtils.randomAlphabetic(5)
 				).build(),
@@ -177,7 +187,9 @@ public class ObjectEntryServiceTest {
 				"permission for ", _objectDefinition.getResourceName(), " "),
 			() -> _objectEntryService.addObjectEntry(
 				0, _objectDefinition.getObjectDefinitionId(),
-				Collections.emptyMap(),
+				ObjectEntryFolderConstants.
+					PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+				null, Collections.emptyMap(),
 				ServiceContextTestUtil.getServiceContext(
 					TestPropsValues.getGroupId(), _guestUser.getUserId())));
 
@@ -190,7 +202,9 @@ public class ObjectEntryServiceTest {
 				"permission for ", _objectDefinition.getResourceName(), " "),
 			() -> _objectEntryService.addObjectEntry(
 				0, _objectDefinition.getObjectDefinitionId(),
-				Collections.emptyMap(),
+				ObjectEntryFolderConstants.
+					PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+				null, Collections.emptyMap(),
 				ServiceContextTestUtil.getServiceContext(
 					TestPropsValues.getGroupId(), _user.getUserId())));
 
@@ -208,6 +222,9 @@ public class ObjectEntryServiceTest {
 		Assert.assertNotNull(
 			_objectEntryService.addObjectEntry(
 				0, _objectDefinition.getObjectDefinitionId(),
+				ObjectEntryFolderConstants.
+					PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+				null,
 				HashMapBuilder.<String, Serializable>put(
 					"firstName", RandomStringUtils.randomAlphabetic(5)
 				).build(),
@@ -226,6 +243,9 @@ public class ObjectEntryServiceTest {
 		Assert.assertNotNull(
 			_objectEntryService.addObjectEntry(
 				0, _objectDefinition.getObjectDefinitionId(),
+				ObjectEntryFolderConstants.
+					PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+				null,
 				HashMapBuilder.<String, Serializable>put(
 					"firstName", RandomStringUtils.randomAlphabetic(5)
 				).build(),
@@ -258,7 +278,10 @@ public class ObjectEntryServiceTest {
 			HashMapBuilder.<Long, ObjectEntry>put(
 				rootNode.getPrimaryKey(),
 				_objectEntryService.addObjectEntry(
-					0, rootNode.getPrimaryKey(), Collections.emptyMap(),
+					0, rootNode.getPrimaryKey(),
+					ObjectEntryFolderConstants.
+						PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+					null, Collections.emptyMap(),
 					ServiceContextTestUtil.getServiceContext(
 						TestPropsValues.getGroupId(), _adminUser.getUserId()))
 			).build();
@@ -270,6 +293,9 @@ public class ObjectEntryServiceTest {
 				node.getPrimaryKey(),
 				_objectEntryService.addObjectEntry(
 					0, node.getPrimaryKey(),
+					ObjectEntryFolderConstants.
+						PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+					null,
 					HashMapBuilder.<String, Serializable>put(
 						() -> {
 							Edge edge = node.getEdge();
@@ -298,27 +324,86 @@ public class ObjectEntryServiceTest {
 						TestPropsValues.getGroupId(), _adminUser.getUserId())));
 		}
 
-		// Root descendant must not have ADD_OBJECT_ENTRY resource action
+		// User can add an object entry to descendant object definitions
+		// with the update permission
 
-		TreeTestUtil.forEachNodeObjectDefinition(
-			_tree.iterator(), _objectDefinitionLocalService,
-			objectDefinition -> {
-				if (objectDefinition.isRootNode()) {
-					return;
-				}
+		_setUser(_adminUser);
 
-				AssertUtils.assertFailure(
-					NoSuchResourceActionException.class,
-					"com.liferay.object#" +
-						objectDefinition.getObjectDefinitionId() +
-							"#ADD_OBJECT_ENTRY",
-					() -> _resourcePermissionLocalService.addResourcePermission(
-						TestPropsValues.getCompanyId(),
-						objectDefinition.getResourceName(),
-						ResourceConstants.SCOPE_COMPANY,
-						String.valueOf(TestPropsValues.getCompanyId()),
-						role.getRoleId(), ObjectActionKeys.ADD_OBJECT_ENTRY));
-			});
+		_resourcePermissionLocalService.removeResourcePermission(
+			TestPropsValues.getCompanyId(),
+			_rootObjectDefinition.getResourceName(),
+			ResourceConstants.SCOPE_COMPANY,
+			String.valueOf(TestPropsValues.getCompanyId()), role.getRoleId(),
+			ObjectActionKeys.ADD_OBJECT_ENTRY);
+
+		_resourcePermissionLocalService.setResourcePermissions(
+			TestPropsValues.getCompanyId(),
+			_rootObjectDefinition.getClassName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(_rootObjectDefinition.getObjectDefinitionId()),
+			role.getRoleId(), new String[] {ActionKeys.UPDATE});
+
+		_setUser(_user);
+
+		iterator = _tree.iterator();
+
+		while (iterator.hasNext()) {
+			Node node = iterator.next();
+
+			if (node.isRoot()) {
+				continue;
+			}
+
+			Assert.assertNotNull(
+				_objectEntryService.addObjectEntry(
+					0, node.getPrimaryKey(),
+					ObjectEntryFolderConstants.
+						PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+					null,
+					HashMapBuilder.<String, Serializable>put(
+						() -> {
+							Edge edge = node.getEdge();
+
+							ObjectRelationship objectRelationship =
+								_objectRelationshipLocalService.
+									getObjectRelationship(
+										edge.getObjectRelationshipId());
+
+							ObjectField objectField =
+								_objectFieldLocalService.getObjectField(
+									objectRelationship.getObjectFieldId2());
+
+							return objectField.getName();
+						},
+						() -> {
+							Node parentNode = node.getParentNode();
+
+							ObjectEntry objectEntry = objectEntries.get(
+								parentNode.getPrimaryKey());
+
+							return objectEntry.getObjectEntryId();
+						}
+					).build(),
+					ServiceContextTestUtil.getServiceContext(
+						TestPropsValues.getGroupId(), _user.getUserId())));
+		}
+
+		// User cannot add an object entry to a root object definition
+		// with the update permission
+
+		AssertUtils.assertFailure(
+			PortalException.class,
+			StringBundler.concat(
+				"User ", _user.getUserId(),
+				" must have ADD_OBJECT_ENTRY permission for ",
+				_rootObjectDefinition.getResourceName(), " "),
+			() -> _objectEntryService.addObjectEntry(
+				0, _rootObjectDefinition.getObjectDefinitionId(),
+				ObjectEntryFolderConstants.
+					PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+				null, Collections.emptyMap(),
+				ServiceContextTestUtil.getServiceContext(
+					TestPropsValues.getGroupId(), _user.getUserId())));
 	}
 
 	@Test
@@ -348,10 +433,10 @@ public class ObjectEntryServiceTest {
 
 		Node objectDefinitionRootNode = _tree.getRootNode();
 
-		Tree objectEntryTree = TreeTestUtil.createObjectEntryTree(
-			"1", _objectEntryLocalService, _objectFieldLocalService,
-			objectDefinitionRootNode.getPrimaryKey(),
-			_objectRelationshipLocalService, _treeFactory);
+		Tree tree = TreeTestUtil.createObjectEntryTree(
+			"1", _objectDefinitionLocalService, _objectEntryLocalService,
+			_objectFieldLocalService, _objectRelationshipLocalService,
+			objectDefinitionRootNode.getPrimaryKey());
 
 		_setUser(_user);
 
@@ -366,7 +451,7 @@ public class ObjectEntryServiceTest {
 			ActionKeys.DELETE);
 
 		TreeTestUtil.forEachNodeObjectEntry(
-			objectEntryTree.iterator(TreeConstants.ITERATOR_TYPE_POST_ORDER),
+			tree.iterator(TreeConstants.ITERATOR_TYPE_POST_ORDER),
 			_objectEntryLocalService,
 			objectEntry -> Assert.assertNotNull(
 				_objectEntryService.deleteObjectEntry(
@@ -379,36 +464,14 @@ public class ObjectEntryServiceTest {
 			String.valueOf(TestPropsValues.getCompanyId()), role.getRoleId(),
 			ActionKeys.DELETE);
 
-		// Root descendant must not have DELETE resource action
-
-		TreeTestUtil.forEachNodeObjectDefinition(
-			_tree.iterator(TreeConstants.ITERATOR_TYPE_POST_ORDER),
-			_objectDefinitionLocalService,
-			objectDefinition -> {
-				if (objectDefinition.isRootNode()) {
-					return;
-				}
-
-				AssertUtils.assertFailure(
-					NoSuchResourceActionException.class,
-					"com.liferay.object.model.ObjectDefinition#" +
-						objectDefinition.getObjectDefinitionId() + "#DELETE",
-					() -> _resourcePermissionLocalService.addResourcePermission(
-						TestPropsValues.getCompanyId(),
-						objectDefinition.getClassName(),
-						ResourceConstants.SCOPE_COMPANY,
-						String.valueOf(TestPropsValues.getCompanyId()),
-						role.getRoleId(), ActionKeys.DELETE));
-			});
-
 		// Root individual permissions must be inherited
 
-		objectEntryTree = TreeTestUtil.createObjectEntryTree(
-			"1", _objectEntryLocalService, _objectFieldLocalService,
-			objectDefinitionRootNode.getPrimaryKey(),
-			_objectRelationshipLocalService, _treeFactory);
+		tree = TreeTestUtil.createObjectEntryTree(
+			"1", _objectDefinitionLocalService, _objectEntryLocalService,
+			_objectFieldLocalService, _objectRelationshipLocalService,
+			objectDefinitionRootNode.getPrimaryKey());
 
-		Node objectEntryRootNode = objectEntryTree.getRootNode();
+		Node objectEntryRootNode = tree.getRootNode();
 
 		_resourcePermissionLocalService.setResourcePermissions(
 			TestPropsValues.getCompanyId(),
@@ -418,11 +481,59 @@ public class ObjectEntryServiceTest {
 			role.getRoleId(), new String[] {ActionKeys.DELETE});
 
 		TreeTestUtil.forEachNodeObjectEntry(
-			objectEntryTree.iterator(TreeConstants.ITERATOR_TYPE_POST_ORDER),
+			tree.iterator(TreeConstants.ITERATOR_TYPE_POST_ORDER),
 			_objectEntryLocalService,
 			objectEntry -> Assert.assertNotNull(
 				_objectEntryService.deleteObjectEntry(
 					objectEntry.getObjectEntryId())));
+
+		// User can delete an object entry of a descendant object definition
+		// with the update permission
+
+		_setUser(_adminUser);
+
+		tree = TreeTestUtil.createObjectEntryTree(
+			"1", _objectDefinitionLocalService, _objectEntryLocalService,
+			_objectFieldLocalService, _objectRelationshipLocalService,
+			_rootObjectDefinition.getRootObjectDefinitionId());
+
+		objectEntryRootNode = tree.getRootNode();
+
+		_resourcePermissionLocalService.setResourcePermissions(
+			TestPropsValues.getCompanyId(),
+			_rootObjectDefinition.getClassName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(objectEntryRootNode.getPrimaryKey()),
+			role.getRoleId(), new String[] {ActionKeys.UPDATE});
+
+		_setUser(_user);
+
+		TreeTestUtil.forEachNodeObjectEntry(
+			tree.iterator(TreeConstants.ITERATOR_TYPE_POST_ORDER),
+			_objectEntryLocalService,
+			objectEntry -> {
+				if (objectEntry.getRootObjectEntryId() ==
+						objectEntry.getObjectEntryId()) {
+
+					return;
+				}
+
+				Assert.assertNotNull(
+					_objectEntryService.deleteObjectEntry(
+						objectEntry.getObjectEntryId()));
+			});
+
+		long rootObjectEntryId = objectEntryRootNode.getPrimaryKey();
+
+		// User cannot delete an object entry of a root object definition
+		// with the update permission
+
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user.getUserId(), " must have DELETE permission for ",
+				_rootObjectDefinition.getClassName(), " ", rootObjectEntryId),
+			() -> _objectEntryService.deleteObjectEntry(rootObjectEntryId));
 	}
 
 	@Test
@@ -495,10 +606,10 @@ public class ObjectEntryServiceTest {
 
 		Node objectDefinitionRootNode = _tree.getRootNode();
 
-		Tree objectEntryTree = TreeTestUtil.createObjectEntryTree(
-			"1", _objectEntryLocalService, _objectFieldLocalService,
-			objectDefinitionRootNode.getPrimaryKey(),
-			_objectRelationshipLocalService, _treeFactory);
+		Tree tree = TreeTestUtil.createObjectEntryTree(
+			"1", _objectDefinitionLocalService, _objectEntryLocalService,
+			_objectFieldLocalService, _objectRelationshipLocalService,
+			objectDefinitionRootNode.getPrimaryKey());
 
 		_setUser(_user);
 
@@ -513,7 +624,7 @@ public class ObjectEntryServiceTest {
 			ActionKeys.VIEW);
 
 		TreeTestUtil.forEachNodeObjectEntry(
-			objectEntryTree.iterator(), _objectEntryLocalService,
+			tree.iterator(), _objectEntryLocalService,
 			objectEntry -> Assert.assertNotNull(
 				_objectEntryService.getObjectEntry(
 					objectEntry.getObjectEntryId())));
@@ -525,31 +636,9 @@ public class ObjectEntryServiceTest {
 			String.valueOf(TestPropsValues.getCompanyId()), role.getRoleId(),
 			ActionKeys.VIEW);
 
-		// Root descendant must not have VIEW resource action
-
-		TreeTestUtil.forEachNodeObjectDefinition(
-			_tree.iterator(TreeConstants.ITERATOR_TYPE_POST_ORDER),
-			_objectDefinitionLocalService,
-			objectDefinition -> {
-				if (objectDefinition.isRootNode()) {
-					return;
-				}
-
-				AssertUtils.assertFailure(
-					NoSuchResourceActionException.class,
-					"com.liferay.object.model.ObjectDefinition#" +
-						objectDefinition.getObjectDefinitionId() + "#VIEW",
-					() -> _resourcePermissionLocalService.addResourcePermission(
-						TestPropsValues.getCompanyId(),
-						objectDefinition.getClassName(),
-						ResourceConstants.SCOPE_COMPANY,
-						String.valueOf(TestPropsValues.getCompanyId()),
-						role.getRoleId(), ActionKeys.VIEW));
-			});
-
 		// Root individual permissions must be inherited
 
-		Node objectEntryRootNode = objectEntryTree.getRootNode();
+		Node objectEntryRootNode = tree.getRootNode();
 
 		_resourcePermissionLocalService.setResourcePermissions(
 			TestPropsValues.getCompanyId(),
@@ -559,10 +648,50 @@ public class ObjectEntryServiceTest {
 			role.getRoleId(), new String[] {ActionKeys.VIEW});
 
 		TreeTestUtil.forEachNodeObjectEntry(
-			objectEntryTree.iterator(), _objectEntryLocalService,
+			tree.iterator(), _objectEntryLocalService,
 			objectEntry -> Assert.assertNotNull(
 				_objectEntryService.getObjectEntry(
 					objectEntry.getObjectEntryId())));
+
+		// User can view an object entry of a descendant object definition
+		// with the update permission
+
+		_setUser(_adminUser);
+
+		_resourcePermissionLocalService.setResourcePermissions(
+			TestPropsValues.getCompanyId(),
+			_rootObjectDefinition.getClassName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(objectEntryRootNode.getPrimaryKey()),
+			role.getRoleId(), new String[] {ActionKeys.UPDATE});
+
+		_setUser(_user);
+
+		TreeTestUtil.forEachNodeObjectEntry(
+			tree.iterator(), _objectEntryLocalService,
+			objectEntry -> {
+				if (objectEntry.getRootObjectEntryId() ==
+						objectEntry.getObjectEntryId()) {
+
+					return;
+				}
+
+				Assert.assertNotNull(
+					_objectEntryService.getObjectEntry(
+						objectEntry.getObjectEntryId()));
+			});
+
+		long rootObjectEntryId = objectEntryRootNode.getPrimaryKey();
+
+		// User cannot view an object entry of a root object definition
+		// with the update permission
+
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user.getUserId(), " must have VIEW permission for ",
+				_rootObjectDefinition.getClassName(), " ", rootObjectEntryId),
+			() -> _objectEntryService.getObjectEntry(rootObjectEntryId));
 	}
 
 	@Test
@@ -581,7 +710,7 @@ public class ObjectEntryServiceTest {
 				null, TestPropsValues.getUserId(),
 				accountEntryObjectDefinition.getObjectDefinitionId(),
 				_objectDefinition.getObjectDefinitionId(), 0,
-				ObjectRelationshipConstants.DELETION_TYPE_PREVENT,
+				ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				"relationship", false,
 				ObjectRelationshipConstants.TYPE_ONE_TO_MANY, null);
@@ -594,7 +723,7 @@ public class ObjectEntryServiceTest {
 				_objectDefinition);
 
 		AccountEntry accountEntry = _accountEntryLocalService.addAccountEntry(
-			TestPropsValues.getUserId(),
+			StringPool.BLANK, TestPropsValues.getUserId(),
 			AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT, "account", null,
 			null, null, null, null,
 			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
@@ -604,6 +733,8 @@ public class ObjectEntryServiceTest {
 		ObjectEntry objectEntry = _objectEntryLocalService.addObjectEntry(
 			TestPropsValues.getUserId(), 0,
 			_objectDefinition.getObjectDefinitionId(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null,
 			HashMapBuilder.<String, Serializable>put(
 				"r_relationship_accountEntryId",
 				accountEntry.getAccountEntryId()
@@ -688,7 +819,8 @@ public class ObjectEntryServiceTest {
 
 		_objectEntryService.addObjectEntry(
 			0, _objectDefinition.getObjectDefinitionId(),
-			Collections.emptyMap(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null, Collections.emptyMap(),
 			ServiceContextTestUtil.getServiceContext(
 				TestPropsValues.getGroupId(), _adminUser.getUserId()));
 
@@ -699,7 +831,9 @@ public class ObjectEntryServiceTest {
 		try {
 			ObjectEntry objectEntry = _objectEntryService.addObjectEntry(
 				0, _objectDefinition.getObjectDefinitionId(),
-				Collections.emptyMap(),
+				ObjectEntryFolderConstants.
+					PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+				null, Collections.emptyMap(),
 				ServiceContextTestUtil.getServiceContext(
 					TestPropsValues.getGroupId(), _guestUser.getUserId()));
 
@@ -714,7 +848,9 @@ public class ObjectEntryServiceTest {
 					" has been reached and will no longer be accepted"),
 				() -> _objectEntryService.addObjectEntry(
 					0, _objectDefinition.getObjectDefinitionId(),
-					Collections.emptyMap(),
+					ObjectEntryFolderConstants.
+						PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+					null, Collections.emptyMap(),
 					ServiceContextTestUtil.getServiceContext(
 						TestPropsValues.getGroupId(), _guestUser.getUserId())));
 
@@ -734,7 +870,9 @@ public class ObjectEntryServiceTest {
 			Assert.assertNotNull(
 				_objectEntryService.addObjectEntry(
 					0, _objectDefinition.getObjectDefinitionId(),
-					Collections.emptyMap(),
+					ObjectEntryFolderConstants.
+						PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+					null, Collections.emptyMap(),
 					ServiceContextTestUtil.getServiceContext(
 						TestPropsValues.getGroupId(), _guestUser.getUserId())));
 
@@ -747,7 +885,9 @@ public class ObjectEntryServiceTest {
 					" has been reached and will no longer be accepted"),
 				() -> _objectEntryService.addObjectEntry(
 					0, _objectDefinition.getObjectDefinitionId(),
-					Collections.emptyMap(),
+					ObjectEntryFolderConstants.
+						PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+					null, Collections.emptyMap(),
 					ServiceContextTestUtil.getServiceContext(
 						TestPropsValues.getGroupId(), _guestUser.getUserId())));
 
@@ -783,7 +923,8 @@ public class ObjectEntryServiceTest {
 
 		ObjectEntry objectEntry = _objectEntryService.addObjectEntry(
 			0, _objectDefinition.getObjectDefinitionId(),
-			Collections.emptyMap(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null, Collections.emptyMap(),
 			ServiceContextTestUtil.getServiceContext(
 				TestPropsValues.getGroupId(), _guestUser.getUserId()));
 
@@ -802,7 +943,9 @@ public class ObjectEntryServiceTest {
 			Assert.assertNotNull(
 				_objectEntryService.addObjectEntry(
 					0, _objectDefinition.getObjectDefinitionId(),
-					Collections.emptyMap(),
+					ObjectEntryFolderConstants.
+						PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+					null, Collections.emptyMap(),
 					ServiceContextTestUtil.getServiceContext(
 						TestPropsValues.getGroupId(), _guestUser.getUserId())));
 
@@ -815,7 +958,9 @@ public class ObjectEntryServiceTest {
 					" has been reached and will no longer be accepted"),
 				() -> _objectEntryService.addObjectEntry(
 					0, _objectDefinition.getObjectDefinitionId(),
-					Collections.emptyMap(),
+					ObjectEntryFolderConstants.
+						PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+					null, Collections.emptyMap(),
 					ServiceContextTestUtil.getServiceContext(
 						TestPropsValues.getGroupId(), _guestUser.getUserId())));
 
@@ -830,6 +975,8 @@ public class ObjectEntryServiceTest {
 	private ObjectEntry _addObjectEntry(User user) throws Exception {
 		return _objectEntryLocalService.addObjectEntry(
 			user.getUserId(), 0, _objectDefinition.getObjectDefinitionId(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null,
 			HashMapBuilder.<String, Serializable>put(
 				"firstName", RandomStringUtils.randomAlphabetic(5)
 			).put(
@@ -957,10 +1104,6 @@ public class ObjectEntryServiceTest {
 
 	private ObjectDefinition _rootObjectDefinition;
 	private Tree _tree;
-
-	@Inject
-	private TreeFactory _treeFactory;
-
 	private User _user;
 
 	@Inject(type = UserLocalService.class)

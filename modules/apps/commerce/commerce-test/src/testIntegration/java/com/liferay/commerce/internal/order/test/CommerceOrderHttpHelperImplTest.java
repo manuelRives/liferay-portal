@@ -49,12 +49,12 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.theme.ThemeDisplayFactory;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.frutilla.FrutillaRule;
 
@@ -152,7 +152,7 @@ public class CommerceOrderHttpHelperImplTest {
 			_commerceOrderLocalService.deleteCommerceOrder(commerceOrder);
 		}
 
-		CentralizedThreadLocal.clearShortLivedThreadLocals();
+		CentralizedThreadLocal.clearShortLivedCentralizedThreadLocals();
 	}
 
 	@Test
@@ -226,6 +226,25 @@ public class CommerceOrderHttpHelperImplTest {
 				commerceOrderItem.getQuantity(),
 				_commerceOrderHttpHelper.getCommerceOrderItemsQuantity(
 					_httpServletRequest)));
+	}
+
+	@Test
+	public void testGetCommerceOrderWithNullCommerceContext() throws Exception {
+		frutillaRule.scenario(
+			"Attempt to get a commerce order from http servlet request"
+		).given(
+			"An HttpServletRequest and a ThemeDisplay"
+		).when(
+			"I use an empty HttpServletRequest with null CommerceContext"
+		).then(
+			"I should get a null value"
+		);
+
+		CommerceOrder commerceOrder =
+			_commerceOrderHttpHelper.getCurrentCommerceOrder(
+				new MockHttpServletRequest());
+
+		Assert.assertNull(commerceOrder);
 	}
 
 	@Rule

@@ -27,6 +27,7 @@ import {getSafeRangeSelectors} from 'shared/util/util';
 import {hasChanges} from 'shared/util/react';
 import {omit} from 'lodash';
 import {Routes, toRoute} from 'shared/util/router';
+import {useChannelContext} from 'shared/context/channel';
 import {useCurrentUser} from 'shared/hooks/useCurrentUser';
 import {useHistory, useParams} from 'react-router-dom';
 import {useMutation} from '@apollo/react-hooks';
@@ -49,8 +50,6 @@ const ERRORS = {
 		)
 	}
 };
-
-const PAGE_NAME = 'Event Analysis Editor';
 
 const connector = connect(null, {
 	addAlert,
@@ -81,6 +80,9 @@ const BaseEventAnalysisPage: React.FC<IBaseEventAnalysisPageProps> = ({
 	rangeSelectors: initialRangeSelectors
 }) => {
 	const history = useHistory();
+
+	const {selectedChannel} = useChannelContext();
+
 	const {channelId, groupId, id: eventAnalysisId = null} = useParams();
 
 	const [compareToPrevious, setCompareToPrevious] = useState<boolean>(
@@ -138,7 +140,7 @@ const BaseEventAnalysisPage: React.FC<IBaseEventAnalysisPageProps> = ({
 				eventAnalysisId,
 				eventDefinitionId: event.id,
 				name,
-				userId: currentUser.userId,
+				userId: String(currentUser.userId),
 				userName: currentUser.name,
 				...getSafeRangeSelectors(rangeSelectors)
 			}
@@ -209,40 +211,18 @@ const BaseEventAnalysisPage: React.FC<IBaseEventAnalysisPageProps> = ({
 
 	const onCompareToPreviousChange = (compareToPrevious: boolean) => {
 		setCompareToPrevious(compareToPrevious);
-
-		analytics.track(`${PAGE_NAME} - Compared to Previous`);
 	};
 
 	const onEventChange = (event: Event) => {
 		setEvent(event);
-
-		if (event) {
-			const {displayName, name, type} = event;
-
-			analytics.track(`${PAGE_NAME} - Selected an Event`, {
-				name: displayName || name,
-				type
-			});
-		}
 	};
 
 	const onRangeSelectorsChange = (rangeSelectors: RangeSelectors) => {
 		setRangeSelectors(rangeSelectors);
-
-		const {rangeEnd, rangeKey, rangeStart} = rangeSelectors;
-		analytics.track(`${PAGE_NAME} - Changed Event Time Period`, {
-			dateEnd: rangeEnd,
-			dateStart: rangeStart,
-			rangeKey
-		});
 	};
 
 	const onTypeChange = (type: CalculationTypes) => {
 		setType(type);
-
-		analytics.track(`${PAGE_NAME} - Changed Calculation Type`, {
-			type
-		});
 	};
 
 	return (
@@ -255,8 +235,9 @@ const BaseEventAnalysisPage: React.FC<IBaseEventAnalysisPageProps> = ({
 					breadcrumbs.getHome({
 						channelId,
 						groupId,
-						label: Liferay.Language.get('home')
-					})
+						label: selectedChannel?.name
+					}),
+					breadcrumbs.getEventAnalysis({channelId, groupId})
 				]}
 				groupId={groupId}
 			>

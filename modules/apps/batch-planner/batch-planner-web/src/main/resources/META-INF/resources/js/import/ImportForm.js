@@ -4,7 +4,7 @@
  */
 
 import ClayTable from '@clayui/table';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
@@ -40,6 +40,24 @@ const TableFieldsHeader = () => (
 		</ClayTable.Row>
 	</ClayTable.Head>
 );
+
+const anyOfGroupNotFilled = (fieldsSelections, relationshipGroups) => {
+	return Object.keys(relationshipGroups).some(
+		(group) =>
+			!relationshipGroups[group].some((value) =>
+				Object.keys(fieldsSelections).some((field) => field === value)
+			)
+	);
+};
+
+const isAnyOfValid = (dbField, fieldsSelections, relationshipGroups) => {
+	return Object.keys(fieldsSelections).some(
+		(selectedField) =>
+			relationshipGroups[dbField.anyOfGroup] &&
+			relationshipGroups[dbField.anyOfGroup].includes(selectedField)
+	);
+};
+
 function ImportForm({
 	formDataQuerySelector,
 	formImportURL,
@@ -55,9 +73,25 @@ function ImportForm({
 	const [fileFields, setFileFields] = useState();
 	const [fileContent, setFileContent] = useState();
 	const [fieldsSelections, setFieldsSelections] = useState({});
-	const [mappingsToBeEvaluated, setMappingsToBeEvaluated] = useState(
-		mappedFields
-	);
+	const [mappingsToBeEvaluated, setMappingsToBeEvaluated] =
+		useState(mappedFields);
+	const relationshipGroups = useMemo(() => {
+		const groups = {};
+
+		dbFields.required.forEach((dbField) => {
+			const {anyOfGroup, name} = dbField;
+
+			if (anyOfGroup) {
+				if (!groups[anyOfGroup]) {
+					groups[anyOfGroup] = [];
+				}
+
+				groups[anyOfGroup].push(name);
+			}
+		});
+
+		return groups;
+	}, [dbFields]);
 	const useTemplateMappingRef = useRef();
 
 	const formIsValid = useMemo(() => {
@@ -69,11 +103,14 @@ function ImportForm({
 		}
 
 		const requiredFieldNotFilled = dbFields.required.some(
-			(dbField) => !fieldsSelections[dbField.name]
+			(dbField) => !fieldsSelections[dbField.name] && !dbField.anyOfGroup
 		);
 
-		return !requiredFieldNotFilled;
-	}, [fieldsSelections, dbFields]);
+		return (
+			!requiredFieldNotFilled &&
+			!anyOfGroupNotFilled(fieldsSelections, relationshipGroups)
+		);
+	}, [dbFields, fieldsSelections, relationshipGroups]);
 
 	const updateFieldMapping = (fileField, dbFieldName) => {
 		setFieldsSelections((prevSelections) => {
@@ -231,9 +268,9 @@ function ImportForm({
 		<>
 			{formIsVisible && (
 				<div className="card import-mapping-table">
-					<h4 className="card-header">
+					<div className="card-header h4">
 						{Liferay.Language.get('import-mappings')}
-					</h4>
+					</div>
 
 					<div className="card-body p-0">
 						<ClayTable borderless hover={false}>
@@ -258,6 +295,11 @@ function ImportForm({
 												dbField={dbField}
 												fileFields={fileFields}
 												formEvaluated={formEvaluated}
+												isAnyOfValid={isAnyOfValid(
+													dbField,
+													fieldsSelections,
+													relationshipGroups
+												)}
 												key={dbField.name}
 												portletNamespace={
 													portletNamespace
@@ -277,7 +319,12 @@ function ImportForm({
 												selectedFileField={
 													fieldsSelections[
 														dbField.name
-													] || ''
+													] ||
+													('' &&
+														!anyOfGroupNotFilled(
+															fieldsSelections,
+															relationshipGroups
+														))
 												}
 												updateFieldMapping={(
 													selectedFileField

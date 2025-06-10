@@ -2,10 +2,15 @@ import * as API from 'shared/api';
 import * as breadcrumbs from 'shared/util/breadcrumbs';
 import autobind from 'autobind-decorator';
 import BasePage from 'shared/components/base-page';
+import ClayButton from '@clayui/button';
+import ClayIcon from '@clayui/icon';
+import ClayLink from '@clayui/link';
+import ClayPopover from '@clayui/popover';
 import getCN from 'classnames';
 import Label from 'shared/components/Label';
 import omitDefinedProps from 'shared/util/omitDefinedProps';
 import React from 'react';
+import URLConstants from 'shared/util/url-constants';
 import {addAlert} from 'shared/actions/alerts';
 import {Alert} from 'shared/types';
 import {ChannelContext} from 'shared/context/channel';
@@ -34,7 +39,6 @@ const ERRORS = {
 		)
 	}
 };
-
 export default WrappedComponent => {
 	class BaseEdit extends React.Component {
 		static contextType = ChannelContext;
@@ -74,11 +78,11 @@ export default WrappedComponent => {
 			open(modalTypes.CONFIRMATION_MODAL, {
 				message: (
 					<div>
-						<h4 className='text-secondary'>
+						<div className='h4 text-secondary'>
 							{Liferay.Language.get(
 								'are-you-sure-you-want-to-delete-this-segment'
 							)}
-						</h4>
+						</div>
 
 						<p>
 							{Liferay.Language.get(
@@ -175,26 +179,6 @@ export default WrappedComponent => {
 
 			submitFn(form)
 				.then(segment => {
-					if (!id) {
-						const {channelId, id, segmentType} = Array.isArray(
-							segment
-						)
-							? segment[0]
-							: segment;
-
-						analytics.track(
-							`${segmentType[0]}${segmentType
-								.slice(1)
-								.toLowerCase()} Segment Creation - Saved`,
-							{
-								channelId,
-								createDelta: Date.now() - this._startDate,
-								segmentId: id
-							},
-							{ip: '0'}
-						);
-					}
-
 					if (
 						(Array.isArray(segment) && segment.length) ||
 						(segment && !Array.isArray(segment))
@@ -301,6 +285,52 @@ export default WrappedComponent => {
 								<Label display='secondary' size='lg' uppercase>
 									{this.getPageTitleLabel()}
 								</Label>
+
+								{type === SegmentTypes.Static && (
+									<ClayPopover
+										alignPosition='bottom'
+										closeOnClickOutside
+										header={Liferay.Language.get(
+											'deprecated-feature'
+										)}
+										trigger={
+											<ClayButton
+												data-tooltip
+												data-tooltip-align='top'
+												displayType='warning'
+												title={Liferay.Language.get(
+													'open-deprecated-definition'
+												)}
+												translucent
+											>
+												{Liferay.Language.get(
+													'deprecated'
+												).toUpperCase()}
+												<span className='inline-item inline-item-before pl-2'>
+													<ClayIcon symbol='warning-full' />
+												</span>
+											</ClayButton>
+										}
+									>
+										{Liferay.Language.get(
+											'this-feature-is-deprecated'
+										)}
+
+										<ClayLink
+											className='ml-1'
+											decoration='underline'
+											href={
+												URLConstants.MaintenanceModeAndDeprecationDocumentation
+											}
+											key='deprecated'
+											target='_blank'
+										>
+											{Liferay.Language.get(
+												'learn-more-about-deprecated-features'
+											)}
+										</ClayLink>
+									</ClayPopover>
+								)}
 							</BasePage.Header.TitleSection>
 
 							<BasePage.Header.Section>

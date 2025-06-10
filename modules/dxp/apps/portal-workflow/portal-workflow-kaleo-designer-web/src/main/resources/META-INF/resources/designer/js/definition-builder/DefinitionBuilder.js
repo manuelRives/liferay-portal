@@ -24,19 +24,19 @@ export default function DefinitionBuilder(props) {
 	const [definitionInfo, setDefinitionInfo] = useState(null);
 	const [definitionName, setDefinitionName] = useState(props.definitionName);
 	const [definitionTitle, setDefinitionTitle] = useState(props.title);
-	const [
-		definitionTitleTranslations,
-		setDefinitionTitleTranslations,
-	] = useState(props.translations);
+	const [definitionTitleTranslations, setDefinitionTitleTranslations] =
+		useState(props.translations);
 	const [deserialize, setDeserialize] = useState(false);
 	const [elements, setElements] = useState(defaultNodes);
-	const [hadGroovyScriptBefore, setHadGroovyScriptBefore] = useState(false);
-	const [hasGroovyScript, setHasGroovyScript] = useState(false);
+	const [hadGroovyOrJavaScriptBefore, setHadGroovyOrJavaScriptBefore] =
+		useState(false);
+	const [hasGroovyOrJavaScript, setHasGroovyOrJavaScript] = useState(false);
 	const [selectedLanguageId, setSelectedLanguageId] = useState('');
 	const [showDefinitionInfo, setShowDefinitionInfo] = useState(false);
 	const [sourceView, setSourceView] = useState(false);
 	const [showAlert, setShowAlert] = useState(false);
-	const [version, setVersion] = useState(parseInt(props.version, 10));
+	const [workflowDefinitionVersions, setWorkflowDefinitionVersions] =
+		useState(props.definitionVersions ? props.definitionVersions : []);
 
 	const contextProps = {
 		accountEntryId,
@@ -55,8 +55,8 @@ export default function DefinitionBuilder(props) {
 		deserialize,
 		elements,
 		functionActionExecutors: props.functionActionExecutors,
-		hadGroovyScriptBefore,
-		hasGroovyScript,
+		hadGroovyOrJavaScriptBefore,
+		hasGroovyOrJavaScript,
 		scriptManagementConfigurationPortletURL:
 			props.scriptManagementConfigurationPortletURL,
 		selectedLanguageId,
@@ -73,29 +73,31 @@ export default function DefinitionBuilder(props) {
 		setDefinitionTitleTranslations,
 		setDeserialize,
 		setElements,
-		setHadGroovyScriptBefore,
-		setHasGroovyScript,
+		setHadGroovyOrJavaScriptBefore,
+		setHasGroovyOrJavaScript,
 		setSelectedLanguageId,
 		setShowAlert,
 		setShowDefinitionInfo,
 		setSourceView,
-		setVersion,
+		setWorkflowDefinitionVersions,
 		showAlert,
 		showDefinitionInfo,
 		sourceView,
 		statuses: props.statuses,
-		version,
+		timeZoneId: props.timeZoneId,
+		versions: props.versions,
+		workflowDefinitionVersions,
 	};
 
 	return (
-		<DefinitionBuilderContextProvider {...contextProps}>
-			<div className="definition-builder-app">
-				<ReactFlowProvider>
+		<ReactFlowProvider>
+			<DefinitionBuilderContextProvider {...contextProps}>
+				<div className="definition-builder-app">
 					<UpperToolbar {...props} />
 
 					{sourceView ? <SourceBuilder /> : <DiagramBuilder />}
-				</ReactFlowProvider>
-			</div>
-		</DefinitionBuilderContextProvider>
+				</div>
+			</DefinitionBuilderContextProvider>
+		</ReactFlowProvider>
 	);
 }

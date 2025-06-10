@@ -24,11 +24,11 @@ import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -184,8 +184,8 @@ public class LayoutUtilityPageEntryManagementToolbarDisplayContext
 	private String _getSelectMasterLayoutURL(String type) {
 		return PortletURLBuilder.createRenderURL(
 			liferayPortletResponse
-		).setMVCPath(
-			"/select_layout_utility_page_entry_master_layout.jsp"
+		).setMVCRenderCommandName(
+			"/layout_admin/select_layout_utility_page_entry_master_layout"
 		).setRedirect(
 			_themeDisplay.getURLCurrent()
 		).setParameter(

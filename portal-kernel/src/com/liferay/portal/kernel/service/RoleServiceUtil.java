@@ -31,35 +31,16 @@ public class RoleServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.RoleServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-
-	/**
-	 * Adds a role. The user is reindexed after role is added.
-	 *
-	 * @param className the name of the class for which the role is created
-	 * @param classPK the primary key of the class for which the role is
-	 created (optionally <code>0</code>)
-	 * @param name the role's name
-	 * @param titleMap the role's localized titles (optionally
-	 <code>null</code>)
-	 * @param descriptionMap the role's localized descriptions (optionally
-	 <code>null</code>)
-	 * @param type the role's type (optionally <code>0</code>)
-	 * @param subtype the role's subtype (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set the expando bridge attributes for the
-	 role.
-	 * @return the role
-	 */
 	public static Role addRole(
-			String className, long classPK, String name,
-			Map<java.util.Locale, String> titleMap,
+			String externalReferenceCode, String className, long classPK,
+			String name, Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, int type,
 			String subtype, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addRole(
-			className, classPK, name, titleMap, descriptionMap, type, subtype,
-			serviceContext);
+			externalReferenceCode, className, classPK, name, titleMap,
+			descriptionMap, type, subtype, serviceContext);
 	}
 
 	/**
@@ -94,6 +75,14 @@ public class RoleServiceUtil {
 		return getService().fetchRole(companyId, name);
 	}
 
+	public static Role fetchRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns all the roles associated with the group.
 	 *
@@ -124,6 +113,15 @@ public class RoleServiceUtil {
 		return getService().getGroupRolesAndTeamRolesCount(
 			companyId, name, excludedNames, title, description, types,
 			excludedTeamRoleId, teamGroupId);
+	}
+
+	public static Role getOrAddIncompleteRole(
+			String externalReferenceCode, String className, long classPK,
+			String name, int type)
+		throws Exception {
+
+		return getService().getOrAddIncompleteRole(
+			externalReferenceCode, className, classPK, name, type);
 	}
 
 	/**
@@ -161,6 +159,14 @@ public class RoleServiceUtil {
 		throws PortalException {
 
 		return getService().getRole(companyId, name);
+	}
+
+	public static Role getRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static List<Role> getRoles(int type, String subtype)
@@ -294,6 +300,22 @@ public class RoleServiceUtil {
 		getService().unsetUserRoles(userId, roleIds);
 	}
 
+	public static Role updateExternalReferenceCode(
+			long roleId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			roleId, externalReferenceCode);
+	}
+
+	public static Role updateExternalReferenceCode(
+			Role role, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			role, externalReferenceCode);
+	}
+
 	/**
 	 * Updates the role with the primary key.
 	 *
@@ -310,13 +332,15 @@ public class RoleServiceUtil {
 	 * @return the role with the primary key
 	 */
 	public static Role updateRole(
-			long roleId, String name, Map<java.util.Locale, String> titleMap,
+			String externalReferenceCode, long roleId, String name,
+			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, String subtype,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateRole(
-			roleId, name, titleMap, descriptionMap, subtype, serviceContext);
+			externalReferenceCode, roleId, name, titleMap, descriptionMap,
+			subtype, serviceContext);
 	}
 
 	public static RoleService getService() {

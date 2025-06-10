@@ -5,10 +5,9 @@
 
 import {Root, createRoot} from 'react-dom/client';
 
-import AppRoutes, {RouteType} from './Routes';
+import Routes, {RouteType} from './Routes';
 
 import './main.scss';
-import Providers from './providers';
 
 class WebComponent extends HTMLElement {
 	private root: Root | undefined;
@@ -18,20 +17,51 @@ class WebComponent extends HTMLElement {
 			this.root = createRoot(this);
 
 			this.root.render(
-				<Providers
+				<Routes
+					path={this.getAttribute('path') as RouteType}
 					properties={{
-						cloudBaseURL: this.getAttribute('cloudBaseURL') || '',
-						contactSupportUrl:
-							this.getAttribute('contactSupportUrl') || '',
+						analyticsCloudURL:
+							this.getAttribute('analyticsCloudURL') || '',
+						cloudConsoleURL:
+							this.getAttribute('cloudConsoleURL') || '',
+						contactSupportURL:
+							this.getAttribute('contactSupportURL') || '',
 						eulaBaseURL: this.getAttribute('eulaBaseURL') || '',
 						featureFlags: (this.getAttribute('featureFlags') ?? '')
 							.split(',')
 							.map((featureflag) => featureflag.trim()),
+						kpi: {
+							kpiConnectorQuartelyRelease:
+								this.getAttribute(
+									'kpiConnectorQuartelyRelease'
+								) || '',
+							kpiLowCodePublishedApps:
+								this.getAttribute('kpiLowCodePublishedApps') ||
+								'',
+							kpiPartnershipIntegration:
+								this.getAttribute(
+									'kpiPartnershipIntegration'
+								) || '',
+							kpiProjectUsingMarketplaceApps:
+								this.getAttribute(
+									'kpiProjectUsingMarketplaceApps'
+								) || '',
+							kpiQuartelyReleaseApps:
+								this.getAttribute('kpiQuartelyReleaseApps') ||
+								'',
+						},
 						marketoFormId: this.getAttribute('marketoFormId') || '',
+						productId: this.getAttribute('productId') || '',
+						trialAccountCheck:
+							(this.getAttribute('trialAccountCheck') as any) ||
+							'true',
+						trialEulaURL: this.getAttribute('trialEulaURL') || '',
+						useSiteTaxonomyVocabularyQuery:
+							this.getAttribute(
+								'useSiteTaxonomyVocabularyQuery'
+							) === 'true',
 					}}
-				>
-					<AppRoutes path={this.getAttribute('path') as RouteType} />
-				</Providers>
+				/>
 			);
 		}
 	}

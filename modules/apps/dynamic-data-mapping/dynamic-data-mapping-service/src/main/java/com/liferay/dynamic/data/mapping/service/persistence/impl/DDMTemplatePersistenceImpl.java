@@ -5,6 +5,7 @@
 
 package com.liferay.dynamic.data.mapping.service.persistence.impl;
 
+import com.liferay.dynamic.data.mapping.exception.DuplicateDDMTemplateExternalReferenceCodeException;
 import com.liferay.dynamic.data.mapping.exception.NoSuchTemplateException;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.model.DDMTemplateTable;
@@ -27,15 +28,21 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -641,7 +648,6 @@ public class DDMTemplatePersistenceImpl
 		"(ddmTemplate.uuid IS NULL OR ddmTemplate.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the ddm template where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchTemplateException</code> if it could not be found.
@@ -826,68 +832,13 @@ public class DDMTemplatePersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		try (SafeCloseable safeCloseable =
-				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
-					DDMTemplate.class)) {
+		DDMTemplate ddmTemplate = fetchByUUID_G(uuid, groupId);
 
-			uuid = Objects.toString(uuid, "");
-
-			FinderPath finderPath = _finderPathCountByUUID_G;
-
-			Object[] finderArgs = new Object[] {uuid, groupId};
-
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if (count == null) {
-				StringBundler sb = new StringBundler(3);
-
-				sb.append(_SQL_COUNT_DDMTEMPLATE_WHERE);
-
-				boolean bindUuid = false;
-
-				if (uuid.isEmpty()) {
-					sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-				}
-				else {
-					bindUuid = true;
-
-					sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-				}
-
-				sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-				String sql = sb.toString();
-
-				Session session = null;
-
-				try {
-					session = openSession();
-
-					Query query = session.createQuery(sql);
-
-					QueryPos queryPos = QueryPos.getInstance(query);
-
-					if (bindUuid) {
-						queryPos.add(uuid);
-					}
-
-					queryPos.add(groupId);
-
-					count = (Long)query.uniqueResult();
-
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-				catch (Exception exception) {
-					throw processException(exception);
-				}
-				finally {
-					closeSession(session);
-				}
-			}
-
-			return count.intValue();
+		if (ddmTemplate == null) {
+			return 0;
 		}
+
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -2011,7 +1962,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -2204,7 +2155,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -4517,7 +4468,6 @@ public class DDMTemplatePersistenceImpl
 		"(ddmTemplate.language IS NULL OR ddmTemplate.language = '')";
 
 	private FinderPath _finderPathFetchBySmallImageId;
-	private FinderPath _finderPathCountBySmallImageId;
 
 	/**
 	 * Returns the ddm template where smallImageId = &#63; or throws a <code>NoSuchTemplateException</code> if it could not be found.
@@ -4691,51 +4641,13 @@ public class DDMTemplatePersistenceImpl
 	 */
 	@Override
 	public int countBySmallImageId(long smallImageId) {
-		try (SafeCloseable safeCloseable =
-				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
-					DDMTemplate.class)) {
+		DDMTemplate ddmTemplate = fetchBySmallImageId(smallImageId);
 
-			FinderPath finderPath = _finderPathCountBySmallImageId;
-
-			Object[] finderArgs = new Object[] {smallImageId};
-
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if (count == null) {
-				StringBundler sb = new StringBundler(2);
-
-				sb.append(_SQL_COUNT_DDMTEMPLATE_WHERE);
-
-				sb.append(_FINDER_COLUMN_SMALLIMAGEID_SMALLIMAGEID_2);
-
-				String sql = sb.toString();
-
-				Session session = null;
-
-				try {
-					session = openSession();
-
-					Query query = session.createQuery(sql);
-
-					QueryPos queryPos = QueryPos.getInstance(query);
-
-					queryPos.add(smallImageId);
-
-					count = (Long)query.uniqueResult();
-
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-				catch (Exception exception) {
-					throw processException(exception);
-				}
-				finally {
-					closeSession(session);
-				}
-			}
-
-			return count.intValue();
+		if (ddmTemplate == null) {
+			return 0;
 		}
+
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_SMALLIMAGEID_SMALLIMAGEID_2 =
@@ -5304,7 +5216,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -5505,7 +5417,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -6250,7 +6162,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -6450,7 +6362,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -6607,7 +6519,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -7746,7 +7658,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -7952,7 +7864,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -8120,7 +8032,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -8704,7 +8616,6 @@ public class DDMTemplatePersistenceImpl
 		"ddmTemplate.classPK = ?";
 
 	private FinderPath _finderPathFetchByG_C_T;
-	private FinderPath _finderPathCountByG_C_T;
 
 	/**
 	 * Returns the ddm template where groupId = &#63; and classNameId = &#63; and templateKey = &#63; or throws a <code>NoSuchTemplateException</code> if it could not be found.
@@ -8912,74 +8823,14 @@ public class DDMTemplatePersistenceImpl
 	public int countByG_C_T(
 		long groupId, long classNameId, String templateKey) {
 
-		try (SafeCloseable safeCloseable =
-				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
-					DDMTemplate.class)) {
+		DDMTemplate ddmTemplate = fetchByG_C_T(
+			groupId, classNameId, templateKey);
 
-			templateKey = Objects.toString(templateKey, "");
-
-			FinderPath finderPath = _finderPathCountByG_C_T;
-
-			Object[] finderArgs = new Object[] {
-				groupId, classNameId, templateKey
-			};
-
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if (count == null) {
-				StringBundler sb = new StringBundler(4);
-
-				sb.append(_SQL_COUNT_DDMTEMPLATE_WHERE);
-
-				sb.append(_FINDER_COLUMN_G_C_T_GROUPID_2);
-
-				sb.append(_FINDER_COLUMN_G_C_T_CLASSNAMEID_2);
-
-				boolean bindTemplateKey = false;
-
-				if (templateKey.isEmpty()) {
-					sb.append(_FINDER_COLUMN_G_C_T_TEMPLATEKEY_3);
-				}
-				else {
-					bindTemplateKey = true;
-
-					sb.append(_FINDER_COLUMN_G_C_T_TEMPLATEKEY_2);
-				}
-
-				String sql = sb.toString();
-
-				Session session = null;
-
-				try {
-					session = openSession();
-
-					Query query = session.createQuery(sql);
-
-					QueryPos queryPos = QueryPos.getInstance(query);
-
-					queryPos.add(groupId);
-
-					queryPos.add(classNameId);
-
-					if (bindTemplateKey) {
-						queryPos.add(templateKey);
-					}
-
-					count = (Long)query.uniqueResult();
-
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-				catch (Exception exception) {
-					throw processException(exception);
-				}
-				finally {
-					closeSession(session);
-				}
-			}
-
-			return count.intValue();
+		if (ddmTemplate == null) {
+			return 0;
 		}
+
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_C_T_GROUPID_2 =
@@ -10296,7 +10147,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -10521,7 +10372,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -11521,7 +11372,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -11764,7 +11615,7 @@ public class DDMTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DDMTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DDMTemplateModelImpl.ORDER_BY_SQL);
@@ -12078,6 +11929,213 @@ public class DDMTemplatePersistenceImpl
 	private static final String _FINDER_COLUMN_G_C_C_T_M_MODE_3_SQL =
 		"(ddmTemplate.mode_ IS NULL OR ddmTemplate.mode_ = '')";
 
+	private FinderPath _finderPathFetchByERC_G;
+
+	/**
+	 * Returns the ddm template where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchTemplateException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching ddm template
+	 * @throws NoSuchTemplateException if a matching ddm template could not be found
+	 */
+	@Override
+	public DDMTemplate findByERC_G(String externalReferenceCode, long groupId)
+		throws NoSuchTemplateException {
+
+		DDMTemplate ddmTemplate = fetchByERC_G(externalReferenceCode, groupId);
+
+		if (ddmTemplate == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("externalReferenceCode=");
+			sb.append(externalReferenceCode);
+
+			sb.append(", groupId=");
+			sb.append(groupId);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchTemplateException(sb.toString());
+		}
+
+		return ddmTemplate;
+	}
+
+	/**
+	 * Returns the ddm template where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching ddm template, or <code>null</code> if a matching ddm template could not be found
+	 */
+	@Override
+	public DDMTemplate fetchByERC_G(
+		String externalReferenceCode, long groupId) {
+
+		return fetchByERC_G(externalReferenceCode, groupId, true);
+	}
+
+	/**
+	 * Returns the ddm template where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching ddm template, or <code>null</code> if a matching ddm template could not be found
+	 */
+	@Override
+	public DDMTemplate fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMTemplate.class)) {
+
+			externalReferenceCode = Objects.toString(externalReferenceCode, "");
+
+			Object[] finderArgs = null;
+
+			if (useFinderCache) {
+				finderArgs = new Object[] {externalReferenceCode, groupId};
+			}
+
+			Object result = null;
+
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByERC_G, finderArgs, this);
+			}
+
+			if (result instanceof DDMTemplate) {
+				DDMTemplate ddmTemplate = (DDMTemplate)result;
+
+				if (!Objects.equals(
+						externalReferenceCode,
+						ddmTemplate.getExternalReferenceCode()) ||
+					(groupId != ddmTemplate.getGroupId())) {
+
+					result = null;
+				}
+			}
+
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
+
+				sb.append(_SQL_SELECT_DDMTEMPLATE_WHERE);
+
+				boolean bindExternalReferenceCode = false;
+
+				if (externalReferenceCode.isEmpty()) {
+					sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3);
+				}
+				else {
+					bindExternalReferenceCode = true;
+
+					sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2);
+				}
+
+				sb.append(_FINDER_COLUMN_ERC_G_GROUPID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindExternalReferenceCode) {
+						queryPos.add(externalReferenceCode);
+					}
+
+					queryPos.add(groupId);
+
+					List<DDMTemplate> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByERC_G, finderArgs, list);
+						}
+					}
+					else {
+						DDMTemplate ddmTemplate = list.get(0);
+
+						result = ddmTemplate;
+
+						cacheResult(ddmTemplate);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (DDMTemplate)result;
+			}
+		}
+	}
+
+	/**
+	 * Removes the ddm template where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the ddm template that was removed
+	 */
+	@Override
+	public DDMTemplate removeByERC_G(String externalReferenceCode, long groupId)
+		throws NoSuchTemplateException {
+
+		DDMTemplate ddmTemplate = findByERC_G(externalReferenceCode, groupId);
+
+		return remove(ddmTemplate);
+	}
+
+	/**
+	 * Returns the number of ddm templates where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching ddm templates
+	 */
+	@Override
+	public int countByERC_G(String externalReferenceCode, long groupId) {
+		DDMTemplate ddmTemplate = fetchByERC_G(externalReferenceCode, groupId);
+
+		if (ddmTemplate == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2 =
+		"ddmTemplate.externalReferenceCode = ? AND ";
+
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3 =
+		"(ddmTemplate.externalReferenceCode IS NULL OR ddmTemplate.externalReferenceCode = '') AND ";
+
+	private static final String _FINDER_COLUMN_ERC_G_GROUPID_2 =
+		"ddmTemplate.groupId = ?";
+
 	public DDMTemplatePersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
@@ -12124,6 +12182,14 @@ public class DDMTemplatePersistenceImpl
 				new Object[] {
 					ddmTemplate.getGroupId(), ddmTemplate.getClassNameId(),
 					ddmTemplate.getTemplateKey()
+				},
+				ddmTemplate);
+
+			finderCache.putResult(
+				_finderPathFetchByERC_G,
+				new Object[] {
+					ddmTemplate.getExternalReferenceCode(),
+					ddmTemplate.getGroupId()
 				},
 				ddmTemplate);
 		}
@@ -12225,14 +12291,10 @@ public class DDMTemplatePersistenceImpl
 			};
 
 			finderCache.putResult(
-				_finderPathCountByUUID_G, args, Long.valueOf(1));
-			finderCache.putResult(
 				_finderPathFetchByUUID_G, args, ddmTemplateModelImpl);
 
 			args = new Object[] {ddmTemplateModelImpl.getSmallImageId()};
 
-			finderCache.putResult(
-				_finderPathCountBySmallImageId, args, Long.valueOf(1));
 			finderCache.putResult(
 				_finderPathFetchBySmallImageId, args, ddmTemplateModelImpl);
 
@@ -12243,9 +12305,15 @@ public class DDMTemplatePersistenceImpl
 			};
 
 			finderCache.putResult(
-				_finderPathCountByG_C_T, args, Long.valueOf(1));
-			finderCache.putResult(
 				_finderPathFetchByG_C_T, args, ddmTemplateModelImpl);
+
+			args = new Object[] {
+				ddmTemplateModelImpl.getExternalReferenceCode(),
+				ddmTemplateModelImpl.getGroupId()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByERC_G, args, ddmTemplateModelImpl);
 		}
 	}
 
@@ -12383,6 +12451,68 @@ public class DDMTemplatePersistenceImpl
 			String uuid = PortalUUIDUtil.generate();
 
 			ddmTemplate.setUuid(uuid);
+		}
+
+		if (Validator.isNull(ddmTemplate.getExternalReferenceCode())) {
+			ddmTemplate.setExternalReferenceCode(ddmTemplate.getUuid());
+		}
+		else {
+			if (!Objects.equals(
+					ddmTemplateModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					ddmTemplate.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = ddmTemplate.getCompanyId();
+
+					long groupId = ddmTemplate.getGroupId();
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = ddmTemplate.getPrimaryKey();
+					}
+
+					try {
+						ddmTemplate.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								DDMTemplate.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								ddmTemplate.getExternalReferenceCode(), null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
+			DDMTemplate ercDDMTemplate = fetchByERC_G(
+				ddmTemplate.getExternalReferenceCode(),
+				ddmTemplate.getGroupId());
+
+			if (isNew) {
+				if (ercDDMTemplate != null) {
+					throw new DuplicateDDMTemplateExternalReferenceCodeException(
+						"Duplicate ddm template with external reference code " +
+							ddmTemplate.getExternalReferenceCode() +
+								" and group " + ddmTemplate.getGroupId());
+				}
+			}
+			else {
+				if ((ercDDMTemplate != null) &&
+					(ddmTemplate.getTemplateId() !=
+						ercDDMTemplate.getTemplateId())) {
+
+					throw new DuplicateDDMTemplateExternalReferenceCodeException(
+						"Duplicate ddm template with external reference code " +
+							ddmTemplate.getExternalReferenceCode() +
+								" and group " + ddmTemplate.getGroupId());
+				}
+			}
 		}
 
 		ServiceContext serviceContext =
@@ -12916,40 +13046,43 @@ public class DDMTemplatePersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
 		ctStrictColumnNames.add("groupId");
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
-		ctStrictColumnNames.add("versionUserId");
-		ctStrictColumnNames.add("versionUserName");
+		ctMergeColumnNames.add("versionUserId");
+		ctMergeColumnNames.add("versionUserName");
 		ctStrictColumnNames.add("createDate");
 		ctIgnoreColumnNames.add("modifiedDate");
 		ctStrictColumnNames.add("classNameId");
 		ctStrictColumnNames.add("classPK");
-		ctStrictColumnNames.add("resourceClassNameId");
-		ctStrictColumnNames.add("templateKey");
-		ctStrictColumnNames.add("version");
-		ctStrictColumnNames.add("name");
-		ctStrictColumnNames.add("description");
-		ctStrictColumnNames.add("type_");
-		ctStrictColumnNames.add("mode_");
-		ctStrictColumnNames.add("language");
-		ctStrictColumnNames.add("script");
-		ctStrictColumnNames.add("cacheable");
-		ctStrictColumnNames.add("smallImage");
-		ctStrictColumnNames.add("smallImageId");
-		ctStrictColumnNames.add("smallImageURL");
-		ctStrictColumnNames.add("lastPublishDate");
+		ctMergeColumnNames.add("resourceClassNameId");
+		ctMergeColumnNames.add("templateKey");
+		ctMergeColumnNames.add("version");
+		ctMergeColumnNames.add("name");
+		ctMergeColumnNames.add("description");
+		ctMergeColumnNames.add("type_");
+		ctMergeColumnNames.add("mode_");
+		ctMergeColumnNames.add("language");
+		ctMergeColumnNames.add("script");
+		ctMergeColumnNames.add("cacheable");
+		ctMergeColumnNames.add("smallImage");
+		ctMergeColumnNames.add("smallImageId");
+		ctMergeColumnNames.add("smallImageURL");
+		ctMergeColumnNames.add("lastPublishDate");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK, Collections.singleton("templateId"));
 		_ctColumnNamesMap.put(
@@ -12959,6 +13092,9 @@ public class DDMTemplatePersistenceImpl
 
 		_uniqueIndexColumnNames.add(
 			new String[] {"groupId", "classNameId", "templateKey"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "groupId"});
 	}
 
 	/**
@@ -13003,11 +13139,6 @@ public class DDMTemplatePersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
-
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
 
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
@@ -13123,11 +13254,6 @@ public class DDMTemplatePersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"smallImageId"},
 			true);
 
-		_finderPathCountBySmallImageId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countBySmallImageId",
-			new String[] {Long.class.getName()}, new String[] {"smallImageId"},
-			false);
-
 		_finderPathWithPaginationFindByG_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_C",
 			new String[] {
@@ -13208,14 +13334,6 @@ public class DDMTemplatePersistenceImpl
 				String.class.getName()
 			},
 			new String[] {"groupId", "classNameId", "templateKey"}, true);
-
-		_finderPathCountByG_C_T = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_C_T",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				String.class.getName()
-			},
-			new String[] {"groupId", "classNameId", "templateKey"}, false);
 
 		_finderPathWithPaginationFindByC_C_T = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C_T",
@@ -13304,6 +13422,11 @@ public class DDMTemplatePersistenceImpl
 				"groupId", "classNameId", "classPK", "type_", "mode_"
 			},
 			false);
+
+		_finderPathFetchByERC_G = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_G",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "groupId"}, true);
 
 		DDMTemplateUtil.setPersistence(this);
 	}

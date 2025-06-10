@@ -30,22 +30,28 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
+
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
 
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,10 +63,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -84,7 +86,7 @@ public abstract class BaseWarehouseResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -98,10 +100,15 @@ public abstract class BaseWarehouseResourceTestCase {
 
 		_warehouseResource.setContextCompany(testCompany);
 
-		WarehouseResource.Builder builder = WarehouseResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		warehouseResource = builder.authentication(
-			"test@liferay.com", "test"
+		warehouseResource = WarehouseResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -115,7 +122,32 @@ public abstract class BaseWarehouseResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Warehouse warehouse1 = randomWarehouse();
+
+		String json = objectMapper.writeValueAsString(warehouse1);
+
+		Warehouse warehouse2 = WarehouseSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(warehouse1, warehouse2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Warehouse warehouse = randomWarehouse();
+
+		String json1 = objectMapper.writeValueAsString(warehouse);
+		String json2 = WarehouseSerDes.toJSON(warehouse);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -130,40 +162,6 @@ public abstract class BaseWarehouseResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		Warehouse warehouse1 = randomWarehouse();
-
-		String json = objectMapper.writeValueAsString(warehouse1);
-
-		Warehouse warehouse2 = WarehouseSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(warehouse1, warehouse2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		Warehouse warehouse = randomWarehouse();
-
-		String json1 = objectMapper.writeValueAsString(warehouse);
-		String json2 = WarehouseSerDes.toJSON(warehouse);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -200,417 +198,6 @@ public abstract class BaseWarehouseResourceTestCase {
 	}
 
 	@Test
-	public void testGetWarehousesPage() throws Exception {
-		Page<Warehouse> page = warehouseResource.getWarehousesPage(
-			null, Pagination.of(1, 10), null);
-
-		long totalCount = page.getTotalCount();
-
-		Warehouse warehouse1 = testGetWarehousesPage_addWarehouse(
-			randomWarehouse());
-
-		Warehouse warehouse2 = testGetWarehousesPage_addWarehouse(
-			randomWarehouse());
-
-		page = warehouseResource.getWarehousesPage(
-			null, Pagination.of(1, 10), null);
-
-		Assert.assertEquals(totalCount + 2, page.getTotalCount());
-
-		assertContains(warehouse1, (List<Warehouse>)page.getItems());
-		assertContains(warehouse2, (List<Warehouse>)page.getItems());
-		assertValid(page, testGetWarehousesPage_getExpectedActions());
-	}
-
-	protected Map<String, Map<String, String>>
-			testGetWarehousesPage_getExpectedActions()
-		throws Exception {
-
-		Map<String, Map<String, String>> expectedActions = new HashMap<>();
-
-		return expectedActions;
-	}
-
-	@Test
-	public void testGetWarehousesPageWithFilterDateTimeEquals()
-		throws Exception {
-
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.DATE_TIME);
-
-		if (entityFields.isEmpty()) {
-			return;
-		}
-
-		Warehouse warehouse1 = randomWarehouse();
-
-		warehouse1 = testGetWarehousesPage_addWarehouse(warehouse1);
-
-		for (EntityField entityField : entityFields) {
-			Page<Warehouse> page = warehouseResource.getWarehousesPage(
-				getFilterString(entityField, "between", warehouse1),
-				Pagination.of(1, 2), null);
-
-			assertEquals(
-				Collections.singletonList(warehouse1),
-				(List<Warehouse>)page.getItems());
-		}
-	}
-
-	@Test
-	public void testGetWarehousesPageWithFilterDoubleEquals() throws Exception {
-		testGetWarehousesPageWithFilter("eq", EntityField.Type.DOUBLE);
-	}
-
-	@Test
-	public void testGetWarehousesPageWithFilterStringContains()
-		throws Exception {
-
-		testGetWarehousesPageWithFilter("contains", EntityField.Type.STRING);
-	}
-
-	@Test
-	public void testGetWarehousesPageWithFilterStringEquals() throws Exception {
-		testGetWarehousesPageWithFilter("eq", EntityField.Type.STRING);
-	}
-
-	@Test
-	public void testGetWarehousesPageWithFilterStringStartsWith()
-		throws Exception {
-
-		testGetWarehousesPageWithFilter("startswith", EntityField.Type.STRING);
-	}
-
-	protected void testGetWarehousesPageWithFilter(
-			String operator, EntityField.Type type)
-		throws Exception {
-
-		List<EntityField> entityFields = getEntityFields(type);
-
-		if (entityFields.isEmpty()) {
-			return;
-		}
-
-		Warehouse warehouse1 = testGetWarehousesPage_addWarehouse(
-			randomWarehouse());
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Warehouse warehouse2 = testGetWarehousesPage_addWarehouse(
-			randomWarehouse());
-
-		for (EntityField entityField : entityFields) {
-			Page<Warehouse> page = warehouseResource.getWarehousesPage(
-				getFilterString(entityField, operator, warehouse1),
-				Pagination.of(1, 2), null);
-
-			assertEquals(
-				Collections.singletonList(warehouse1),
-				(List<Warehouse>)page.getItems());
-		}
-	}
-
-	@Test
-	public void testGetWarehousesPageWithPagination() throws Exception {
-		Page<Warehouse> warehousePage = warehouseResource.getWarehousesPage(
-			null, null, null);
-
-		int totalCount = GetterUtil.getInteger(warehousePage.getTotalCount());
-
-		Warehouse warehouse1 = testGetWarehousesPage_addWarehouse(
-			randomWarehouse());
-
-		Warehouse warehouse2 = testGetWarehousesPage_addWarehouse(
-			randomWarehouse());
-
-		Warehouse warehouse3 = testGetWarehousesPage_addWarehouse(
-			randomWarehouse());
-
-		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
-
-		int pageSizeLimit = 500;
-
-		if (totalCount >= (pageSizeLimit - 2)) {
-			Page<Warehouse> page1 = warehouseResource.getWarehousesPage(
-				null,
-				Pagination.of(
-					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
-					pageSizeLimit),
-				null);
-
-			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
-
-			assertContains(warehouse1, (List<Warehouse>)page1.getItems());
-
-			Page<Warehouse> page2 = warehouseResource.getWarehousesPage(
-				null,
-				Pagination.of(
-					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
-					pageSizeLimit),
-				null);
-
-			assertContains(warehouse2, (List<Warehouse>)page2.getItems());
-
-			Page<Warehouse> page3 = warehouseResource.getWarehousesPage(
-				null,
-				Pagination.of(
-					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
-					pageSizeLimit),
-				null);
-
-			assertContains(warehouse3, (List<Warehouse>)page3.getItems());
-		}
-		else {
-			Page<Warehouse> page1 = warehouseResource.getWarehousesPage(
-				null, Pagination.of(1, totalCount + 2), null);
-
-			List<Warehouse> warehouses1 = (List<Warehouse>)page1.getItems();
-
-			Assert.assertEquals(
-				warehouses1.toString(), totalCount + 2, warehouses1.size());
-
-			Page<Warehouse> page2 = warehouseResource.getWarehousesPage(
-				null, Pagination.of(2, totalCount + 2), null);
-
-			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
-
-			List<Warehouse> warehouses2 = (List<Warehouse>)page2.getItems();
-
-			Assert.assertEquals(warehouses2.toString(), 1, warehouses2.size());
-
-			Page<Warehouse> page3 = warehouseResource.getWarehousesPage(
-				null, Pagination.of(1, (int)totalCount + 3), null);
-
-			assertContains(warehouse1, (List<Warehouse>)page3.getItems());
-			assertContains(warehouse2, (List<Warehouse>)page3.getItems());
-			assertContains(warehouse3, (List<Warehouse>)page3.getItems());
-		}
-	}
-
-	@Test
-	public void testGetWarehousesPageWithSortDateTime() throws Exception {
-		testGetWarehousesPageWithSort(
-			EntityField.Type.DATE_TIME,
-			(entityField, warehouse1, warehouse2) -> {
-				BeanTestUtil.setProperty(
-					warehouse1, entityField.getName(),
-					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
-			});
-	}
-
-	@Test
-	public void testGetWarehousesPageWithSortDouble() throws Exception {
-		testGetWarehousesPageWithSort(
-			EntityField.Type.DOUBLE,
-			(entityField, warehouse1, warehouse2) -> {
-				BeanTestUtil.setProperty(
-					warehouse1, entityField.getName(), 0.1);
-				BeanTestUtil.setProperty(
-					warehouse2, entityField.getName(), 0.5);
-			});
-	}
-
-	@Test
-	public void testGetWarehousesPageWithSortInteger() throws Exception {
-		testGetWarehousesPageWithSort(
-			EntityField.Type.INTEGER,
-			(entityField, warehouse1, warehouse2) -> {
-				BeanTestUtil.setProperty(warehouse1, entityField.getName(), 0);
-				BeanTestUtil.setProperty(warehouse2, entityField.getName(), 1);
-			});
-	}
-
-	@Test
-	public void testGetWarehousesPageWithSortString() throws Exception {
-		testGetWarehousesPageWithSort(
-			EntityField.Type.STRING,
-			(entityField, warehouse1, warehouse2) -> {
-				Class<?> clazz = warehouse1.getClass();
-
-				String entityFieldName = entityField.getName();
-
-				Method method = clazz.getMethod(
-					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
-
-				Class<?> returnType = method.getReturnType();
-
-				if (returnType.isAssignableFrom(Map.class)) {
-					BeanTestUtil.setProperty(
-						warehouse1, entityFieldName,
-						Collections.singletonMap("Aaa", "Aaa"));
-					BeanTestUtil.setProperty(
-						warehouse2, entityFieldName,
-						Collections.singletonMap("Bbb", "Bbb"));
-				}
-				else if (entityFieldName.contains("email")) {
-					BeanTestUtil.setProperty(
-						warehouse1, entityFieldName,
-						"aaa" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()) +
-									"@liferay.com");
-					BeanTestUtil.setProperty(
-						warehouse2, entityFieldName,
-						"bbb" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()) +
-									"@liferay.com");
-				}
-				else {
-					BeanTestUtil.setProperty(
-						warehouse1, entityFieldName,
-						"aaa" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()));
-					BeanTestUtil.setProperty(
-						warehouse2, entityFieldName,
-						"bbb" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()));
-				}
-			});
-	}
-
-	protected void testGetWarehousesPageWithSort(
-			EntityField.Type type,
-			UnsafeTriConsumer<EntityField, Warehouse, Warehouse, Exception>
-				unsafeTriConsumer)
-		throws Exception {
-
-		List<EntityField> entityFields = getEntityFields(type);
-
-		if (entityFields.isEmpty()) {
-			return;
-		}
-
-		Warehouse warehouse1 = randomWarehouse();
-		Warehouse warehouse2 = randomWarehouse();
-
-		for (EntityField entityField : entityFields) {
-			unsafeTriConsumer.accept(entityField, warehouse1, warehouse2);
-		}
-
-		warehouse1 = testGetWarehousesPage_addWarehouse(warehouse1);
-
-		warehouse2 = testGetWarehousesPage_addWarehouse(warehouse2);
-
-		Page<Warehouse> page = warehouseResource.getWarehousesPage(
-			null, null, null);
-
-		for (EntityField entityField : entityFields) {
-			Page<Warehouse> ascPage = warehouseResource.getWarehousesPage(
-				null, Pagination.of(1, (int)page.getTotalCount() + 1),
-				entityField.getName() + ":asc");
-
-			assertContains(warehouse1, (List<Warehouse>)ascPage.getItems());
-			assertContains(warehouse2, (List<Warehouse>)ascPage.getItems());
-
-			Page<Warehouse> descPage = warehouseResource.getWarehousesPage(
-				null, Pagination.of(1, (int)page.getTotalCount() + 1),
-				entityField.getName() + ":desc");
-
-			assertContains(warehouse2, (List<Warehouse>)descPage.getItems());
-			assertContains(warehouse1, (List<Warehouse>)descPage.getItems());
-		}
-	}
-
-	protected Warehouse testGetWarehousesPage_addWarehouse(Warehouse warehouse)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetWarehousesPage() throws Exception {
-		GraphQLField graphQLField = new GraphQLField(
-			"warehouses",
-			new HashMap<String, Object>() {
-				{
-					put("page", 1);
-					put("pageSize", 10);
-				}
-			},
-			new GraphQLField("items", getGraphQLFields()),
-			new GraphQLField("page"), new GraphQLField("totalCount"));
-
-		// No namespace
-
-		JSONObject warehousesJSONObject = JSONUtil.getValueAsJSONObject(
-			invokeGraphQLQuery(graphQLField), "JSONObject/data",
-			"JSONObject/warehouses");
-
-		long totalCount = warehousesJSONObject.getLong("totalCount");
-
-		Warehouse warehouse1 = testGraphQLGetWarehousesPage_addWarehouse();
-		Warehouse warehouse2 = testGraphQLGetWarehousesPage_addWarehouse();
-
-		warehousesJSONObject = JSONUtil.getValueAsJSONObject(
-			invokeGraphQLQuery(graphQLField), "JSONObject/data",
-			"JSONObject/warehouses");
-
-		Assert.assertEquals(
-			totalCount + 2, warehousesJSONObject.getLong("totalCount"));
-
-		assertContains(
-			warehouse1,
-			Arrays.asList(
-				WarehouseSerDes.toDTOs(
-					warehousesJSONObject.getString("items"))));
-		assertContains(
-			warehouse2,
-			Arrays.asList(
-				WarehouseSerDes.toDTOs(
-					warehousesJSONObject.getString("items"))));
-
-		// Using the namespace headlessCommerceAdminInventory_v1_0
-
-		warehousesJSONObject = JSONUtil.getValueAsJSONObject(
-			invokeGraphQLQuery(
-				new GraphQLField(
-					"headlessCommerceAdminInventory_v1_0", graphQLField)),
-			"JSONObject/data", "JSONObject/headlessCommerceAdminInventory_v1_0",
-			"JSONObject/warehouses");
-
-		Assert.assertEquals(
-			totalCount + 2, warehousesJSONObject.getLong("totalCount"));
-
-		assertContains(
-			warehouse1,
-			Arrays.asList(
-				WarehouseSerDes.toDTOs(
-					warehousesJSONObject.getString("items"))));
-		assertContains(
-			warehouse2,
-			Arrays.asList(
-				WarehouseSerDes.toDTOs(
-					warehousesJSONObject.getString("items"))));
-	}
-
-	protected Warehouse testGraphQLGetWarehousesPage_addWarehouse()
-		throws Exception {
-
-		return testGraphQLWarehouse_addWarehouse();
-	}
-
-	@Test
-	public void testPostWarehouse() throws Exception {
-		Warehouse randomWarehouse = randomWarehouse();
-
-		Warehouse postWarehouse = testPostWarehouse_addWarehouse(
-			randomWarehouse);
-
-		assertEquals(randomWarehouse, postWarehouse);
-		assertValid(postWarehouse);
-	}
-
-	protected Warehouse testPostWarehouse_addWarehouse(Warehouse warehouse)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
 	public void testDeleteWarehouseByExternalReferenceCode() throws Exception {
 		@SuppressWarnings("PMD.UnusedLocalVariable")
 		Warehouse warehouse =
@@ -626,17 +213,37 @@ public abstract class BaseWarehouseResourceTestCase {
 			404,
 			warehouseResource.getWarehouseByExternalReferenceCodeHttpResponse(
 				warehouse.getExternalReferenceCode()));
-
 		assertHttpResponseStatusCode(
 			404,
 			warehouseResource.getWarehouseByExternalReferenceCodeHttpResponse(
-				warehouse.getExternalReferenceCode()));
+				"-"));
 	}
 
 	protected Warehouse
 			testDeleteWarehouseByExternalReferenceCode_addWarehouse()
 		throws Exception {
 
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testDeleteWarehouseId() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Warehouse warehouse = testDeleteWarehouseId_addWarehouse();
+
+		assertHttpResponseStatusCode(
+			204,
+			warehouseResource.deleteWarehouseIdHttpResponse(warehouse.getId()));
+
+		assertHttpResponseStatusCode(
+			404,
+			warehouseResource.getWarehouseIdHttpResponse(warehouse.getId()));
+		assertHttpResponseStatusCode(
+			404, warehouseResource.getWarehouseIdHttpResponse(0L));
+	}
+
+	protected Warehouse testDeleteWarehouseId_addWarehouse() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
@@ -776,34 +383,6 @@ public abstract class BaseWarehouseResourceTestCase {
 	}
 
 	@Test
-	public void testPatchWarehouseByExternalReferenceCode() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testDeleteWarehouseId() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Warehouse warehouse = testDeleteWarehouseId_addWarehouse();
-
-		assertHttpResponseStatusCode(
-			204,
-			warehouseResource.deleteWarehouseIdHttpResponse(warehouse.getId()));
-
-		assertHttpResponseStatusCode(
-			404,
-			warehouseResource.getWarehouseIdHttpResponse(warehouse.getId()));
-
-		assertHttpResponseStatusCode(
-			404,
-			warehouseResource.getWarehouseIdHttpResponse(warehouse.getId()));
-	}
-
-	protected Warehouse testDeleteWarehouseId_addWarehouse() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
 	public void testGetWarehouseId() throws Exception {
 		Warehouse postWarehouse = testGetWarehouseId_addWarehouse();
 
@@ -912,8 +491,478 @@ public abstract class BaseWarehouseResourceTestCase {
 	}
 
 	@Test
+	public void testGetWarehousesPage() throws Exception {
+		Page<Warehouse> page = warehouseResource.getWarehousesPage(
+			null, null, Pagination.of(1, 10), null);
+
+		long totalCount = page.getTotalCount();
+
+		Warehouse warehouse1 = testGetWarehousesPage_addWarehouse(
+			randomWarehouse());
+
+		Warehouse warehouse2 = testGetWarehousesPage_addWarehouse(
+			randomWarehouse());
+
+		page = warehouseResource.getWarehousesPage(
+			null, null, Pagination.of(1, 10), null);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(warehouse1, (List<Warehouse>)page.getItems());
+		assertContains(warehouse2, (List<Warehouse>)page.getItems());
+		assertValid(page, testGetWarehousesPage_getExpectedActions());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetWarehousesPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetWarehousesPageWithFilterDateTimeEquals()
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(
+			EntityField.Type.DATE_TIME);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		Warehouse warehouse1 = randomWarehouse();
+
+		warehouse1 = testGetWarehousesPage_addWarehouse(warehouse1);
+
+		for (EntityField entityField : entityFields) {
+			Page<Warehouse> page = warehouseResource.getWarehousesPage(
+				null, getFilterString(entityField, "between", warehouse1),
+				Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(warehouse1),
+				(List<Warehouse>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetWarehousesPageWithFilterDoubleEquals() throws Exception {
+		testGetWarehousesPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetWarehousesPageWithFilterStringContains()
+		throws Exception {
+
+		testGetWarehousesPageWithFilter("contains", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetWarehousesPageWithFilterStringEquals() throws Exception {
+		testGetWarehousesPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetWarehousesPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetWarehousesPageWithFilter("startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetWarehousesPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		Warehouse warehouse1 = testGetWarehousesPage_addWarehouse(
+			randomWarehouse());
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Warehouse warehouse2 = testGetWarehousesPage_addWarehouse(
+			randomWarehouse());
+
+		for (EntityField entityField : entityFields) {
+			Page<Warehouse> page = warehouseResource.getWarehousesPage(
+				null, getFilterString(entityField, operator, warehouse1),
+				Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(warehouse1),
+				(List<Warehouse>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetWarehousesPageWithPagination() throws Exception {
+		Page<Warehouse> warehousesPage = warehouseResource.getWarehousesPage(
+			null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(warehousesPage.getTotalCount());
+
+		Warehouse warehouse1 = testGetWarehousesPage_addWarehouse(
+			randomWarehouse());
+
+		Warehouse warehouse2 = testGetWarehousesPage_addWarehouse(
+			randomWarehouse());
+
+		Warehouse warehouse3 = testGetWarehousesPage_addWarehouse(
+			randomWarehouse());
+
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
+
+		int pageSizeLimit = 500;
+
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Warehouse> page1 = warehouseResource.getWarehousesPage(
+				null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
+
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
+
+			assertContains(warehouse1, (List<Warehouse>)page1.getItems());
+
+			Page<Warehouse> page2 = warehouseResource.getWarehousesPage(
+				null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
+
+			assertContains(warehouse2, (List<Warehouse>)page2.getItems());
+
+			Page<Warehouse> page3 = warehouseResource.getWarehousesPage(
+				null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
+
+			assertContains(warehouse3, (List<Warehouse>)page3.getItems());
+		}
+		else {
+			Page<Warehouse> page1 = warehouseResource.getWarehousesPage(
+				null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<Warehouse> warehouses1 = (List<Warehouse>)page1.getItems();
+
+			Assert.assertEquals(
+				warehouses1.toString(), totalCount + 2, warehouses1.size());
+
+			Page<Warehouse> page2 = warehouseResource.getWarehousesPage(
+				null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Warehouse> warehouses2 = (List<Warehouse>)page2.getItems();
+
+			Assert.assertEquals(warehouses2.toString(), 1, warehouses2.size());
+
+			Page<Warehouse> page3 = warehouseResource.getWarehousesPage(
+				null, null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(warehouse1, (List<Warehouse>)page3.getItems());
+			assertContains(warehouse2, (List<Warehouse>)page3.getItems());
+			assertContains(warehouse3, (List<Warehouse>)page3.getItems());
+		}
+	}
+
+	@Test
+	public void testGetWarehousesPageWithSortDateTime() throws Exception {
+		testGetWarehousesPageWithSort(
+			EntityField.Type.DATE_TIME,
+			(entityField, warehouse1, warehouse2) -> {
+				BeanTestUtil.setProperty(
+					warehouse1, entityField.getName(),
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetWarehousesPageWithSortDouble() throws Exception {
+		testGetWarehousesPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, warehouse1, warehouse2) -> {
+				BeanTestUtil.setProperty(
+					warehouse1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					warehouse2, entityField.getName(), 0.5);
+			});
+	}
+
+	@Test
+	public void testGetWarehousesPageWithSortInteger() throws Exception {
+		testGetWarehousesPageWithSort(
+			EntityField.Type.INTEGER,
+			(entityField, warehouse1, warehouse2) -> {
+				BeanTestUtil.setProperty(warehouse1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(warehouse2, entityField.getName(), 1);
+			});
+	}
+
+	@Test
+	public void testGetWarehousesPageWithSortString() throws Exception {
+		testGetWarehousesPageWithSort(
+			EntityField.Type.STRING,
+			(entityField, warehouse1, warehouse2) -> {
+				Class<?> clazz = warehouse1.getClass();
+
+				String entityFieldName = entityField.getName();
+
+				Method method = clazz.getMethod(
+					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
+
+				Class<?> returnType = method.getReturnType();
+
+				if (returnType.isAssignableFrom(Map.class)) {
+					BeanTestUtil.setProperty(
+						warehouse1, entityFieldName,
+						Collections.singletonMap("Aaa", "Aaa"));
+					BeanTestUtil.setProperty(
+						warehouse2, entityFieldName,
+						Collections.singletonMap("Bbb", "Bbb"));
+				}
+				else if (entityFieldName.contains("email")) {
+					BeanTestUtil.setProperty(
+						warehouse1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+					BeanTestUtil.setProperty(
+						warehouse2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+				}
+				else {
+					BeanTestUtil.setProperty(
+						warehouse1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+					BeanTestUtil.setProperty(
+						warehouse2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+				}
+			});
+	}
+
+	protected void testGetWarehousesPageWithSort(
+			EntityField.Type type,
+			UnsafeTriConsumer<EntityField, Warehouse, Warehouse, Exception>
+				unsafeTriConsumer)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		Warehouse warehouse1 = randomWarehouse();
+		Warehouse warehouse2 = randomWarehouse();
+
+		for (EntityField entityField : entityFields) {
+			unsafeTriConsumer.accept(entityField, warehouse1, warehouse2);
+		}
+
+		warehouse1 = testGetWarehousesPage_addWarehouse(warehouse1);
+
+		warehouse2 = testGetWarehousesPage_addWarehouse(warehouse2);
+
+		Page<Warehouse> page = warehouseResource.getWarehousesPage(
+			null, null, null, null);
+
+		for (EntityField entityField : entityFields) {
+			Page<Warehouse> ascPage = warehouseResource.getWarehousesPage(
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
+				entityField.getName() + ":asc");
+
+			assertContains(warehouse1, (List<Warehouse>)ascPage.getItems());
+			assertContains(warehouse2, (List<Warehouse>)ascPage.getItems());
+
+			Page<Warehouse> descPage = warehouseResource.getWarehousesPage(
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
+				entityField.getName() + ":desc");
+
+			assertContains(warehouse2, (List<Warehouse>)descPage.getItems());
+			assertContains(warehouse1, (List<Warehouse>)descPage.getItems());
+		}
+	}
+
+	protected Warehouse testGetWarehousesPage_addWarehouse(Warehouse warehouse)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetWarehousesPage() throws Exception {
+		GraphQLField graphQLField = new GraphQLField(
+			"warehouses",
+			new HashMap<String, Object>() {
+				{
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
+
+		// No namespace
+
+		JSONObject warehousesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/warehouses");
+
+		long totalCount = warehousesJSONObject.getLong("totalCount");
+
+		Warehouse warehouse1 = testGraphQLGetWarehousesPage_addWarehouse();
+		Warehouse warehouse2 = testGraphQLGetWarehousesPage_addWarehouse();
+
+		warehousesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/warehouses");
+
+		Assert.assertEquals(
+			totalCount + 2, warehousesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			warehouse1,
+			Arrays.asList(
+				WarehouseSerDes.toDTOs(
+					warehousesJSONObject.getString("items"))));
+		assertContains(
+			warehouse2,
+			Arrays.asList(
+				WarehouseSerDes.toDTOs(
+					warehousesJSONObject.getString("items"))));
+
+		// Using the namespace headlessCommerceAdminInventory_v1_0
+
+		warehousesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminInventory_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessCommerceAdminInventory_v1_0",
+			"JSONObject/warehouses");
+
+		Assert.assertEquals(
+			totalCount + 2, warehousesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			warehouse1,
+			Arrays.asList(
+				WarehouseSerDes.toDTOs(
+					warehousesJSONObject.getString("items"))));
+		assertContains(
+			warehouse2,
+			Arrays.asList(
+				WarehouseSerDes.toDTOs(
+					warehousesJSONObject.getString("items"))));
+	}
+
+	protected Warehouse testGraphQLGetWarehousesPage_addWarehouse()
+		throws Exception {
+
+		return testGraphQLWarehouse_addWarehouse();
+	}
+
+	@Test
+	public void testPatchWarehouseByExternalReferenceCode() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
 	public void testPatchWarehouseId() throws Exception {
 		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testPostWarehouse() throws Exception {
+		Warehouse randomWarehouse = randomWarehouse();
+
+		Warehouse postWarehouse = testPostWarehouse_addWarehouse(
+			randomWarehouse);
+
+		assertEquals(randomWarehouse, postWarehouse);
+		assertValid(postWarehouse);
+	}
+
+	protected Warehouse testPostWarehouse_addWarehouse(Warehouse warehouse)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPutWarehouseByExternalReferenceCode() throws Exception {
+		Warehouse postWarehouse =
+			testPutWarehouseByExternalReferenceCode_addWarehouse();
+
+		Warehouse randomWarehouse = randomWarehouse();
+
+		Warehouse putWarehouse =
+			warehouseResource.putWarehouseByExternalReferenceCode(
+				postWarehouse.getExternalReferenceCode(), randomWarehouse);
+
+		assertEquals(randomWarehouse, putWarehouse);
+		assertValid(putWarehouse);
+
+		Warehouse getWarehouse =
+			warehouseResource.getWarehouseByExternalReferenceCode(
+				putWarehouse.getExternalReferenceCode());
+
+		assertEquals(randomWarehouse, getWarehouse);
+		assertValid(getWarehouse);
+
+		Warehouse newWarehouse =
+			testPutWarehouseByExternalReferenceCode_createWarehouse();
+
+		putWarehouse = warehouseResource.putWarehouseByExternalReferenceCode(
+			newWarehouse.getExternalReferenceCode(), newWarehouse);
+
+		assertEquals(newWarehouse, putWarehouse);
+		assertValid(putWarehouse);
+
+		getWarehouse = warehouseResource.getWarehouseByExternalReferenceCode(
+			putWarehouse.getExternalReferenceCode());
+
+		assertEquals(newWarehouse, getWarehouse);
+
+		Assert.assertEquals(
+			newWarehouse.getExternalReferenceCode(),
+			putWarehouse.getExternalReferenceCode());
+	}
+
+	protected Warehouse
+			testPutWarehouseByExternalReferenceCode_createWarehouse()
+		throws Exception {
+
+		return randomWarehouse();
+	}
+
+	protected Warehouse testPutWarehouseByExternalReferenceCode_addWarehouse()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Rule
@@ -2001,7 +2050,8 @@ public abstract class BaseWarehouseResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -2071,12 +2121,12 @@ public abstract class BaseWarehouseResourceTestCase {
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -2085,11 +2135,16 @@ public abstract class BaseWarehouseResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -2121,6 +2176,24 @@ public abstract class BaseWarehouseResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -2142,16 +2215,6 @@ public abstract class BaseWarehouseResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -2249,7 +2312,9 @@ public abstract class BaseWarehouseResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseWarehouseResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.inventory.resource.v1_0.

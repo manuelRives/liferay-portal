@@ -14,7 +14,6 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
-import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
@@ -24,9 +23,9 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.product.navigation.control.menu.manager.ProductNavigationControlMenuManager;
 import com.liferay.site.configuration.MenuAccessConfiguration;
 
-import java.util.Objects;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -74,10 +73,9 @@ public class ProductNavigationControlMenuManagerImpl
 				String[] accessToControlMenuRoleIds =
 					menuAccessConfiguration.accessToControlMenuRoleIds();
 
-				for (Role role :
-						_roleLocalService.getUserRoles(
-							themeDisplay.getUserId())) {
+				User user = themeDisplay.getUser();
 
+				for (Role role : user.getAllRoles()) {
 					if (Objects.equals(
 							role.getName(), RoleConstants.ADMINISTRATOR) ||
 						Objects.equals(
@@ -132,14 +130,9 @@ public class ProductNavigationControlMenuManagerImpl
 			_portal.getPortletNamespace(LayoutAdminPortletKeys.GROUP_PAGES) +
 				"mvcRenderCommandName";
 
-		if (Objects.equals(
-				ParamUtil.getString(httpServletRequest, mvcRenderCommandName),
-				"/layout_admin/locked_layout")) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			ParamUtil.getString(httpServletRequest, mvcRenderCommandName),
+			"/layout_admin/locked_layout");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -150,8 +143,5 @@ public class ProductNavigationControlMenuManagerImpl
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private RoleLocalService _roleLocalService;
 
 }

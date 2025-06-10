@@ -13,7 +13,7 @@ import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -21,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Cristina González
  */
-@Component(service = ContentDashboardItemFilterProvider.class)
+@Component(
+	property = "service.ranking:Integer=140",
+	service = ContentDashboardItemFilterProvider.class
+)
 public class FileExtensionContentDashboardItemFilterProvider
 	implements ContentDashboardItemFilterProvider {
 

@@ -41,6 +41,7 @@ public class CPSpecificationOptionWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("CPSpecificationOptionId", getCPSpecificationOptionId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -53,6 +54,7 @@ public class CPSpecificationOptionWrapper
 		attributes.put("facetable", isFacetable());
 		attributes.put("key", getKey());
 		attributes.put("priority", getPriority());
+		attributes.put("visible", isVisible());
 		attributes.put("lastPublishDate", getLastPublishDate());
 
 		return attributes;
@@ -76,6 +78,13 @@ public class CPSpecificationOptionWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long CPSpecificationOptionId = (Long)attributes.get(
@@ -149,6 +158,12 @@ public class CPSpecificationOptionWrapper
 
 		if (priority != null) {
 			setPriority(priority);
+		}
+
+		Boolean visible = (Boolean)attributes.get("visible");
+
+		if (visible != null) {
+			setVisible(visible);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -307,6 +322,16 @@ public class CPSpecificationOptionWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this cp specification option.
+	 *
+	 * @return the external reference code of this cp specification option
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the facetable of this cp specification option.
 	 *
 	 * @return the facetable of this cp specification option
@@ -334,6 +359,21 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public Date getLastPublishDate() {
 		return model.getLastPublishDate();
+	}
+
+	@Override
+	public java.util.List<com.liferay.list.type.model.ListTypeDefinition>
+			getListTypeDefinitions()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getListTypeDefinitions();
+	}
+
+	@Override
+	public long getListTypeDefinitionsCount()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getListTypeDefinitionsCount();
 	}
 
 	/**
@@ -493,6 +533,16 @@ public class CPSpecificationOptionWrapper
 	}
 
 	/**
+	 * Returns the visible of this cp specification option.
+	 *
+	 * @return the visible of this cp specification option
+	 */
+	@Override
+	public boolean getVisible() {
+		return model.getVisible();
+	}
+
+	/**
 	 * Returns <code>true</code> if this cp specification option is facetable.
 	 *
 	 * @return <code>true</code> if this cp specification option is facetable; <code>false</code> otherwise
@@ -500,6 +550,16 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public boolean isFacetable() {
 		return model.isFacetable();
+	}
+
+	/**
+	 * Returns <code>true</code> if this cp specification option is visible.
+	 *
+	 * @return <code>true</code> if this cp specification option is visible; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isVisible() {
+		return model.isVisible();
 	}
 
 	@Override
@@ -637,6 +697,16 @@ public class CPSpecificationOptionWrapper
 		java.util.Locale defaultLocale) {
 
 		model.setDescriptionMap(descriptionMap, defaultLocale);
+	}
+
+	/**
+	 * Sets the external reference code of this cp specification option.
+	 *
+	 * @param externalReferenceCode the external reference code of this cp specification option
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
 	}
 
 	/**
@@ -811,6 +881,16 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	/**
+	 * Sets whether this cp specification option is visible.
+	 *
+	 * @param visible the visible of this cp specification option
+	 */
+	@Override
+	public void setVisible(boolean visible) {
+		model.setVisible(visible);
 	}
 
 	@Override

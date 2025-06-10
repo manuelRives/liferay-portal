@@ -3,22 +3,19 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
 import {MouseEvent, ReactNode} from 'react';
 
-import sitesIcon from '../../assets/icons/sites_icon.svg';
-
 import './CardButton.scss';
-import {StepType} from '../../pages/GetApp/enums/stepType';
 
-export function CardButton({
+const CardButton = ({
 	description,
 	disabled,
 	icon = '',
 	iconRight,
 	onClick,
 	selected,
-	step,
 	title,
 }: {
 	description: string;
@@ -27,61 +24,40 @@ export function CardButton({
 	iconRight?: boolean;
 	onClick: (event: MouseEvent) => void;
 	selected: boolean;
-	step?: StepType;
 	title: string;
-}) {
-	return (
-		<div
-			className={classNames('card-button d-flex', {
-				'card-button--disabled': disabled,
-				'card-button--selected': selected,
-			})}
-			onClick={disabled ? () => {} : onClick}
-		>
-			{step === StepType.PAYMENT ? (
-				<img
-					alt="trial"
-					className="card-button-icon"
-					src={icon as string}
-				/>
-			) : (
-				!iconRight &&
-				(icon ? (
-					icon
-				) : (
-					<img
-						alt="sites-icon"
-						className="card-button-icon"
-						src={sitesIcon}
-					/>
-				))
-			)}
+}) => (
+	<div
+		aria-disabled={disabled}
+		className={classNames('card-button d-flex', {
+			'card-button--disabled': disabled,
+			'card-button--selected': selected,
+		})}
+		onClick={(event) => {
+			if (disabled) {
+				return;
+			}
 
-			<div className="card-button-info">
-				<div className="card-button-title">
-					<div
-						className={classNames('card-button-text', {
-							'icon-right': iconRight,
-						})}
-					>
-						{title}
-						{step !== StepType.PAYMENT && iconRight && icon}
-					</div>
+			onClick(event);
+		}}
+	>
+		{typeof icon === 'string' ? <ClayIcon symbol={icon} /> : icon}
 
-					<small
-						className={classNames({
-							'card-button-description':
-								step === StepType.PAYMENT,
-							'card-button-description-paid':
-								step === StepType.LICENSES,
-						})}
-					>
-						{description}
-					</small>
-				</div>
+		<div className="card-button-info">
+			<div
+				className={classNames('card-button-text', {
+					'icon-right': iconRight,
+				})}
+			>
+				{title}
+
+				{iconRight && icon}
 			</div>
+
+			<small className="card-button-description">{description}</small>
 		</div>
-	);
-}
+	</div>
+);
+
+export {CardButton};
 
 export default CardButton;

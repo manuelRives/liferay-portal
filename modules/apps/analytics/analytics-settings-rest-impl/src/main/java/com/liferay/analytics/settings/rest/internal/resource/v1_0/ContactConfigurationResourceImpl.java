@@ -32,6 +32,10 @@ public class ContactConfigurationResourceImpl
 
 	@Override
 	public ContactConfiguration getContactConfiguration() throws Exception {
+		if (_contactConfiguration != null) {
+			return _contactConfiguration;
+		}
+
 		AnalyticsConfiguration analyticsConfiguration =
 			_analyticsSettingsManager.getAnalyticsConfiguration(
 				contextCompany.getCompanyId());
@@ -58,7 +62,7 @@ public class ContactConfigurationResourceImpl
 		boolean accountsSelected = false;
 
 		if (contactConfiguration.getSyncAllAccounts() ||
-			!ArrayUtil.isEmpty(
+			ArrayUtil.isNotEmpty(
 				contactConfiguration.getSyncedAccountGroupIds())) {
 
 			accountsSelected = true;
@@ -67,9 +71,10 @@ public class ContactConfigurationResourceImpl
 		boolean contactsSelected = false;
 
 		if (contactConfiguration.getSyncAllContacts() ||
-			!ArrayUtil.isEmpty(
+			ArrayUtil.isNotEmpty(
 				contactConfiguration.getSyncedOrganizationIds()) ||
-			!ArrayUtil.isEmpty(contactConfiguration.getSyncedUserGroupIds())) {
+			ArrayUtil.isNotEmpty(
+				contactConfiguration.getSyncedUserGroupIds())) {
 
 			contactsSelected = true;
 		}
@@ -96,6 +101,8 @@ public class ContactConfigurationResourceImpl
 				"syncedUserGroupIds",
 				contactConfiguration.getSyncedUserGroupIds()
 			).build());
+
+		_contactConfiguration = contactConfiguration;
 	}
 
 	@Activate
@@ -110,6 +117,8 @@ public class ContactConfigurationResourceImpl
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	private ContactConfiguration _contactConfiguration;
 
 	@Reference
 	private Http _http;

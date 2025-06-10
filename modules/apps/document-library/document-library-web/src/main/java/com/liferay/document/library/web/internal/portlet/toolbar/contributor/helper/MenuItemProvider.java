@@ -20,9 +20,9 @@ import com.liferay.document.library.visibility.controller.DLFileEntryTypeVisibil
 import com.liferay.document.library.web.internal.security.permission.resource.DLFolderPermission;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -38,14 +38,14 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -312,10 +312,6 @@ public class MenuItemProvider {
 		Folder folder, ThemeDisplay themeDisplay,
 		PortletRequest portletRequest) {
 
-		if (!_featureFlagManager.isEnabled("LPD-10793")) {
-			return null;
-		}
-
 		long folderId = _getFolderId(folder);
 
 		if (!_hasPermission(
@@ -440,7 +436,8 @@ public class MenuItemProvider {
 		try {
 			return _dlFileEntryTypeService.getFolderFileEntryTypes(
 				_siteConnectedGroupGroupProvider.
-					getCurrentAndAncestorSiteAndDepotGroupIds(groupId, true),
+					getCurrentAndAncestorSiteAndDepotGroupIds(
+						groupId, false, true),
 				folderId, inherited);
 		}
 		catch (PortalException portalException) {
@@ -478,34 +475,33 @@ public class MenuItemProvider {
 		Folder folder, ThemeDisplay themeDisplay,
 		PortletRequest portletRequest) {
 
-		List<MenuItem> menuItems = new ArrayList<>();
-
 		List<DLFileEntryType> fileEntryTypes = _getFileEntryTypes(
 			themeDisplay.getScopeGroupId(), folder);
 
-		for (DLFileEntryType fileEntryType : fileEntryTypes) {
-			try {
-				if ((fileEntryType.getFileEntryTypeId() !=
-						DLFileEntryTypeConstants.COMPANY_ID_BASIC_DOCUMENT) &&
-					_isFileEntryTypeVisible(
-						themeDisplay.getUserId(), fileEntryType)) {
+		return TransformUtil.transform(
+			fileEntryTypes,
+			fileEntryType -> {
+				try {
+					if ((fileEntryType.getFileEntryTypeId() !=
+							DLFileEntryTypeConstants.
+								COMPANY_ID_BASIC_DOCUMENT) &&
+						_isFileEntryTypeVisible(
+							themeDisplay.getUserId(), fileEntryType)) {
 
-					MenuItem urlMenuItem = _getFileEntryTypeMenuItem(
-						folder, fileEntryTypes, fileEntryType, themeDisplay,
-						portletRequest);
-
-					menuItems.add(urlMenuItem);
+						return _getFileEntryTypeMenuItem(
+							folder, fileEntryTypes, fileEntryType, themeDisplay,
+							portletRequest);
+					}
 				}
-			}
-			catch (PortalException portalException) {
-				_log.error(
-					"Unable to add menu item for file entry type " +
-						fileEntryType.getName(),
-					portalException);
-			}
-		}
+				catch (PortalException portalException) {
+					_log.error(
+						"Unable to add menu item for file entry type " +
+							fileEntryType.getName(),
+						portalException);
+				}
 
-		return menuItems;
+				return null;
+			});
 	}
 
 	private PortletURL _getPortletURL(
@@ -589,9 +585,6 @@ public class MenuItemProvider {
 
 	@Reference
 	private DLFileEntryTypeService _dlFileEntryTypeService;
-
-	@Reference
-	private FeatureFlagManager _featureFlagManager;
 
 	@Reference
 	private Language _language;

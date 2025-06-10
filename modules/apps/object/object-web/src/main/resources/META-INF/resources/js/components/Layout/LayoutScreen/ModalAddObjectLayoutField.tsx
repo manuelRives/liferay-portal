@@ -19,7 +19,6 @@ import {
 import classNames from 'classnames';
 import React, {useMemo, useState} from 'react';
 
-import {defaultLanguageId} from '../../../utils/constants';
 import {TYPES, useLayoutContext} from '../objectLayoutContext';
 
 import './ModalAddObjectLayoutField.scss';
@@ -93,9 +92,8 @@ export default function ModalAddObjectLayoutField({
 	tabIndex,
 }: IProps) {
 	const [{objectFields}, dispatch] = useLayoutContext();
-	const [selectedObjectFieldId, setSelectedObjectFieldId] = useState<
-		string
-	>();
+	const [selectedObjectFieldId, setSelectedObjectFieldId] =
+		useState<string>();
 
 	const objectFieldItems = useMemo(() => {
 		const availableObjectFields: ObjectFieldItem[] = [];
@@ -105,11 +103,10 @@ export default function ModalAddObjectLayoutField({
 				if (!inLayout) {
 					availableObjectFields.push({
 						businessType,
-						label: stringUtils.getLocalizableLabel(
-							defaultLanguageId,
-							label,
-							name
-						),
+						label: stringUtils.getLocalizableLabel({
+							fallbackLabel: name,
+							labels: label,
+						}),
 						readOnly,
 						required,
 						value: id,
@@ -200,10 +197,10 @@ export default function ModalAddObjectLayoutField({
 											{required
 												? Liferay.Language.get(
 														'mandatory'
-												  )
+													)
 												: Liferay.Language.get(
 														'optional'
-												  )}
+													)}
 										</ClayLabel>
 
 										{(businessType === 'AutoIncrement' ||

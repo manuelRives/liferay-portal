@@ -3,20 +3,14 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {DISPATCH_TRIGGER_TYPE} from '~/util/enum';
-
 import {TestrayBuildsCases} from '.';
-import TestrayError from '../../TestrayError';
 import Rest from '../../core/Rest';
 import SearchBuilder from '../../core/SearchBuilder';
-import i18n from '../../i18n';
 import {CategoryOptions} from '../../pages/Project/Routines/Builds/BuildForm/Stack/RunsList';
 import yupSchema from '../../schema/yup';
-import {CaseResultStatuses, DispatchTriggerStatuses} from '../../util/statuses';
+import {CaseResultStatuses} from '../../util/statuses';
 import fetcher from '../fetcher';
-import {liferayDispatchTriggerImpl} from './LiferayDispatchTrigger';
 import {testrayCaseResultImpl} from './TestrayCaseResult';
-import {testrayDispatchTriggerImpl} from './TestrayDispatchTrigger';
 import {testrayFactorRest} from './TestrayFactor';
 import {testrayRunImpl} from './TestrayRun';
 
@@ -33,6 +27,7 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 	constructor() {
 		super({
 			adapter: ({
+				cpuUseTime,
 				description,
 				dueStatus,
 				gitHash,
@@ -45,6 +40,7 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 				templateTestrayBuildId,
 			}) => ({
 				archived: false,
+				cpuUseTime,
 				description,
 				dueStatus,
 				gitHash,
@@ -80,9 +76,9 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 		let runIndex = 1;
 
 		for (const run of runs) {
-			const factorOptions = (Object.values(
-				run
-			) as CategoryOptions[]).filter(Boolean);
+			const factorOptions = (
+				Object.values(run) as CategoryOptions[]
+			).filter(Boolean);
 
 			const factorOptionsList = factorOptions
 				.filter(({factorOption}) => Boolean(factorOption))
@@ -108,7 +104,8 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 					factorOption.factorOptionId
 				) {
 					await testrayFactorRest.create({
-						factorCategoryId: factorOption.factorCategoryId?.toString(),
+						factorCategoryId:
+							factorOption.factorCategoryId?.toString(),
 						factorOptionId: factorOption.factorOptionId?.toString(),
 						name: '',
 						routineId: undefined,
@@ -131,6 +128,7 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 					caseId,
 					comment: undefined,
 					dueStatus: CaseResultStatuses.UNTESTED,
+					errors: undefined,
 					issues: undefined,
 					mbMessageId: 0,
 					mbThreadId: 0,
@@ -170,40 +168,6 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 		return !!buildResponse?.totalCount;
 	}
 
-	protected async validate(build: Build, id?: number) {
-		const searchBuilder = new SearchBuilder({useURIEncode: true});
-
-		if (id) {
-			searchBuilder.ne('id', id).and();
-		}
-
-		const filter = searchBuilder
-			.eq('name', build.name)
-			.and()
-			.eq('projectId', build.projectId)
-			.and()
-			.eq('routineId', build.routineId)
-			.build();
-
-		const response = await this.fetcher<APIResponse<TestrayBuild>>(
-			`/builds?filter=${filter}`
-		);
-
-		if (response?.totalCount) {
-			throw new TestrayError(
-				i18n.sub('the-x-name-already-exists', 'build')
-			);
-		}
-	}
-
-	protected async beforeCreate(build: Build): Promise<void> {
-		await this.validate(build);
-	}
-
-	protected async beforeUpdate(id: number, build: Build): Promise<void> {
-		await this.validate(build, id);
-	}
-
 	public async archiveUpdate(id: number, archived: boolean | undefined) {
 		await this.fetcher.patch(`/builds/${id}`, {
 			archived: !archived,
@@ -211,42 +175,11 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 	}
 
 	public async autofill(objectEntryId1: number, objectEntryId2: number) {
-		const autofillType = 'Build';
-
-		const name = `AUTOFILL-${objectEntryId1}/${objectEntryId2}-${autofillType}-${new Date().getTime()}`;
-
-		const response = await liferayDispatchTriggerImpl.create({
-			active: true,
-			dispatchTaskExecutorType: DISPATCH_TRIGGER_TYPE.AUTO_FILL,
-			dispatchTaskSettings: {
-				autofillType,
-				objectEntryId1,
-				objectEntryId2,
-			},
-			externalReferenceCode: name,
-			name,
-			overlapAllowed: false,
-		});
-
-		const body = {
-			dueStatus: DispatchTriggerStatuses.INPROGRESS,
-			output: '',
-		};
-
-		try {
-			await liferayDispatchTriggerImpl.run(
-				response.liferayDispatchTrigger.id
-			);
-		}
-		catch (error) {
-			body.dueStatus = DispatchTriggerStatuses.FAILED;
-			body.output = (error as TestrayError)?.message;
-		}
-
-		await testrayDispatchTriggerImpl.update(
-			response.testrayDispatchTrigger.id,
-			body
+		const response = await this.fetcher.post(
+			`/testray-build-autofill/${objectEntryId1}/${objectEntryId2}`
 		);
+
+		return response;
 	}
 
 	public async getCurrentCaseIds(buildId: string | number) {
@@ -276,7 +209,7 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 			return runs[runs?.length - 1];
 		};
 
-		let runNumber = (getLastRunNumber() as unknown) as number;
+		let runNumber = getLastRunNumber() as unknown as number;
 
 		for (const run of data.runOptions) {
 			const runId = run?.runId;
@@ -312,6 +245,10 @@ class TestrayBuildImpl extends Rest<Build, TestrayBuild> {
 		}
 
 		return this.update(id, data);
+	}
+
+	public async updateBuildSummary(id: string) {
+		return fetcher.patch(`/testray-build/${id}`, null);
 	}
 
 	public async updateArchivedFlag(id: number, archived: boolean) {

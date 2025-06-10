@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {delegate, escapeHTML, openSelectionModal, sub} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {delegate, escapeHTML, sub} from 'frontend-js-web';
 
 export default function ({
 	portletNamespace,
@@ -36,21 +37,17 @@ export default function ({
 			return;
 		}
 
-		form[
-			`${portletNamespace}addDepotGroupRolesGroupIds`
-		].value = addGroupIds.join(',');
+		form[`${portletNamespace}addDepotGroupRolesGroupIds`].value =
+			addGroupIds.join(',');
 
-		form[
-			`${portletNamespace}addDepotGroupRolesRoleIds`
-		].value = addRoleIds.join(',');
+		form[`${portletNamespace}addDepotGroupRolesRoleIds`].value =
+			addRoleIds.join(',');
 
-		form[
-			`${portletNamespace}deleteDepotGroupRolesGroupIds`
-		].value = deleteGroupIds.join(',');
+		form[`${portletNamespace}deleteDepotGroupRolesGroupIds`].value =
+			deleteGroupIds.join(',');
 
-		form[
-			`${portletNamespace}deleteDepotGroupRolesRoleIds`
-		].value = deleteRoleIds.join(',');
+		form[`${portletNamespace}deleteDepotGroupRolesRoleIds`].value =
+			deleteRoleIds.join(',');
 	};
 
 	Liferay.componentReady(`${portletNamespace}${searchContainerId}`).then(
@@ -101,10 +98,8 @@ export default function ({
 
 							searchContainer.updateDataStore();
 
-							const [
-								groupId,
-								roleId,
-							] = selectedItem.entityid.split('-');
+							const [groupId, roleId] =
+								selectedItem.entityid.split('-');
 
 							for (let i = 0; i < deleteRoleIds.length; i++) {
 								if (

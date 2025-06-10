@@ -8,13 +8,13 @@ package com.liferay.search.experiences.rest.client.serdes.v1_0;
 import com.liferay.search.experiences.rest.client.dto.v1_0.GeneralConfiguration;
 import com.liferay.search.experiences.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -61,14 +61,10 @@ public class GeneralConfigurationSerDes {
 						 getClauseContributorsExcludes().length;
 				 i++) {
 
-				sb.append("\"");
-
 				sb.append(
-					_escape(
+					_toJSON(
 						generalConfiguration.getClauseContributorsExcludes()
 							[i]));
-
-				sb.append("\"");
 
 				if ((i + 1) < generalConfiguration.
 						getClauseContributorsExcludes().length) {
@@ -95,14 +91,10 @@ public class GeneralConfigurationSerDes {
 						 getClauseContributorsIncludes().length;
 				 i++) {
 
-				sb.append("\"");
-
 				sb.append(
-					_escape(
+					_toJSON(
 						generalConfiguration.getClauseContributorsIncludes()
 							[i]));
-
-				sb.append("\"");
 
 				if ((i + 1) < generalConfiguration.
 						getClauseContributorsIncludes().length) {
@@ -112,6 +104,31 @@ public class GeneralConfigurationSerDes {
 			}
 
 			sb.append("]");
+		}
+
+		if (generalConfiguration.getCollectionProvider() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"collectionProvider\": ");
+
+			sb.append(generalConfiguration.getCollectionProvider());
+		}
+
+		if (generalConfiguration.getCollectionProviderType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"collectionProviderType\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(generalConfiguration.getCollectionProviderType()));
+
+			sb.append("\"");
 		}
 
 		if (generalConfiguration.getEmptySearchEnabled() != null) {
@@ -185,12 +202,8 @@ public class GeneralConfigurationSerDes {
 				 i < generalConfiguration.getSearchableAssetTypes().length;
 				 i++) {
 
-				sb.append("\"");
-
 				sb.append(
-					_escape(generalConfiguration.getSearchableAssetTypes()[i]));
-
-				sb.append("\"");
+					_toJSON(generalConfiguration.getSearchableAssetTypes()[i]));
 
 				if ((i + 1) <
 						generalConfiguration.getSearchableAssetTypes().length) {
@@ -255,6 +268,25 @@ public class GeneralConfigurationSerDes {
 				"clauseContributorsIncludes",
 				String.valueOf(
 					generalConfiguration.getClauseContributorsIncludes()));
+		}
+
+		if (generalConfiguration.getCollectionProvider() == null) {
+			map.put("collectionProvider", null);
+		}
+		else {
+			map.put(
+				"collectionProvider",
+				String.valueOf(generalConfiguration.getCollectionProvider()));
+		}
+
+		if (generalConfiguration.getCollectionProviderType() == null) {
+			map.put("collectionProviderType", null);
+		}
+		else {
+			map.put(
+				"collectionProviderType",
+				String.valueOf(
+					generalConfiguration.getCollectionProviderType()));
 		}
 
 		if (generalConfiguration.getEmptySearchEnabled() == null) {
@@ -337,6 +369,59 @@ public class GeneralConfigurationSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(
+					jsonParserFieldName, "clauseContributorsExcludes")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "clauseContributorsIncludes")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "collectionProvider")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "collectionProviderType")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "emptySearchEnabled")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "explain")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "includeResponseString")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "languageId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "queryString")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "searchableAssetTypes")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "timeZoneId")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			GeneralConfiguration generalConfiguration,
 			String jsonParserFieldName, Object jsonParserFieldValue) {
@@ -355,6 +440,22 @@ public class GeneralConfigurationSerDes {
 				if (jsonParserFieldValue != null) {
 					generalConfiguration.setClauseContributorsIncludes(
 						toStrings((Object[])jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "collectionProvider")) {
+
+				if (jsonParserFieldValue != null) {
+					generalConfiguration.setCollectionProvider(
+						(Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "collectionProviderType")) {
+
+				if (jsonParserFieldValue != null) {
+					generalConfiguration.setCollectionProviderType(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
@@ -437,36 +538,7 @@ public class GeneralConfigurationSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -476,6 +548,42 @@ public class GeneralConfigurationSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

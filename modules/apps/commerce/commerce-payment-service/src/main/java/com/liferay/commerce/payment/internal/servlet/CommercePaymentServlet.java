@@ -15,12 +15,12 @@ import com.liferay.commerce.payment.constants.CommercePaymentIntegrationConstant
 import com.liferay.commerce.payment.engine.CommercePaymentEngine;
 import com.liferay.commerce.payment.engine.CommerceSubscriptionEngine;
 import com.liferay.commerce.payment.gateway.CommercePaymentGateway;
+import com.liferay.commerce.payment.helper.CommercePaymentHelper;
+import com.liferay.commerce.payment.helper.CommercePaymentHttpHelper;
 import com.liferay.commerce.payment.integration.CommercePaymentIntegration;
 import com.liferay.commerce.payment.model.CommercePaymentEntry;
 import com.liferay.commerce.payment.result.CommercePaymentResult;
 import com.liferay.commerce.payment.service.CommercePaymentEntryLocalService;
-import com.liferay.commerce.payment.util.CommercePaymentHelper;
-import com.liferay.commerce.payment.util.CommercePaymentHttpHelper;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
@@ -45,6 +45,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.net.URL;
@@ -53,13 +60,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -137,14 +137,23 @@ public class CommercePaymentServlet extends HttpServlet {
 			_log.error(exception);
 
 			try {
-				PermissionThreadLocal.setPermissionChecker(
-					PermissionCheckerFactoryUtil.create(
-						_portal.getUser(httpServletRequest)));
+				CommerceOrder commerceOrder =
+					_commerceOrderLocalService.fetchCommerceOrder(
+						_commerceOrderId);
 
-				_commercePaymentEngine.updateOrderPaymentStatus(
-					_commerceOrderId,
-					CommerceOrderPaymentConstants.STATUS_FAILED,
-					StringPool.BLANK, StringPool.BLANK);
+				if ((commerceOrder != null) &&
+					!(commerceOrder.getPaymentStatus() ==
+						CommercePaymentEntryConstants.STATUS_COMPLETED)) {
+
+					PermissionThreadLocal.setPermissionChecker(
+						PermissionCheckerFactoryUtil.create(
+							_portal.getUser(httpServletRequest)));
+
+					_commercePaymentEngine.updateOrderPaymentStatus(
+						_commerceOrderId,
+						CommerceOrderPaymentConstants.STATUS_FAILED,
+						StringPool.BLANK, StringPool.BLANK);
+				}
 
 				httpServletResponse.sendRedirect(
 					_portal.getPortalURL(httpServletRequest));
@@ -240,7 +249,7 @@ public class CommercePaymentServlet extends HttpServlet {
 					commerceOrder.getCommerceOrderId(), commerceChannelId,
 					commerceOrder.getTotal(), null, null,
 					commerceCurrency.getCode(),
-					_language.getLanguageId(httpServletRequest), null,
+					_language.getLanguageId(httpServletRequest), null, null,
 					commerceOrder.getCommercePaymentMethodKey(),
 					commercePaymentIntegration.getPaymentIntegrationType(),
 					null, null, CommercePaymentEntryConstants.TYPE_PAYMENT,
@@ -278,7 +287,18 @@ public class CommercePaymentServlet extends HttpServlet {
 						CommerceOrderPaymentConstants.STATUS_CANCELLED,
 						StringPool.BLANK, StringPool.BLANK);
 
-					httpServletResponse.sendRedirect(_redirect);
+					commercePaymentEntry.setPaymentStatus(
+						CommerceOrderPaymentConstants.STATUS_CANCELLED);
+
+					commercePaymentEntry =
+						_commercePaymentEntryLocalService.
+							updateCommercePaymentEntry(commercePaymentEntry);
+
+					if (ParamUtil.getBoolean(
+							httpServletRequest, "redirect", true)) {
+
+						httpServletResponse.sendRedirect(_redirect);
+					}
 
 					return;
 				}
@@ -328,6 +348,12 @@ public class CommercePaymentServlet extends HttpServlet {
 			if (Validator.isNull(commercePaymentEntry.getRedirectURL())) {
 				if (CommercePaymentEntryConstants.STATUS_CREATED ==
 						paymentStatus) {
+
+					if (!ParamUtil.getBoolean(
+							httpServletRequest, "redirect", true)) {
+
+						return;
+					}
 
 					commercePaymentEntry = _commercePaymentGateway.authorize(
 						httpServletRequest, commercePaymentEntry);

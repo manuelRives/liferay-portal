@@ -4,7 +4,7 @@
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {cleanup, fireEvent, render} from '@testing-library/react';
+import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -44,24 +44,20 @@ describe('', () => {
 	beforeEach(() => {
 		cleanup();
 
-		if (global.document) {
-			global.document.body.createTextRange = () => ({
-				commonAncestorContainer: {
-					nodeName: 'BODY',
-					ownerDocument: document,
-				},
-				getBoundingClientRect: () => {},
-				getClientRects: () => ({length: 0}),
-				setEnd: () => {},
-				setStart: () => {},
-			});
+		window.document.createRange = () => ({
+			cloneRange: (range) => range,
+			getBoundingClientRect: () => 1,
+			getClientRects: () => 1,
+			setEnd: () => {},
+			setStart: () => {},
+		});
 
+		if (global.document) {
 			const saveButton = global.document.createElement('button');
 			saveButton.classList.add('save-button');
 
-			const saveAndContinueButton = global.document.createElement(
-				'button'
-			);
+			const saveAndContinueButton =
+				global.document.createElement('button');
 			saveAndContinueButton.classList.add('save-and-continue-button');
 
 			global.document.body.appendChild(saveButton);
@@ -74,51 +70,76 @@ describe('', () => {
 	});
 
 	it('renders', () => {
-		const {getByText} = renderApp({
+		renderApp({
 			initialScript: 'thisistheinitialscript',
 		});
 
-		expect(getByText('thisistheinitialscript')).toBeInTheDocument();
+		expect(screen.getByText('thisistheinitialscript')).toBeInTheDocument();
 	});
 
-	it('includes the variable in the script when clicked', () => {
-		const {getByText} = renderApp();
+	it('includes the variable in the script when clicked', async () => {
+		renderApp();
 
-		const variableButton = getByText('variableTemplate1');
+		const variableButton = screen.getByText('variableTemplate1');
 
-		userEvent.click(variableButton);
+		await userEvent.click(variableButton);
 
-		expect(getByText('this is a variable 1')).toBeInTheDocument();
+		expect(screen.getByText('this is a variable 1')).toBeInTheDocument();
 	});
 
 	it('shows a popover with the tooltip when the preview icon is hovered', () => {
-		const {getByText} = renderApp();
+		renderApp();
 
-		const variableButton = getByText('variableTemplate1');
+		const variableButton = screen.getByText('variableTemplate1');
 
 		fireEvent.mouseEnter(variableButton.querySelector('.preview-icon'));
 
-		expect(getByText('this is a tooltip 1')).toBeInTheDocument();
+		expect(screen.getByText('this is a tooltip 1')).toBeInTheDocument();
 	});
 
-	it('filters variable groups when search', () => {
-		const {getByLabelText, queryByText} = renderApp();
+	it('filters variable groups when search', async () => {
+		renderApp();
 
-		const searchInput = getByLabelText('search');
+		const searchInput = screen.getByLabelText('search');
 
-		userEvent.type(searchInput, 'variableTemplate2');
+		await userEvent.type(searchInput, 'variableTemplate2');
 
-		expect(queryByText('variableTemplate2')).toBeInTheDocument();
-		expect(queryByText('variableTemplate1')).not.toBeInTheDocument();
+		expect(screen.queryByText('variableTemplate2')).toBeInTheDocument();
+		expect(screen.queryByText('variableTemplate1')).not.toBeInTheDocument();
 	});
 
-	it('no result when searching', () => {
-		const {getByLabelText, queryByText} = renderApp();
+	it('no result when searching', async () => {
+		renderApp();
 
-		const searchInput = getByLabelText('search');
+		const searchInput = screen.getByLabelText('search');
 
-		userEvent.type(searchInput, 'anotherVariable');
+		await userEvent.type(searchInput, 'anotherVariable');
 
-		expect(queryByText('no-results-found')).toBeInTheDocument();
+		expect(screen.queryByText('no-results-found')).toBeInTheDocument();
+	});
+
+	it('enables focus trap when clicking ctrl + m', () => {
+		const {container} = renderApp();
+
+		const editor = container.querySelector('.CodeMirror').CodeMirror;
+
+		expect(editor.state.keyMaps).not.toContain(
+			expect.objectContaining({name: 'tabKey'})
+		);
+
+		act(() => {
+			editor.triggerOnKeyDown({
+				altKey: false,
+				ctrlKey: true,
+				keyCode: 77,
+				metaKey: false,
+				shiftKey: false,
+				type: 'keydown',
+			});
+		});
+
+		expect(editor.state.keyMaps).toEqual(
+			expect.arrayContaining([expect.objectContaining({name: 'tabKey'})])
+		);
 	});
 });

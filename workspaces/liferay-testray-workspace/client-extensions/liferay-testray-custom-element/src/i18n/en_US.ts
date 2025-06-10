@@ -55,6 +55,7 @@ export default {
 	'attachment': 'Attachment',
 	'attachments': 'Attachments',
 	'attachments-x': 'Attachments ({0})',
+	'auto-fill': 'Autofill',
 	'auto-fill-build-is-scheduled-to-be-processed':
 		'Auto Fill Build is Scheduled to be Processed.',
 	'auto-fill-x': 'Auto Fill {0}',
@@ -68,6 +69,7 @@ export default {
 	'available-subcomponents': 'Available Sub Components',
 	'available-teams': 'Available Teams',
 	'avatar': 'Avatar',
+	'average-duration': 'Average Duration',
 	'back': 'Back',
 	'begin-analysis': 'Begin Analysis',
 	'blocked': 'Blocked',
@@ -79,6 +81,7 @@ export default {
 	'build-b-successfully-added': 'Build B, successfully added',
 	'build-history': 'Build History',
 	'build-name': 'Build Name',
+	'build-status': 'Build Status',
 	'builds': 'Builds',
 	'builds-ordered-by-date': 'Builds (Ordered by Date)',
 	'cancel': 'Cancel',
@@ -105,6 +108,7 @@ export default {
 	'columns': 'Columns',
 	'comment': 'Comment',
 	'comments': 'Comments',
+	'compare': 'Compare',
 	'compare-x': 'Compare {0}',
 	'complete': 'Complete',
 	'complete-test': 'Complete Test',
@@ -114,6 +118,7 @@ export default {
 	'components': 'Components',
 	'confirm-password': 'Confirm Password',
 	'copy-x': 'Copy - {0}',
+	'cpu-use-time': 'CPU Use Time',
 	'create': 'Create',
 	'create-cases-if-you-want-to-link-cases-to-this-build':
 		'Create cases if you want to link cases to this build.',
@@ -156,6 +161,8 @@ export default {
 	'deselect-items': 'Deselect Items.',
 	'details': 'Details',
 	'dnr': 'DNR',
+	'duration': 'Duration',
+	'duration-report': 'Duration Report',
 	'edit': 'Edit',
 	'edit-build': 'Edit Build',
 	'edit-case': 'Edit Case',
@@ -183,10 +190,12 @@ export default {
 	'export-cases': 'Export Cases',
 	'export-csv': 'Export CSV',
 	'failed': 'Failed',
+	'false': 'False',
 	'filter-results': 'Filter Results',
 	'filters-pinned-successfully': 'Filters pinned successfully.',
 	'filters-unpinned-successfully': 'Filters unpinned successfully.',
 	'first-name': 'First Name',
+	'flaky': 'Flaky',
 	'git-hash': 'Git Hash',
 	'github-compare-urls': 'GitHub Compare URLs',
 	'go-to-homepage': 'Go to homepage',
@@ -194,8 +203,10 @@ export default {
 	'hide': 'Hide',
 	'history': 'History',
 	'import-jira-issues': 'Import JIRA Issues',
+	'import-status': 'Import Status',
 	'in-analysis': 'In Analysis',
 	'in-progress': 'In Progress',
+	'incomplete': 'Incomplete',
 	'issue': 'Issue',
 	'issues': 'Issues',
 	'issues-in-x': 'Issues in {0}',
@@ -205,6 +216,7 @@ export default {
 	'job-scheduler': 'Job Scheduler',
 	'job-scheduler-x': 'Job Scheduler {0}',
 	'key': 'Key',
+	'last-execution-total-cpu-usage': 'Last Execution Total CPU Usage',
 	'last-name': 'Last Name',
 	'last-used-date': 'Last Used Date',
 	'latest-build': 'Latest Build',
@@ -283,6 +295,7 @@ export default {
 	'password-may-contain-letters-and-numbers':
 		'Password may contain letters and numbers.',
 	'passwords-do-not-match': 'Passwords do not match.',
+	'playwright-reports': 'Playwright Reports',
 	'please-select-at-least-two-subtasks-to-merge':
 		'Please select at least two subtasks to merge.',
 	'please-select-one-or-more-roles': 'Please, select one or more roles.',
@@ -321,6 +334,8 @@ export default {
 	'run-b': 'Run B',
 	'run-b-successfully-added': 'Run B, successfully added',
 	'runs': 'Runs',
+	'runs-x-and-x-ready-to-be-compared':
+		'Runs {0} and {1} ready to be compared.',
 	'save': 'Save',
 	'score': 'Score',
 	'screen-name': 'Screen Name',
@@ -393,6 +408,10 @@ export default {
 	'test-history': 'Test History',
 	'test-lead-should-only-have-access-to-builds-test-plans-test-suites-and-test-cases-.-this-role-will-be-responsible-for-creating-builds-and-for-creating-test-plans-test-runs-the-people-assigned-to-these-would-be-our-current-product-leads':
 		'Test Lead should only have access to Builds, Test Plans, Test Suites and Test Cases. This role will be responsible for creating Builds and for creating Test Plans/Test Runs. The people assigned to these would be our current product leads.',
+	'test-results-are-being-imported-into-this-build':
+		'Test results are being imported into this build',
+	'test-results-are-queued-to-be-imported':
+		'Test results are queued to be imported',
 	'test-type': 'Test Type',
 	'testers-carry-permissions-to-analyze-test-results-by-workflowing-results-or-collaborating-on-tasks':
 		'Testers carry permissions to analyze test results by workflowing results or collaborating on tasks',
@@ -415,6 +434,8 @@ export default {
 	'there-are-no-linked-users': 'There are no linked users.',
 	'there-are-no-matching-results': 'There are no matching results.',
 	'this-build-has-been-analyzed': 'This build has been analyzed.',
+	'this-build-has-finished-the-import-process':
+		'This build has finished the import process',
 	'this-build-is-currently-in-analysis':
 		'This build is currently in analysis.',
 	'this-build-is-currently-in-open': 'This build is currently in open.',
@@ -423,17 +444,22 @@ export default {
 	'this-builds-task-has-been-abandoned':
 		"This build's task has been abandoned.",
 	'this-field-is-required': 'This field is required.',
+	'this-is-a-possible-flaky-test': 'This is a possible flaky test.',
 	'this-role-is-for-general-liferay-employees-and-enables-authenticated-users-to-view-test-results':
 		'This role is for general Liferay employees and enables authenticated users to view test results.',
+	'this-subtask-has-been-merged-wihth-x':
+		'This subtask has been merged wihth {0}.',
 	'this-user-does-not-have-authentication-with-jira':
 		'This user does not have authentication with jira',
-	'time-x-total-issues': 'Time {0} Total Issues',
 	'total': 'Total',
 	'total-completed': 'Total Completed',
 	'total-estimated-time': 'Total Estimated Time',
+	'total-issues': 'Total Issues',
 	'total-test-cases': 'Total test cases',
+	'true': 'True',
 	'type': 'Type',
 	'type-is-a-required-field': 'Type is a required field',
+	'unable-to-find-more-than-one-run': 'Unable to find more than one run.',
 	'unarchive': 'Unarchive',
 	'unassign-myself': 'Unassign Myself',
 	'unassigned': 'Unassigned',
@@ -451,16 +477,21 @@ export default {
 	'view-in-jira': 'View in JIRA',
 	'view-page': 'View Page',
 	'view-task': 'View Task',
+	'view-x': 'View {0}',
 	'warning': 'Warning',
 	'warnings': 'Warnings',
 	'warnings-x': 'Warnings ({0})',
+	'x-case-results-were-autofilled': '{0} case results were autofilled.',
 	'x-create-date': '{0}. Create Date',
+	'x-execution-date': '{0}. Execution Date',
 	'x-is-a-required-field': '{0} is a required field.',
 	'x-items': '{0} Items',
 	'x-items-cannot-be-deleted': '{0} items cannot be deleted',
 	'x-jobs-in-progress': '{0} Jobs in Progress',
 	'x-minutes': '{0} Minutes',
 	'x-results-for-x': '{0} Results for {1}',
+	'x-successfully-merged-with-x-view-x':
+		'{0} successfully merged with {1}. <u><a class="font-weight-bold" id="testray-link">View {2}</a></u>',
 	'x-tests-were-split-into-x-successfully-view-x':
 		'{0} tests were split into {1} successfully. <u><a class="font-weight-bold" id="testray-link">View {2}</a></u>',
 	'you-are-not-the-assigned-user': 'You are not the assigned user.',

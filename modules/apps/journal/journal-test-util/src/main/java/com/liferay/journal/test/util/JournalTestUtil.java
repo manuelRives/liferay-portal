@@ -49,6 +49,7 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -386,7 +387,9 @@ public class JournalTestUtil {
 
 		DDMTemplate ddmTemplate = DDMTemplateTestUtil.addTemplate(
 			ddmGroupId, ddmStructure.getStructureId(),
-			PortalUtil.getClassNameId(JournalArticle.class));
+			PortalUtil.getClassNameId(JournalArticle.class),
+			TemplateConstants.LANG_TYPE_FTL, "${name.getData()}",
+			LocaleUtil.getSiteDefault());
 
 		boolean neverExpire = true;
 
@@ -487,6 +490,45 @@ public class JournalTestUtil {
 			_getLocalizedMap(RandomTestUtil.randomString()), null,
 			LocaleUtil.getSiteDefault(), null, null, false, false,
 			serviceContext);
+	}
+
+	public static JournalArticle addArticleDefaultValues(
+			long userId, long groupId, String title)
+		throws Exception {
+
+		DDMForm ddmForm = DDMStructureTestUtil.getSampleDDMForm(
+			_locales, LocaleUtil.US);
+
+		DDMStructure ddmStructure = DDMStructureTestUtil.addStructure(
+			groupId, JournalArticle.class.getName(), ddmForm, LocaleUtil.US);
+
+		DDMTemplate ddmTemplate = DDMTemplateTestUtil.addTemplate(
+			groupId, ddmStructure.getStructureId(),
+			PortalUtil.getClassNameId(JournalArticle.class),
+			TemplateConstants.LANG_TYPE_FTL, getSampleTemplateFTL(),
+			LocaleUtil.US);
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(groupId, userId);
+
+		return JournalArticleLocalServiceUtil.addArticleDefaultValues(
+			serviceContext.getUserId(), serviceContext.getScopeGroupId(),
+			PortalUtil.getClassNameId(DDMStructure.class),
+			ddmStructure.getStructureId(),
+			HashMapBuilder.put(
+				LocaleUtil.US, title
+			).build(),
+			null,
+			DDMStructureTestUtil.getSampleStructuredContent(
+				HashMapBuilder.put(
+					LocaleUtil.SPAIN, "Valor Predefinido"
+				).put(
+					LocaleUtil.US, "Predefined Value"
+				).build(),
+				LocaleUtil.US.toString()),
+			ddmStructure.getStructureId(), ddmTemplate.getTemplateKey(), null,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 0, 0, true, true,
+			false, 0, 0, null, null, serviceContext);
 	}
 
 	public static JournalArticle addArticleWithWorkflow(
@@ -980,6 +1022,21 @@ public class JournalTestUtil {
 		return updateArticle(
 			article, _getLocalizedMap(title), content, workflowEnabled,
 			approved, serviceContext);
+	}
+
+	public static JournalArticle updateArticle(
+			long userId, JournalArticle article, Map<Locale, String> titleMap,
+			Map<Locale, String> contentMap, Locale defaultLocale,
+			boolean workflowEnabled, boolean approved,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		String content = DDMStructureTestUtil.getSampleStructuredContent(
+			contentMap, LocaleUtil.toLanguageId(defaultLocale));
+
+		return updateArticle(
+			userId, article, titleMap, content, null, workflowEnabled, approved,
+			serviceContext);
 	}
 
 	public static JournalArticle updateArticle(

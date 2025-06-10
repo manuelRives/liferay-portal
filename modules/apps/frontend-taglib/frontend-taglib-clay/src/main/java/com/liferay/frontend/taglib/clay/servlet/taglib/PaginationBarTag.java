@@ -14,15 +14,15 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Julien Castelain
@@ -248,7 +248,7 @@ public class PaginationBarTag extends BaseContainerTag {
 		jspWriter.write(_totalItems.toString());
 		jspWriter.write(StringPool.SPACE);
 		jspWriter.write("</div><ul class=\"pagination pagination-root\">");
-		jspWriter.write("<li class=\"page-item\"");
+		jspWriter.write("<li class=\"");
 
 		boolean firstPage = false;
 
@@ -257,10 +257,10 @@ public class PaginationBarTag extends BaseContainerTag {
 		}
 
 		if (firstPage) {
-			jspWriter.write(" disabled\"");
+			jspWriter.write("disabled ");
 		}
 
-		jspWriter.write(">");
+		jspWriter.write("page-item\">");
 
 		if (firstPage) {
 			jspWriter.write("<div class=\"page-link\">");
@@ -370,7 +370,7 @@ public class PaginationBarTag extends BaseContainerTag {
 			}
 		}
 
-		jspWriter.write("<li class=\"page-item\"");
+		jspWriter.write("<li class=\"");
 
 		boolean lastPage = false;
 
@@ -379,10 +379,10 @@ public class PaginationBarTag extends BaseContainerTag {
 		}
 
 		if (lastPage) {
-			jspWriter.write(" disabled\"");
+			jspWriter.write("disabled ");
 		}
 
-		jspWriter.write(">");
+		jspWriter.write("page-item\">");
 
 		if (lastPage) {
 			jspWriter.write("<div class=\"page-link\">");
@@ -431,19 +431,19 @@ public class PaginationBarTag extends BaseContainerTag {
 
 		JspWriter jspWriter = pageContext.getOut();
 
-		jspWriter.write("<li class=\"page-item");
+		jspWriter.write("<li class=\"");
 
 		if (item == _activePage) {
-			jspWriter.write(" active");
+			jspWriter.write("active ");
 		}
 
 		if ((_disabledPages != null) &&
 			_disabledPages.contains(Integer.valueOf(item))) {
 
-			jspWriter.write(" disabled");
+			jspWriter.write("disabled ");
 		}
 
-		jspWriter.write("\">");
+		jspWriter.write("page-item\">");
 
 		LinkTag linkTag = new LinkTag();
 

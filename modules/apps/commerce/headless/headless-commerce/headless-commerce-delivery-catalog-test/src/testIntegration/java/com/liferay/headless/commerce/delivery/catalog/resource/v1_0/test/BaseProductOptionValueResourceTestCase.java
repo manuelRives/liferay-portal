@@ -29,8 +29,9 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -38,11 +39,16 @@ import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
+
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
 
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,10 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -81,7 +83,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -95,11 +97,15 @@ public abstract class BaseProductOptionValueResourceTestCase {
 
 		_productOptionValueResource.setContextCompany(testCompany);
 
-		ProductOptionValueResource.Builder builder =
-			ProductOptionValueResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		productOptionValueResource = builder.authentication(
-			"test@liferay.com", "test"
+		productOptionValueResource = ProductOptionValueResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -113,7 +119,33 @@ public abstract class BaseProductOptionValueResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		ProductOptionValue productOptionValue1 = randomProductOptionValue();
+
+		String json = objectMapper.writeValueAsString(productOptionValue1);
+
+		ProductOptionValue productOptionValue2 = ProductOptionValueSerDes.toDTO(
+			json);
+
+		Assert.assertTrue(equals(productOptionValue1, productOptionValue2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		ProductOptionValue productOptionValue = randomProductOptionValue();
+
+		String json1 = objectMapper.writeValueAsString(productOptionValue);
+		String json2 = ProductOptionValueSerDes.toJSON(productOptionValue);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -128,41 +160,6 @@ public abstract class BaseProductOptionValueResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		ProductOptionValue productOptionValue1 = randomProductOptionValue();
-
-		String json = objectMapper.writeValueAsString(productOptionValue1);
-
-		ProductOptionValue productOptionValue2 = ProductOptionValueSerDes.toDTO(
-			json);
-
-		Assert.assertTrue(equals(productOptionValue1, productOptionValue2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		ProductOptionValue productOptionValue = randomProductOptionValue();
-
-		String json1 = objectMapper.writeValueAsString(productOptionValue);
-		String json2 = ProductOptionValueSerDes.toJSON(productOptionValue);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -220,7 +217,8 @@ public abstract class BaseProductOptionValueResourceTestCase {
 			productOptionValueResource.
 				getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage(
 					channelExternalReferenceCode, productExternalReferenceCode,
-					productOptionExternalReferenceCode, null, null, null,
+					productOptionExternalReferenceCode, null,
+					RandomTestUtil.randomString(), null, null,
 					Pagination.of(1, 10));
 
 		long totalCount = page.getTotalCount();
@@ -242,7 +240,8 @@ public abstract class BaseProductOptionValueResourceTestCase {
 						irrelevantChannelExternalReferenceCode,
 						irrelevantProductExternalReferenceCode,
 						irrelevantProductOptionExternalReferenceCode, null,
-						null, null, Pagination.of(1, (int)totalCount + 1));
+						null, null, null,
+						Pagination.of(1, (int)totalCount + 1));
 
 			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
@@ -271,7 +270,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 			productOptionValueResource.
 				getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage(
 					channelExternalReferenceCode, productExternalReferenceCode,
-					productOptionExternalReferenceCode, null, null, null,
+					productOptionExternalReferenceCode, null, null, null, null,
 					Pagination.of(1, 10));
 
 		Assert.assertEquals(totalCount + 2, page.getTotalCount());
@@ -310,14 +309,15 @@ public abstract class BaseProductOptionValueResourceTestCase {
 		String productOptionExternalReferenceCode =
 			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage_getProductOptionExternalReferenceCode();
 
-		Page<ProductOptionValue> productOptionValuePage =
+		Page<ProductOptionValue> productOptionValuesPage =
 			productOptionValueResource.
 				getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage(
 					channelExternalReferenceCode, productExternalReferenceCode,
-					productOptionExternalReferenceCode, null, null, null, null);
+					productOptionExternalReferenceCode, null, null, null, null,
+					null);
 
 		int totalCount = GetterUtil.getInteger(
-			productOptionValuePage.getTotalCount());
+			productOptionValuesPage.getTotalCount());
 
 		ProductOptionValue productOptionValue1 =
 			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage_addProductOptionValue(
@@ -345,6 +345,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 						channelExternalReferenceCode,
 						productExternalReferenceCode,
 						productOptionExternalReferenceCode, null, null, null,
+						null,
 						Pagination.of(
 							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
 							pageSizeLimit));
@@ -361,6 +362,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 						channelExternalReferenceCode,
 						productExternalReferenceCode,
 						productOptionExternalReferenceCode, null, null, null,
+						null,
 						Pagination.of(
 							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
 							pageSizeLimit));
@@ -375,6 +377,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 						channelExternalReferenceCode,
 						productExternalReferenceCode,
 						productOptionExternalReferenceCode, null, null, null,
+						null,
 						Pagination.of(
 							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
 							pageSizeLimit));
@@ -390,7 +393,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 						channelExternalReferenceCode,
 						productExternalReferenceCode,
 						productOptionExternalReferenceCode, null, null, null,
-						Pagination.of(1, totalCount + 2));
+						null, Pagination.of(1, totalCount + 2));
 
 			List<ProductOptionValue> productOptionValues1 =
 				(List<ProductOptionValue>)page1.getItems();
@@ -405,7 +408,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 						channelExternalReferenceCode,
 						productExternalReferenceCode,
 						productOptionExternalReferenceCode, null, null, null,
-						Pagination.of(2, totalCount + 2));
+						null, Pagination.of(2, totalCount + 2));
 
 			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
@@ -422,7 +425,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 						channelExternalReferenceCode,
 						productExternalReferenceCode,
 						productOptionExternalReferenceCode, null, null, null,
-						Pagination.of(1, (int)totalCount + 3));
+						null, Pagination.of(1, (int)totalCount + 3));
 
 			assertContains(
 				productOptionValue1,
@@ -494,13 +497,6 @@ public abstract class BaseProductOptionValueResourceTestCase {
 	}
 
 	@Test
-	public void testPostChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage()
-		throws Exception {
-
-		Assert.assertTrue(false);
-	}
-
-	@Test
 	public void testGetChannelProductProductOptionProductOptionValuesPage()
 		throws Exception {
 
@@ -520,7 +516,8 @@ public abstract class BaseProductOptionValueResourceTestCase {
 		Page<ProductOptionValue> page =
 			productOptionValueResource.
 				getChannelProductProductOptionProductOptionValuesPage(
-					channelId, productId, productOptionId, null, null, null,
+					channelId, productId, productOptionId, null,
+					RandomTestUtil.randomString(), null, null,
 					Pagination.of(1, 10));
 
 		long totalCount = page.getTotalCount();
@@ -538,7 +535,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 				productOptionValueResource.
 					getChannelProductProductOptionProductOptionValuesPage(
 						irrelevantChannelId, irrelevantProductId,
-						irrelevantProductOptionId, null, null, null,
+						irrelevantProductOptionId, null, null, null, null,
 						Pagination.of(1, (int)totalCount + 1));
 
 			Assert.assertEquals(totalCount + 1, page.getTotalCount());
@@ -567,7 +564,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 			productOptionValueResource.
 				getChannelProductProductOptionProductOptionValuesPage(
 					channelId, productId, productOptionId, null, null, null,
-					Pagination.of(1, 10));
+					null, Pagination.of(1, 10));
 
 		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
@@ -602,14 +599,14 @@ public abstract class BaseProductOptionValueResourceTestCase {
 		Long productOptionId =
 			testGetChannelProductProductOptionProductOptionValuesPage_getProductOptionId();
 
-		Page<ProductOptionValue> productOptionValuePage =
+		Page<ProductOptionValue> productOptionValuesPage =
 			productOptionValueResource.
 				getChannelProductProductOptionProductOptionValuesPage(
 					channelId, productId, productOptionId, null, null, null,
-					null);
+					null, null);
 
 		int totalCount = GetterUtil.getInteger(
-			productOptionValuePage.getTotalCount());
+			productOptionValuesPage.getTotalCount());
 
 		ProductOptionValue productOptionValue1 =
 			testGetChannelProductProductOptionProductOptionValuesPage_addProductOptionValue(
@@ -635,6 +632,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 				productOptionValueResource.
 					getChannelProductProductOptionProductOptionValuesPage(
 						channelId, productId, productOptionId, null, null, null,
+						null,
 						Pagination.of(
 							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
 							pageSizeLimit));
@@ -649,6 +647,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 				productOptionValueResource.
 					getChannelProductProductOptionProductOptionValuesPage(
 						channelId, productId, productOptionId, null, null, null,
+						null,
 						Pagination.of(
 							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
 							pageSizeLimit));
@@ -661,6 +660,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 				productOptionValueResource.
 					getChannelProductProductOptionProductOptionValuesPage(
 						channelId, productId, productOptionId, null, null, null,
+						null,
 						Pagination.of(
 							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
 							pageSizeLimit));
@@ -674,7 +674,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 				productOptionValueResource.
 					getChannelProductProductOptionProductOptionValuesPage(
 						channelId, productId, productOptionId, null, null, null,
-						Pagination.of(1, totalCount + 2));
+						null, Pagination.of(1, totalCount + 2));
 
 			List<ProductOptionValue> productOptionValues1 =
 				(List<ProductOptionValue>)page1.getItems();
@@ -687,7 +687,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 				productOptionValueResource.
 					getChannelProductProductOptionProductOptionValuesPage(
 						channelId, productId, productOptionId, null, null, null,
-						Pagination.of(2, totalCount + 2));
+						null, Pagination.of(2, totalCount + 2));
 
 			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
@@ -702,7 +702,7 @@ public abstract class BaseProductOptionValueResourceTestCase {
 				productOptionValueResource.
 					getChannelProductProductOptionProductOptionValuesPage(
 						channelId, productId, productOptionId, null, null, null,
-						Pagination.of(1, (int)totalCount + 3));
+						null, Pagination.of(1, (int)totalCount + 3));
 
 			assertContains(
 				productOptionValue1,
@@ -769,6 +769,13 @@ public abstract class BaseProductOptionValueResourceTestCase {
 		throws Exception {
 
 		return null;
+	}
+
+	@Test
+	public void testPostChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage()
+		throws Exception {
+
+		Assert.assertTrue(false);
 	}
 
 	@Test
@@ -1871,7 +1878,8 @@ public abstract class BaseProductOptionValueResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1952,12 +1960,12 @@ public abstract class BaseProductOptionValueResourceTestCase {
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1966,11 +1974,16 @@ public abstract class BaseProductOptionValueResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -2002,6 +2015,24 @@ public abstract class BaseProductOptionValueResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -2023,16 +2054,6 @@ public abstract class BaseProductOptionValueResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -2130,7 +2151,9 @@ public abstract class BaseProductOptionValueResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseProductOptionValueResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.delivery.catalog.resource.v1_0.

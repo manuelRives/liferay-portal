@@ -7,29 +7,33 @@ import {useEffect, useState} from 'react';
 import {Outlet, useLocation, useNavigate} from 'react-router-dom';
 
 import {useMarketplaceContext} from '../../context/MarketplaceContext';
+import {Analytics} from '../../core/Analytics';
+import {SkuOptions} from '../../enums/Product';
+import useAccountAddresses from '../../hooks/useAccountAddresses';
 import useCart from '../../hooks/useCart';
-import useGetAddresses from '../../hooks/useGetAddresses';
+import useCommerceRegions from '../../hooks/useCommerceRegions';
+import i18n from '../../i18n';
+import {Liferay} from '../../liferay/liferay';
+import CommerceSelectAccount from '../../services/rest/CommerceSelectAccount';
+import HeadlessAdminUser from '../../services/rest/HeadlessAdminUser';
+import {Region} from '../../services/rest/HeadlessCommerceAdminAddress';
 import {
 	getPaymentMethodURL,
 	postCheckoutCart,
 	postEmailAppInformation,
 } from '../../utils/api';
+import {getProductPriceModel} from '../../utils/productUtils';
 import {useGetAppContext} from './GetAppContextProvider';
 import ProductHeader from './containers/ProductHeader';
 import ProductStepWizard from './containers/ProductStepWizard';
 import {PaymentMethod} from './enums/paymentMethod';
-import {SkuOptions} from './enums/skuOptions';
 import buildNewCart from './utils/buildNewCart';
 import {getProductOrderTypes} from './utils/getProductOrderTypes';
-import getProductPriceModel from './utils/getProductPriceModel';
 import {getProductSpecificationValues} from './utils/getProductSpecificationValues';
 import getReplaceCurrentURL from './utils/getReplaceCurrentURL';
 import {postCartByPaymentMethod} from './utils/postCartByPaymentMethod';
 
 import './styles/index.scss';
-import {Analytics} from '../../core/Analytics';
-import i18n from '../../i18n';
-import {Liferay} from '../../liferay/liferay';
 
 const getProductBasePriceAndTrial = (
 	product: DeliveryProduct,
@@ -47,7 +51,8 @@ const getProductBasePriceAndTrial = (
 	}
 
 	const {isFreeApp} = getProductPriceModel(product);
-	const skus = ((product.skus as unknown) as DeliverySKU[]).filter(
+
+	const skus = (product.skus as unknown as DeliverySKU[])?.filter(
 		({purchasable}) => purchasable
 	);
 
@@ -125,13 +130,19 @@ const GetAppOutlet = () => {
 	] = useGetAppContext();
 
 	const [loading, setLoading] = useState(false);
-	const {addresses} = useGetAddresses(account?.id);
+	const {data: addressResponse = {items: []}} = useAccountAddresses(
+		account?.id
+	);
 	const {channel} = useMarketplaceContext();
 	const location = useLocation();
+
+	const {data: regionsResponse} = useCommerceRegions();
+	const regions = regionsResponse?.items ?? [];
+
 	const navigate = useNavigate();
 
 	const productBasePriceAndTrial = getProductBasePriceAndTrial(
-		(product as unknown) as DeliveryProduct,
+		product as unknown as DeliveryProduct,
 		isCloudApp
 	);
 
@@ -151,14 +162,61 @@ const GetAppOutlet = () => {
 
 	const {isFreeApp, priceModel} = getProductPriceModel(product);
 
+	const getCountryNameByCode = (regions: Region[], countryCode?: string) => {
+		const country = regions.find((region) => region.a2 === countryCode);
+
+		return (
+			country?.title_i18n[Liferay.ThemeDisplay.getLanguageId()] ||
+			country?.title_i18n[Liferay.ThemeDisplay.getDefaultLanguageId()] ||
+			country?.name
+		);
+	};
+
+	const getRegionByCountryCode = (
+		regions: Region[],
+		regionISOCode?: string,
+		countryCode?: string
+	) => {
+		const country = regions.find((region) => region.a2 === countryCode);
+		const addressRegion = country?.regions.find(
+			(region) => region.regionCode === regionISOCode
+		);
+
+		return addressRegion?.name;
+	};
+
 	async function handleGetApp(orderId = cartUtil?.cart?.id) {
 		setLoading(true);
+
+		if (billingAddress.saveAddress) {
+			await HeadlessAdminUser.postAddress(account?.id as number, {
+				addressCountry: getCountryNameByCode(
+					regions,
+					billingAddress?.country
+				),
+				addressLocality: billingAddress.city,
+				addressRegion: getRegionByCountryCode(
+					regions,
+					billingAddress.regionISOCode,
+					billingAddress?.country
+				),
+				addressType: 'billing-and-shipping',
+				name: billingAddress.name,
+				phoneNumber: billingAddress.phoneNumber,
+				postalCode: billingAddress.zip,
+				primary: false,
+				streetAddressLine1: billingAddress.street1,
+				streetAddressLine2: billingAddress.street2,
+			});
+		}
 
 		const productSpecificationValues = getProductSpecificationValues(
 			product?.productSpecifications || []
 		);
 
 		const orderType = getProductOrderTypes(productSpecificationValues);
+
+		delete billingAddress.saveAddress;
 
 		try {
 			const cart = buildNewCart({
@@ -183,7 +241,7 @@ const GetAppOutlet = () => {
 				? await cartUtil.updateCart(orderId, {
 						...cart,
 						cartItems: cartUtil.cartItems,
-				  })
+					})
 				: await postCartByPaymentMethod(cart, channel.id);
 
 			await postCheckoutCart({cartId: cartResponse.id});
@@ -215,6 +273,8 @@ const GetAppOutlet = () => {
 				cartResponse.id,
 				nextStepsCallbackURL
 			);
+
+			await CommerceSelectAccount.selectAccount(account?.id as number);
 
 			window.location.href = paymentMethodURL || nextStepsCallbackURL;
 		}
@@ -253,7 +313,8 @@ const GetAppOutlet = () => {
 
 						<Outlet
 							context={{
-								addresses,
+								account,
+								addresses: addressResponse.items,
 								cartUtil,
 								handleGetApp,
 								isFreeApp,

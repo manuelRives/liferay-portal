@@ -31,13 +31,13 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -64,7 +64,8 @@ public class FunctionCommercePaymentIntegration
 			CommercePaymentEntry commercePaymentEntry)
 		throws PortalException {
 
-		return _setCommercePaymentEntry(commercePaymentEntry, "/authorize");
+		return _setCommercePaymentEntry(
+			httpServletRequest, commercePaymentEntry, "/authorize");
 	}
 
 	@Override
@@ -73,7 +74,8 @@ public class FunctionCommercePaymentIntegration
 			CommercePaymentEntry commercePaymentEntry)
 		throws PortalException {
 
-		return _setCommercePaymentEntry(commercePaymentEntry, "/cancel");
+		return _setCommercePaymentEntry(
+			httpServletRequest, commercePaymentEntry, "/cancel");
 	}
 
 	@Override
@@ -82,7 +84,8 @@ public class FunctionCommercePaymentIntegration
 			CommercePaymentEntry commercePaymentEntry)
 		throws PortalException {
 
-		return _setCommercePaymentEntry(commercePaymentEntry, "/capture");
+		return _setCommercePaymentEntry(
+			httpServletRequest, commercePaymentEntry, "/capture");
 	}
 
 	@Override
@@ -124,7 +127,8 @@ public class FunctionCommercePaymentIntegration
 			CommercePaymentEntry commercePaymentEntry)
 		throws PortalException {
 
-		return _setCommercePaymentEntry(commercePaymentEntry, "/refund");
+		return _setCommercePaymentEntry(
+			httpServletRequest, commercePaymentEntry, "/refund");
 	}
 
 	@Override
@@ -134,7 +138,7 @@ public class FunctionCommercePaymentIntegration
 		throws PortalException {
 
 		return _setCommercePaymentEntry(
-			commercePaymentEntry, "/set-up-payment");
+			httpServletRequest, commercePaymentEntry, "/set-up-payment");
 	}
 
 	@Activate
@@ -203,6 +207,7 @@ public class FunctionCommercePaymentIntegration
 	}
 
 	private JSONObject _getPayloadJSONObject(
+			HttpServletRequest httpServletRequest,
 			CommercePaymentEntry commercePaymentEntry)
 		throws Exception {
 
@@ -245,11 +250,15 @@ public class FunctionCommercePaymentIntegration
 		return JSONUtil.put(
 			"commercePaymentEntry", commercePaymentEntryJSONObject
 		).put(
+			"httpServletRequestParameterMap",
+			httpServletRequest.getParameterMap()
+		).put(
 			"typeSettings", typeSettingsJSONObject
 		);
 	}
 
 	private CommercePaymentEntry _setCommercePaymentEntry(
+		HttpServletRequest httpServletRequest,
 		CommercePaymentEntry commercePaymentEntry, String resourcePath) {
 
 		try {
@@ -262,7 +271,8 @@ public class FunctionCommercePaymentIntegration
 						commercePaymentEntry.getCompanyId(), Http.Method.POST,
 						_functionCommercePaymentIntegrationConfiguration.
 							oAuth2ApplicationExternalReferenceCode(),
-						_getPayloadJSONObject(commercePaymentEntry),
+						_getPayloadJSONObject(
+							httpServletRequest, commercePaymentEntry),
 						resourcePath, commercePaymentEntry.getUserId()
 					).get()));
 
@@ -288,6 +298,11 @@ public class FunctionCommercePaymentIntegration
 
 			if (jsonObject.has("note")) {
 				commercePaymentEntry.setNote(jsonObject.getString("note"));
+			}
+
+			if (jsonObject.has("payload")) {
+				commercePaymentEntry.setPayload(
+					jsonObject.getString("payload"));
 			}
 
 			if (jsonObject.has("paymentStatus")) {

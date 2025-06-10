@@ -8,6 +8,9 @@ package com.liferay.gradle.plugins.workspace.internal.util;
 import java.io.IOException;
 import java.io.InputStream;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,13 +28,19 @@ public class StringUtil {
 
 	public static final String BLANK = "";
 
+	public static final String COLON = ":";
+
 	public static final String COMMA = ",";
 
 	public static final String COMMA_AND_SPACE = ", ";
 
+	public static final String FORWARD_SLASH = "/";
+
 	public static final String NEW_LINE = "\n";
 
 	public static final String STAR = "*";
+
+	public static final String UNDERSCORE = "_";
 
 	public static String capitalize(String s) {
 		if ((s == null) || s.isEmpty()) {
@@ -85,6 +94,21 @@ public class StringUtil {
 		}
 
 		return false;
+	}
+
+	public static boolean isUrl(String url) {
+		if (isBlank(url) || !url.contains(COLON)) {
+			return false;
+		}
+
+		try {
+			new URL(url);
+
+			return true;
+		}
+		catch (MalformedURLException malformedURLException) {
+			return false;
+		}
 	}
 
 	public static String join(String delimiter, Collection<?> objects) {
@@ -153,6 +177,20 @@ public class StringUtil {
 		}
 
 		return Arrays.asList(s.split(COMMA));
+	}
+
+	public static String suffixIfNotBlank(String s, String suffix) {
+		return suffixIfNotBlank(s, UNDERSCORE, suffix);
+	}
+
+	public static String suffixIfNotBlank(
+		String s, String separator, String suffix) {
+
+		if (isBlank(suffix)) {
+			return s;
+		}
+
+		return concat(s, separator, suffix);
 	}
 
 	public static String toAlphaNumericLowerCase(String value) {

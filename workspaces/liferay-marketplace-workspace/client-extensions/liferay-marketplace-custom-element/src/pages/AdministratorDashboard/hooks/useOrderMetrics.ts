@@ -7,7 +7,8 @@ import {addDays, eachDayOfInterval, format} from 'date-fns';
 import useSWR from 'swr';
 
 import SearchBuilder from '../../../core/SearchBuilder';
-import HeadlessCommerceAdminOrderImpl from '../../../services/rest/HeadlessCommerceAdminOrder';
+import {OrderTypes} from '../../../enums/Order';
+import HeadlessCommerceAdminOrder from '../../../services/rest/HeadlessCommerceAdminOrder';
 
 export const METRIC_PARAMETER = {
 	month: 30,
@@ -19,6 +20,17 @@ export const METRIC_PARAMETER = {
 };
 
 type FilterType = 'month' | 'q1' | 'q2' | 'q3' | 'q4' | 'week';
+
+export const orderSearchBuilder = new SearchBuilder()
+	.in('orderTypeExternalReferenceCode', [
+		OrderTypes.CLIENT_EXTENSION,
+		OrderTypes.CLOUDAPP,
+		OrderTypes.COMPOSITE_APP,
+		OrderTypes.DXPAPP,
+		OrderTypes.LOW_CODE_CONFIGURATION,
+		OrderTypes.OTHER,
+	])
+	.and();
 
 const useOrderMetrics = (param: FilterType) => {
 	return useSWR('metrics/order', async () => {
@@ -40,20 +52,22 @@ const useOrderMetrics = (param: FilterType) => {
 		const requestsParams = [
 			new URLSearchParams({
 				fields: 'id,orderStatus,totalAmount',
+				filter: orderSearchBuilder.clone().build(),
 				pageSize: '-1',
 				sort: 'createDate:desc',
 			}),
 			new URLSearchParams({
 				fields: 'id',
-				filter: SearchBuilder.gt(
-					'createDate',
-					lastPeriod.toISOString()
-				),
+				filter: orderSearchBuilder
+					.clone()
+					.gt('createDate', lastPeriod.toISOString())
+					.build(),
 				pageSize: '1',
 			}),
 			new URLSearchParams({
 				fields: 'id',
-				filter: new SearchBuilder()
+				filter: orderSearchBuilder
+					.clone()
 					.lt('createDate', lastPeriod.toISOString())
 					.and()
 					.gt('createDate', beforeLastPeriod.toISOString())
@@ -64,7 +78,7 @@ const useOrderMetrics = (param: FilterType) => {
 
 		const response = await Promise.all(
 			requestsParams.map((searchParam) =>
-				HeadlessCommerceAdminOrderImpl.getOrders(searchParam)
+				HeadlessCommerceAdminOrder.getOrders(searchParam)
 			)
 		);
 
@@ -75,11 +89,17 @@ const useOrderMetrics = (param: FilterType) => {
 
 		const newOrders = response[1].totalCount - response[2].totalCount;
 
+		let growth = Number(
+			((newOrders / response[1].totalCount) * 100).toFixed(2)
+		);
+
+		if (Number.isNaN(growth)) {
+			growth = 0;
+		}
+
 		return {
 			beforeLastPeriod: response[2].totalCount,
-			growth: Number(
-				((newOrders / response[1].totalCount) * 100).toFixed(2)
-			),
+			growth,
 			lastPeriod: response[1].totalCount,
 			paidAmount: paidAppsAmount,
 			param,
@@ -105,15 +125,16 @@ const useOrderChartLineMetrics = () => {
 		const requestsParams = [
 			new URLSearchParams({
 				fields: 'id,createDate',
-				filter: SearchBuilder.gt(
-					'createDate',
-					lastPeriod.toISOString()
-				),
+				filter: orderSearchBuilder
+					.clone()
+					.gt('createDate', lastPeriod.toISOString())
+					.build(),
 				pageSize: '-1',
 			}),
 			new URLSearchParams({
 				fields: 'id,createDate',
-				filter: new SearchBuilder()
+				filter: orderSearchBuilder
+					.clone()
 					.gt('createDate', beforeLastPeriod.toISOString())
 					.and()
 					.lt('createDate', lastPeriod.toISOString())
@@ -136,12 +157,12 @@ const useOrderChartLineMetrics = () => {
 
 		const response = await Promise.all(
 			requestsParams.map((searchParam) =>
-				HeadlessCommerceAdminOrderImpl.getOrders(searchParam)
+				HeadlessCommerceAdminOrder.getOrders(searchParam)
 			)
 		);
 
 		const metrics = response.map(({items}, index) => {
-			const dates = (daysInterval[index] as unknown) as Date[];
+			const dates = daysInterval[index] as unknown as Date[];
 
 			return {
 				dates: dates.map(

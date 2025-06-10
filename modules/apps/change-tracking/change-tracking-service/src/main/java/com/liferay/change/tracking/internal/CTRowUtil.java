@@ -10,6 +10,8 @@ import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
+import java.io.Serializable;
+
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -120,7 +122,7 @@ public class CTRowUtil {
 		String[] uniqueIndexColumnNames, long targetCTCollectionId) {
 
 		StringBundler sb = new StringBundler(
-			(9 * uniqueIndexColumnNames.length) + 17);
+			(3 * uniqueIndexColumnNames.length) + 9);
 
 		sb.append("select ");
 		sb.append(primaryColumnName);
@@ -146,8 +148,7 @@ public class CTRowUtil {
 		String[] uniqueIndexColumnNames, long ctCollectionId,
 		Set<Long> primaryKeys) {
 
-		StringBundler sb = new StringBundler(
-			(9 * uniqueIndexColumnNames.length) + 17);
+		StringBundler sb = new StringBundler();
 
 		sb.append("select ");
 		sb.append(primaryColumnName);
@@ -165,17 +166,29 @@ public class CTRowUtil {
 		sb.append(" where ctCollectionId = ");
 		sb.append(ctCollectionId);
 		sb.append(" and (");
+		sb.append(primaryColumnName);
+		sb.append(" in (");
 
-		for (long primaryKey : primaryKeys) {
-			sb.append("(");
-			sb.append(primaryColumnName);
-			sb.append(" = ");
+		int i = 0;
+
+		for (Serializable primaryKey : primaryKeys) {
+			if (i == _BATCH_SIZE) {
+				sb.setStringAt(")", sb.index() - 1);
+
+				sb.append(" or ");
+				sb.append(primaryColumnName);
+				sb.append(" in (");
+
+				i = 0;
+			}
+
 			sb.append(primaryKey);
-			sb.append(")");
-			sb.append(" or ");
+			sb.append(", ");
+
+			i++;
 		}
 
-		sb.setIndex(sb.index() - 1);
+		sb.setStringAt(")", sb.index() - 1);
 
 		sb.append(")");
 
@@ -191,14 +204,12 @@ public class CTRowUtil {
 
 		Collection<Integer> values = tableColumnsMap.values();
 
-		if (values.contains(Types.BLOB)) {
-			return true;
-		}
-
-		return false;
+		return values.contains(Types.BLOB);
 	}
 
 	private CTRowUtil() {
 	}
+
+	private static final int _BATCH_SIZE = 1000;
 
 }

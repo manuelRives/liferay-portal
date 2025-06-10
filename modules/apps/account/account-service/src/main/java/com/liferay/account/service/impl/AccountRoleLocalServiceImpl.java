@@ -6,13 +6,16 @@
 package com.liferay.account.service.impl;
 
 import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.exception.NoSuchRoleException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.base.AccountRoleLocalServiceBaseImpl;
 import com.liferay.account.service.persistence.AccountEntryPersistence;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -62,12 +65,13 @@ public class AccountRoleLocalServiceImpl
 
 	@Override
 	public AccountRole addAccountRole(
-			long userId, long accountEntryId, String name,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap)
+			String externalReferenceCode, long userId, long accountEntryId,
+			String name, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap)
 		throws PortalException {
 
 		Role role = _roleLocalService.addRole(
-			userId, AccountRole.class.getName(),
+			externalReferenceCode, userId, AccountRole.class.getName(),
 			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT, name, titleMap,
 			descriptionMap, RoleConstants.TYPE_ACCOUNT, null, null);
 
@@ -81,6 +85,7 @@ public class AccountRoleLocalServiceImpl
 
 		accountRole = createAccountRole(counterLocalService.increment());
 
+		accountRole.setExternalReferenceCode(role.getExternalReferenceCode());
 		accountRole.setCompanyId(role.getCompanyId());
 		accountRole.setAccountEntryId(accountEntryId);
 		accountRole.setRoleId(role.getRoleId());
@@ -217,6 +222,39 @@ public class AccountRoleLocalServiceImpl
 		long[] accountEntryIds) {
 
 		return accountRolePersistence.findByAccountEntryId(accountEntryIds);
+	}
+
+	@Override
+	public AccountRole getOrAddIncompleteAccountRole(
+			String externalReferenceCode, long companyId, long userId,
+			long accountEntryId, String name)
+		throws Exception {
+
+		AccountRole accountRole = fetchAccountRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		if (accountRole != null) {
+			return accountRole;
+		}
+
+		if (!LazyReferencingThreadLocal.isEnabled()) {
+			throw new NoSuchRoleException(
+				StringBundler.concat(
+					"Unable to find account role with external reference code ",
+					externalReferenceCode, " and company ", companyId));
+		}
+
+		Role role = _roleLocalService.getOrAddIncompleteRole(
+			externalReferenceCode, companyId, userId,
+			AccountRole.class.getName(),
+			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT, name,
+			RoleConstants.TYPE_ACCOUNT);
+
+		accountRole = getAccountRoleByRoleId(role.getRoleId());
+
+		accountRole.setAccountEntryId(accountEntryId);
+
+		return updateAccountRole(accountRole);
 	}
 
 	@Override

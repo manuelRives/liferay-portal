@@ -1,4 +1,5 @@
 /* eslint-disable no-case-declarations */
+
 /**
  * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
@@ -10,12 +11,7 @@ import {STORAGE_KEYS} from '~/core/Storage';
 
 import {useFetch} from '../hooks/useFetch';
 import useStorage from '../hooks/useStorage';
-import {
-	APIResponse,
-	TestrayDispatchTrigger,
-	UserAccount,
-} from '../services/rest';
-import {testrayDispatchTriggerImpl} from '../services/rest/TestrayDispatchTrigger';
+import {UserAccount} from '../services/rest';
 import {ActionMap} from '../types';
 
 export type BuildId = number | null;
@@ -32,15 +28,14 @@ export type CompareRuns = {
 };
 
 type InitialState = {
-	autoFillBuild: AutofillBuild;
+	autofillBuild: AutofillBuild;
 	compareRuns: CompareRuns;
 	myUserAccount?: UserAccount;
 	runNumber: number;
-	testrayDispatchTriggers: APIResponse<TestrayDispatchTrigger>;
 };
 
 const initialState: InitialState = {
-	autoFillBuild: {
+	autofillBuild: {
 		buildA: null,
 		buildB: null,
 	},
@@ -50,15 +45,6 @@ const initialState: InitialState = {
 	},
 	myUserAccount: undefined,
 	runNumber: 0,
-	testrayDispatchTriggers: {
-		actions: {},
-		facets: [],
-		items: [],
-		lastPage: 1,
-		page: 1,
-		pageSize: 1,
-		totalCount: 1,
-	},
 };
 
 export const enum TestrayTypes {
@@ -87,7 +73,7 @@ export const TestrayContext = createContext<
 	[
 		InitialState,
 		(param: AppActions) => void,
-		KeyedMutator<UserAccount> | null
+		KeyedMutator<UserAccount> | null,
 	]
 >([initialState, () => null, null]);
 
@@ -104,13 +90,13 @@ const reducer = (state: InitialState, action: AppActions) => {
 		case TestrayTypes.SET_BUILD_A:
 			return {
 				...state,
-				autoFillBuild: {...state.autoFillBuild, buildA: action.payload},
+				autofillBuild: {...state.autofillBuild, buildA: action.payload},
 			};
 
 		case TestrayTypes.SET_BUILD_B:
 			return {
 				...state,
-				autoFillBuild: {...state.autoFillBuild, buildB: action.payload},
+				autofillBuild: {...state.autofillBuild, buildB: action.payload},
 			};
 
 		case TestrayTypes.SET_RUN_A:
@@ -133,9 +119,9 @@ const reducer = (state: InitialState, action: AppActions) => {
 const TestrayContextProvider: React.FC<{
 	children: ReactNode;
 }> = ({children}) => {
-	const [autoFillBuildValue, setAutoFillBuildValue] = useStorage<{
-		autoFillBuild: AutofillBuild;
-	}>(STORAGE_KEYS.COMPARE_RUNS, {
+	const [autofillBuildValue, setAutofillBuildValue] = useStorage<{
+		autofillBuild: AutofillBuild;
+	}>(STORAGE_KEYS.AUTO_FILL, {
 		initialValue: initialState,
 		storageType: 'temporary',
 	});
@@ -149,18 +135,8 @@ const TestrayContextProvider: React.FC<{
 
 	const [state, dispatch] = useReducer(reducer, {
 		...initialState,
-		autoFillBuild: autoFillBuildValue?.autoFillBuild,
+		autofillBuild: autofillBuildValue?.autofillBuild,
 		compareRuns: compareRunsValue?.compareRuns,
-	});
-
-	const {data: testrayDispatchTriggers} = useFetch<
-		APIResponse<TestrayDispatchTrigger>
-	>(testrayDispatchTriggerImpl.resource, {
-		params: {
-			aggregationTerms: 'dueStatus',
-			pageSize: 10,
-			sort: 'dateCreated:asc',
-		},
 	});
 
 	const {data: myUserAccount, mutate} = useFetch('/my-user-account', {
@@ -173,7 +149,6 @@ const TestrayContextProvider: React.FC<{
 			givenName: user?.givenName,
 			id: user?.id,
 			image: user.image,
-			jiraAuthorization: user?.jiraAuthorization,
 			name: user.name,
 			roleBriefs: user?.roleBriefs,
 			userGroupBriefs: user?.userGroupBriefs,
@@ -183,22 +158,23 @@ const TestrayContextProvider: React.FC<{
 
 	const compareRuns = useMemo(() => state.compareRuns, [state.compareRuns]);
 
-	const autoFillBuild = useMemo(() => state.autoFillBuild, [
-		state.autoFillBuild,
-	]);
+	const autofillBuild = useMemo(
+		() => state.autofillBuild,
+		[state.autofillBuild]
+	);
 
 	useEffect(() => {
 		if (compareRuns) {
 			setcompareRunsValue({compareRuns});
 		}
 
-		if (autoFillBuild) {
-			setAutoFillBuildValue({autoFillBuild});
+		if (autofillBuild) {
+			setAutofillBuildValue({autofillBuild});
 		}
 	}, [
-		autoFillBuild,
+		autofillBuild,
 		compareRuns,
-		setAutoFillBuildValue,
+		setAutofillBuildValue,
 		setcompareRunsValue,
 	]);
 
@@ -218,9 +194,6 @@ const TestrayContextProvider: React.FC<{
 			value={[
 				{
 					...state,
-					testrayDispatchTriggers: testrayDispatchTriggers as APIResponse<
-						TestrayDispatchTrigger
-					>,
 				},
 				dispatch,
 				mutate,

@@ -51,6 +51,30 @@
 			}
 		},
 
+		_checkImageWidth(editor, editorContent, imageSrc) {
+			if (!editorContent) {
+				return;
+			}
+
+			const editorContentDocument =
+				!editor.window.$.AlloyEditor &&
+				!editorContent.id.endsWith('BalloonEditor')
+					? editorContent.querySelector('iframe').contentDocument
+					: editorContent;
+
+			const imgElement = editorContentDocument.querySelector(
+				`img[src='${imageSrc}']`
+			);
+
+			if (imgElement) {
+				imgElement.onload = function () {
+					if (this.width === 0) {
+						this.setAttribute('width', '150px');
+					}
+				};
+			}
+		},
+
 		_commitAudioValue(value, node) {
 			const instance = this;
 
@@ -201,6 +225,9 @@
 			else if (itemSrc.value) {
 				itemSrc = itemSrc.value;
 			}
+			else if (itemSrc.url) {
+				itemSrc = itemSrc.url;
+			}
 
 			if (selectedItem.returnType === STR_FILE_ENTRY_RETURN_TYPE) {
 				try {
@@ -208,7 +235,7 @@
 
 					itemSrc = editor.config.attachmentURLPrefix
 						? editor.config.attachmentURLPrefix +
-						  encodeURIComponent(itemValue.title)
+							encodeURIComponent(itemValue.title)
 						: itemValue.url;
 				}
 				catch (error) {}
@@ -252,16 +279,16 @@
 				const imageSrc = instance._getItemSrc(editor, selectedItem);
 
 				if (imageSrc) {
+					const editorContent = editor.window.$.AlloyEditor
+						? document.getElementById(`${editor.name}Container`)
+						: document.getElementById(`cke_${editor.name}`);
+
 					if (typeof callback === 'function') {
-						callback(imageSrc, selectedItem);
+						callback(imageSrc);
 					}
 					else {
-						const editorContent = document.getElementById(
-							`${editor.id}_contents`
-						);
-
-						const editorContentHeight = editorContent.getBoundingClientRect()
-							.height;
+						const editorContentHeight =
+							editorContent.getBoundingClientRect().height;
 
 						const imgElement = new Image();
 
@@ -281,6 +308,12 @@
 							editor.insertHtml(elementOuterHtml);
 
 							editor.focus();
+
+							instance._checkImageWidth(
+								editor,
+								editorContent,
+								imageSrc
+							);
 						};
 					}
 				}

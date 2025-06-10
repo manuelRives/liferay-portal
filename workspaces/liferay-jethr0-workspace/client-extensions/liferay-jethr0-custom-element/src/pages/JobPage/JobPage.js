@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayBadge from '@clayui/badge';
 import {Heading} from '@clayui/core';
 import ClayLayout from '@clayui/layout';
 import ClayPanel from '@clayui/panel';
@@ -134,21 +135,33 @@ function JobInformation({job}) {
 					fieldType="STRING"
 					fieldValue={job.name}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Job ID"
 					fieldType="STRING"
 					fieldValue={job.id}
 				/>
+
+				<strong>{'Job Blessed: '}</strong>
+				{job.blessed ? (
+					<ClayBadge displayType="success" label="blessed" />
+				) : (
+					<ClayBadge displayType="secondary" label="normal" />
+				)}
+				<br />
+
 				<Jethr0InformationField
 					fieldLabel="Job State"
 					fieldType="STRING"
 					fieldValue={job.state.name}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Job Type"
 					fieldType="STRING"
 					fieldValue={job.type.name}
 				/>
+
 				{job.routine && (
 					<Jethr0InformationField
 						fieldLabel="Routine"
@@ -157,21 +170,25 @@ function JobInformation({job}) {
 						fieldValue={job.routine.name}
 					/>
 				)}
+
 				<Jethr0InformationField
 					fieldLabel="Create Date"
 					fieldType="DATE"
 					fieldValue={job.dateCreated}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Modified Date"
 					fieldType="DATE"
 					fieldValue={job.dateModified}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Start Date"
 					fieldType="DATE"
 					fieldValue={job.startDate}
 				/>
+
 				{jobDefinition.jobDefinitionParameters &&
 					jobParameters?.map((jobParameter) => {
 						let parameter;
@@ -268,14 +285,21 @@ function JobPage() {
 				<Jethr0NavigationBar
 					active={job.routine ? 'Routines' : 'Jobs'}
 				/>
+
 				<Jethr0Breadcrumbs breadcrumbs={breadcrumbs} />
+
 				<Jethr0ContainerFluid>
 					<ClayLayout.Row justify="between">
 						<Heading level={3} weight="lighter">
 							{jobName}
 						</Heading>
+
 						<Jethr0ButtonsRow
 							buttons={[
+								{
+									link: '/jobs/' + id + '/update',
+									title: 'Update',
+								},
 								{
 									onClick: () => {
 										deleteJobById({
@@ -289,7 +313,9 @@ function JobPage() {
 						/>
 					</ClayLayout.Row>
 				</Jethr0ContainerFluid>
+
 				<JobInformation job={job} />
+
 				<JobBuilds job={job} />
 			</Jethr0Card>
 		</ClayLayout.Container>

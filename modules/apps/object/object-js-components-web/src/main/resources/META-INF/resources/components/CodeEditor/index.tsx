@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import CodeMirror from '@liferay/frontend-js-codemirror-web';
+import {CodeMirror} from '@liferay/frontend-js-codemirror-web';
 import classNames from 'classnames';
 import {FieldBase} from 'frontend-js-components-web';
-import React, {ReactNode, useRef} from 'react';
+import React, {useRef} from 'react';
 
 import CodeMirrorEditor, {ICodeMirrorEditor} from './CodeMirrorEditor';
 import {Sidebar, SidebarCategory} from './Sidebar';
@@ -19,7 +19,7 @@ export {Element} from './Element';
 export {SidebarCategory} from './Sidebar';
 
 interface CodeEditorProps extends ICodeMirrorEditor {
-	CustomSidebarContent?: ReactNode;
+	CustomSidebarContent?: React.ReactNode;
 	className?: string;
 	error?: string;
 	readOnly?: boolean;
@@ -55,9 +55,8 @@ const CodeEditor = React.forwardRef<CodeMirror.Editor, CodeEditorProps>(
 				ref(editor);
 			}
 			else {
-				(ref as React.MutableRefObject<
-					CodeMirror.Editor
-				>).current = editor;
+				(ref as React.MutableRefObject<CodeMirror.Editor>).current =
+					editor;
 			}
 		};
 

@@ -12,10 +12,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Date;
 import java.util.Properties;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Andrea Sbarra
@@ -64,6 +64,9 @@ public class CommerceCheckoutStepCETImplFactoryImpl
 				portletRequest, "oAuth2ApplicationExternalReferenceCode")
 		).put(
 			"order", ParamUtil.getBoolean(portletRequest, "order")
+		).put(
+			"paymentMethodKey",
+			ParamUtil.getBoolean(portletRequest, "paymentMethodKey")
 		).put(
 			"sennaDisabled",
 			ParamUtil.getBoolean(portletRequest, "sennaDisabled")

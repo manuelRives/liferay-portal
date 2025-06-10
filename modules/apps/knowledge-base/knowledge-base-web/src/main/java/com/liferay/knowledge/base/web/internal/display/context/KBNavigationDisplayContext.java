@@ -23,10 +23,10 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -81,13 +81,13 @@ public class KBNavigationDisplayContext {
 			return KBArticleServiceUtil.getAllDescendantKBArticles(
 				groupId, parentResourcePrimKey,
 				WorkflowConstants.STATUS_APPROVED,
-				new KBArticlePriorityComparator(true));
+				KBArticlePriorityComparator.getInstance(true));
 		}
 
 		return KBArticleServiceUtil.getKBArticles(
 			groupId, parentResourcePrimKey, WorkflowConstants.STATUS_APPROVED,
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new KBArticlePriorityComparator(true));
+			KBArticlePriorityComparator.getInstance(true));
 	}
 
 	public String getCurrentKBFolderURLTitle() throws PortalException {

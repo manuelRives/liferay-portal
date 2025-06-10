@@ -183,6 +183,27 @@ public class BuildHistoryProcessor {
 		return _getBuildHistories(duration, null, null, biConsumer, startTime);
 	}
 
+	public static Collection<BuildHistory> newUtilizationTestTypeBuildHistories(
+		long duration, long startTime) {
+
+		BiConsumer<Set<BuildJSONObject>, Map<String, BuildHistory>> biConsumer =
+			new BiConsumer<Set<BuildJSONObject>, Map<String, BuildHistory>>() {
+
+				@Override
+				public void accept(
+					Set<BuildJSONObject> buildJSONObjects,
+					Map<String, BuildHistory> buildHistories) {
+
+					_addToBuildHistoriesMap(
+						buildJSONObjects, buildHistories, duration,
+						new GroupByTestBatchType(), startTime);
+				}
+
+			};
+
+		return _getBuildHistories(duration, null, null, biConsumer, startTime);
+	}
+
 	private static void _addToBuildHistoriesMap(
 		Collection<BuildJSONObject> buildJSONObjects,
 		Map<String, BuildHistory> buildHistoriesMap, long duration,
@@ -492,6 +513,86 @@ public class BuildHistoryProcessor {
 			name = name.replace("-validation", "");
 
 			return name;
+		}
+
+	}
+
+	private static class GroupByTestBatchType
+		implements Function<BuildJSONObject, String> {
+
+		public String apply(BuildJSONObject buildJSONObject) {
+			String jobName = buildJSONObject.getJobName();
+
+			if (jobName.contains("maintenance-") ||
+				jobName.contains("mirrors-") ||
+				jobName.contains("verification-")) {
+
+				return TestBatchType.MAINTENANCE.toString();
+			}
+
+			if (buildJSONObject.isTopLevelBuild()) {
+				return TestBatchType.TOP_LEVEL_BUILD.toString();
+			}
+
+			Map<String, String> parameters = buildJSONObject.getParameters();
+
+			if (parameters.containsKey("JOB_VARIANT")) {
+				String jobVariant = parameters.get("JOB_VARIANT");
+
+				if (jobVariant.contains("functional")) {
+					return TestBatchType.POSHI.toString();
+				}
+
+				if (jobVariant.contains("integration")) {
+					return TestBatchType.INTEGRATION.toString();
+				}
+
+				if (jobVariant.startsWith("build-lib-versions") ||
+					jobVariant.startsWith("empty-osgi-core-dir") ||
+					jobVariant.startsWith("gogo-shell-client") ||
+					jobVariant.startsWith("javadoc-test") ||
+					jobVariant.startsWith("jsp-runtime-compile") ||
+					jobVariant.startsWith("patching-tool") ||
+					jobVariant.startsWith("poshi-validation") ||
+					jobVariant.startsWith("ruby-sass-compiler") ||
+					jobVariant.startsWith("source-format") ||
+					jobVariant.startsWith("tck")) {
+
+					return TestBatchType.MINIMAL.toString();
+				}
+
+				if (jobVariant.contains("playwright")) {
+					return TestBatchType.PLAYWRIGHT.toString();
+				}
+
+				if ((jobVariant.startsWith("modules-unit") ||
+					 jobVariant.startsWith("unit")) &&
+					!jobVariant.contains("project-templates")) {
+
+					return TestBatchType.UNIT.toString();
+				}
+			}
+
+			return TestBatchType.OTHER.toString();
+		}
+
+		private enum TestBatchType {
+
+			INTEGRATION("Integration"), MAINTENANCE("Maintenance"),
+			MINIMAL("Minimal"), OTHER("Other"), PLAYWRIGHT("Playwright"),
+			POSHI("Poshi"), TOP_LEVEL_BUILD("Top Level Build"), UNIT("Unit");
+
+			@Override
+			public String toString() {
+				return _string;
+			}
+
+			private TestBatchType(String string) {
+				_string = string;
+			}
+
+			private final String _string;
+
 		}
 
 	}

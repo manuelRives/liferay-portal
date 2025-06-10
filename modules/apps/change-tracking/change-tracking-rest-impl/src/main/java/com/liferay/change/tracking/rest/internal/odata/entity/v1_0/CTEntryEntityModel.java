@@ -25,6 +25,11 @@ public class CTEntryEntityModel implements EntityModel {
 		_entityFieldsMap = EntityModel.toEntityFieldsMap(
 			new BooleanEntityField("hideable", locale -> "hideable"),
 			new DateTimeEntityField(
+				"ctCollectionStatusDate",
+				locale -> Field.getSortableFieldName(
+					"ctCollectionStatusDate_Number"),
+				locale -> "ctCollectionStatusDate"),
+			new DateTimeEntityField(
 				"dateCreated",
 				locale -> Field.getSortableFieldName(Field.CREATE_DATE),
 				locale -> Field.CREATE_DATE),
@@ -32,6 +37,17 @@ public class CTEntryEntityModel implements EntityModel {
 				"dateModified",
 				locale -> Field.getSortableFieldName(Field.MODIFIED_DATE),
 				locale -> Field.MODIFIED_DATE),
+			new EntityField(
+				"ctCollectionStatus", EntityField.Type.INTEGER,
+				locale -> Field.getSortableFieldName(
+					"ctCollectionStatusLabel_".concat(
+						LocaleUtil.toLanguageId(locale))),
+				locale -> "ctCollectionStatus", String::valueOf),
+			new EntityField(
+				"status", EntityField.Type.INTEGER,
+				locale -> Field.getSortableFieldName(
+					"statusLabel_".concat(LocaleUtil.toLanguageId(locale))),
+				locale -> "status", String::valueOf),
 			new IdEntityField(
 				"modelClassNameId", locale -> "modelClassNameId",
 				String::valueOf),
@@ -39,16 +55,19 @@ public class CTEntryEntityModel implements EntityModel {
 				"ownerId", locale -> Field.USER_ID, String::valueOf),
 			new IdEntityField(
 				"siteId", locale -> Field.GROUP_ID, String::valueOf),
-			new EntityField(
-				"status", EntityField.Type.INTEGER,
-				locale -> Field.getSortableFieldName(
-					"statusLabel_".concat(LocaleUtil.toLanguageId(locale))),
-				locale -> "status", String::valueOf),
 			new StringEntityField(
 				"changeType",
 				locale -> Field.getSortableFieldName(
 					"changeTypeLabel_".concat(LocaleUtil.toLanguageId(locale))),
 				locale -> "changeTypeLabel"),
+			new StringEntityField(
+				"ctCollectionName",
+				locale -> Field.getSortableFieldName(
+					"ctCollectionName_String")),
+			new StringEntityField(
+				"ctCollectionStatusUserName",
+				locale -> Field.getSortableFieldName(
+					"ctCollectionStatusUserName_String")),
 			new StringEntityField("ownerName", locale -> Field.USER_NAME),
 			new StringEntityField(
 				"siteName",

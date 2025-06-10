@@ -14,6 +14,7 @@ import React, {useContext, useEffect, useState} from 'react';
 import ServiceProvider from '../../ServiceProvider/index';
 import {debouncePromise} from '../../utilities/debounce';
 import {CART_PRODUCT_QUANTITY_CHANGED} from '../../utilities/eventsDefinitions';
+import {getMultipleQuantity} from '../../utilities/quantities';
 import Price from '../price/Price';
 import QuantitySelector from '../quantity_selector/QuantitySelector';
 import ItemInfoView from './CartItemViews/ItemInfoView';
@@ -55,6 +56,21 @@ const deboncedUpdateItemQuantity = debouncePromise(
 	},
 	1000
 );
+
+const isValidMedia = (adaptiveMediaImageHTMLTag) => {
+	if (adaptiveMediaImageHTMLTag) {
+		const testElement = window.document.createElement('div');
+
+		testElement.innerHTML = adaptiveMediaImageHTMLTag;
+
+		const imgElement = testElement.querySelector('img');
+		const srcAttribute = imgElement.getAttribute('src');
+
+		return !!srcAttribute;
+	}
+
+	return false;
+};
 
 function CartItem({
 	adaptiveMediaImageHTMLTag,
@@ -178,8 +194,7 @@ function CartItem({
 	return (
 		<div
 			className={classnames('mini-cart-item', {
-				'align-items-start':
-					Liferay.FeatureFlags['COMMERCE-9599'] && hasChildItems,
+				'align-items-start': hasChildItems,
 				'is-removed': isRemoved,
 			})}
 		>
@@ -194,7 +209,7 @@ function CartItem({
 					</span>
 				</a>
 
-				{!!adaptiveMediaImageHTMLTag && (
+				{isValidMedia(adaptiveMediaImageHTMLTag) && (
 					<div
 						className="mini-cart-item-thumbnail"
 						dangerouslySetInnerHTML={{
@@ -264,8 +279,13 @@ function CartItem({
 					}}
 					quantity={selectorQuantity}
 					step={
-						skuUnitOfMeasure?.incrementalOrderQuantity ||
-						settings.multipleQuantity
+						skuUnitOfMeasure
+							? getMultipleQuantity(
+									skuUnitOfMeasure.incrementalOrderQuantity,
+									settings.multipleQuantity,
+									skuUnitOfMeasure.precision
+								)
+							: settings.multipleQuantity
 					}
 					{...settings}
 					unitOfMeasure={skuUnitOfMeasure}
@@ -283,9 +303,7 @@ function CartItem({
 			</div>
 
 			<div className={getClassName('mini-cart-item-actions')}>
-				{(Liferay.FeatureFlags['COMMERCE-9599'] &&
-					hasOptions(rawOptions)) ||
-				hasSkuUnitOfMeasure ? (
+				{hasOptions(rawOptions) || hasSkuUnitOfMeasure ? (
 					<ClayDropDown
 						closeOnClick
 						trigger={
@@ -295,7 +313,7 @@ function CartItem({
 									name
 								)}
 								className="d-inline-flex"
-								data-qa-id="cart-item-actions"
+								data-qa-id="cartItemActions"
 								displayType="unstyled"
 								symbol="ellipsis-v"
 								title={sub(

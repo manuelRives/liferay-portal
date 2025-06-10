@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -21,20 +22,22 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.kernel.workflow.WorkflowHandler;
+import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 import com.liferay.portal.kernel.workflow.WorkflowInstance;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManager;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + PortletKeys.MY_WORKFLOW_TASK,
+		"jakarta.portlet.name=" + PortletKeys.MY_WORKFLOW_TASK,
 		"mvc.command.name=/portal_workflow_task/complete_task"
 	},
 	service = MVCActionCommand.class
@@ -61,6 +64,17 @@ public class CompleteTaskMVCActionCommand
 			WebKeys.THEME_DISPLAY);
 
 		try {
+			boolean hideDefaultSuccessMessage = ParamUtil.getBoolean(
+				actionRequest, "hideDefaultSuccessMessage");
+
+			if (hideDefaultSuccessMessage) {
+				SessionMessages.add(
+					actionRequest,
+					_portal.getPortletId(actionRequest) +
+						SessionMessages.
+							KEY_SUFFIX_HIDE_DEFAULT_SUCCESS_MESSAGE);
+			}
+
 			long workflowTaskId = ParamUtil.getLong(
 				actionRequest, "workflowTaskId");
 
@@ -72,10 +86,17 @@ public class CompleteTaskMVCActionCommand
 				themeDisplay.getCompanyId(), workflowTaskId);
 
 			ServiceContext serviceContext = (ServiceContext)workflowContext.get(
-				"serviceContext");
+				WorkflowConstants.CONTEXT_SERVICE_CONTEXT);
 
 			serviceContext.setRequest(
 				_getHttpServletRequest(actionRequest, actionResponse));
+
+			WorkflowHandler<?> workflowHandler =
+				WorkflowHandlerRegistryUtil.getWorkflowHandler(
+					(String)workflowContext.get(
+						WorkflowConstants.CONTEXT_ENTRY_CLASS_NAME));
+
+			workflowHandler.contributeWorkflowContext(workflowContext);
 
 			workflowContext.put(
 				WorkflowConstants.CONTEXT_USER_ID,

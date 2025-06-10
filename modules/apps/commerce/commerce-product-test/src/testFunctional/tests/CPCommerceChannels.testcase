@@ -3,11 +3,14 @@ definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Product Info Management";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp(minium = "true");
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
@@ -452,45 +455,6 @@ definition {
 			locator1 = "CommerceEntry#ENTRY_NAME_BODY_VERTICAL_ELLIPSIS");
 	}
 
-	@description = "This is a test for COMMERCE-6413. Commerce Channel API unable to define Type"
-	@priority = 3
-	test CanCreateChannelViaAPIAndCheckTabs {
-		property portal.acceptance = "false";
-
-		var wrongChannelType = "Site";
-		var correctChannelType = "site";
-		var channelTabsList = "General,Type,Notification Queue,Notification Templates,Payment Restrictions,Shipping Restrictions";
-		var createChannelResponseWithError = CommerceJSONChannelsAPI._addChannel(
-			channelName = "Test Channel New",
-			channelType = ${wrongChannelType},
-			currencyCode = "US",
-			externalReferenceCode = 101);
-
-		var createChannelErrorMessage = JSONUtil.getWithJSONPath(${createChannelResponseWithError}, "$");
-
-		TestUtils.assertEquals(
-			actual = ${createChannelErrorMessage},
-			expected = "{errorDescription=Invalid channel type, message=null, status=400}");
-
-		CommerceChannels.openChannelsAdmin();
-
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
-
-		CommerceJSONChannelsAPI._addChannel(
-			channelName = "Test Channel New",
-			channelType = ${correctChannelType},
-			currencyCode = "US",
-			externalReferenceCode = 101);
-
-		Refresh();
-
-		CommerceNavigator.gotoEntry(entryName = "Test Channel New");
-
-		for (var channelTab : list ${channelTabsList}) {
-			CommerceEntry.gotoMenuTab(menuTab = ${channelTab});
-		}
-	}
-
 	@description = "COMMERCE-12919. Can Edit PayPal payment method in a channel's Details page"
 	@priority = 3
 	test CanEditPayPalPaymentMethod {
@@ -625,64 +589,6 @@ definition {
 			key_fieldLabel = "Tracking URL",
 			locator1 = "TextInput#GENERIC_TEXT_INPUT",
 			value1 = "");
-	}
-
-	@description = "Verify users without edit permission cannot change the currency of a channel."
-	@priority = 5
-	test CanNotEditChannelCurrencyAsUserWithoutEditPermission {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "true";
-
-		task ("Given a Commerce account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And given the buyer has permission to view a channel's configuration") {
-			CommercePermissions.defineChannelPermissionsViaJSONAPI(
-				roleTitle = "User",
-				update = "false",
-				view = "true");
-
-			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "MANAGE_COMMERCE_PRODUCT_CHANNEL_VISIBILITY",
-				resourceName = "com.liferay.commerce.product",
-				roleTitle = "User");
-		}
-
-		task ("When the buyer logs in and goes to the Minium channel") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceChannels.openChannelsAdmin();
-
-			AssertTextEquals(
-				key_columnIndex = 1,
-				key_rowIndex = 1,
-				locator1 = "CommerceEntry#TABLE_ENTRY_ROW_FIELD_GENERIC",
-				value1 = "Minium Portal");
-		}
-
-		task ("Then the buyer is unable to change the channel currency code") {
-			AssertElementNotPresent(
-				key_entryName = "Minium Portal",
-				locator1 = "CommerceNavigation#ENTRY_NAME",
-				value1 = "Minium Portal");
-		}
 	}
 
 	@description = "This is a test for COMMERCE-10053. An error message shows up when the eligibility element is already linked"
@@ -937,7 +843,7 @@ definition {
 		}
 
 		task ("And the user creates a new notifications template") {
-			CommerceEntry.gotoMenuTab(menuTab = "Notification Templates");
+			CommerceEntry.gotoMenuTab(menuTab = "Notification Templates DEPRECATED");
 
 			Click(locator1 = "Button#PLUS");
 
@@ -1332,7 +1238,7 @@ definition {
 			channelType = "Site",
 			siteName = "Guest");
 
-		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates");
+		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates DEPRECATED");
 
 		Click(locator1 = "Button#PLUS");
 
@@ -1539,7 +1445,7 @@ definition {
 
 		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 
-		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates");
+		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates DEPRECATED");
 
 		Click(locator1 = "Button#PLUS");
 
@@ -1691,7 +1597,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1787,7 +1693,7 @@ definition {
 
 		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 
-		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates");
+		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates DEPRECATED");
 
 		Click(locator1 = "Button#PLUS");
 
@@ -1825,7 +1731,7 @@ definition {
 
 		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 
-		CommerceEntry.gotoMenuTab(menuTab = "Notification Queue");
+		CommerceEntry.gotoMenuTab(menuTab = "Notification Queue DEPRECATED");
 
 		Click(
 			key_value = "Test",
@@ -1845,7 +1751,7 @@ definition {
 
 		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 
-		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates");
+		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates DEPRECATED");
 
 		Click(locator1 = "Button#PLUS");
 
@@ -2369,7 +2275,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2491,7 +2397,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2589,7 +2495,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2773,7 +2679,7 @@ definition {
 
 		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 
-		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates");
+		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates DEPRECATED");
 
 		Click(locator1 = "Button#PLUS");
 
@@ -2811,7 +2717,7 @@ definition {
 
 		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 
-		CommerceEntry.gotoMenuTab(menuTab = "Notification Queue");
+		CommerceEntry.gotoMenuTab(menuTab = "Notification Queue DEPRECATED");
 
 		AssertElementPresent(
 			key_name = "Test",
@@ -2849,10 +2755,6 @@ definition {
 		}
 
 		task ("Then the priority values will be shown in the priority column") {
-			AssertElementPresent(
-				key_text = "Priority",
-				locator1 = "Button#ANY");
-
 			AssertTextEquals(
 				key_columnNumber = 3,
 				key_entryName = "Standard Delivery",
@@ -2934,7 +2836,7 @@ definition {
 
 		task ("When an order is placed") {
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 

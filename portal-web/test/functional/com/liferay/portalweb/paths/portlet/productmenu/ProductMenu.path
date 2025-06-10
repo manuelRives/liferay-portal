@@ -92,7 +92,7 @@
 </tr>
 <tr>
 	<td>SITE</td>
-	<td>//div[contains(@id,'siteSelector')]//div[h5[.='${key_site}']]</td>
+	<td>//div[contains(@id,'siteSelector')]//div[div[.='${key_site}']]</td>
 	<td></td>
 </tr>
 <tr>
@@ -156,11 +156,6 @@
 <tr>
 	<td>PRODUCT_MENU_PANEL_TIMES</td>
 	<td>//a[contains(@id,'ProductMenu')][*[name()='svg'][contains(@class,'icon-times')]]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>STICKER</td>
-	<td>//div[contains(@class,'product-menu-sidebar')]//div[contains(@class,'sticker')][contains(@style,'${key_imageName}')]</td>
 	<td></td>
 </tr>
 </tbody>

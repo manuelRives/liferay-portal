@@ -7,23 +7,26 @@ import ClayAutocomplete from '@clayui/autocomplete';
 import ClayDropDown from '@clayui/drop-down';
 import {useDebounce} from '@clayui/shared';
 import {DateTimeRenderer} from '@liferay/frontend-data-set-web';
+import {stringUtils} from '@liferay/object-js-components-web';
 import {
 	FORM_EVENT_TYPES,
 	useForm,
 	useFormState,
 } from 'data-engine-js-components-web';
-import {ReactFieldBase as FieldBase} from 'dynamic-data-mapping-form-field-type';
+import {ReactFieldBase as FieldBase} from 'dynamic-data-mapping-form-field-type/api';
 import {fetch} from 'frontend-js-web';
 import React, {useEffect, useRef, useState} from 'react';
 
-type LocalizedValue<T> = Liferay.Language.LocalizedValue<T>;
-
-const defaultLanguageId = Liferay.ThemeDisplay.getDefaultLanguageId();
+import type {
+	Locale,
+	LocalizedValue,
+} from 'dynamic-data-mapping-form-field-type';
 
 async function fetchOptions<T>(url: string) {
 	const response = await fetch(url, {
 		headers: {
 			'Accept': 'application/json',
+			'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),
 			'Content-Type': 'application/json',
 		},
 		method: 'GET',
@@ -32,42 +35,48 @@ async function fetchOptions<T>(url: string) {
 	return (await response.json()) as T;
 }
 
-function getLabel<T extends ObjectMap<any>>(
+export function getLabel<T extends ObjectMap<any>>(
 	item: T,
 	key: keyof T,
+	objectDefinitionDefaultLanguageId: Locale,
 	objectFieldBusinessType: string
 ) {
 	const value = item[key];
 
-	if (typeof value !== 'object') {
-		if (objectFieldBusinessType === 'Date') {
-			return DateTimeRenderer({
-				options: {
-					format: {
-						day: 'numeric',
-						month: 'short',
-						timeZone: 'UTC',
-						year: 'numeric',
-					},
-				},
-				value: String(value),
-			});
-		}
-
-		return value ? String(value) : '';
+	if (!value && objectFieldBusinessType !== 'Boolean') {
+		return '';
 	}
-	const label =
-		(value as LocalizedValue<string>)[defaultLanguageId] ??
-		(value as {[key: string]: string})['name'] ??
-		(value as {[key: string]: string})['label_i18n'];
 
-	return label ? String(label) : '';
+	if (objectFieldBusinessType === 'Date') {
+		return DateTimeRenderer({
+			options: {
+				format: {
+					day: 'numeric',
+					month: 'short',
+					timeZone: 'UTC',
+					year: 'numeric',
+				},
+			},
+			value: String(value),
+		});
+	}
+
+	return typeof value === 'object'
+		? stringUtils.getLocalizableLabel({
+				fallbackLabel:
+					(value as {[key: string]: string})['name'] ??
+					(value as {[key: string]: string})['label_i18n'],
+				fallbackLanguageId: objectDefinitionDefaultLanguageId,
+				labels: value as LocalizedValue<string>,
+			})
+		: String(value);
 }
 
 function LoadingWithDebounce({
 	labelKey,
 	list,
 	loading,
+	objectDefinitionDefaultLanguageId,
 	objectFieldBusinessType,
 	onSelect,
 	searchTerm,
@@ -75,6 +84,7 @@ function LoadingWithDebounce({
 	labelKey: string;
 	list?: Item[];
 	loading?: boolean;
+	objectDefinitionDefaultLanguageId: Locale;
 	objectFieldBusinessType: string;
 	onSelect: (item: Item) => void;
 	searchTerm?: string;
@@ -104,7 +114,12 @@ function LoadingWithDebounce({
 					key={item.id}
 					match={searchTerm}
 					onClick={() => onSelect(item)}
-					value={getLabel(item, labelKey, objectFieldBusinessType)}
+					value={getLabel(
+						item,
+						labelKey,
+						objectDefinitionDefaultLanguageId,
+						objectFieldBusinessType
+					)}
 				/>
 			))}
 		</>
@@ -117,6 +132,7 @@ export default function ObjectRelationship({
 	inputName,
 	labelKey = 'label',
 	name,
+	objectDefinitionDefaultLanguageId,
 	objectEntryId,
 	objectFieldBusinessType,
 	onBlur,
@@ -132,10 +148,8 @@ export default function ObjectRelationship({
 }: IProps) {
 	const autocompleteRef = useRef<HTMLInputElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
-	const [
-		{active, list, loading, searchTerm, selected, url},
-		setState,
-	] = useState<State>({url: null});
+	const [{active, list, loading, searchTerm, selected, url}, setState] =
+		useState<State>({url: null});
 
 	const dispatch = useForm();
 
@@ -171,7 +185,7 @@ export default function ObjectRelationship({
 					? apiURL.replace(/{\w+}/, String(parameterObjectFieldId))
 					: `${apiURL}?pageSize=-1${
 							searchTerm ? `&search=${searchTerm}` : ''
-					  }`;
+						}`;
 			}
 
 			if (!newURL || newURL === url) {
@@ -188,7 +202,7 @@ export default function ObjectRelationship({
 						objectEntryId !== '0'
 							? items.filter(
 									(item) => item.id !== Number(objectEntryId)
-							  )
+								)
 							: items,
 					loading: false,
 					url: newURL,
@@ -266,7 +280,13 @@ export default function ObjectRelationship({
 	}, [active]);
 
 	const label =
-		(selected && getLabel(selected, labelKey, objectFieldBusinessType)) ??
+		(selected &&
+			getLabel(
+				selected,
+				labelKey,
+				objectDefinitionDefaultLanguageId,
+				objectFieldBusinessType
+			)) ??
 		searchTerm;
 
 	return (
@@ -292,6 +312,7 @@ export default function ObjectRelationship({
 									getLabel(
 										item,
 										labelKey,
+										objectDefinitionDefaultLanguageId,
 										objectFieldBusinessType
 									) === value
 							);
@@ -355,6 +376,9 @@ export default function ObjectRelationship({
 								labelKey={labelKey}
 								list={list}
 								loading={loading}
+								objectDefinitionDefaultLanguageId={
+									objectDefinitionDefaultLanguageId
+								}
 								objectFieldBusinessType={
 									objectFieldBusinessType
 								}
@@ -390,6 +414,7 @@ interface IProps {
 	inputName: string;
 	labelKey?: string;
 	name: string;
+	objectDefinitionDefaultLanguageId: Locale;
 	objectEntryId: string;
 	objectFieldBusinessType: string;
 	onBlur?: React.FocusEventHandler<HTMLInputElement>;

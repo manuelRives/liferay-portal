@@ -7,17 +7,25 @@ package com.liferay.object.internal.search.spi.model.index.contributor;
 
 import com.liferay.account.model.AccountEntryOrganizationRel;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
+import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.entry.util.ObjectEntryValuesUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
+import com.liferay.object.model.ObjectEntryFolder;
 import com.liferay.object.model.ObjectField;
+import com.liferay.object.model.ObjectFolder;
+import com.liferay.object.rest.dto.v1_0.ListEntry;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectEntryFolderLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Document;
@@ -26,6 +34,10 @@ import com.liferay.portal.kernel.search.FieldArray;
 import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
@@ -53,15 +65,19 @@ public class ObjectEntryModelDocumentContributor
 			accountEntryOrganizationRelLocalService,
 		String className,
 		ObjectDefinitionLocalService objectDefinitionLocalService,
+		ObjectEntryFolderLocalService objectEntryFolderLocalService,
 		ObjectEntryLocalService objectEntryLocalService,
-		ObjectFieldLocalService objectFieldLocalService) {
+		ObjectFieldLocalService objectFieldLocalService,
+		ObjectFolderLocalService objectFolderLocalService) {
 
 		_accountEntryOrganizationRelLocalService =
 			accountEntryOrganizationRelLocalService;
 		_className = className;
 		_objectDefinitionLocalService = objectDefinitionLocalService;
+		_objectEntryFolderLocalService = objectEntryFolderLocalService;
 		_objectEntryLocalService = objectEntryLocalService;
 		_objectFieldLocalService = objectFieldLocalService;
+		_objectFolderLocalService = objectFolderLocalService;
 	}
 
 	@Override
@@ -102,18 +118,16 @@ public class ObjectEntryModelDocumentContributor
 	}
 
 	private void _contribute(
-		Document document, FieldArray fieldArray,
-		ObjectDefinition objectDefinition, ObjectEntry objectEntry,
-		ObjectField objectField, StringBundler sb,
+		Document document, FieldArray fieldArray, String fieldName,
+		Object fieldValue, String locale, ObjectDefinition objectDefinition,
+		ObjectEntry objectEntry, ObjectField objectField, StringBundler sb,
 		Map<String, Serializable> values) {
 
 		if (!objectField.isIndexed()) {
 			return;
 		}
 
-		Object value = values.get(objectField.getName());
-
-		if (value == null) {
+		if (fieldValue == null) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
 					StringBundler.concat(
@@ -125,8 +139,6 @@ public class ObjectEntryModelDocumentContributor
 			return;
 		}
 
-		String objectFieldName = objectField.getName();
-
 		if (StringUtil.equals(
 				objectField.getBusinessType(),
 				ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT) ||
@@ -134,19 +146,38 @@ public class ObjectEntryModelDocumentContributor
 				objectField.getBusinessType(),
 				ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT)) {
 
-			value = ObjectEntryValuesUtil.getValueString(objectField, values);
+			fieldValue = ObjectEntryValuesUtil.getValueString(
+				objectField, values);
+		}
+		else if (StringUtil.equals(
+					objectField.getBusinessType(),
+					ObjectFieldConstants.BUSINESS_TYPE_MULTISELECT_PICKLIST) &&
+				 (fieldValue instanceof List)) {
+
+			fieldValue = ListUtil.toString(
+				(List)fieldValue, (String)null, StringPool.COMMA_AND_SPACE);
+		}
+		else if (StringUtil.equals(
+					objectField.getBusinessType(),
+					ObjectFieldConstants.BUSINESS_TYPE_PICKLIST) &&
+				 (fieldValue instanceof ListEntry)) {
+
+			ListEntry listEntry = (ListEntry)fieldValue;
+
+			fieldValue = listEntry.getKey();
 		}
 		else if (StringUtil.equals(
 					objectField.getBusinessType(),
 					ObjectFieldConstants.BUSINESS_TYPE_PRECISION_DECIMAL)) {
 
-			value = BigDecimalUtil.stripTrailingZeros((BigDecimal)value);
+			fieldValue = BigDecimalUtil.stripTrailingZeros(
+				(BigDecimal)fieldValue);
 		}
 		else if (Objects.equals(
 					objectDefinition.getAccountEntryRestrictedObjectFieldId(),
 					objectField.getObjectFieldId())) {
 
-			Long accountEntryId = (Long)value;
+			Long accountEntryId = (Long)fieldValue;
 
 			document.addKeyword(
 				"accountEntryRestrictedObjectFieldValue", accountEntryId);
@@ -160,81 +191,82 @@ public class ObjectEntryModelDocumentContributor
 					Long.class));
 		}
 
-		String valueString = String.valueOf(value);
+		String valueString = String.valueOf(fieldValue);
 
 		if (objectField.isIndexedAsKeyword()) {
 			_addField(
-				fieldArray, objectFieldName, "value_keyword",
+				fieldArray, fieldName, "value_keyword",
 				StringUtil.lowerCase(valueString));
 
-			_appendToContent(sb, objectFieldName, valueString);
+			_appendToContent(sb, fieldName, valueString);
 		}
-		else if (value instanceof BigDecimal) {
-			_addField(fieldArray, objectFieldName, "value_double", valueString);
+		else if (fieldValue instanceof BigDecimal) {
+			_addField(fieldArray, fieldName, "value_double", valueString);
 
-			_appendToContent(sb, objectFieldName, valueString);
+			_appendToContent(sb, fieldName, valueString);
 		}
-		else if (value instanceof Boolean) {
+		else if (fieldValue instanceof Boolean) {
+			_addField(fieldArray, fieldName, "value_boolean", valueString);
 			_addField(
-				fieldArray, objectFieldName, "value_boolean", valueString);
+				fieldArray, fieldName, "value_keyword",
+				_translate((Boolean)fieldValue));
+
+			_appendToContent(sb, fieldName, valueString);
+		}
+		else if (fieldValue instanceof Date) {
 			_addField(
-				fieldArray, objectFieldName, "value_keyword",
-				_translate((Boolean)value));
+				fieldArray, fieldName, "value_date",
+				_getDateString(fieldValue));
 
-			_appendToContent(sb, objectFieldName, valueString);
+			_appendToContent(sb, fieldName, _getDateString(fieldValue));
 		}
-		else if (value instanceof Date) {
-			_addField(
-				fieldArray, objectFieldName, "value_date",
-				_getDateString(value));
+		else if (fieldValue instanceof Double) {
+			_addField(fieldArray, fieldName, "value_double", valueString);
 
-			_appendToContent(sb, objectFieldName, _getDateString(value));
+			_appendToContent(sb, fieldName, valueString);
 		}
-		else if (value instanceof Double) {
-			_addField(fieldArray, objectFieldName, "value_double", valueString);
+		else if (fieldValue instanceof Integer) {
+			_addField(fieldArray, fieldName, "value_integer", valueString);
 
-			_appendToContent(sb, objectFieldName, valueString);
+			_appendToContent(sb, fieldName, valueString);
 		}
-		else if (value instanceof Integer) {
-			_addField(
-				fieldArray, objectFieldName, "value_integer", valueString);
+		else if (fieldValue instanceof Long) {
+			_addField(fieldArray, fieldName, "value_long", valueString);
 
-			_appendToContent(sb, objectFieldName, valueString);
+			_appendToContent(sb, fieldName, valueString);
 		}
-		else if (value instanceof Long) {
-			_addField(fieldArray, objectFieldName, "value_long", valueString);
-
-			_appendToContent(sb, objectFieldName, valueString);
-		}
-		else if (value instanceof String) {
+		else if (fieldValue instanceof String) {
 			if (Validator.isBlank(objectField.getIndexedLanguageId())) {
+				_addField(fieldArray, fieldName, "value_text", valueString);
+			}
+			else if (objectField.isLocalized()) {
 				_addField(
-					fieldArray, objectFieldName, "value_text", valueString);
+					fieldArray, fieldName, "value_" + locale, valueString);
 			}
 			else {
 				_addField(
-					fieldArray, objectFieldName,
+					fieldArray, fieldName,
 					"value_" + objectField.getIndexedLanguageId(), valueString);
 			}
 
 			_addField(
-				fieldArray, objectFieldName, "value_keyword_lowercase",
+				fieldArray, fieldName, "value_keyword_lowercase",
 				_getSortableValue(valueString));
 
-			_appendToContent(sb, objectFieldName, valueString);
+			_appendToContent(sb, fieldName, valueString);
 		}
-		else if (value instanceof byte[]) {
+		else if (fieldValue instanceof byte[]) {
 			_addField(
-				fieldArray, objectFieldName, "value_binary",
-				Base64.encode((byte[])value));
+				fieldArray, fieldName, "value_binary",
+				Base64.encode((byte[])fieldValue));
 		}
 		else {
 			if (_log.isWarnEnabled()) {
 				_log.warn(
 					StringBundler.concat(
 						"Object entry ", objectEntry.getObjectEntryId(),
-						" has object field \"", objectFieldName,
-						"\" with unsupported value ", value));
+						" has object field \"", fieldName,
+						"\" with unsupported value ", fieldValue));
 			}
 		}
 	}
@@ -251,10 +283,6 @@ public class ObjectEntryModelDocumentContributor
 			new Field(
 				Field.getSortableFieldName(Field.ENTRY_CLASS_PK),
 				document.get(Field.ENTRY_CLASS_PK)));
-		document.add(
-			new Field(
-				Field.getSortableFieldName("externalReferenceCode"),
-				objectEntry.getExternalReferenceCode()));
 
 		FieldArray fieldArray = (FieldArray)document.getField(
 			"nestedFieldArray");
@@ -275,8 +303,7 @@ public class ObjectEntryModelDocumentContributor
 		document.addKeyword(
 			"objectDefinitionName", objectDefinition.getShortName());
 
-		Map<String, Serializable> values = _objectEntryLocalService.getValues(
-			objectEntry.getObjectEntryId());
+		Map<String, Serializable> values = objectEntry.getValues();
 
 		List<ObjectField> objectFields =
 			_objectFieldLocalService.getObjectFields(
@@ -285,9 +312,33 @@ public class ObjectEntryModelDocumentContributor
 		StringBundler sb = new StringBundler(objectFields.size() * 4);
 
 		for (ObjectField objectField : objectFields) {
-			_contribute(
-				document, fieldArray, objectDefinition, objectEntry,
-				objectField, sb, values);
+			if (objectField.isLocalized()) {
+				Map<String, Object> localizedValues =
+					(Map<String, Object>)values.get(
+						objectField.getI18nObjectFieldName());
+
+				if (MapUtil.isEmpty(localizedValues)) {
+					continue;
+				}
+
+				for (Map.Entry<String, Object> localeMap :
+						localizedValues.entrySet()) {
+
+					_contribute(
+						document, fieldArray, objectField.getName(),
+						localizedValues.get(localeMap.getKey()),
+						LocaleUtil.fromLanguageId(
+							localeMap.getKey(), true, false
+						).toString(),
+						objectDefinition, objectEntry, objectField, sb, values);
+				}
+			}
+			else {
+				_contribute(
+					document, fieldArray, objectField.getName(),
+					values.get(objectField.getName()), null, objectDefinition,
+					objectEntry, objectField, sb, values);
+			}
 		}
 
 		if (sb.index() > 0) {
@@ -296,12 +347,102 @@ public class ObjectEntryModelDocumentContributor
 
 		document.add(new Field("objectEntryContent", sb.toString()));
 
+		document.addKeyword("objectEntryId", objectEntry.getObjectEntryId());
 		document.add(
 			new Field("objectEntryTitle", objectEntry.getTitleValue()));
+
+		ObjectFolder objectFolder = _objectFolderLocalService.getObjectFolder(
+			objectDefinition.getObjectFolderId());
+
+		document.addKeyword(
+			"objectFolderExternalReferenceCode",
+			objectFolder.getExternalReferenceCode(), true);
+
+		if (FeatureFlagManagerUtil.isEnabled(
+				objectEntry.getCompanyId(), "LPD-17564")) {
+
+			_contributeObjectEntryFolder(
+				document, objectEntry.getObjectEntryFolderId());
+		}
+	}
+
+	private void _contributeObjectEntryFolder(
+		Document document, long objectEntryFolderId) {
+
+		document.addKeyword(Field.FOLDER_ID, objectEntryFolderId);
+
+		ObjectEntryFolder objectEntryFolder =
+			_objectEntryFolderLocalService.fetchObjectEntryFolder(
+				objectEntryFolderId);
+
+		if (objectEntryFolder == null) {
+			return;
+		}
+
+		ObjectEntryFolder rootObjectEntryFolder = _getRootObjectEntryFolder(
+			objectEntryFolder);
+
+		String cmsSection = _getCMSSection(
+			rootObjectEntryFolder.getExternalReferenceCode());
+
+		if (cmsSection == null) {
+			return;
+		}
+
+		document.addKeyword("cms_kind", "object");
+		document.addKeyword(
+			"cms_root",
+			rootObjectEntryFolder.getObjectEntryFolderId() ==
+				objectEntryFolderId);
+		document.addKeyword("cms_section", cmsSection);
+	}
+
+	private String _getCMSSection(String externalReferenceCode) {
+		if (externalReferenceCode.equals(
+				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS)) {
+
+			return "contents";
+		}
+
+		if (externalReferenceCode.equals(
+				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES)) {
+
+			return "files";
+		}
+
+		return null;
 	}
 
 	private String _getDateString(Object value) {
 		return _format.format(value);
+	}
+
+	private ObjectEntryFolder _getRootObjectEntryFolder(
+		ObjectEntryFolder objectEntryFolder) {
+
+		if (objectEntryFolder == null) {
+			return null;
+		}
+
+		if (Objects.equals(
+				objectEntryFolder.getExternalReferenceCode(),
+				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS) ||
+			Objects.equals(
+				objectEntryFolder.getExternalReferenceCode(),
+				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES)) {
+
+			return objectEntryFolder;
+		}
+
+		String[] parts = StringUtil.split(
+			objectEntryFolder.getTreePath(), CharPool.SLASH);
+
+		if (parts.length <= 2) {
+			return null;
+		}
+
+		return _objectEntryFolderLocalService.fetchObjectEntryFolder(
+			GetterUtil.getLong(parts[1]));
 	}
 
 	private String _getSortableValue(String value) {
@@ -330,7 +471,9 @@ public class ObjectEntryModelDocumentContributor
 		_accountEntryOrganizationRelLocalService;
 	private final String _className;
 	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
+	private final ObjectEntryFolderLocalService _objectEntryFolderLocalService;
 	private final ObjectEntryLocalService _objectEntryLocalService;
 	private final ObjectFieldLocalService _objectFieldLocalService;
+	private final ObjectFolderLocalService _objectFolderLocalService;
 
 }

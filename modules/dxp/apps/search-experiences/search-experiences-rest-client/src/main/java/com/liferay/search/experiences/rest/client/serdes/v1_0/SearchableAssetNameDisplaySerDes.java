@@ -8,13 +8,13 @@ package com.liferay.search.experiences.rest.client.serdes.v1_0;
 import com.liferay.search.experiences.rest.client.dto.v1_0.SearchableAssetNameDisplay;
 import com.liferay.search.experiences.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -78,6 +78,16 @@ public class SearchableAssetNameDisplaySerDes {
 			sb.append("\"");
 		}
 
+		if (searchableAssetNameDisplay.getHasSubtype() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"hasSubtype\": ");
+
+			sb.append(searchableAssetNameDisplay.getHasSubtype());
+		}
+
 		sb.append("}");
 
 		return sb.toString();
@@ -118,6 +128,15 @@ public class SearchableAssetNameDisplaySerDes {
 				String.valueOf(searchableAssetNameDisplay.getDisplayName()));
 		}
 
+		if (searchableAssetNameDisplay.getHasSubtype() == null) {
+			map.put("hasSubtype", null);
+		}
+		else {
+			map.put(
+				"hasSubtype",
+				String.valueOf(searchableAssetNameDisplay.getHasSubtype()));
+		}
+
 		return map;
 	}
 
@@ -135,6 +154,21 @@ public class SearchableAssetNameDisplaySerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "className")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "displayName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "hasSubtype")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			SearchableAssetNameDisplay searchableAssetNameDisplay,
 			String jsonParserFieldName, Object jsonParserFieldValue) {
@@ -149,6 +183,12 @@ public class SearchableAssetNameDisplaySerDes {
 				if (jsonParserFieldValue != null) {
 					searchableAssetNameDisplay.setDisplayName(
 						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "hasSubtype")) {
+				if (jsonParserFieldValue != null) {
+					searchableAssetNameDisplay.setHasSubtype(
+						(Boolean)jsonParserFieldValue);
 				}
 			}
 		}
@@ -183,36 +223,7 @@ public class SearchableAssetNameDisplaySerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -222,6 +233,42 @@ public class SearchableAssetNameDisplaySerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

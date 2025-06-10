@@ -7,6 +7,7 @@ import '@testing-library/jest-dom/extend-expect';
 import {render, screen} from '@testing-library/react';
 import React from 'react';
 
+import TranslationFilter from '../../../src/main/resources/META-INF/resources/js/translation_manager/TranslationFilter';
 import TranslationOptions from '../../../src/main/resources/META-INF/resources/js/translation_manager/TranslationOptions';
 
 const DEFAULT_FIELDS = {
@@ -43,10 +44,13 @@ const DEFAULT_PROPS = {
 };
 
 const renderDefaultComponent = () =>
-	render(<TranslationOptions {...DEFAULT_PROPS} />);
-describe('TranslationOptions', () => {
-	Liferay.FeatureFlags['LPD-11253'] = true;
+	render(
 
+		// @ts-ignore
+
+		<TranslationOptions {...DEFAULT_PROPS} />
+	);
+describe('TranslationOptions', () => {
 	it('translations options ellipsis not rendered when default language is selected', () => {
 		renderDefaultComponent();
 
@@ -60,17 +64,37 @@ describe('TranslationOptions', () => {
 	describe('Reset Translations Button', () => {
 		it('reset translations button is disabled when default language is selected', () => {
 			render(
+
+				// @ts-ignore
+
 				<TranslationOptions
 					{...DEFAULT_PROPS}
 					selectedLanguageId="ca_ES"
 				/>
 			);
 
-			const resetTranslationsButton = screen.getByText(
-				'reset-translation'
-			);
+			const resetTranslationsButton =
+				screen.getByText('reset-translation');
 
 			expect(resetTranslationsButton).toBeDisabled();
+		});
+	});
+
+	describe('Translation Filter Picker', () => {
+		it('all fields option is selected by default', () => {
+			render(
+
+				// @ts-ignore
+
+				<TranslationFilter
+					{...DEFAULT_PROPS}
+					selectedLanguageId="ca_ES"
+				/>
+			);
+
+			const resetTranslationsButton = screen.getByText('all-fields');
+
+			expect(resetTranslationsButton).toBeInTheDocument();
 		});
 	});
 });

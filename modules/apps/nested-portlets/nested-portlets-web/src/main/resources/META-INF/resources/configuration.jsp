@@ -24,7 +24,7 @@
 		<liferay-frontend:fieldset
 			cssClass="display-style-icon"
 		>
-			<h4><liferay-ui:message key="layout-template" /></h4>
+			<div class="h4"><liferay-ui:message key="layout-template" /></div>
 
 			<clay:row>
 
@@ -43,8 +43,14 @@
 							<label>
 								<aui:input checked="<%= layoutTemplateId.equals(layoutTemplate.getLayoutTemplateId()) %>" label="" name="preferences--layoutTemplateId--" type="radio" value="<%= layoutTemplate.getLayoutTemplateId() %>" />
 
+								<aui:style>
+									.card-background-image-<%= layoutTemplate.getLayoutTemplateId() %> {
+										background-image: url('<%= layoutTemplate.getStaticResourcePath() + HtmlUtil.escapeAttribute(layoutTemplate.getThumbnailPath()) %>') !important;
+									}
+								</aui:style>
+
 								<div class="card">
-									<div class="aspect-ratio aspect-ratio-bg-cover" style="background-image: url('<%= layoutTemplate.getStaticResourcePath() + HtmlUtil.escapeAttribute(layoutTemplate.getThumbnailPath()) %>');">
+									<div class="aspect-ratio aspect-ratio-bg-cover card-background-image-<%= layoutTemplate.getLayoutTemplateId() %>">
 									</div>
 
 									<div class="card-body">

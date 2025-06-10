@@ -12,24 +12,13 @@ import {LearnMessage, LearnResourcesContext} from 'frontend-js-components-web';
 import {fetch, objectToFormData} from 'frontend-js-web';
 import React, {ChangeEvent, useEffect, useRef, useState} from 'react';
 
+import {disableFormSubmitButton} from '../../clientExtensionUtil';
+
 type TFeedback = {displayType: DisplayType; message: string};
 
 const EMPTY_FEEDBACK: TFeedback = {
 	displayType: 'info',
 	message: '',
-};
-
-const disableFormSubmitButton = (
-	disabled: boolean,
-	portletNamespace: string
-) => {
-	const submitButton = document.getElementById(
-		portletNamespace + 'editClientExtensionEntrySubmitButton'
-	) as HTMLButtonElement;
-
-	if (submitButton) {
-		submitButton.disabled = disabled;
-	}
 };
 
 const readInputFile = (file: File) => {
@@ -62,14 +51,12 @@ const FrontendTokenDefinitionFilePicker = ({
 	const [feedback, setFeedback] = useState(EMPTY_FEEDBACK);
 	const [alertRole, setAlertRole] = useState<'alert' | null>(null);
 	const [isValidatingJSON, setIsValidatingJSON] = useState(false);
-	const [
-		frontendTokenDefinitionJSON,
-		setFrontendTokenDefinitionJSON,
-	] = useState<string | undefined>(
-		initialFrontendTokenDefinitionJSON !== ''
-			? initialFrontendTokenDefinitionJSON
-			: undefined
-	);
+	const [frontendTokenDefinitionJSON, setFrontendTokenDefinitionJSON] =
+		useState<string | undefined>(
+			initialFrontendTokenDefinitionJSON !== ''
+				? initialFrontendTokenDefinitionJSON
+				: undefined
+		);
 
 	const fileInputRef = useRef<HTMLInputElement>();
 	const selectFileButtonRef = useRef<HTMLButtonElement>();
@@ -119,7 +106,7 @@ const FrontendTokenDefinitionFilePicker = ({
 							? error
 							: Liferay.Language.get(
 									'your-upload-failed-to-complete'
-							  ),
+								),
 				});
 			});
 	};
@@ -225,7 +212,7 @@ const FrontendTokenDefinitionFilePicker = ({
 
 					<LearnMessage
 						resource="client-extension-web"
-						resourceKey="learn-frontend-token-definitions"
+						resourceKey="frontend-token-definitions"
 					/>
 				</Text>
 
@@ -236,6 +223,9 @@ const FrontendTokenDefinitionFilePicker = ({
 					id={fileInputId}
 					name={fileInputId}
 					onChange={handleFileInputChange}
+
+					// @ts-ignore
+
 					ref={fileInputRef}
 					type="file"
 				/>
@@ -252,6 +242,9 @@ const FrontendTokenDefinitionFilePicker = ({
 						disabled={isValidatingJSON || disabled}
 						displayType="secondary"
 						onClick={() => fileInputRef.current?.click()}
+
+						// @ts-ignore
+
 						ref={selectFileButtonRef}
 					>
 						{!frontendTokenDefinitionJSON
@@ -271,6 +264,9 @@ const FrontendTokenDefinitionFilePicker = ({
 						)}
 
 						{frontendTokenDefinitionJSON && (
+
+							// @ts-ignore
+
 							<ClayButtonWithIcon
 								borderless
 								className="ml-2"

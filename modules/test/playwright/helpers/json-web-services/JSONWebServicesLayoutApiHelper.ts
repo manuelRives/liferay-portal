@@ -6,25 +6,8 @@
 import {expect} from '@playwright/test';
 
 import {liferayConfig} from '../../liferay.config';
+import getRandomString from '../../utils/getRandomString';
 import {ApiHelpers} from '../ApiHelpers';
-
-export type Layout = {
-	companyId: string;
-	friendlyURL: string;
-	groupId: string;
-	hidden: boolean;
-	layoutId: string;
-	nameCurrentValue: string;
-	parentPlid: string;
-	plid: string;
-	privateLayout: boolean;
-	status: number;
-	system: boolean;
-	themeId: string;
-	titleCurrentValue: string;
-	type: string;
-	uuid: string;
-};
 
 export class JSONWebServicesLayoutApiHelper {
 	readonly apiHelpers: ApiHelpers;
@@ -49,11 +32,23 @@ export class JSONWebServicesLayoutApiHelper {
 	 * @param options.type
 	 * The layout type (eg: 'portlet' or 'content')
 	 */
-	async addLayout(
-		groupId: string,
-		title: string,
-		options: {publish?: boolean; type: string} = {type: 'portlet'}
-	): Promise<Layout> {
+	async addLayout({
+		externalReferenceCode = '',
+		groupId,
+		masterLayoutPlid = '0',
+		options = {type: 'portlet'},
+		parentLayoutId = '0',
+		privateLayout = 'false',
+		title,
+	}: {
+		externalReferenceCode?: string;
+		groupId: string;
+		masterLayoutPlid?: string;
+		options?: {publish?: boolean; type?: string};
+		parentLayoutId?: string;
+		privateLayout?: string;
+		title: string;
+	}): Promise<Layout> {
 		if (options.publish && options.type !== 'content') {
 			throw new TypeError(
 				`Publish parameter can only be 'undefined' for non content layouts`
@@ -64,15 +59,30 @@ export class JSONWebServicesLayoutApiHelper {
 
 		const urlSearchParams = new URLSearchParams();
 
+		urlSearchParams.append('externalReferenceCode', externalReferenceCode);
 		urlSearchParams.append('groupId', groupId);
-		urlSearchParams.append('privateLayout', 'false');
-		urlSearchParams.append('parentLayoutId', '0');
-		urlSearchParams.append('name', name);
-		urlSearchParams.append('title', title);
-		urlSearchParams.append('description', '');
+		urlSearchParams.append('privateLayout', privateLayout);
+		urlSearchParams.append('parentLayoutId', parentLayoutId);
+		urlSearchParams.append('localeNamesMap', JSON.stringify({en_US: name}));
+		urlSearchParams.append(
+			'localeTitlesMap',
+			JSON.stringify({en_US: title})
+		);
+		urlSearchParams.append(
+			'descriptionMap',
+			JSON.stringify({en_US: getRandomString()})
+		);
+		urlSearchParams.append('keywordsMap', JSON.stringify({en_US: ''}));
+		urlSearchParams.append('robotsMap', JSON.stringify({en_US: ''}));
 		urlSearchParams.append('type', options.type);
+		urlSearchParams.append('typeSettings', '');
 		urlSearchParams.append('hidden', 'false');
-		urlSearchParams.append('friendlyURL', `/${title}`);
+		urlSearchParams.append(
+			'friendlyURLMap',
+			JSON.stringify({en_US: `/${title}`})
+		);
+		urlSearchParams.append('masterLayoutPlid', masterLayoutPlid);
+		urlSearchParams.append('serviceContext', JSON.stringify({}));
 
 		const layout = await this.apiHelpers.post(
 			`${liferayConfig.environment.baseUrl}${this.basePath}/add-layout`,
@@ -109,6 +119,30 @@ export class JSONWebServicesLayoutApiHelper {
 
 		return this.apiHelpers.post(
 			`${liferayConfig.environment.baseUrl}${this.basePath}/delete-layout`,
+			{
+				data: urlSearchParams.toString(),
+				failOnStatusCode: true,
+				headers: await this.apiHelpers.getJSONWebServicesHeaders(),
+			}
+		);
+	}
+
+	async getLayoutsCount(
+		groupId: number,
+		privateLayout: boolean
+	): Promise<void> {
+		const urlSearchParams = new URLSearchParams();
+
+		// @ts-ignore
+
+		urlSearchParams.append('groupId', groupId);
+
+		// @ts-ignore
+
+		urlSearchParams.append('privateLayout', privateLayout);
+
+		return this.apiHelpers.post(
+			`${liferayConfig.environment.baseUrl}${this.basePath}/get-layouts-count`,
 			{
 				data: urlSearchParams.toString(),
 				failOnStatusCode: true,

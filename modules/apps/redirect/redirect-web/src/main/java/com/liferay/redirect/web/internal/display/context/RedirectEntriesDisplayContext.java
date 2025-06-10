@@ -46,18 +46,18 @@ import com.liferay.redirect.web.internal.util.comparator.RedirectComparator;
 import com.liferay.redirect.web.internal.util.comparator.RedirectDateComparator;
 import com.liferay.staging.StagingGroupHelper;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -220,6 +220,22 @@ public class RedirectEntriesDisplayContext {
 			redirectEntry.getSourceURL();
 	}
 
+	public boolean isLiveGroup() {
+		if (_liveGroup != null) {
+			return _liveGroup;
+		}
+
+		boolean liveGroup = false;
+
+		if (_stagingGroupHelper.isLiveGroup(_themeDisplay.getScopeGroupId())) {
+			liveGroup = true;
+		}
+
+		_liveGroup = liveGroup;
+
+		return _liveGroup;
+	}
+
 	public boolean isStagingGroup() {
 		if (_stagingGroup != null) {
 			return _stagingGroup;
@@ -376,6 +392,7 @@ public class RedirectEntriesDisplayContext {
 	private final HttpServletRequest _httpServletRequest;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
+	private Boolean _liveGroup;
 	private final ModelResourcePermission<RedirectEntry>
 		_modelResourcePermission;
 	private final PortletResourcePermission _portletResourcePermission;

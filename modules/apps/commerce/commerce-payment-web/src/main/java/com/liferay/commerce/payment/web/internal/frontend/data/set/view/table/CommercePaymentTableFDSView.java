@@ -41,10 +41,11 @@ public class CommercePaymentTableFDSView extends BaseTableFDSView {
 			"externalReferenceCode", "erc"
 		).add(
 			"createDate", "date",
-			fdsTableSchemaField -> {
-				fdsTableSchemaField.setContentRenderer("dateTime");
-				fdsTableSchemaField.setSortable(true);
-			}
+			fdsTableSchemaField -> fdsTableSchemaField.setContentRenderer(
+				"dateTime"
+			).setSortable(
+				true
+			)
 		).add(
 			"amountFormatted", "amount"
 		).add(
@@ -54,7 +55,7 @@ public class CommercePaymentTableFDSView extends BaseTableFDSView {
 		).add(
 			"paymentStatusStatus", "status",
 			fdsTableSchemaField -> fdsTableSchemaField.setContentRenderer(
-				"label")
+				"CommercePaymentStatusDataRenderer")
 		).build();
 	}
 

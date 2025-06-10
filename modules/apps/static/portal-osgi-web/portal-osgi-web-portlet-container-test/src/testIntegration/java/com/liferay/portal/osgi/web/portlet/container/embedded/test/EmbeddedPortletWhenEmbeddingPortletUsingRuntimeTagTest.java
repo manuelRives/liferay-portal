@@ -13,9 +13,11 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionary;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.osgi.web.portlet.container.test.BasePortletContainerTestCase;
 import com.liferay.portal.osgi.web.portlet.container.test.TestPortlet;
@@ -24,18 +26,18 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletRequestDispatcher;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.IOException;
 
 import java.util.Dictionary;
-
-import javax.portlet.PortletContext;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletRequestDispatcher;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -183,6 +185,71 @@ public class EmbeddedPortletWhenEmbeddingPortletUsingRuntimeTagTest
 
 		Assert.assertTrue(testPortlet.isCalledServeResource());
 		Assert.assertTrue(testRuntimePortlet.isCalledRuntime());
+	}
+
+	@Test
+	public void testShouldRenderPortletResourcesEmbeddedAndRuntimePortlets()
+		throws Exception {
+
+		TestPortlet testPortlet = new TestPortlet() {
+
+			@Override
+			public void render(
+					RenderRequest renderRequest, RenderResponse renderResponse)
+				throws IOException, PortletException {
+
+				super.render(renderRequest, renderResponse);
+
+				PortletContext portletContext = getPortletContext();
+
+				PortletRequestDispatcher portletRequestDispatcher =
+					portletContext.getRequestDispatcher(
+						"/runtime_custom_portlet.jsp");
+
+				portletRequestDispatcher.include(renderRequest, renderResponse);
+			}
+
+		};
+
+		setUpPortlet(
+			testPortlet, new HashMapDictionary<>(), TEST_PORTLET_ID + "1");
+		setUpPortlet(
+			testPortlet, new HashMapDictionary<>(), TEST_PORTLET_ID + "2");
+
+		TestRuntimePortlet testRuntimePortlet = new TestRuntimePortlet();
+
+		String[] paths = {
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString()
+		};
+
+		setUpPortlet(
+			testRuntimePortlet,
+			HashMapDictionaryBuilder.<String, Object>put(
+				"com.liferay.portlet.footer-portlet-css", "/" + paths[0]
+			).put(
+				"com.liferay.portlet.footer-portlet-javascript", "/" + paths[1]
+			).put(
+				"com.liferay.portlet.header-portlet-css", "/" + paths[2]
+			).put(
+				"com.liferay.portlet.header-portlet-javascript", "/" + paths[3]
+			).build(),
+			"testRuntimePortletId", false);
+
+		PortletContainerTestUtil.Response response =
+			PortletContainerTestUtil.request(
+				layout.getRegularURL(
+					PortletContainerTestUtil.getHttpServletRequest(
+						group, layout)));
+
+		Assert.assertEquals(200, response.getCode());
+
+		String body = response.getBody();
+
+		for (String path : paths) {
+			Assert.assertTrue(body.contains(path));
+			Assert.assertTrue(body.indexOf(path) == body.lastIndexOf(path));
+		}
 	}
 
 	private static String[] _layoutStaticPortletsAll;

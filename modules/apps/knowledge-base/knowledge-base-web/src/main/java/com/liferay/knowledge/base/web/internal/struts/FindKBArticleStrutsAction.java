@@ -22,6 +22,7 @@ import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
+import com.liferay.portal.kernel.portlet.PortletLayoutFinder;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
@@ -41,18 +42,18 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -131,7 +132,8 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 	}
 
 	private List<Layout> _getCandidateLayouts(
-			long plid, boolean privateLayout, KBArticle kbArticle)
+			long plid, boolean privateLayout, KBArticle kbArticle,
+			ThemeDisplay themeDisplay)
 		throws Exception {
 
 		List<Layout> candidateLayouts = new ArrayList<>();
@@ -151,7 +153,14 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 				group.getGroupId(), privateLayout,
 				LayoutConstants.TYPE_PORTLET));
 
-		Layout layout = _layoutLocalService.getLayout(plid);
+		PortletLayoutFinder.Result result = _portletLayoutFinder.find(
+			themeDisplay, kbArticle.getGroupId());
+
+		Layout layout = _layoutLocalService.getLayout(result.getPlid());
+
+		if (layout == null) {
+			layout = _layoutLocalService.getLayout(plid);
+		}
 
 		if ((layout.getGroupId() == kbArticle.getGroupId()) &&
 			layout.isTypePortlet()) {
@@ -219,13 +228,16 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 		PortletURL firstMatchPortletURL = null;
 
 		List<Layout> layouts = _getCandidateLayouts(
-			plid, privateLayout, kbArticle);
+			plid, privateLayout, kbArticle,
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY));
 
 		for (Layout layout : layouts) {
 			LayoutTypePortlet layoutTypePortlet =
 				(LayoutTypePortlet)layout.getLayoutType();
 
-			List<Portlet> portlets = layoutTypePortlet.getAllPortlets();
+			List<Portlet> portlets =
+				layoutTypePortlet.getAllNonembeddedPortlets();
 
 			for (Portlet portlet : portlets) {
 				String rootPortletId = PortletIdCodec.decodePortletName(
@@ -378,18 +390,17 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 	}
 
 	private String _getKBFolderUrlTitle(KBArticle kbArticle) throws Exception {
-		if ((kbArticle != null) &&
-			Validator.isNotNull(kbArticle.getUrlTitle()) &&
-			(kbArticle.getKbFolderId() !=
+		if ((kbArticle == null) || Validator.isNull(kbArticle.getUrlTitle()) ||
+			(kbArticle.getKbFolderId() ==
 				KBFolderConstants.DEFAULT_PARENT_FOLDER_ID)) {
 
-			KBFolder kbFolder = _kbFolderLocalService.getKBFolder(
-				kbArticle.getKbFolderId());
-
-			return kbFolder.getUrlTitle();
+			return null;
 		}
 
-		return null;
+		KBFolder kbFolder = _kbFolderLocalService.getKBFolder(
+			kbArticle.getKbFolderId());
+
+		return kbFolder.getUrlTitle();
 	}
 
 	private String _getPortletId(long plid) throws Exception {
@@ -491,5 +502,10 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.knowledge.base.model.KBArticle)"
+	)
+	private PortletLayoutFinder _portletLayoutFinder;
 
 }

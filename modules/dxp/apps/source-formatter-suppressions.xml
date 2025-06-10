@@ -2,6 +2,9 @@
 
 <suppressions>
 	<checkstyle>
-		<suppress checks="OSGiCommandsCheck" files="antivirus/antivirus-async-store/src/main/java/com/liferay/antivirus/async/store/internal/scheduler/AntivirusAsyncFileStoreSchedulerJobConfiguration\.java" />
+		<suppress checks="InnerExceptionClassCheck" files="document-library-opener/document-library-opener-onedrive-web/src/main/java/com/liferay/document/library/opener/onedrive/web/internal/exception/GraphServicePortalException\.java" />
 	</checkstyle>
+	<source-check>
+		<suppress checks="GradleDependencyArtifactsCheck" files="sharepoint-soap/sharepoint-soap-repository/build\.gradle" />
+	</source-check>
 </suppressions>

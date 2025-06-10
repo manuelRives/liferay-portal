@@ -1,0 +1,13 @@
+[#if configuration.modalId?has_content]
+	<div class="d-none" id="${configuration.modalId}">
+		<lfr-drop-zone></lfr-drop-zone>
+	</div>
+
+	[#if configuration.modalEditMode]
+		<style data-lfr-nonce>
+			.has-edit-mode-menu .page-editor__fragment-content #${configuration.modalId} {
+				display: block !important;
+			}
+		</style>
+	[/#if]
+[/#if]

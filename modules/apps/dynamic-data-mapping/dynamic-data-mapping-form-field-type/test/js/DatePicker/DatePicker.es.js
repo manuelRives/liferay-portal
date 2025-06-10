@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import moment from 'moment';
 import React from 'react';
 
-import DatePicker from '../../../src/main/resources/META-INF/resources/DatePicker/DatePicker.es';
+import DatePicker from '../../../src/main/resources/META-INF/resources/js/DatePicker/DatePicker';
 
 describe('DatePicker', () => {
 	it('renders the help text', () => {
@@ -20,12 +20,29 @@ describe('DatePicker', () => {
 		).toHaveTextContent('Type something');
 	});
 
+	it('does not render the html autocomplete attribute', () => {
+		render(<DatePicker />);
+
+		expect(
+			document.querySelector('.form-control').hasAttribute('autocomplete')
+		).toBe(false);
+	});
+
+	it('renders the html autocomplete attribute', () => {
+		render(<DatePicker htmlAutocompleteAttribute="name" />);
+
+		expect(
+			document.querySelector('.form-control').getAttribute('autocomplete')
+		).toBe('name');
+	});
+
 	it('renders the label', () => {
 		render(<DatePicker label="Date picker" />);
 
 		const allByText = screen.getAllByText('Date picker');
-		expect(allByText).toHaveLength(1);
+		expect(allByText).toHaveLength(2);
 		expect(allByText[0]).toBeInTheDocument();
+		expect(allByText[1]).toBeInTheDocument();
 	});
 
 	it('renders the predefined value', () => {

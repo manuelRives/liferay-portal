@@ -67,9 +67,10 @@ const Timers = ({setContentName, setErrors}) => {
 							reassignments.assignmentType[0] ===
 							'resourceActions'
 						) {
-							reassignments.resourceAction = filteredTimerActions.map(
-								({resourceAction}) => resourceAction
-							);
+							reassignments.resourceAction =
+								filteredTimerActions.map(
+									({resourceAction}) => resourceAction
+								);
 						}
 						else if (
 							reassignments.assignmentType[0] === 'roleId'
@@ -89,11 +90,10 @@ const Timers = ({setContentName, setErrors}) => {
 								({script}) => script
 							)[0];
 
-							reassignments.scriptLanguage = filteredTimerActions.map(
-								({scriptLanguage}) => [
+							reassignments.scriptLanguage =
+								filteredTimerActions.map(({scriptLanguage}) => [
 									scriptLanguage || DEFAULT_LANGUAGE,
-								]
-							)[0];
+								])[0];
 						}
 						else if (
 							reassignments.assignmentType[0] === 'user' &&
@@ -101,9 +101,10 @@ const Timers = ({setContentName, setErrors}) => {
 								'sectionData'
 							)
 						) {
-							reassignments.emailAddress = filteredTimerActions[0].sectionData.map(
-								({emailAddress}) => emailAddress
-							);
+							reassignments.emailAddress =
+								filteredTimerActions[0].sectionData.map(
+									({emailAddress}) => emailAddress
+								);
 						}
 						else if (
 							reassignments.assignmentType[0] === 'roleType' &&
@@ -111,18 +112,18 @@ const Timers = ({setContentName, setErrors}) => {
 								'sectionData'
 							)
 						) {
-							reassignments.autoCreate = filteredTimerActions[0].sectionData.map(
-								({autoCreate}) => autoCreate
-							);
-							reassignments.roleKey = filteredTimerActions[0].sectionData.map(
-								({roleKey}) => roleKey
-							);
-							reassignments.roleName = filteredTimerActions[0].sectionData.map(
-								({roleName}) => roleName
-							);
-							reassignments.roleType = filteredTimerActions[0].sectionData.map(
-								({roleType}) => roleType
-							);
+							reassignments.autoCreate =
+								filteredTimerActions[0].sectionData.map(
+									({autoCreate}) => autoCreate
+								);
+							reassignments.roleName =
+								filteredTimerActions[0].sectionData.map(
+									({roleName}) => roleName
+								);
+							reassignments.roleType =
+								filteredTimerActions[0].sectionData.map(
+									({roleType}) => roleType
+								);
 						}
 
 						return reassignments;
@@ -266,18 +267,17 @@ const Timers = ({setContentName, setErrors}) => {
 				}
 				else if (
 					section.assignmentType === 'roleType' &&
-					data.some((entry) => entry[0] === 'roleKey')
+					data.some((entry) => entry[0] === 'roleName')
 				) {
 					section.sectionData = data
-						.find((entry) => entry[0] === 'roleKey')[1]
-						.map((roleKey, index) => ({
+						.find((entry) => entry[0] === 'roleName')[1]
+						.map((_, index) => ({
 							autoCreate: filterSectionDataProperty(
 								data,
 								index,
 								'autoCreate'
 							),
 							identifier: `${Date.now()}-${index}`,
-							roleKey,
 							roleName: filterSectionDataProperty(
 								data,
 								index,

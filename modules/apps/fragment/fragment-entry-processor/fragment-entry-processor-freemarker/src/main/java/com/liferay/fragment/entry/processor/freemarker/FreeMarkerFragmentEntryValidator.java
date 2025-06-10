@@ -31,10 +31,11 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Locale;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Collections;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -61,7 +62,7 @@ public class FreeMarkerFragmentEntryValidator
 					CompanyThreadLocal.getCompanyId());
 
 		if (!freeMarkerFragmentEntryProcessorConfiguration.enable() ||
-			!_isFreemarkerTemplate(html)) {
+			!_isFreeMarkerTemplate(html)) {
 
 			return;
 		}
@@ -114,7 +115,8 @@ public class FreeMarkerFragmentEntryValidator
 					"input",
 					new InputTemplateNode(
 						StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
-						"name", false, false, false, false, "type", "value")
+						false, "name", false, false, false, false, "type",
+						"value", Collections.emptyMap())
 				).put(
 					"layoutMode", Constants.VIEW
 				).putAll(
@@ -155,7 +157,7 @@ public class FreeMarkerFragmentEntryValidator
 		return message;
 	}
 
-	private boolean _isFreemarkerTemplate(String html) {
+	private boolean _isFreeMarkerTemplate(String html) {
 		if (html.contains("${") || html.contains("[#") || html.contains("[@")) {
 			return true;
 		}

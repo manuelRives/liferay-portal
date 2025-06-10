@@ -8,12 +8,12 @@ import {isNode} from 'react-flow-renderer';
 
 import {DefinitionBuilderContext} from '../../../DefinitionBuilderContext';
 import {DiagramBuilderContext} from '../../DiagramBuilderContext';
-import DefinitionInfo from './DefnitionInfo';
+import {DefinitionInfo} from './DefinitionInfo/DefinitionInfo';
 import SidebarBody from './SidebarBody';
 import SidebarHeader from './SidebarHeader';
 import sectionComponents from './sections/sectionComponents';
 
-const contents = {
+export const contents = {
 	'actions': {
 		backButton: (setContentName, selectedItemType) => () =>
 			setContentName(selectedItemType),

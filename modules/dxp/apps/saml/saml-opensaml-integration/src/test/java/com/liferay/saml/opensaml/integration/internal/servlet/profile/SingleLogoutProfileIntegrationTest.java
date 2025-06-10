@@ -16,7 +16,6 @@ import com.liferay.portal.struts.TilesUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.saml.constants.SamlWebKeys;
 import com.liferay.saml.opensaml.integration.internal.BaseSamlTestCase;
-import com.liferay.saml.opensaml.integration.internal.helper.RelayStateHelperImpl;
 import com.liferay.saml.opensaml.integration.internal.provider.CachingChainingMetadataResolver;
 import com.liferay.saml.persistence.model.SamlIdpSpSession;
 import com.liferay.saml.persistence.model.SamlSpSession;
@@ -102,9 +101,6 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 		_singleLogoutProfileImpl = new SingleLogoutProfileImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			_singleLogoutProfileImpl, "_relayStateHelper",
-			_relayStateHelperImpl);
-		ReflectionTestUtil.setFieldValue(
 			_singleLogoutProfileImpl, "credentialResolver", credentialResolver);
 		ReflectionTestUtil.setFieldValue(
 			_singleLogoutProfileImpl, "localEntityManager",
@@ -123,9 +119,6 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 		ReflectionTestUtil.setFieldValue(
 			_singleLogoutProfileImpl, "samlSpSessionLocalService",
 			_samlSpSessionLocalService);
-
-		ReflectionTestUtil.invoke(
-			_relayStateHelperImpl, "activate", new Class<?>[0]);
 
 		_singleLogoutProfileImpl.activate(SystemBundleUtil.getBundleContext());
 
@@ -369,8 +362,6 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 	private static ServiceRegistration<CookiesManager>
 		_cookiesManagerServiceRegistration;
 
-	private final RelayStateHelperImpl _relayStateHelperImpl =
-		new RelayStateHelperImpl();
 	private SamlIdpSpConnectionLocalService _samlIdpSpConnectionLocalService;
 	private SamlIdpSpSessionLocalService _samlIdpSpSessionLocalService;
 	private SamlSpSessionLocalService _samlSpSessionLocalService;

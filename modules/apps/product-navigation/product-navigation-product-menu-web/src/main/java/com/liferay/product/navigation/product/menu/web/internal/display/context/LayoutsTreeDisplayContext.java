@@ -60,17 +60,17 @@ import com.liferay.site.navigation.service.SiteNavigationMenuLocalService;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemType;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeRegistry;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pavel Savinov
@@ -158,32 +158,6 @@ public class LayoutsTreeDisplayContext {
 		).build();
 	}
 
-	private String _getAddCollectionLayoutURL() {
-		Group scopeGroup = _themeDisplay.getScopeGroup();
-
-		if (scopeGroup.isStaged() && !scopeGroup.isStagingGroup()) {
-			return StringPool.BLANK;
-		}
-
-		return PortletURLBuilder.create(
-			PortalUtil.getControlPanelPortletURL(
-				_liferayPortletRequest, LayoutAdminPortletKeys.GROUP_PAGES,
-				PortletRequest.RENDER_PHASE)
-		).setMVCPath(
-			"/select_layout_collections.jsp"
-		).setRedirect(
-			_getRedirect()
-		).setBackURL(
-			_getBackURL()
-		).setParameter(
-			"groupId", _themeDisplay.getSiteGroupId()
-		).setParameter(
-			"privateLayout", _isPrivateLayout()
-		).setParameter(
-			"selPlid", LayoutConstants.DEFAULT_PLID
-		).buildString();
-	}
-
 	private String _getAddLayoutURL() {
 		Group scopeGroup = _themeDisplay.getScopeGroup();
 
@@ -195,8 +169,8 @@ public class LayoutsTreeDisplayContext {
 			PortalUtil.getControlPanelPortletURL(
 				_liferayPortletRequest, LayoutAdminPortletKeys.GROUP_PAGES,
 				PortletRequest.RENDER_PHASE)
-		).setMVCPath(
-			"/select_layout_page_template_entry.jsp"
+		).setMVCRenderCommandName(
+			"/layout_admin/select_layout_page_template_entry"
 		).setRedirect(
 			_getRedirect()
 		).setBackURL(
@@ -262,8 +236,6 @@ public class LayoutsTreeDisplayContext {
 
 	private Map<String, Object> _getConfigData() {
 		Map<String, Object> configData = HashMapBuilder.<String, Object>put(
-			"addCollectionLayoutURL", _getAddCollectionLayoutURL()
-		).put(
 			"addLayoutURL", _getAddLayoutURL()
 		).put(
 			"administrationPortletNamespace",
@@ -338,11 +310,7 @@ public class LayoutsTreeDisplayContext {
 				() -> {
 					Group scopeGroup = _themeDisplay.getScopeGroup();
 
-					if (scopeGroup.hasLocalOrRemoteStagingGroup()) {
-						return true;
-					}
-
-					return false;
+					return scopeGroup.hasLocalOrRemoteStagingGroup();
 				}
 			).build());
 
@@ -619,11 +587,11 @@ public class LayoutsTreeDisplayContext {
 	}
 
 	private List<Long> _getSelectedLayoutPath() throws Exception {
-		long selPlid = _getSelPlid();
-
 		List<Long> selectedLayoutPath = new ArrayList<>();
 
 		selectedLayoutPath.add(LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
+
+		long selPlid = _getSelPlid();
 
 		Layout layout = _layoutLocalService.fetchLayout(selPlid);
 
@@ -806,14 +774,9 @@ public class LayoutsTreeDisplayContext {
 	}
 
 	private boolean _hasAddLayoutPermission() throws PortalException {
-		if (GroupPermissionUtil.contains(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getScopeGroup(), ActionKeys.ADD_LAYOUT)) {
-
-			return true;
-		}
-
-		return false;
+		return GroupPermissionUtil.contains(
+			_themeDisplay.getPermissionChecker(), _themeDisplay.getScopeGroup(),
+			ActionKeys.ADD_LAYOUT);
 	}
 
 	private boolean _hasAdministrationPortletPermission() throws Exception {
@@ -827,25 +790,15 @@ public class LayoutsTreeDisplayContext {
 		ControlPanelEntry controlPanelEntry =
 			portlet.getControlPanelEntryInstance();
 
-		if (!controlPanelEntry.hasAccessPermission(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getScopeGroup(), portlet)) {
-
-			return false;
-		}
-
-		return true;
+		return controlPanelEntry.hasAccessPermission(
+			_themeDisplay.getPermissionChecker(), _themeDisplay.getScopeGroup(),
+			portlet);
 	}
 
 	private boolean _hasConfigureLayoutPermission() throws PortalException {
-		if (GroupPermissionUtil.contains(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getScopeGroup(), ActionKeys.MANAGE_LAYOUTS)) {
-
-			return true;
-		}
-
-		return false;
+		return GroupPermissionUtil.contains(
+			_themeDisplay.getPermissionChecker(), _themeDisplay.getScopeGroup(),
+			ActionKeys.MANAGE_LAYOUTS);
 	}
 
 	private boolean _isPageHierarchyOption(String pageTypeOption) {

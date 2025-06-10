@@ -18,9 +18,9 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -146,10 +146,8 @@ public class ContactMultiLanguageSearchTest {
 	protected void setUpContactFixture() throws Exception {
 		contactFixture = new ContactFixture(contactLocalService);
 
-		contactFixture.setUp();
-
-		contactFixture.setUser(user);
 		contactFixture.setGroup(group);
+		contactFixture.setUser(user);
 
 		_contacts = contactFixture.getContacts();
 	}

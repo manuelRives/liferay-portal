@@ -17,8 +17,10 @@ export default function StatusDataRenderer({
 				itemData.status.label === 'approved'
 					? 'label-success'
 					: itemData.status.label === 'pending'
-					? 'label-info'
-					: 'label-secondary',
+						? 'label-info'
+						: itemData.status.label === 'expired'
+							? 'label-warning'
+							: 'label-secondary',
 				'label'
 			)}
 		>

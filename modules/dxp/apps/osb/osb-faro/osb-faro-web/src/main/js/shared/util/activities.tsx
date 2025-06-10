@@ -33,10 +33,11 @@ type SessionEvent = {
 };
 
 type SessionEventAttribute = {
+	assetTitle?: string;
 	canonicalUrl: string;
 	header: string;
 	referrer: string;
-	title: string;
+	pageTitle: string;
 	url: string;
 };
 
@@ -99,21 +100,37 @@ export const buildLegendItems = ({
  * @param {Array} events Array of UserSessions events.
  * @returns {Array.<Object>} Array of objects for a vertical timeline.
  */
-const formatEvents = (events: UserSessionEvent[]): Array<SessionEvent> =>
+export const formatEvents = (events: UserSessionEvent[]): Array<SessionEvent> =>
 	events.map(
-		({canonicalUrl, createDate, name, pageTitle, referrer, url}) => ({
-			attributes: {
-				canonicalUrl,
-				header: Liferay.Language.get('event-attributes'),
-				referrer,
-				title: pageTitle,
-				url
-			},
-			description: pageTitle,
-			subtitle: canonicalUrl,
-			time: moment(createDate),
-			title: name
-		})
+		({
+			applicationId,
+			assetTitle,
+			canonicalUrl,
+			createDate,
+			name,
+			pageTitle,
+			referrer,
+			url
+		}) => {
+			const isAsset = ['Blog', 'Document', 'Form', 'WebContent'].includes(
+				applicationId
+			);
+
+			return {
+				attributes: {
+					...(isAsset && {assetTitle}),
+					canonicalUrl: decodeURIComponent(canonicalUrl),
+					header: Liferay.Language.get('event-attributes'),
+					pageTitle,
+					referrer: decodeURIComponent(referrer),
+					url: decodeURIComponent(url)
+				},
+				description: assetTitle,
+				subtitle: decodeURIComponent(canonicalUrl),
+				time: moment(createDate),
+				title: name
+			};
+		}
 	);
 
 /**

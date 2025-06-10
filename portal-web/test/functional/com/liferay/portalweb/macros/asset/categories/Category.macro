@@ -297,7 +297,7 @@ definition {
 
 		AssertTextEquals(
 			locator1 = "Modal#BODY",
-			value1 = "This category might be being used in some contents. If you delete it, this category and all of its subcategories will also be deleted and removed from those contents. Do you want to continue deleting this category?");
+			value1 = "This category might be being used in some contents. If you delete it, this category and its subcategories will also be deleted and removed from those contents. Friendly URLs may also be affected. Do you want to continue deleting this category?");
 
 		Click(
 			key_text = "Delete",
@@ -505,29 +505,6 @@ definition {
 					value1 = "${propertiesValueField} ${i}");
 			}
 		}
-	}
-
-	@summary = "Default summary"
-	macro viewCategoryViewableByCP(viewableBy = null, vocabularyName = null, categoryName = null) {
-		Navigator.gotoNavNested(navNested = ${vocabularyName});
-
-		LexiconEntry.gotoEntryMenuItem(
-			menuItem = "Permissions",
-			rowEntry = ${categoryName});
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		if (${viewableBy} == "Anyone (Guest Role)") {
-			AssertChecked.assertCheckedNotVisible(locator1 = "AssetPermissions#GUEST_VIEW_CHECKBOX");
-		}
-		else if (${viewableBy} == "Owner") {
-			AssertChecked.assertCheckedNotVisible(locator1 = "AssetPermissions#OWNER_VIEW_CHECKBOX");
-		}
-		else if (${viewableBy} == "Site Members") {
-			AssertChecked.assertCheckedNotVisible(locator1 = "AssetPermissions#SITE_MEMBER_VIEW_CHECKBOX");
-		}
-
-		SelectFrameTop(value1 = "relative=top");
 	}
 
 	@summary = "Default summary"

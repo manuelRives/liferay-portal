@@ -7,7 +7,7 @@
 
 <liferay-ui:header
 	backURL="<%= backURL %>"
-	cssClass="container-fluid container-fluid-max-xl"
+	cssClass="container-fluid container-fluid-max-xxxl"
 	localizeTitle="<%= false %>"
 	title='<%= (calendar == null) ? LanguageUtil.format(request, "new-calendar-for-x", calendarResourceName, false) : calendarName %>'
 />
@@ -78,8 +78,7 @@
 
 <aui:script use="liferay-calendar-simple-color-picker">
 	window.<portlet:namespace />colorPicker = new Liferay.SimpleColorPicker({
-		color:
-			'<%= ColorUtil.toHexString((calendar != null) ? calendar.getColor() : CalendarServiceConfigurationValues.CALENDAR_COLOR_DEFAULT) %>',
+		color: '<%= ColorUtil.toHexString((calendar != null) ? calendar.getColor() : CalendarServiceConfigurationValues.CALENDAR_COLOR_DEFAULT) %>',
 		on: {
 			colorChange: function (event) {
 				var colorPicker = document.getElementById(

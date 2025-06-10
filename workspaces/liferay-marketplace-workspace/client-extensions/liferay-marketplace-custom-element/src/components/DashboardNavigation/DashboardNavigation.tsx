@@ -3,16 +3,14 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import useAccounts from '../../hooks/data/useAccounts';
+import AccountSearchDropdown from './AccountSearchDropdown';
 import {DashboardNavigationList} from './DashboardNavigationList';
 
 import './DashboardNavigation.scss';
-import useAccounts from '../../hooks/data/useAccounts';
-import {AppProps} from '../DashboardTable/DashboardTable';
-import AccountSearchDropdown from './AccountSearchDropdown';
 
 export type DashboardListItems = {
 	itemTitle: string;
-	items?: AppProps[];
 	path: string;
 	symbol: string;
 };
@@ -20,7 +18,7 @@ export type DashboardListItems = {
 export type DashboardNavigationProps = {
 	accountAppsNumber?: number;
 	accountIcon?: string;
-	accountsSearch: ReturnType<typeof useAccounts>;
+	accountsSearch?: ReturnType<typeof useAccounts>;
 	currentAccount?: Account;
 	dashboardNavigationItems: DashboardListItems[];
 };

@@ -5,7 +5,8 @@
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayForm, {ClayInput} from '@clayui/form';
-import {openToast, sub} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
 
@@ -63,8 +64,8 @@ const FileUrlCopyButton = ({url}) => {
 								showFeedback
 									? 'check'
 									: error
-									? 'exclamation-circle'
-									: 'copy'
+										? 'exclamation-circle'
+										: 'copy'
 							}
 							title={Liferay.Language.get('copy')}
 						/>

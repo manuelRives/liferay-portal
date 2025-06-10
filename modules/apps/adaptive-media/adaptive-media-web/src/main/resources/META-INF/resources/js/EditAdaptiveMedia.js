@@ -8,12 +8,12 @@ import ClayButton from '@clayui/button';
 import ClayForm, {ClayCheckbox, ClayRadio, ClayRadioGroup} from '@clayui/form';
 import ClayLayout from '@clayui/layout';
 import {useFormik} from 'formik';
+import {openToast} from 'frontend-js-components-web';
 import {
 	fetch,
 	navigate,
 	normalizeFriendlyURL,
 	objectToFormData,
-	openToast,
 } from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useState} from 'react';
@@ -154,14 +154,8 @@ const EditAdaptiveMedia = ({
 		},
 	});
 
-	const {
-		errors,
-		handleBlur,
-		handleChange,
-		setFieldValue,
-		touched,
-		values,
-	} = formik;
+	const {errors, handleBlur, handleChange, setFieldValue, touched, values} =
+		formik;
 
 	const onCancel = useCallback(() => {
 		if (redirect) {

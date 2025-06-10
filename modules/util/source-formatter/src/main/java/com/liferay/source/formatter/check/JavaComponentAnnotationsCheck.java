@@ -173,7 +173,7 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 		}
 
 		for (String currentBranchRenamedFileName :
-				_getCurrentBranchRenamedFileNames(sourceFormatterArgs)) {
+				sourceFormatterArgs.getCurrentBranchRenamedFileNames()) {
 
 			if (absolutePath.endsWith(currentBranchRenamedFileName)) {
 				return;
@@ -206,7 +206,8 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 					addMessage(
 						fileName,
 						"@Component classes should only specify one service " +
-							"type in the 'service' attribute, see LPS-180838");
+							"type in the \"service\" attribute, see " +
+								"LPS-180838");
 
 					break;
 				}
@@ -240,7 +241,8 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 		if ((immediateAttributeValue != null) &&
 			immediateAttributeValue.equals("true")) {
 
-			addMessage(fileName, "Do not use 'immediate = true' in @Component");
+			addMessage(
+				fileName, "Do not use \"immediate = true\" in @Component");
 		}
 	}
 
@@ -288,8 +290,9 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 			addMessage(
 				fileName,
 				StringBundler.concat(
-					"The 'service' attribute points to '", fullyQualifiedName,
-					"', which is an internal class or interface"));
+					"The \"service\" attribute points to \"",
+					fullyQualifiedName,
+					"\", which is an internal class or interface"));
 
 			return;
 		}
@@ -319,8 +322,9 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 			addMessage(
 				fileName,
 				StringBundler.concat(
-					"The 'service' attribute points to '", fullyQualifiedName,
-					"', which is an internal class or interface"));
+					"The \"service\" attribute points to \"",
+					fullyQualifiedName,
+					"\", which is an internal class or interface"));
 		}
 	}
 
@@ -418,7 +422,7 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 
 				addMessage(
 					fileName,
-					"Missing @Component 'configurationPid' attribute, see " +
+					"Missing @Component \"configurationPid\" attribute, see " +
 						"LPS-88783");
 
 				break;
@@ -518,8 +522,8 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 
 			if (javaFile == null) {
 				String message = StringBundler.concat(
-					"Remove '", configurationClass,
-					"' from 'configurationPid' as the configuration class ",
+					"Remove \"", configurationClass,
+					"\" from \"configurationPid\" as the configuration class ",
 					"does not exist");
 
 				addMessage(fileName, message);
@@ -575,24 +579,24 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 		String newPropertyAttribute = StringUtil.replace(
 			propertyAttribute,
 			new String[] {
-				"\"javax.portlet.supports.mime-type=text/html\",",
-				"\"javax.portlet.supports.mime-type=text/html\""
+				"\"jakarta.portlet.supports.mime-type=text/html\",",
+				"\"jakarta.portlet.supports.mime-type=text/html\""
 			},
 			new String[] {StringPool.BLANK, StringPool.BLANK});
 
 		if (newPropertyAttribute.contains(
-				"\"javax.portlet.init-param.config-template=") &&
-			!newPropertyAttribute.contains("javax.portlet.portlet-mode=")) {
+				"\"jakarta.portlet.init-param.config-template=") &&
+			!newPropertyAttribute.contains("jakarta.portlet.portlet-mode=")) {
 
 			newPropertyAttribute = _addNewProperties(
 				newPropertyAttribute,
-				"\"javax.portlet.portlet-mode=text/html;config\"");
+				"\"jakarta.portlet.portlet-mode=text/html;config\"");
 		}
 
 		if (isAttributeValue(_CHECK_PORTLET_VERSION_KEY, absolutePath) &&
 			!absolutePath.contains("/modules/apps/archived/") &&
 			!absolutePath.contains("/modules/sdk/") &&
-			!newPropertyAttribute.contains("\"javax.portlet.version=3.0\"")) {
+			!newPropertyAttribute.contains("\"jakarta.portlet.version=4.0\"")) {
 
 			String serviceAttributeValue = getAnnotationAttributeValue(
 				annotation, "service");
@@ -609,7 +613,7 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 
 			if (serviceAttributeValues.contains("Portlet.class")) {
 				newPropertyAttribute = _addNewProperties(
-					newPropertyAttribute, "\"javax.portlet.version=3.0\"");
+					newPropertyAttribute, "\"jakarta.portlet.version=4.0\"");
 			}
 		}
 
@@ -708,7 +712,7 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 		if (checkMismatchedServiceAttribute &&
 			!serviceAttributeValue.equals(expectedServiceAttributeValue)) {
 
-			addMessage(fileName, "Mismatched @Component 'service' attribute");
+			addMessage(fileName, "Mismatched @Component \"service\" attribute");
 		}
 
 		String className = javaClass.getName();
@@ -734,8 +738,8 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 			if (!allowed) {
 				addMessage(
 					fileName,
-					"No need to register '" + className +
-						"' in @Component 'service' attribute");
+					"No need to register \"" + className +
+						"\" in @Component \"service\" attribute");
 			}
 		}
 
@@ -762,22 +766,6 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 		}
 
 		return _bundleSymbolicNamesMap;
-	}
-
-	private synchronized List<String> _getCurrentBranchRenamedFileNames(
-			SourceFormatterArgs sourceFormatterArgs)
-		throws Exception {
-
-		if (_currentBranchRenamedFileNames != null) {
-			return _currentBranchRenamedFileNames;
-		}
-
-		_currentBranchRenamedFileNames =
-			GitUtil.getCurrentBranchRenamedFileNames(
-				sourceFormatterArgs.getBaseDirName(),
-				sourceFormatterArgs.getGitWorkingBranchName());
-
-		return _currentBranchRenamedFileNames;
 	}
 
 	private String _getExpectedServiceAttributeValue(
@@ -975,7 +963,6 @@ public class JavaComponentAnnotationsCheck extends JavaAnnotationsCheck {
 		Pattern.compile("\\s(\\w+) = \\{");
 	private static final Pattern _attributePattern = Pattern.compile(
 		"\\W(\\w+)\\s*=");
-	private static List<String> _currentBranchRenamedFileNames;
 
 	private Map<String, String> _bundleSymbolicNamesMap;
 	private String _rootDirName;

@@ -7,9 +7,9 @@ package com.liferay.headless.commerce.delivery.cart.client.problem;
 
 import com.liferay.headless.commerce.delivery.cart.client.json.BaseJSONParser;
 
-import java.util.Objects;
+import jakarta.annotation.Generated;
 
-import javax.annotation.Generated;
+import java.util.Objects;
 
 /**
  * @author Andrea Sbarra
@@ -138,6 +138,26 @@ public class Problem {
 		@Override
 		protected Problem[] createDTOArray(int size) {
 			return new Problem[size];
+		}
+
+		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "detail")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "status")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "title")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+			else {
+				throw new IllegalArgumentException(
+					"Unsupported field name " + jsonParserFieldName);
+			}
 		}
 
 		@Override

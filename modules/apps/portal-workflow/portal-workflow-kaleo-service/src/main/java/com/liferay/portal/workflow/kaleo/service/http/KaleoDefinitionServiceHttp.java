@@ -43,8 +43,9 @@ public class KaleoDefinitionServiceHttp {
 
 	public static com.liferay.portal.workflow.kaleo.model.KaleoDefinition
 			addKaleoDefinition(
-				HttpPrincipal httpPrincipal, String name, String title,
-				String description, String content, String scope, int version,
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				String name, String title, String description, String content,
+				String scope, int version,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -54,8 +55,8 @@ public class KaleoDefinitionServiceHttp {
 				_addKaleoDefinitionParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, name, title, description, content, scope, version,
-				serviceContext);
+				methodKey, externalReferenceCode, name, title, description,
+				content, scope, version, serviceContext);
 
 			Object returnObj = null;
 
@@ -87,20 +88,251 @@ public class KaleoDefinitionServiceHttp {
 	}
 
 	public static com.liferay.portal.workflow.kaleo.model.KaleoDefinition
+			getKaleoDefinition(
+				HttpPrincipal httpPrincipal, long kaleoDefinitionId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				KaleoDefinitionServiceUtil.class, "getKaleoDefinition",
+				_getKaleoDefinitionParameterTypes1);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, kaleoDefinitionId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.portal.workflow.kaleo.model.KaleoDefinition)
+				returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.portal.workflow.kaleo.model.KaleoDefinition
+			getKaleoDefinition(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				KaleoDefinitionServiceUtil.class, "getKaleoDefinition",
+				_getKaleoDefinitionParameterTypes2);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, companyId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.portal.workflow.kaleo.model.KaleoDefinition)
+				returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.portal.workflow.kaleo.model.KaleoDefinition
+			getKaleoDefinition(
+				HttpPrincipal httpPrincipal, String name,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				KaleoDefinitionServiceUtil.class, "getKaleoDefinition",
+				_getKaleoDefinitionParameterTypes3);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, name, serviceContext);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.portal.workflow.kaleo.model.KaleoDefinition)
+				returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static java.util.List
+		<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
+				getScopeKaleoDefinitions(
+					HttpPrincipal httpPrincipal, String scope, boolean active,
+					int start, int end,
+					com.liferay.portal.kernel.util.OrderByComparator
+						<com.liferay.portal.workflow.kaleo.model.
+							KaleoDefinition> orderByComparator,
+					com.liferay.portal.kernel.service.ServiceContext
+						serviceContext)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				KaleoDefinitionServiceUtil.class, "getScopeKaleoDefinitions",
+				_getScopeKaleoDefinitionsParameterTypes4);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, scope, active, start, end, orderByComparator,
+				serviceContext);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (java.util.List
+				<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>)
+					returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static java.util.List
+		<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
+				getScopeKaleoDefinitions(
+					HttpPrincipal httpPrincipal, String scope, int start,
+					int end,
+					com.liferay.portal.kernel.util.OrderByComparator
+						<com.liferay.portal.workflow.kaleo.model.
+							KaleoDefinition> orderByComparator,
+					com.liferay.portal.kernel.service.ServiceContext
+						serviceContext)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				KaleoDefinitionServiceUtil.class, "getScopeKaleoDefinitions",
+				_getScopeKaleoDefinitionsParameterTypes5);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, scope, start, end, orderByComparator,
+				serviceContext);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (java.util.List
+				<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>)
+					returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.portal.workflow.kaleo.model.KaleoDefinition
 			updateKaleoDefinition(
-				HttpPrincipal httpPrincipal, long kaleoDefinitionId,
-				String title, String description, String content,
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long kaleoDefinitionId, String title, String description,
+				String content,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				KaleoDefinitionServiceUtil.class, "updateKaleoDefinition",
-				_updateKaleoDefinitionParameterTypes1);
+				_updateKaleoDefinitionParameterTypes6);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, kaleoDefinitionId, title, description, content,
-				serviceContext);
+				methodKey, externalReferenceCode, kaleoDefinitionId, title,
+				description, content, serviceContext);
 
 			Object returnObj = null;
 
@@ -137,12 +369,32 @@ public class KaleoDefinitionServiceHttp {
 	private static final Class<?>[] _addKaleoDefinitionParameterTypes0 =
 		new Class[] {
 			String.class, String.class, String.class, String.class,
-			String.class, int.class,
+			String.class, String.class, int.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
-	private static final Class<?>[] _updateKaleoDefinitionParameterTypes1 =
+	private static final Class<?>[] _getKaleoDefinitionParameterTypes1 =
+		new Class[] {long.class};
+	private static final Class<?>[] _getKaleoDefinitionParameterTypes2 =
+		new Class[] {String.class, long.class};
+	private static final Class<?>[] _getKaleoDefinitionParameterTypes3 =
 		new Class[] {
-			long.class, String.class, String.class, String.class,
+			String.class, com.liferay.portal.kernel.service.ServiceContext.class
+		};
+	private static final Class<?>[] _getScopeKaleoDefinitionsParameterTypes4 =
+		new Class[] {
+			String.class, boolean.class, int.class, int.class,
+			com.liferay.portal.kernel.util.OrderByComparator.class,
+			com.liferay.portal.kernel.service.ServiceContext.class
+		};
+	private static final Class<?>[] _getScopeKaleoDefinitionsParameterTypes5 =
+		new Class[] {
+			String.class, int.class, int.class,
+			com.liferay.portal.kernel.util.OrderByComparator.class,
+			com.liferay.portal.kernel.service.ServiceContext.class
+		};
+	private static final Class<?>[] _updateKaleoDefinitionParameterTypes6 =
+		new Class[] {
+			String.class, long.class, String.class, String.class, String.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 

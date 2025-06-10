@@ -24,19 +24,19 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.roles.admin.search.RoleSearch;
-import com.liferay.roles.item.selector.regular.role.RegularRoleItemSelectorCriterion;
-import com.liferay.roles.item.selector.site.role.SiteRoleItemSelectorCriterion;
+import com.liferay.roles.item.selector.RegularRoleItemSelectorCriterion;
+import com.liferay.roles.item.selector.SiteRoleItemSelectorCriterion;
 import com.liferay.site.configuration.manager.MenuAccessConfigurationManager;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Mikel Lorza

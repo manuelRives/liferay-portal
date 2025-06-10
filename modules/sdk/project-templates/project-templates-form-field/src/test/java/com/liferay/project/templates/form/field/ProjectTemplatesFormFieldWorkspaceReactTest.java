@@ -78,34 +78,34 @@ public class ProjectTemplatesFormFieldWorkspaceReactTest
 		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
 			_liferayVersion);
 
+		String product = "portal";
+
 		if (liferayWorkspaceProduct != null) {
 			writeGradlePropertiesInWorkspace(
 				workspaceDir,
 				"liferay.workspace.product=" + liferayWorkspaceProduct);
+
+			product = liferayWorkspaceProduct.substring(
+				0, liferayWorkspaceProduct.indexOf("-"));
 		}
 
 		File gradleProjectDir = buildTemplateWithGradle(
 			new File(workspaceDir, "modules"), "form-field", name,
-			"--js-framework", "react", "--liferay-version", _liferayVersion);
+			"--js-framework", "react", "--liferay-product", product,
+			"--liferay-version", _liferayVersion);
 
-		if (Objects.equals(_liferayVersion, "7.2.1-1")) {
+		testContains(
+			gradleProjectDir, "build.gradle",
+			"jsCompile group: \"com.liferay\", name: " +
+				"\"com.liferay.dynamic.data.mapping.form.field.type\"");
+
+		if (Objects.equals(product, "dxp")) {
 			testContains(
-				gradleProjectDir, "build.gradle",
-				"compileOnly group: \"com.liferay\", name: " +
-					"\"com.liferay.dynamic.data.mapping.api\"",
-				"compileOnly group: \"com.liferay\", name: " +
-					"\"com.liferay.frontend.js.loader.modules.extender.api\"",
-				"jsCompile group: \"com.liferay\", name: " +
-					"\"com.liferay.dynamic.data.mapping.form.field.type\"",
-				DEPENDENCY_PORTAL_KERNEL);
+				gradleProjectDir, "build.gradle", DEPENDENCY_RELEASE_DXP_API);
 		}
-		else {
+		else if (Objects.equals(product, "portal")) {
 			testContains(
 				gradleProjectDir, "build.gradle",
-				"compileOnly group: \"com.liferay.portal\", name: " +
-					"\"release.portal.api\"",
-				"jsCompile group: \"com.liferay\", name: " +
-					"\"com.liferay.dynamic.data.mapping.form.field.type\"",
 				DEPENDENCY_RELEASE_PORTAL_API);
 		}
 
@@ -132,16 +132,11 @@ public class ProjectTemplatesFormFieldWorkspaceReactTest
 		testContains(
 			gradleProjectDir,
 			"src/main/resources/META-INF/resources/foobar.es.js",
-			"import React from 'react';",
-			"import {FieldBase} from 'dynamic-data-mapping-form-field-type" +
-				"/FieldBase/ReactFieldBase.es';",
-			"import {useSyncValue} from " +
-				"'dynamic-data-mapping-form-field-type/hooks/useSyncValue.es';",
-			"const Foobar = ({name, onChange, predefinedValue, readOnly, " +
-				"value})",
-			"const Main = ({label, name, onChange, predefinedValue, " +
-				"readOnly, value, ...otherProps})",
-			"Main.displayName = 'Foobar';", "export default Main;");
+			"import {ReactFieldBase as FieldBase} from " +
+				"'dynamic-data-mapping-form-field-type';",
+			"import React, {useState} from 'react';",
+			"export default function Foobar({",
+			"const [currentValue, setCurrentValue] = useState(");
 
 		testNotContains(
 			gradleProjectDir, "build.gradle", true, "^repositories \\{.*");

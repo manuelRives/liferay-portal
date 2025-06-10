@@ -5,6 +5,7 @@
 
 import {act, fireEvent, render, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {RichText} from 'dynamic-data-mapping-form-field-type';
 import React from 'react';
 
 import {Editor} from '../../../../../../src/main/resources/META-INF/resources/js/components/rules/editor/Editor.es';
@@ -99,6 +100,8 @@ const defaultProps = (fieldsList = FIELDS) => {
 	};
 };
 
+globalThis.RichText = RichText;
+
 jest.mock('frontend-js-web', () => ({
 	...jest.requireActual('frontend-js-web'),
 	loadModule: jest.fn((fieldModule) => {
@@ -109,7 +112,6 @@ jest.mock('frontend-js-web', () => ({
 			Grid,
 			ImagePicker,
 			Numeric,
-			RichText,
 			Select,
 			Text,
 		} = jest.requireActual('dynamic-data-mapping-form-field-type');
@@ -133,7 +135,7 @@ jest.mock('frontend-js-web', () => ({
 				component = Numeric;
 				break;
 			case 'rich_text':
-				component = RichText;
+				component = globalThis.RichText;
 				break;
 			case 'select':
 				component = Select;
@@ -371,19 +373,22 @@ describe('Editor', () => {
 							fireEvent.click(getByText('value'));
 						});
 
+						if (type === 'rich_text') {
+							expect(
+								document.querySelectorAll(selector)
+							).toBeTruthy();
+
+							return;
+						}
+
 						await waitFor(() => {
-							document
+							const fieldElement = document
 								.querySelectorAll('.timeline-item')[1]
 								.querySelectorAll('.ddm-field')[3]
 								.querySelector(selector);
-						});
 
-						expect(
-							document
-								.querySelectorAll('.timeline-item')[1]
-								.querySelectorAll('.ddm-field')[3]
-								.querySelector(selector)
-						).toBeTruthy();
+							expect(fieldElement).toBeTruthy();
+						});
 					}
 				);
 
@@ -444,9 +449,10 @@ describe('Editor', () => {
 						fireEvent.click(getByText('other-field'));
 					});
 
-					const allFields = STRING_DATATYPE_FIELDS.concat(
-						NUMBER_TYPE_FIELDS
-					).concat(UPLOAD_TYPE_FIELD);
+					const allFields =
+						STRING_DATATYPE_FIELDS.concat(
+							NUMBER_TYPE_FIELDS
+						).concat(UPLOAD_TYPE_FIELD);
 
 					const otherValueButton = await waitFor(() => {
 						return getByTestId('field-right-id');
@@ -600,9 +606,10 @@ describe('Editor', () => {
 			it.each(['show', 'require', 'enable'])(
 				'shows all fields on target dropdown when the type is %p',
 				async (type) => {
-					const fields = STRING_DATATYPE_FIELDS.concat(
-						NUMBER_TYPE_FIELDS
-					).concat(UPLOAD_TYPE_FIELD);
+					const fields =
+						STRING_DATATYPE_FIELDS.concat(
+							NUMBER_TYPE_FIELDS
+						).concat(UPLOAD_TYPE_FIELD);
 					const props = defaultProps();
 					const {getByText, queryAllByText} = render(
 						<Editor

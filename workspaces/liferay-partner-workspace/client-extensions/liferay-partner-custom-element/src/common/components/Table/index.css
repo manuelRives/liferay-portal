@@ -1,3 +1,15 @@
+.autofit-col {
+	padding-left: 0 !important;
+}
+
+.autofit-row {
+	display: ruby;
+}
+
+.lexicon-icon-order-arrow {
+	color: #6e6868;
+}
+
 .table-cell-items {
 	display: block;
 	overflow: hidden;

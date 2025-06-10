@@ -15,7 +15,6 @@ import com.liferay.portal.kernel.exception.LayoutNameException;
 import com.liferay.portal.kernel.exception.LayoutParentLayoutIdException;
 import com.liferay.portal.kernel.exception.LayoutTypeException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
@@ -56,6 +55,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.comparator.LayoutPriorityComparator;
 import com.liferay.portal.model.impl.LayoutImpl;
 import com.liferay.portal.util.LayoutTypeControllerTracker;
+import com.liferay.portal.util.PropsValues;
 
 import java.util.HashMap;
 import java.util.List;
@@ -463,29 +463,21 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 
 			String urlSeparator = friendlyURLResolver.getURLSeparator();
 
-			if (!FeatureFlagManagerUtil.isEnabled("LPS-203351") &&
-				urlSeparator.contains(friendlyURL)) {
+			if (urlSeparator.contains(friendlyURL) ||
+				friendlyURL.startsWith(urlSeparator)) {
 
 				keywordConflict = urlSeparator;
 			}
 
-			if (FeatureFlagManagerUtil.isEnabled("LPS-203351")) {
-				if (urlSeparator.contains(friendlyURL) ||
-					friendlyURL.startsWith(urlSeparator)) {
+			String defaultURLSeparator =
+				friendlyURLResolver.getDefaultURLSeparator();
 
-					keywordConflict = urlSeparator;
-				}
+			if (Validator.isNull(keywordConflict) &&
+				friendlyURLResolver.isURLSeparatorConfigurable() &&
+				(defaultURLSeparator.contains(friendlyURL) ||
+				 friendlyURL.startsWith(defaultURLSeparator))) {
 
-				String defaultURLSeparator =
-					friendlyURLResolver.getDefaultURLSeparator();
-
-				if (Validator.isNull(keywordConflict) &&
-					friendlyURLResolver.isURLSeparatorConfigurable() &&
-					(defaultURLSeparator.contains(friendlyURL) ||
-					 friendlyURL.startsWith(defaultURLSeparator))) {
-
-					keywordConflict = defaultURLSeparator;
-				}
+				keywordConflict = defaultURLSeparator;
 			}
 
 			if (Validator.isNotNull(keywordConflict)) {
@@ -523,9 +515,10 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 			}
 		}
 
-		for (Locale locale : LanguageUtil.getAvailableLocales()) {
-			String languageId = StringUtil.toLowerCase(
-				LocaleUtil.toLanguageId(locale));
+		for (String languageId : PropsValues.LOCALES) {
+			languageId = StringUtil.toLowerCase(languageId);
+
+			Locale locale = LocaleUtil.fromLanguageId(languageId, false);
 
 			String i18nPathLanguageId =
 				StringPool.SLASH +
@@ -734,7 +727,6 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 		long classNameId, long classPK, String type) {
 
 		if (!Objects.equals(type, LayoutConstants.TYPE_ASSET_DISPLAY) &&
-			!Objects.equals(type, LayoutConstants.TYPE_COLLECTION) &&
 			!Objects.equals(type, LayoutConstants.TYPE_CONTENT) &&
 			!Objects.equals(type, LayoutConstants.TYPE_UTILITY)) {
 

@@ -42,6 +42,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 
 import java.util.ArrayList;
@@ -50,14 +58,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Gabriel Albuquerque
@@ -122,18 +122,12 @@ public class SystemObjectEntryItemSelectorView
 		InfoItemItemSelectorCriterion itemSelectorCriterion,
 		ThemeDisplay themeDisplay) {
 
-		if (StringUtil.equals(
-				_itemSelector.getItemSelectedEventName(
-					themeDisplay.getURLCurrent()),
-				StringBundler.concat(
-					"_",
-					ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
-					"_selectInfoItem"))) {
-
-			return false;
-		}
-
-		return true;
+		return !StringUtil.equals(
+			_itemSelector.getItemSelectedEventName(
+				themeDisplay.getURLCurrent()),
+			StringBundler.concat(
+				"_", ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+				"_selectInfoItem"));
 	}
 
 	@Override
@@ -384,7 +378,8 @@ public class SystemObjectEntryItemSelectorView
 						ParamUtil.getLong(_portletRequest, "objectEntryId"),
 						ParamUtil.getLong(
 							_portletRequest, "objectRelationshipId"),
-						searchContainer.getStart(), searchContainer.getEnd());
+						null, searchContainer.getStart(),
+						searchContainer.getEnd());
 
 				searchContainer.setResultsAndTotal(
 					() -> baseModels,
@@ -393,7 +388,8 @@ public class SystemObjectEntryItemSelectorView
 						_themeDisplay.getScopeGroupId(), _objectDefinition,
 						ParamUtil.getLong(_portletRequest, "objectEntryId"),
 						ParamUtil.getLong(
-							_portletRequest, "objectRelationshipId")));
+							_portletRequest, "objectRelationshipId"),
+						null));
 			}
 			catch (Exception exception) {
 				_log.error(exception);

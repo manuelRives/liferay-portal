@@ -294,7 +294,7 @@
 					"title": "The contentType Schema",
 					"type": "string"
 				},
-				"contentURL": {
+				"contentUrl": {
 					"title": "The contentURL Schema",
 					"type": "string"
 				},
@@ -1589,6 +1589,8 @@
 						"Column",
 						"DropZone",
 						"Form",
+						"FormStep",
+						"FormStepContainer",
 						"Fragment",
 						"FragmentDropZone",
 						"Root",
@@ -1642,6 +1644,14 @@
 					},
 					"title": "The formConfig Schema",
 					"type": "object"
+				},
+				"formType": {
+					"enum": [
+						"simple",
+						"multistep"
+					],
+					"title": "The multistep Schema",
+					"type": "string"
 				},
 				"fragmentStyle": {
 					"$ref": "#/definitions/FragmentStyle"
@@ -1714,12 +1724,75 @@
 					"title": "The layout Schema",
 					"type": "object"
 				},
+				"localizationConfig": {
+					"properties": {
+						"unlocalizedFieldsMessage": {
+							"$ref": "#/definitions/FragmentInlineValue"
+						},
+						"unlocalizedFieldsState": {
+							"enum": [
+								"disabled",
+								"readOnly"
+							],
+							"title": "The unlocalizedFieldsState Schema",
+							"type": "string"
+						}
+					},
+					"title": "The localizationConfig Schema",
+					"type": "object"
+				},
 				"name": {
 					"title": "The name Schema",
 					"type": "string"
+				},
+				"numberOfSteps": {
+					"title": "The number of steps Schema",
+					"type": "integer"
 				}
 			},
 			"title": "The PageFormDefinition Schema",
+			"type": "object"
+		},
+		"PageFormStepContainerDefinition": {
+			"additionalProperties": false,
+			"properties": {
+				"cssClasses": {
+					"items": {
+						"type": "string"
+					},
+					"title": "The CSS Classes Schema",
+					"type": "array"
+				},
+				"customCSS": {
+					"title": "The Custom CSS Schema",
+					"type": "string"
+				},
+				"customCSSViewports": {
+					"items": {
+						"$ref": "#/definitions/CustomCSSViewport"
+					},
+					"title": "The customCSSViewports Schema",
+					"type": "array"
+				},
+				"fragmentStyle": {
+					"$ref": "#/definitions/FragmentStyle"
+				},
+				"fragmentViewports": {
+					"items": {
+						"$ref": "#/definitions/FragmentViewport"
+					},
+					"title": "The fragmentViewports Schema",
+					"type": "array"
+				}
+			},
+			"title": "The PageFormStepContainerDefinition Schema",
+			"type": "object"
+		},
+		"PageFormStepDefinition": {
+			"additionalProperties": false,
+			"properties": {
+			},
+			"title": "The PageFormStepDefinition Schema",
 			"type": "object"
 		},
 		"PageFragmentDropZoneDefinition": {
@@ -1989,10 +2062,6 @@
 		"PageRuleAction": {
 			"additionalProperties": false,
 			"properties": {
-				"action": {
-					"title": "The action Schema",
-					"type": "string"
-				},
 				"id": {
 					"title": "The id Schema",
 					"type": "string"
@@ -2012,20 +2081,31 @@
 		"PageRuleCondition": {
 			"additionalProperties": false,
 			"properties": {
-				"condition": {
-					"title": "The condition Schema",
+				"field": {
+					"title": "The field Schema",
 					"type": "string"
 				},
 				"id": {
 					"title": "The id Schema",
 					"type": "string"
 				},
+				"options": {
+					"additionalProperties": false,
+					"properties": {
+						"type": {
+							"title": "The type Schema",
+							"type": "string"
+						},
+						"value": {
+							"title": "The value Schema",
+							"type": "string"
+						}
+					},
+					"title": "The options Schema",
+					"type": "object"
+				},
 				"type": {
 					"title": "The type Schema",
-					"type": "string"
-				},
-				"value": {
-					"title": "The value Schema",
 					"type": "string"
 				}
 			},

@@ -55,6 +55,8 @@ public class CPDefinitionKeywordQueryContributor
 		_queryHelper.addSearchTerm(
 			booleanQuery, searchContext, CPField.EXTERNAL_REFERENCE_CODE,
 			false);
+		_queryHelper.addSearchTerm(
+			booleanQuery, searchContext, CPField.GTINS, false);
 		_queryHelper.addSearchLocalizedTerm(
 			booleanQuery, searchContext, CPField.SHORT_DESCRIPTION, false);
 		_queryHelper.addSearchTerm(
@@ -65,6 +67,12 @@ public class CPDefinitionKeywordQueryContributor
 		_queryHelper.addSearchLocalizedTerm(
 			booleanQuery, searchContext, CPField.SPECIFICATION_VALUES_NAMES,
 			false);
+		_queryHelper.addSearchLocalizedTerm(
+			booleanQuery, searchContext,
+			CPField.SPECIFICATION_VALUES_NAMES + "_text", false);
+		_queryHelper.addSearchTerm(
+			booleanQuery, searchContext,
+			CPField.SPECIFICATION_VALUES_NAMES + "_text", false);
 		_queryHelper.addSearchLocalizedTerm(
 			booleanQuery, searchContext, Field.CONTENT, false);
 		_queryHelper.addSearchLocalizedTerm(

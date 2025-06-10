@@ -14,10 +14,11 @@ definition {
 		}
 
 		var api = "headless-builder/filters";
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/${api} \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-H Content-Type: application/json
 		''';
 
@@ -31,7 +32,7 @@ definition {
 		var curl = FilterAPI._curlAPIFilter(virtualHost = ${virtualHost});
 		var body = '''
 			"oDataFilter": "${filterValue}",
-			"r_apiEndpointToAPIFilters_c_apiEndpointERC": "${endpointERC}"
+			"r_apiEndpointToAPIFilters_l_apiEndpointERC": "${endpointERC}"
 		''';
 
 		var curl = StringUtil.add(${curl}, " -d { ${body} }", "");

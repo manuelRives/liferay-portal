@@ -1,10 +1,11 @@
-@component-name = "portal-batch-planner"
+@component-name = "portal-headless"
 definition {
 
 	property custom.properties = "feature.flag.COMMERCE-8087=true${line.separator}feature.flag.LPS-173135=true";
+	property portal.acceptance = "quarantine";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Import/Export";
+	property testray.main.component.name = "Data Migration Center";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -50,11 +51,9 @@ definition {
 
 	@priority = 4
 	test CanSeeDisabledFieldsDetailsWithExportObjectCsv {
-		property portal.acceptance = "true";
-
 		task ("When selecting custom object entity type with CSV format") {
 			ImportExport.configureExport(
-				entityType = "C_Test (v1_0 - Liferay Object REST)",
+				entityType = "Test (v1.0 - Liferay Object REST)",
 				exportFileFormat = "CSV");
 		}
 
@@ -73,11 +72,9 @@ definition {
 
 	@priority = 4
 	test CanSelectAllSupportedFieldsWithCheckedAttributeCode {
-		property portal.acceptance = "true";
-
 		task ("And Given selecting custom object entity type with CSV format") {
 			ImportExport.configureExport(
-				entityType = "C_Test (v1_0 - Liferay Object REST)",
+				entityType = "Test (v1.0 - Liferay Object REST)",
 				exportFileFormat = "CSV");
 		}
 
@@ -98,11 +95,9 @@ definition {
 
 	@priority = 4
 	test CanSelectSupportedFieldsWithExportCsv {
-		property portal.acceptance = "true";
-
 		task ("When selecting custom object entity type with CSV format") {
 			ImportExport.configureExport(
-				entityType = "C_Test (v1_0 - Liferay Object REST)",
+				entityType = "Test (v1.0 - Liferay Object REST)",
 				exportFileFormat = "CSV");
 		}
 

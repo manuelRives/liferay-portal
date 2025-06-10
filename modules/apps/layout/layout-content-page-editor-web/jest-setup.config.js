@@ -71,12 +71,20 @@ jest.mock(
 			defaultSegmentsExperienceId: '0',
 			frontendTokens: {},
 			layoutType: 'content',
-			panels: [['browser']],
 			portletNamespace: 'page-editor-portlet-namespace',
 			selectedViewportSize: 'desktop',
-			sidebarPanels: {
+			sidebarPanels: [['browser']],
+			sidebarPanelsMap: {
 				browser: {label: 'Browser', sidebarPanelId: 'browser'},
 			},
 		},
 	})
+);
+
+// eslint-disable-next-line
+jest.mock(
+	'./src/main/resources/META-INF/resources/page_editor/app/utils/useIsSmallResolution',
+
+	// eslint-disable-next-line
+	() => jest.fn(() => false)
 );

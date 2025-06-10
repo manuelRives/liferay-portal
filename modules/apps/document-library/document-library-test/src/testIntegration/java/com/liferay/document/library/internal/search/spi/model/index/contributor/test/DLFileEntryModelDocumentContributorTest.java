@@ -15,6 +15,7 @@ import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.store.DLStore;
 import com.liferay.document.library.kernel.store.DLStoreRequest;
+import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.lang.SafeCloseable;
@@ -22,27 +23,43 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsUtil;
+import com.liferay.portal.util.PropsValues;
 
 import java.io.IOException;
 
 import java.nio.charset.StandardCharsets;
 
+import java.util.Locale;
+
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,6 +75,11 @@ public class DLFileEntryModelDocumentContributorTest {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
+
+	@Before
+	public void setUp() throws Exception {
+		_group = GroupTestUtil.addGroup();
+	}
 
 	@Test
 	public void testCachedTextExtractionIsNotReused() throws Exception {
@@ -85,7 +107,7 @@ public class DLFileEntryModelDocumentContributorTest {
 			Assert.assertNotEquals(
 				"overriden",
 				document.get(
-					PortalUtil.getSiteDefaultLocale(dlFileEntry.getGroupId()),
+					_portal.getSiteDefaultLocale(dlFileEntry.getGroupId()),
 					Field.CONTENT));
 		}
 	}
@@ -116,9 +138,95 @@ public class DLFileEntryModelDocumentContributorTest {
 			Assert.assertEquals(
 				"overriden",
 				document.get(
-					PortalUtil.getSiteDefaultLocale(dlFileEntry.getGroupId()),
+					_portal.getSiteDefaultLocale(dlFileEntry.getGroupId()),
 					Field.CONTENT));
 		}
+	}
+
+	@Test
+	public void testCachedTextExtractionWithDLFileIndexingMaxSizeAndCacheExtraction()
+		throws Exception {
+
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				_getConfigurationTemporarySwapper(true)) {
+
+			String fileContent = StringUtil.randomString(
+				PropsValues.DL_FILE_INDEXING_MAX_SIZE + 1);
+
+			DLFileEntry dlFileEntry = _addDLFileEntry(
+				ContentTypes.APPLICATION_OCTET_STREAM,
+				fileContent.getBytes(StandardCharsets.UTF_8));
+
+			Document document = new DocumentImpl();
+
+			_dlFileEntryModelDocumentContributor.contribute(
+				document, dlFileEntry);
+
+			String content = _getFileAsString(dlFileEntry);
+
+			Assert.assertEquals(
+				PropsValues.DL_FILE_INDEXING_MAX_SIZE, content.length());
+
+			_withDLFileIndexingMaxSize(
+				100,
+				() -> _dlFileEntryModelDocumentContributor.contribute(
+					document, dlFileEntry));
+
+			content = _getFileAsString(dlFileEntry);
+
+			Assert.assertEquals(100, content.length());
+		}
+	}
+
+	@Test
+	public void testCachedTextExtractionWithDLFileIndexingMaxSizeAndNoCacheExtraction()
+		throws Exception {
+
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				_getConfigurationTemporarySwapper(false)) {
+
+			String fileContent = StringUtil.randomString(
+				PropsValues.DL_FILE_INDEXING_MAX_SIZE + 1);
+
+			DLFileEntry dlFileEntry = _addDLFileEntry(
+				ContentTypes.APPLICATION_OCTET_STREAM,
+				fileContent.getBytes(StandardCharsets.UTF_8));
+
+			Document document = new DocumentImpl();
+
+			_dlFileEntryModelDocumentContributor.contribute(
+				document, dlFileEntry);
+
+			String content = document.get(
+				_portal.getSiteDefaultLocale(dlFileEntry.getGroupId()),
+				Field.CONTENT);
+
+			Assert.assertEquals(
+				PropsValues.DL_FILE_INDEXING_MAX_SIZE, content.length());
+
+			_withDLFileIndexingMaxSize(
+				100,
+				() -> _dlFileEntryModelDocumentContributor.contribute(
+					document, dlFileEntry));
+
+			content = document.get(
+				_portal.getSiteDefaultLocale(dlFileEntry.getGroupId()),
+				Field.CONTENT);
+
+			Assert.assertEquals(100, content.length());
+		}
+	}
+
+	@Test
+	public void testIndexDefaultLanguageId() throws Exception {
+		Company company = _companyLocalService.getCompany(
+			TestPropsValues.getCompanyId());
+
+		_testIndexDefaultLanguageId(
+			company.getLocale(), "true", LocaleUtil.HUNGARY);
+
+		_testIndexDefaultLanguageId(
+			LocaleUtil.HUNGARY, "false", LocaleUtil.HUNGARY);
 	}
 
 	@Test
@@ -221,14 +329,19 @@ public class DLFileEntryModelDocumentContributorTest {
 	private DLFileEntry _addDLFileEntry() throws Exception {
 		String content = StringUtil.randomString();
 
-		byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+		return _addDLFileEntry(
+			ContentTypes.APPLICATION_OCTET_STREAM,
+			content.getBytes(StandardCharsets.UTF_8));
+	}
+
+	private DLFileEntry _addDLFileEntry(String mimeType, byte[] bytes)
+		throws Exception {
 
 		return _dlFileEntryLocalService.addFileEntry(
-			null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
-			TestPropsValues.getGroupId(),
-			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
-			StringUtil.randomString(), null, StringPool.BLANK, StringPool.BLANK,
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
+			_group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), mimeType, StringUtil.randomString(),
+			null, StringPool.BLANK, StringPool.BLANK,
 			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT, null,
 			null, new UnsyncByteArrayInputStream(bytes), bytes.length, null,
 			null, null, ServiceContextTestUtil.getServiceContext());
@@ -267,6 +380,58 @@ public class DLFileEntryModelDocumentContributorTest {
 			dlFileEntry.getName(), dlFileVersion.getStoreFileName() + ".index");
 	}
 
+	private void _testIndexDefaultLanguageId(
+			Locale expectedLocale, String inheritLocales, Locale locale)
+		throws Exception {
+
+		Document document = new DocumentImpl();
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			_group.getTypeSettingsProperties();
+
+		typeSettingsUnicodeProperties.setProperty(
+			GroupConstants.TYPE_SETTINGS_KEY_INHERIT_LOCALES, inheritLocales);
+
+		String languageId = LanguageUtil.getLanguageId(locale);
+
+		typeSettingsUnicodeProperties.setProperty(
+			PropsKeys.LOCALES, languageId);
+		typeSettingsUnicodeProperties.setProperty("languageId", languageId);
+
+		_group.setTypeSettingsProperties(typeSettingsUnicodeProperties);
+
+		_group = _groupLocalService.updateGroup(_group);
+
+		DLFileEntry dlFileEntry = _addDLFileEntry();
+
+		_dlFileEntryModelDocumentContributor.contribute(document, dlFileEntry);
+
+		Assert.assertEquals(
+			LocaleUtil.toLanguageId(expectedLocale),
+			document.get(Field.DEFAULT_LANGUAGE_ID));
+	}
+
+	private <E extends Exception> void _withDLFileIndexingMaxSize(
+			int dlFileIndexingMaxSize, UnsafeRunnable<E> unsafeRunnable)
+		throws Exception {
+
+		PropsUtil.set(
+			PropsKeys.DL_FILE_INDEXING_MAX_SIZE,
+			String.valueOf(dlFileIndexingMaxSize));
+
+		try {
+			unsafeRunnable.run();
+		}
+		finally {
+			PropsUtil.set(
+				PropsKeys.DL_FILE_INDEXING_MAX_SIZE,
+				String.valueOf(PropsValues.DL_FILE_INDEXING_MAX_SIZE));
+		}
+	}
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
+
 	@Inject
 	private CTCollectionLocalService _ctCollectionLocalService;
 
@@ -281,5 +446,14 @@ public class DLFileEntryModelDocumentContributorTest {
 
 	@Inject
 	private DLStore _dlStore;
+
+	@DeleteAfterTestRun
+	private Group _group;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private Portal _portal;
 
 }

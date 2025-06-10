@@ -20,8 +20,9 @@ public class MySQLSQLTransformerLogic extends BaseSQLTransformerLogic {
 		super(db);
 
 		Function[] functions = {
-			getBitwiseCheckFunction(), getBooleanFunction(),
-			getCastClobTextFunction(), getCastLongFunction(),
+			getAggregationFunction(), getBitwiseCheckFunction(),
+			getBooleanFunction(), getCastClobTextFunction(),
+			getCastFloatFunction(), getCastLongFunction(),
 			getCastTextFunction(), getDropTableIfExistsTextFunction(),
 			getIntegerDivisionFunction(), getNullDateFunction()
 		};
@@ -31,6 +32,11 @@ public class MySQLSQLTransformerLogic extends BaseSQLTransformerLogic {
 		}
 
 		setFunctions(functions);
+	}
+
+	@Override
+	protected String replaceCastFloat(Matcher matcher) {
+		return matcher.replaceAll("CAST($1 AS DECIMAL(9, 7))");
 	}
 
 	@Override

@@ -37,12 +37,12 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.sites.kernel.util.Sites;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/add_content_layout"
 	},
 	service = MVCActionCommand.class
@@ -101,7 +101,7 @@ public class AddContentLayoutMVCActionCommand
 					"layoutPrototypeUuid", layoutPrototype.getUuid());
 
 				layout = _layoutService.addLayout(
-					groupId, privateLayout, parentLayoutId, nameMap,
+					null, groupId, privateLayout, parentLayoutId, nameMap,
 					new HashMap<>(), new HashMap<>(), new HashMap<>(),
 					new HashMap<>(), LayoutConstants.TYPE_PORTLET,
 					typeSettingsUnicodeProperties.toString(), false,
@@ -136,7 +136,7 @@ public class AddContentLayoutMVCActionCommand
 				}
 
 				layout = _layoutService.addLayout(
-					groupId, privateLayout, parentLayoutId,
+					null, groupId, privateLayout, parentLayoutId,
 					portal.getClassNameId(LayoutPageTemplateEntry.class),
 					layoutPageTemplateEntryId, nameMap, new HashMap<>(),
 					new HashMap<>(), new HashMap<>(), new HashMap<>(),

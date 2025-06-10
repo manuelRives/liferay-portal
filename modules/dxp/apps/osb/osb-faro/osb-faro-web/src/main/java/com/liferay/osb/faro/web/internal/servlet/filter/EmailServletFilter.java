@@ -5,18 +5,19 @@
 
 package com.liferay.osb.faro.web.internal.servlet.filter;
 
+import com.liferay.osb.faro.engine.client.constants.OSBAsahHeaderConstants;
 import com.liferay.osb.faro.engine.client.util.TokenUtil;
 import com.liferay.osb.faro.web.internal.util.ServletRequestUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.BaseFilter;
 
-import java.util.Objects;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Objects;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -41,7 +42,7 @@ public class EmailServletFilter extends BaseFilter {
 
 	protected boolean isInvalidRequest(HttpServletRequest httpServletRequest) {
 		String faroBackendSecuritySignature = httpServletRequest.getHeader(
-			"OSB-Asah-Faro-Backend-Security-Signature");
+			OSBAsahHeaderConstants.FARO_BACKEND_SECURITY_SIGNATURE);
 
 		if (faroBackendSecuritySignature == null) {
 			_logInvalidRequest(null, httpServletRequest);

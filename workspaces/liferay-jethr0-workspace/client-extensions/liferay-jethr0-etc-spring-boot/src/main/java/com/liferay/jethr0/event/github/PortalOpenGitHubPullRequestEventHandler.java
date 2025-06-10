@@ -5,7 +5,6 @@
 
 package com.liferay.jethr0.event.github;
 
-import com.liferay.jethr0.event.EventHandlerContext;
 import com.liferay.jethr0.event.github.file.GitHubFile;
 import com.liferay.jethr0.event.github.pullrequest.GitHubPullRequest;
 import com.liferay.jethr0.event.github.user.GitHubUser;
@@ -15,11 +14,15 @@ import com.liferay.jethr0.util.StringUtil;
 
 import java.io.IOException;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.json.JSONObject;
 
@@ -55,9 +58,9 @@ public class PortalOpenGitHubPullRequestEventHandler
 	}
 
 	protected PortalOpenGitHubPullRequestEventHandler(
-		EventHandlerContext eventHandlerContext, JSONObject messageJSONObject) {
+		JSONObject messageJSONObject) {
 
-		super(eventHandlerContext, messageJSONObject);
+		super(messageJSONObject);
 	}
 
 	@Override
@@ -91,7 +94,7 @@ public class PortalOpenGitHubPullRequestEventHandler
 			getJenkinsBranchBuildPropertyValue(
 				StringUtil.combine(
 					"subrepo.merge.receiver.name[",
-					upstreamGitBranchEntity.getBranchName(), "]"));
+					upstreamGitBranchEntity.getName(), "]"));
 
 		if (!gitHubPullRequest.isMergeSubrepositoryPullRequest() ||
 			!Objects.equals(
@@ -148,8 +151,19 @@ public class PortalOpenGitHubPullRequestEventHandler
 				"To conserve resources, the PR Tester does not automatically ",
 				"run for portal release branches."));
 
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				StringUtil.combine(
+					"Skipped release branch jobs for ",
+					gitHubPullRequest.getHTMLURL(), " at ",
+					StringUtil.toString(new Date())));
+		}
+
 		return true;
 	}
+
+	private static final Log _log = LogFactory.getLog(
+		PortalOpenGitHubPullRequestEventHandler.class);
 
 	private static final Pattern _branchSHAPattern = Pattern.compile(
 		"\\+(?<branchSHA>[0-9a-f]{40})");

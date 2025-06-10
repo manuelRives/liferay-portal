@@ -23,7 +23,7 @@ boolean workflowEnabled = WorkflowHandlerRegistryUtil.getWorkflowHandler(Journal
 List<WorkflowDefinition> workflowDefinitions = null;
 
 if (workflowEnabled) {
-	workflowDefinitions = WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(company.getCompanyId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	workflowDefinitions = WorkflowDefinitionManagerUtil.liberalGetActiveWorkflowDefinitions(company.getCompanyId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 }
 
 String languageId = LocaleUtil.toLanguageId(locale);
@@ -56,13 +56,7 @@ renderResponse.setTitle(title);
 <liferay-util:buffer
 	var="removeButton"
 >
-	<button
-		aria-label='<%= LanguageUtil.get(request, "remove") %>'
-		class="btn btn-monospaced btn-outline-borderless btn-outline-secondary float-right modify-link"
-		data-rowId="REMOVE_BUTTON_ROW_ID"
-		title='<%= LanguageUtil.get(request, "remove") %>'
-		type="button"
-	>
+	<button aria-label="<%= LanguageUtil.get(request, "remove") %>" class="btn btn-monospaced btn-outline-borderless btn-outline-secondary float-right modify-link" data-rowId="REMOVE_BUTTON_ROW_ID" title="<%= LanguageUtil.get(request, "remove") %>" type="button">
 		<clay:icon
 			symbol="times-circle"
 		/>
@@ -120,6 +114,7 @@ renderResponse.setTitle(title);
 			<liferay-frontend:fieldset
 				collapsed="<%= false %>"
 				collapsible="<%= true %>"
+				disabled="<%= !journalDisplayContext.hasUpdateDLFolderPermission() %>"
 				label="details"
 			>
 				<aui:input name="name" />
@@ -133,6 +128,7 @@ renderResponse.setTitle(title);
 				<liferay-frontend:fieldset
 					collapsed="<%= true %>"
 					collapsible="<%= true %>"
+					disabled="<%= !journalDisplayContext.hasUpdateDLFolderPermission() %>"
 					label="custom-fields"
 				>
 					<liferay-expando:custom-attribute-list
@@ -149,6 +145,7 @@ renderResponse.setTitle(title);
 			<liferay-frontend:fieldset
 				collapsed="<%= true %>"
 				collapsible="<%= true %>"
+				disabled="<%= !journalDisplayContext.hasUpdateDLFolderPermission() %>"
 				label="parent-folder"
 			>
 
@@ -187,7 +184,7 @@ renderResponse.setTitle(title);
 			</liferay-frontend:fieldset>
 		</c:if>
 
-		<c:if test="<%= rootFolder || (folder != null) %>">
+		<c:if test="<%= (rootFolder || (folder != null)) && journalDisplayContext.hasAdvancedUpdateDLFolderPermission() %>">
 
 			<%
 			List<DDMStructure> ddmStructures = journalDisplayContext.getDDMStructures(JournalFolderConstants.RESTRICTION_TYPE_DDM_STRUCTURES_AND_WORKFLOW);

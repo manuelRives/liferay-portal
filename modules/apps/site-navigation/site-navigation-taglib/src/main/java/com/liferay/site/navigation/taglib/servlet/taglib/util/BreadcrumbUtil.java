@@ -40,14 +40,14 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author José Manuel Navarro
@@ -101,7 +101,10 @@ public class BreadcrumbUtil {
 		Group group = GroupLocalServiceUtil.getGroup(
 			themeDisplay.getCompanyId(), GroupConstants.GUEST);
 
-		if (group.getPublicLayoutsPageCount() == 0) {
+		Layout layout = LayoutServiceUtil.fetchFirstLayout(
+			group.getGroupId(), false, true);
+
+		if (layout == null) {
 			return null;
 		}
 
@@ -270,18 +273,20 @@ public class BreadcrumbUtil {
 		breadcrumbEntry.setTitle(
 			group.getDescriptiveName(themeDisplay.getLocale()));
 
-		int layoutsPageCount = 0;
+		Layout firstLayout = null;
 
 		if (layoutSet.isPrivateLayout()) {
-			layoutsPageCount = LayoutServiceUtil.getLayoutsCount(
-				group.getGroupId(), true);
+			firstLayout = LayoutServiceUtil.fetchFirstLayout(
+				group.getGroupId(), true, true);
 		}
 		else {
-			layoutsPageCount = LayoutServiceUtil.getLayoutsCount(
-				group.getGroupId(), false);
+			firstLayout = LayoutServiceUtil.fetchFirstLayout(
+				group.getGroupId(), false, true);
 		}
 
-		if (layoutsPageCount <= 0) {
+		if (firstLayout == null) {
+			breadcrumbEntry.setBrowsable(false);
+
 			breadcrumbEntries.add(breadcrumbEntry);
 
 			return;
@@ -419,16 +424,11 @@ public class BreadcrumbUtil {
 		LayoutSet layoutSet, ThemeDisplay themeDisplay) {
 
 		try {
-			if (LayoutPermissionUtil.contains(
-					themeDisplay.getPermissionChecker(),
-					LayoutLocalServiceUtil.getDefaultPlid(
-						layoutSet.getGroupId(), layoutSet.isPrivateLayout()),
-					ActionKeys.VIEW)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutPermissionUtil.contains(
+				themeDisplay.getPermissionChecker(),
+				LayoutLocalServiceUtil.getDefaultPlid(
+					layoutSet.getGroupId(), layoutSet.isPrivateLayout()),
+				ActionKeys.VIEW);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {

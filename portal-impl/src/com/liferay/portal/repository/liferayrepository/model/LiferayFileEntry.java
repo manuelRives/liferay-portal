@@ -87,11 +87,7 @@ public class LiferayFileEntry extends LiferayModel implements FileEntry {
 
 		LiferayFileEntry liferayFileEntry = (LiferayFileEntry)object;
 
-		if (Objects.equals(_dlFileEntry, liferayFileEntry._dlFileEntry)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(_dlFileEntry, liferayFileEntry._dlFileEntry);
 	}
 
 	@Override
@@ -154,6 +150,11 @@ public class LiferayFileEntry extends LiferayModel implements FileEntry {
 	@Override
 	public Date getCreateDate() {
 		return _dlFileEntry.getCreateDate();
+	}
+
+	@Override
+	public long getCtCollectionId() {
+		return _dlFileEntry.getCtCollectionId();
 	}
 
 	@Override

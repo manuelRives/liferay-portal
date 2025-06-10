@@ -5,6 +5,7 @@
 
 package com.liferay.commerce.product.service.persistence.impl;
 
+import com.liferay.commerce.product.exception.DuplicateCPSpecificationOptionExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCPSpecificationOptionException;
 import com.liferay.commerce.product.model.CPSpecificationOption;
 import com.liferay.commerce.product.model.CPSpecificationOptionTable;
@@ -27,14 +28,20 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -664,7 +671,9 @@ public class CPSpecificationOptionPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CPSpecificationOptionModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_SQL);
@@ -874,7 +883,9 @@ public class CPSpecificationOptionPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CPSpecificationOptionModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_SQL);
@@ -1686,7 +1697,9 @@ public class CPSpecificationOptionPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CPSpecificationOptionModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_SQL);
@@ -1904,7 +1917,9 @@ public class CPSpecificationOptionPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CPSpecificationOptionModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_SQL);
@@ -2661,7 +2676,9 @@ public class CPSpecificationOptionPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CPSpecificationOptionModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_SQL);
@@ -2861,7 +2878,9 @@ public class CPSpecificationOptionPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CPSpecificationOptionModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_SQL);
@@ -3577,7 +3596,9 @@ public class CPSpecificationOptionPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CPSpecificationOptionModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_SQL);
@@ -3777,7 +3798,9 @@ public class CPSpecificationOptionPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CPSpecificationOptionModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CPSpecificationOptionModelImpl.ORDER_BY_SQL);
@@ -3950,7 +3973,6 @@ public class CPSpecificationOptionPersistenceImpl
 			"cpSpecificationOption.CPOptionCategoryId = ?";
 
 	private FinderPath _finderPathFetchByC_K;
-	private FinderPath _finderPathCountByC_K;
 
 	/**
 	 * Returns the cp specification option where companyId = &#63; and key = &#63; or throws a <code>NoSuchCPSpecificationOptionException</code> if it could not be found.
@@ -4138,36 +4160,141 @@ public class CPSpecificationOptionPersistenceImpl
 	 */
 	@Override
 	public int countByC_K(long companyId, String key) {
+		CPSpecificationOption cpSpecificationOption = fetchByC_K(
+			companyId, key);
+
+		if (cpSpecificationOption == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_C_K_COMPANYID_2 =
+		"cpSpecificationOption.companyId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_K_KEY_2 =
+		"cpSpecificationOption.key = ?";
+
+	private static final String _FINDER_COLUMN_C_K_KEY_3 =
+		"(cpSpecificationOption.key IS NULL OR cpSpecificationOption.key = '')";
+
+	private FinderPath _finderPathFetchByERC_C;
+
+	/**
+	 * Returns the cp specification option where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchCPSpecificationOptionException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching cp specification option
+	 * @throws NoSuchCPSpecificationOptionException if a matching cp specification option could not be found
+	 */
+	@Override
+	public CPSpecificationOption findByERC_C(
+			String externalReferenceCode, long companyId)
+		throws NoSuchCPSpecificationOptionException {
+
+		CPSpecificationOption cpSpecificationOption = fetchByERC_C(
+			externalReferenceCode, companyId);
+
+		if (cpSpecificationOption == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("externalReferenceCode=");
+			sb.append(externalReferenceCode);
+
+			sb.append(", companyId=");
+			sb.append(companyId);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchCPSpecificationOptionException(sb.toString());
+		}
+
+		return cpSpecificationOption;
+	}
+
+	/**
+	 * Returns the cp specification option where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching cp specification option, or <code>null</code> if a matching cp specification option could not be found
+	 */
+	@Override
+	public CPSpecificationOption fetchByERC_C(
+		String externalReferenceCode, long companyId) {
+
+		return fetchByERC_C(externalReferenceCode, companyId, true);
+	}
+
+	/**
+	 * Returns the cp specification option where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching cp specification option, or <code>null</code> if a matching cp specification option could not be found
+	 */
+	@Override
+	public CPSpecificationOption fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache) {
+
 		try (SafeCloseable safeCloseable =
 				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
 					CPSpecificationOption.class)) {
 
-			key = Objects.toString(key, "");
+			externalReferenceCode = Objects.toString(externalReferenceCode, "");
 
-			FinderPath finderPath = _finderPathCountByC_K;
+			Object[] finderArgs = null;
 
-			Object[] finderArgs = new Object[] {companyId, key};
+			if (useFinderCache) {
+				finderArgs = new Object[] {externalReferenceCode, companyId};
+			}
 
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
+			Object result = null;
 
-			if (count == null) {
-				StringBundler sb = new StringBundler(3);
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByERC_C, finderArgs, this);
+			}
 
-				sb.append(_SQL_COUNT_CPSPECIFICATIONOPTION_WHERE);
+			if (result instanceof CPSpecificationOption) {
+				CPSpecificationOption cpSpecificationOption =
+					(CPSpecificationOption)result;
 
-				sb.append(_FINDER_COLUMN_C_K_COMPANYID_2);
+				if (!Objects.equals(
+						externalReferenceCode,
+						cpSpecificationOption.getExternalReferenceCode()) ||
+					(companyId != cpSpecificationOption.getCompanyId())) {
 
-				boolean bindKey = false;
+					result = null;
+				}
+			}
 
-				if (key.isEmpty()) {
-					sb.append(_FINDER_COLUMN_C_K_KEY_3);
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
+
+				sb.append(_SQL_SELECT_CPSPECIFICATIONOPTION_WHERE);
+
+				boolean bindExternalReferenceCode = false;
+
+				if (externalReferenceCode.isEmpty()) {
+					sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
 				}
 				else {
-					bindKey = true;
+					bindExternalReferenceCode = true;
 
-					sb.append(_FINDER_COLUMN_C_K_KEY_2);
+					sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
 				}
+
+				sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
 
 				String sql = sb.toString();
 
@@ -4180,15 +4307,28 @@ public class CPSpecificationOptionPersistenceImpl
 
 					QueryPos queryPos = QueryPos.getInstance(query);
 
-					queryPos.add(companyId);
-
-					if (bindKey) {
-						queryPos.add(key);
+					if (bindExternalReferenceCode) {
+						queryPos.add(externalReferenceCode);
 					}
 
-					count = (Long)query.uniqueResult();
+					queryPos.add(companyId);
 
-					finderCache.putResult(finderPath, finderArgs, count);
+					List<CPSpecificationOption> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByERC_C, finderArgs, list);
+						}
+					}
+					else {
+						CPSpecificationOption cpSpecificationOption = list.get(
+							0);
+
+						result = cpSpecificationOption;
+
+						cacheResult(cpSpecificationOption);
+					}
 				}
 				catch (Exception exception) {
 					throw processException(exception);
@@ -4198,18 +4338,60 @@ public class CPSpecificationOptionPersistenceImpl
 				}
 			}
 
-			return count.intValue();
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (CPSpecificationOption)result;
+			}
 		}
 	}
 
-	private static final String _FINDER_COLUMN_C_K_COMPANYID_2 =
-		"cpSpecificationOption.companyId = ? AND ";
+	/**
+	 * Removes the cp specification option where externalReferenceCode = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the cp specification option that was removed
+	 */
+	@Override
+	public CPSpecificationOption removeByERC_C(
+			String externalReferenceCode, long companyId)
+		throws NoSuchCPSpecificationOptionException {
 
-	private static final String _FINDER_COLUMN_C_K_KEY_2 =
-		"cpSpecificationOption.key = ?";
+		CPSpecificationOption cpSpecificationOption = findByERC_C(
+			externalReferenceCode, companyId);
 
-	private static final String _FINDER_COLUMN_C_K_KEY_3 =
-		"(cpSpecificationOption.key IS NULL OR cpSpecificationOption.key = '')";
+		return remove(cpSpecificationOption);
+	}
+
+	/**
+	 * Returns the number of cp specification options where externalReferenceCode = &#63; and companyId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the number of matching cp specification options
+	 */
+	@Override
+	public int countByERC_C(String externalReferenceCode, long companyId) {
+		CPSpecificationOption cpSpecificationOption = fetchByERC_C(
+			externalReferenceCode, companyId);
+
+		if (cpSpecificationOption == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2 =
+		"cpSpecificationOption.externalReferenceCode = ? AND ";
+
+	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3 =
+		"(cpSpecificationOption.externalReferenceCode IS NULL OR cpSpecificationOption.externalReferenceCode = '') AND ";
+
+	private static final String _FINDER_COLUMN_ERC_C_COMPANYID_2 =
+		"cpSpecificationOption.companyId = ?";
 
 	public CPSpecificationOptionPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
@@ -4247,6 +4429,14 @@ public class CPSpecificationOptionPersistenceImpl
 				new Object[] {
 					cpSpecificationOption.getCompanyId(),
 					cpSpecificationOption.getKey()
+				},
+				cpSpecificationOption);
+
+			finderCache.putResult(
+				_finderPathFetchByERC_C,
+				new Object[] {
+					cpSpecificationOption.getExternalReferenceCode(),
+					cpSpecificationOption.getCompanyId()
 				},
 				cpSpecificationOption);
 		}
@@ -4347,9 +4537,16 @@ public class CPSpecificationOptionPersistenceImpl
 				cpSpecificationOptionModelImpl.getKey()
 			};
 
-			finderCache.putResult(_finderPathCountByC_K, args, Long.valueOf(1));
 			finderCache.putResult(
 				_finderPathFetchByC_K, args, cpSpecificationOptionModelImpl);
+
+			args = new Object[] {
+				cpSpecificationOptionModelImpl.getExternalReferenceCode(),
+				cpSpecificationOptionModelImpl.getCompanyId()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByERC_C, args, cpSpecificationOptionModelImpl);
 		}
 	}
 
@@ -4499,6 +4696,76 @@ public class CPSpecificationOptionPersistenceImpl
 			String uuid = PortalUUIDUtil.generate();
 
 			cpSpecificationOption.setUuid(uuid);
+		}
+
+		if (Validator.isNull(
+				cpSpecificationOption.getExternalReferenceCode())) {
+
+			cpSpecificationOption.setExternalReferenceCode(
+				cpSpecificationOption.getUuid());
+		}
+		else {
+			if (!Objects.equals(
+					cpSpecificationOptionModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					cpSpecificationOption.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = cpSpecificationOption.getCompanyId();
+
+					long groupId = 0;
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = cpSpecificationOption.getPrimaryKey();
+					}
+
+					try {
+						cpSpecificationOption.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								CPSpecificationOption.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								cpSpecificationOption.
+									getExternalReferenceCode(),
+								null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
+			CPSpecificationOption ercCPSpecificationOption = fetchByERC_C(
+				cpSpecificationOption.getExternalReferenceCode(),
+				cpSpecificationOption.getCompanyId());
+
+			if (isNew) {
+				if (ercCPSpecificationOption != null) {
+					throw new DuplicateCPSpecificationOptionExternalReferenceCodeException(
+						"Duplicate cp specification option with external reference code " +
+							cpSpecificationOption.getExternalReferenceCode() +
+								" and company " +
+									cpSpecificationOption.getCompanyId());
+				}
+			}
+			else {
+				if ((ercCPSpecificationOption != null) &&
+					(cpSpecificationOption.getCPSpecificationOptionId() !=
+						ercCPSpecificationOption.
+							getCPSpecificationOptionId())) {
+
+					throw new DuplicateCPSpecificationOptionExternalReferenceCodeException(
+						"Duplicate cp specification option with external reference code " +
+							cpSpecificationOption.getExternalReferenceCode() +
+								" and company " +
+									cpSpecificationOption.getCompanyId());
+				}
+			}
 		}
 
 		ServiceContext serviceContext =
@@ -5050,28 +5317,32 @@ public class CPSpecificationOptionPersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
 		ctIgnoreColumnNames.add("modifiedDate");
-		ctStrictColumnNames.add("CPOptionCategoryId");
-		ctStrictColumnNames.add("title");
-		ctStrictColumnNames.add("description");
-		ctStrictColumnNames.add("facetable");
-		ctStrictColumnNames.add("key_");
-		ctStrictColumnNames.add("priority");
-		ctStrictColumnNames.add("lastPublishDate");
+		ctMergeColumnNames.add("CPOptionCategoryId");
+		ctMergeColumnNames.add("title");
+		ctMergeColumnNames.add("description");
+		ctMergeColumnNames.add("facetable");
+		ctMergeColumnNames.add("key_");
+		ctMergeColumnNames.add("priority");
+		ctMergeColumnNames.add("visible");
+		ctMergeColumnNames.add("lastPublishDate");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("CPSpecificationOptionId"));
@@ -5079,6 +5350,9 @@ public class CPSpecificationOptionPersistenceImpl
 			CTColumnResolutionType.STRICT, ctStrictColumnNames);
 
 		_uniqueIndexColumnNames.add(new String[] {"companyId", "key_"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "companyId"});
 	}
 
 	/**
@@ -5179,10 +5453,10 @@ public class CPSpecificationOptionPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "key_"}, true);
 
-		_finderPathCountByC_K = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_K",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "key_"}, false);
+		_finderPathFetchByERC_C = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_C",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "companyId"}, true);
 
 		CPSpecificationOptionUtil.setPersistence(this);
 	}

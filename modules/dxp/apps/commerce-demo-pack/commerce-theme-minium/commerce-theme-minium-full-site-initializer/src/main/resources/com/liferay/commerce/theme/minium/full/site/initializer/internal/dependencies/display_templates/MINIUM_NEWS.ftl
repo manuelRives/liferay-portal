@@ -1,4 +1,4 @@
-<style>
+<style ${nonceAttribute}>
 	.minium-news {
 		display: inline-flex;
 	}
@@ -25,6 +25,10 @@
 		font-size: 16px;
 		margin-bottom: 10;
 	}
+
+	.minium-news-image {
+		background-image: url(${imageURL})
+	}
 </style>
 
 <div class="panel">
@@ -36,8 +40,7 @@
 						<#assign imageURL = curEntry.getCoverImageURL(themeDisplay) />
 						<#if imageURL??>
 							<div
-								class="thumbnail aspect-ratio-bg-cover cover-image"
-								style="background-image: url(${imageURL})"
+								class="thumbnail aspect-ratio-bg-cover cover-image minium-news-image"
 							>
 							</div>
 						</#if>
@@ -53,9 +56,9 @@
 							</#if>
 
 							<a href="${viewEntryPortletURL}">
-								<h5 class="title">
+								<div class="h5 title">
 									${htmlUtil.escape(blogsEntryUtil.getDisplayTitle(resourceBundle, curEntry))}
-								</h5>
+								</div>
 							</a>
 
 							<#assign publishedDate = languageUtil.getTimeDescription(locale, .now?long - curEntry.getCreateDate()?long, true) />

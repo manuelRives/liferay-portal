@@ -1,4 +1,5 @@
 import AcquisitionsQuery from 'shared/queries/AcquisitionsQuery';
+import AssetAppearsOnQuery from 'shared/queries/AssetAppearsOnQuery';
 import BlockedCustomEventDefinitionsQuery from 'settings/definitions/events/queries/BlockedCustomEventDefinitionsQuery';
 import EventAnalysisResultQuery from 'event-analysis/queries/EventAnalysisResultQuery';
 import EventAttributeDefinitionQuery, {
@@ -9,6 +10,7 @@ import EventAttributeValuesQuery from 'event-analysis/queries/EventAttributeValu
 import EventDefinitionQuery from 'event-analysis/queries/EventDefinitionQuery';
 import EventDefinitionsQuery from 'event-analysis/queries/EventDefinitionsQuery';
 import EventMetricQuery from 'shared/queries/EventMetricQuery';
+import EventPropertiesQuery from 'segment/segment-editor/dynamic/queries/EventPropertiesQuery';
 import getInterestsQuery from 'contacts/queries/InterestsQuery';
 import IndividualInterestsQuery from 'shared/queries/IndividualInterestsQuery';
 import IndividualMetricsQuery from 'shared/queries/IndividualMetricsQuery';
@@ -25,6 +27,12 @@ import SuppressedUsersListQuery from 'settings/data-privacy/queries/SuppressedUs
 import TimeRangeQuery from 'shared/queries/TimeRangeQuery';
 import TouchpointsQuery from 'shared/queries/TouchpointsQuery';
 import UserSessionQuery from 'shared/queries/UserSessionQuery';
+import {
+	AssetMetricQuery,
+	AssetTabsQuery,
+	SitesMetricQuery,
+	SitesTabsQuery
+} from 'shared/components/metric-card/queries';
 import {
 	AttributeTypes,
 	DataTypes,
@@ -51,21 +59,271 @@ import {
 import {getSafeRangeSelectors} from 'shared/util/util';
 import {INTERVAL_KEY_MAP} from 'shared/util/time';
 import {isArray, mapValues, range} from 'lodash';
-import {
-	SitesMetricQuery,
-	SitesTabsQuery
-} from 'shared/components/metric-card/queries';
+import {PageAudienceReportQuery} from 'shared/components/audience-report/queries';
+import {SegmentPageViewsQuery} from 'shared/queries/SegmentPageViewsQuery';
 
 const METRIC_TYPENAME_MAP = {
 	histogram: 'HistogramMetric',
 	trend: 'Trend'
 };
 
+export function mockAssetAppearsOnReq(variables, empty) {
+	let assetMetrics = [];
+
+	if (!empty) {
+		assetMetrics = [
+			{
+				__typename: 'BlogMetric',
+				assetId:
+					'http://liferay.com/web/test/abc/123/a42d8ae1-d145-40da-8150-3fe28deb04ad',
+				assetTitle: 'a42d8ae1-d145-40da-8150-3fe28deb04ad',
+				selectedMetrics: [
+					{
+						__typename: 'AssetMetric',
+						name: 'viewsMetric',
+						value: 113948
+					}
+				]
+			},
+			{
+				__typename: 'BlogMetric',
+				assetId:
+					'http://liferay.com/web/test/abc/123/a9bd5ff0-d623-4743-a2b5-3dbafd8d2a86',
+				assetTitle: 'a9bd5ff0-d623-4743-a2b5-3dbafd8d2a86',
+				selectedMetrics: [
+					{
+						__typename: 'AssetMetric',
+						name: 'viewsMetric',
+						value: 912285
+					}
+				]
+			},
+			{
+				__typename: 'BlogMetric',
+				assetId:
+					'http://liferay.com/web/test/abc/123/b8cbb4b5-5a1f-425d-a06b-c0544e2991ce',
+				assetTitle: 'b8cbb4b5-5a1f-425d-a06b-c0544e2991ce',
+				selectedMetrics: [
+					{
+						__typename: 'AssetMetric',
+						name: 'viewsMetric',
+						value: 431627
+					}
+				]
+			},
+			{
+				__typename: 'BlogMetric',
+				assetId:
+					'http://liferay.com/web/test/abc/123/280b69a6-b2dc-4d8f-a0d4-421b450c257b',
+				assetTitle: '280b69a6-b2dc-4d8f-a0d4-421b450c257b',
+				selectedMetrics: [
+					{
+						__typename: 'AssetMetric',
+						name: 'viewsMetric',
+						value: 273970
+					}
+				]
+			},
+			{
+				__typename: 'BlogMetric',
+				assetId:
+					'http://liferay.com/web/test/abc/123/a9ca649d-fc1f-4499-ab8a-c39f2ca1b024',
+				assetTitle: 'a9ca649d-fc1f-4499-ab8a-c39f2ca1b024',
+				selectedMetrics: [
+					{
+						__typename: 'AssetMetric',
+						name: 'viewsMetric',
+						value: 95519
+					}
+				]
+			}
+		];
+	}
+
+	return {
+		request: {
+			query: AssetAppearsOnQuery,
+			variables: {
+				assetId: 'myBlogId',
+				channelId: '123',
+				page: 1,
+				rangeEnd: null,
+				rangeKey: 30,
+				rangeStart: null,
+				size: 2,
+				start: 0,
+				title: 'Blog Title',
+				...variables
+			}
+		},
+		result: {
+			data: {
+				assetPages: {
+					__typename: 'AssetPages',
+					assetMetrics,
+					total: empty ? 0 : 1000
+				}
+			}
+		}
+	};
+}
+
+export function mockAssetMetricReq({empty, metricName, queryName, rangeKey}) {
+	return {
+		request: {
+			query: AssetMetricQuery(queryName)(metricName),
+			variables: {
+				assetId: '123',
+				channelId: '456',
+				devices: 'Any',
+				interval: 'D',
+				location: 'Any',
+				rangeEnd: null,
+				rangeKey,
+				rangeStart: null,
+				title: 'My awesome asset',
+				touchpoint: 'https://liferay.com'
+			}
+		},
+		result: {
+			data: {
+				[queryName]: {
+					__typename: 'AssetMetric',
+					[metricName]: {
+						__typename: 'Metric',
+						histogram: {
+							__typename: 'HistogramMetricBag',
+							asymmetricComparison: false,
+							metrics: empty
+								? []
+								: [
+										{
+											__typename: 'HistogramMetric',
+											key: '2024-01-17T18:00',
+											previousValue: 0,
+											previousValueKey:
+												'2024-01-16T18:00',
+											trend: {
+												__typename: 'Trend',
+												percentage: null,
+												trendClassification: 'NEUTRAL'
+											},
+											value: 0,
+											valueKey: '2024-01-17T18:00'
+										}
+								  ],
+							total: empty ? 0 : 5
+						},
+						previousValue: null,
+						trend: {
+							__typename: 'Trend',
+							percentage: null,
+							trendClassification: 'NEUTRAL'
+						},
+						value: 0
+					}
+				}
+			}
+		}
+	};
+}
+
+export function mockAssetTabsReq({metrics, name, rangeKey}) {
+	const assetMetrics = {};
+
+	metrics.forEach(metric => {
+		assetMetrics[metric.name] = {
+			__typename: 'Metric',
+			previousValue: null,
+			trend: {
+				__typename: 'Trend',
+				percentage: null,
+				trendClassification: 'NEUTRAL'
+			},
+			value: 100
+		};
+	});
+
+	return {
+		request: {
+			query: AssetTabsQuery(metrics, name),
+			variables: {
+				assetId: '123',
+				channelId: '456',
+				devices: 'Any',
+				interval: 'D',
+				location: 'Any',
+				rangeEnd: null,
+				rangeKey,
+				rangeStart: null,
+				title: 'My awesome asset',
+				touchpoint: 'https://liferay.com'
+			}
+		},
+		result: {
+			data: {
+				[name]: {
+					__typename: 'AssetMetric',
+					...assetMetrics
+				}
+			}
+		}
+	};
+}
+
+export function mockAudienceReportReq({queryProps}) {
+	return {
+		request: {
+			query: PageAudienceReportQuery(queryProps),
+			variables: {
+				channelId: '456',
+				devices: 'Any',
+				location: 'Any',
+				rangeEnd: null,
+				rangeKey: 30,
+				rangeStart: null,
+				title: 'Home Page',
+				touchpoint: 'https://www.liferay.com'
+			}
+		},
+		result: {
+			data: {
+				page: {
+					__typename: 'PageMetric',
+					viewsMetric: {
+						__typename: 'Metric',
+						audienceReport: {
+							__typename: 'AudienceReport',
+							anonymousUsersCount: 12804,
+							knownUsersCount: 98,
+							nonsegmentedKnownUsersCount: 96,
+							segmentedAnonymousUsersCount: null,
+							segmentedKnownUsersCount: 2
+						},
+						segment: {
+							__typename: 'MetricBag',
+							metrics: [
+								{
+									__typename: 'Metric',
+									value: 2,
+									valueKey: 'UK Visitors'
+								}
+							],
+							total: 1
+						}
+					}
+				}
+			}
+		}
+	};
+}
+
 export function mockExperimentDraftReq() {
 	return {
 		request: {
 			query: EXPERIMENT_DRAFT_QUERY,
 			variables: {
+				channelId: '2000',
 				experimentId: '123'
 			}
 		},
@@ -102,6 +360,7 @@ export function mockExperimentReq({
 		request: {
 			query: EXPERIMENT_QUERY,
 			variables: {
+				channelId: '2000',
 				experimentId: '123'
 			}
 		},
@@ -259,6 +518,7 @@ export function mockExperimentStatusReq({status}) {
 			fetchPolicy: 'network-only',
 			query: EXPERIMENT_STATUS_QUERY,
 			variables: {
+				channelId: '2000',
 				experimentId: '123'
 			}
 		},
@@ -1176,6 +1436,7 @@ export function mockEventAnalysisReq() {
 						eventDefinition: {
 							__typename: 'EventDefinition',
 							description: null,
+							displayName: 'assetClicked',
 							hidden: false,
 							id: '1',
 							name: 'assetClicked',
@@ -1238,6 +1499,33 @@ export function mockEventAnalysisListReq(items) {
 				eventAnalyses: {
 					__typename: 'EventAnalysisBag',
 					eventAnalyses: items,
+					total: items.length
+				}
+			}
+		}
+	};
+}
+
+export function mockEventPropertiesReq(items, mockVariables = {}) {
+	return {
+		request: {
+			query: EventPropertiesQuery,
+			variables: {
+				keyword: '',
+				page: 0,
+				size: items.length,
+				sort: {
+					column: NAME,
+					type: OrderByDirections.Ascending
+				},
+				...mockVariables
+			}
+		},
+		result: {
+			data: {
+				eventProperties: {
+					__typename: 'EventPropertyBag',
+					eventProperties: items,
 					total: items.length
 				}
 			}
@@ -1423,6 +1711,32 @@ export function mockSearchStringListReq() {
 	};
 }
 
+export function mockSegmentPageViewsReq({segmentPageViews}) {
+	return {
+		request: {
+			fetchPolicy: 'network-only',
+			query: SegmentPageViewsQuery,
+			variables: {
+				canonicalUrl: 'http://liferay.com',
+				channelId: '456',
+				rangeEnd: null,
+				rangeKey: 0,
+				rangeStart: null,
+				segmentIds: segmentPageViews.map(segment => segment.segmentId),
+				title: 'Liferay DXP - Home'
+			}
+		},
+		result: {
+			data: {
+				segmentPageViews: segmentPageViews.map(segment => ({
+					...segment,
+					__typename: 'SegmentPageView'
+				}))
+			}
+		}
+	};
+}
+
 export function mockSuppressedUsersListReq(items, mockVariables = {}) {
 	return {
 		request: {
@@ -1561,7 +1875,7 @@ export function mockTouchpointsReq(items, mockVariables = {}) {
 				start: 0,
 				terms: 'test',
 				title: '',
-				touchpoint: '',
+				touchpoint: null,
 				...getSafeRangeSelectors({
 					rangeKey: RangeKeyTimeRanges.Last30Days
 				}),
@@ -1966,6 +2280,8 @@ export const mockSessions = variables => ({
 						events: [
 							{
 								__typename: 'Event',
+								applicationId: 'Page',
+								assetTitle: 'Home - Liferay DXP',
 								canonicalUrl: 'http://localhost:8080',
 								createDate: 'Mon Dec 06 17:28:48 GMT 2021',
 								name: 'tabBlurred',

@@ -8,7 +8,7 @@ import {cleanup, render} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-import NumericInputMask from '../../../src/main/resources/META-INF/resources/NumericInputMask/NumericInputMask';
+import NumericInputMask from '../../../src/main/resources/META-INF/resources/js/NumericInputMask/NumericInputMask';
 
 const globalLanguageDirection = Liferay.Language.direction;
 
@@ -130,9 +130,8 @@ describe('Field Numeric Input Mask', () => {
 		const divWithThousandsSeparator = document.querySelector(
 			'div[data-field-name="thousandsSeparator"]'
 		);
-		const buttonInsideDiv = divWithThousandsSeparator.querySelector(
-			'button'
-		);
+		const buttonInsideDiv =
+			divWithThousandsSeparator.querySelector('button');
 
 		userEvent.click(buttonInsideDiv);
 		const disabledOption = document.querySelector(

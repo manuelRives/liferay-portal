@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -400,6 +401,12 @@ public class KBArticleLocalServiceUtil {
 			groupId, kbFolderId, urlTitle, status);
 	}
 
+	public static PersistedModel fetchPersistedModel(
+		Serializable primaryKeyObj) {
+
+		return getService().fetchPersistedModel(primaryKeyObj);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -629,6 +636,13 @@ public class KBArticleLocalServiceUtil {
 		return getService().getLatestKBArticle(resourcePrimKey, status);
 	}
 
+	public static KBArticle getLatestKBArticle(
+			long resourcePrimKey, int[] statuses)
+		throws PortalException {
+
+		return getService().getLatestKBArticle(resourcePrimKey, statuses);
+	}
+
 	public static KBArticle getLatestKBArticleByExternalReferenceCode(
 			long groupId, String externalReferenceCode)
 		throws PortalException {
@@ -811,8 +825,14 @@ public class KBArticleLocalServiceUtil {
 		getService().subscribeKBArticle(userId, groupId, resourcePrimKey);
 	}
 
-	public static void unlockKBArticle(long resourcePrimKey) {
-		getService().unlockKBArticle(resourcePrimKey);
+	public static void unlockKBArticle(long userId, long resourcePrimKey) {
+		getService().unlockKBArticle(userId, resourcePrimKey);
+	}
+
+	public static void unlockKBArticle(
+		long userId, long resourcePrimKey, boolean force) {
+
+		getService().unlockKBArticle(userId, resourcePrimKey, force);
 	}
 
 	public static void unsubscribeGroupKBArticles(long userId, long groupId)
@@ -911,13 +931,11 @@ public class KBArticleLocalServiceUtil {
 	}
 
 	public static KBArticleLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(KBArticleLocalService service) {
-		_service = service;
-	}
-
-	private static volatile KBArticleLocalService _service;
+	private static final Snapshot<KBArticleLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			KBArticleLocalServiceUtil.class, KBArticleLocalService.class);
 
 }

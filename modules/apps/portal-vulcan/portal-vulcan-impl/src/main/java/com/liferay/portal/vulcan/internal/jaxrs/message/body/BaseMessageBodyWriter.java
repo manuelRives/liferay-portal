@@ -6,30 +6,26 @@
 package com.liferay.portal.vulcan.internal.jaxrs.message.body;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.PropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 import com.liferay.portal.vulcan.fields.FieldsQueryParam;
 import com.liferay.portal.vulcan.fields.RestrictFieldsQueryParam;
 import com.liferay.portal.vulcan.jackson.databind.ser.VulcanPropertyFilter;
 
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.Providers;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-
-import java.util.Set;
-
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.Providers;
 
 /**
  * @author Alejandro Hernández
@@ -93,21 +89,11 @@ public abstract class BaseMessageBodyWriter
 	private SimpleFilterProvider _getSimpleFilterProvider() {
 		return new SimpleFilterProvider() {
 			{
-				PropertyFilter propertyFilter = null;
-
-				Set<String> fieldNames = _fieldsQueryParam.getFieldNames();
-				Set<String> restrictFieldNames =
-					_restrictFieldsQueryParam.getRestrictFieldNames();
-
-				if ((fieldNames == null) && (restrictFieldNames == null)) {
-					propertyFilter = SimpleBeanPropertyFilter.serializeAll();
-				}
-				else {
-					propertyFilter = VulcanPropertyFilter.of(
-						fieldNames, restrictFieldNames);
-				}
-
-				addFilter("Liferay.Vulcan", propertyFilter);
+				addFilter(
+					"Liferay.Vulcan",
+					VulcanPropertyFilter.of(
+						_fieldsQueryParam.getFieldNames(),
+						_restrictFieldsQueryParam.getRestrictFieldNames()));
 			}
 		};
 	}

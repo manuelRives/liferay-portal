@@ -83,11 +83,19 @@ public class TestClassFactory {
 	public static TestClassMethod newTestClassMethod(
 		boolean ignored, String name, TestClass testClass) {
 
+		if (testClass instanceof PlaywrightJUnitTestClass) {
+			return new PlaywrightTestClassMethod(ignored, name, testClass);
+		}
+
 		return new TestClassMethod(ignored, name, testClass);
 	}
 
 	public static TestClassMethod newTestClassMethod(
 		JSONObject jsonObject, TestClass testClass) {
+
+		if (testClass instanceof PlaywrightJUnitTestClass) {
+			return new PlaywrightTestClassMethod(jsonObject, testClass);
+		}
 
 		return new TestClassMethod(jsonObject, testClass);
 	}
@@ -206,12 +214,12 @@ public class TestClassFactory {
 						PlaywrightBatchTestClassGroup) {
 
 				if (jsonObject != null) {
-					return new PlaywrightTestClass(
+					return new PlaywrightJUnitTestClass(
 						batchTestClassGroup, jsonObject);
 				}
 
-				return new PlaywrightTestClass(
-					batchTestClassGroup, testClassFile, testClassMethodName);
+				return new PlaywrightJUnitTestClass(
+					batchTestClassGroup, testClassFile);
 			}
 			else if (batchTestClassGroup instanceof
 						PluginsBatchTestClassGroup) {

@@ -35,13 +35,14 @@ patch {
 	fileNames "org/eclipse/osgi/internal/loader/sources/NullPackageSource.java"
 	fileNames "org/eclipse/osgi/internal/loader/sources/PackageSource.java"
 	fileNames "org/eclipse/osgi/internal/log/LoggerContextTargetMap.java"
+	fileNames "org/eclipse/osgi/internal/serviceregistry/FilteredServiceListener.java"
 	fileNames "org/eclipse/osgi/internal/serviceregistry/ServiceFactoryUse.java"
 	fileNames "org/eclipse/osgi/internal/serviceregistry/ServiceProperties.java"
 	fileNames "org/eclipse/osgi/internal/serviceregistry/ServiceRegistrationImpl.java"
 	fileNames "org/eclipse/osgi/internal/serviceregistry/ServiceRegistry.java"
 	fileNames "org/eclipse/osgi/internal/weaving/WeavingHookConfigurator.java"
+	fileNames "org/eclipse/osgi/storage/BundleInfo.java"
 	fileNames "org/eclipse/osgi/storage/bundlefile/ZipBundleFile.java"
-
 	originalLibModuleName = "org.eclipse.osgi"
 }
 

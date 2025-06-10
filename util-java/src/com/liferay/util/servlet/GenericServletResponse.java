@@ -5,15 +5,16 @@
 
 package com.liferay.util.servlet;
 
+import com.liferay.petra.io.OutputStreamWriter;
+import com.liferay.petra.io.unsync.UnsyncPrintWriter;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.servlet.ServletOutputStreamAdapter;
-import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import java.io.PrintWriter;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
 /**
  * @author Brian Wing Shun Chan
@@ -52,8 +53,9 @@ public class GenericServletResponse extends HttpServletResponseWrapper {
 
 	@Override
 	public PrintWriter getWriter() {
-		return UnsyncPrintWriterPool.borrow(
-			getOutputStream(), getCharacterEncoding());
+		return new UnsyncPrintWriter(
+			new OutputStreamWriter(
+				getOutputStream(), getCharacterEncoding(), true));
 	}
 
 	@Override

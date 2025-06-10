@@ -7,7 +7,8 @@ import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import {TreeView as ClayTreeView} from '@clayui/core';
 import {ClayDropDownWithItems} from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
-import {fetch, navigate, openModal, openToast, sub} from 'frontend-js-web';
+import {openModal, openToast} from 'frontend-js-components-web';
+import {fetch, navigate, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
@@ -189,10 +190,10 @@ function TreeItem({
 	const warningMessage = isSiteTemplate
 		? Liferay.Language.get(
 				'there-is-a-page-with-the-same-friendly-url-in-a-site-using-this-site-template'
-		  )
+			)
 		: Liferay.Language.get(
 				'there-is-a-page-with-the-same-friendly-url-in-the-site-template'
-		  );
+			);
 
 	return (
 		<ClayTreeView.Item
@@ -229,10 +230,7 @@ function TreeItem({
 					{item.regularURL ? (
 						<a
 							aria-label={(() => {
-								if (
-									Liferay.FeatureFlags['LPS-196847'] &&
-									!item.hasGuestViewPermission
-								) {
+								if (!item.hasGuestViewPermission) {
 									return `${
 										item.name
 									}. ${Liferay.Language.get(
@@ -262,8 +260,7 @@ function TreeItem({
 								{item.name}
 							</span>
 
-							{Liferay.FeatureFlags['LPS-196847'] &&
-							!item.hasGuestViewPermission ? (
+							{!item.hasGuestViewPermission ? (
 								<ClayIcon
 									className="c-ml-2 c-mt-0 flex-shrink-0 icon-tooltip text-4"
 									data-title={Liferay.Language.get(
@@ -302,6 +299,9 @@ function TreeItem({
 									renderMenuOnClick
 									trigger={
 										<ClayButtonWithIcon
+											aria-label={Liferay.Language.get(
+												'actions'
+											)}
 											className="component-action quick-action-item"
 											displayType={null}
 											size="sm"
@@ -328,12 +328,7 @@ function TreeItem({
 							{item.regularURL ? (
 								<a
 									aria-label={(() => {
-										if (
-											Liferay.FeatureFlags[
-												'LPS-196847'
-											] &&
-											!item.hasGuestViewPermission
-										) {
+										if (!item.hasGuestViewPermission) {
 											return `${
 												item.name
 											}. ${Liferay.Language.get(
@@ -364,8 +359,7 @@ function TreeItem({
 										{item.name}
 									</span>
 
-									{Liferay.FeatureFlags['LPS-196847'] &&
-									!item.hasGuestViewPermission ? (
+									{!item.hasGuestViewPermission ? (
 										<ClayIcon
 											className="c-ml-2 c-mt-0 flex-shrink-0 icon-tooltip text-4"
 											data-title={Liferay.Language.get(
@@ -469,9 +463,10 @@ function normalizeActions(actions, namespace) {
 													}
 													else {
 														openToast({
-															message: Liferay.Language.get(
-																'your-request-processed-successfully'
-															),
+															message:
+																Liferay.Language.get(
+																	'your-request-processed-successfully'
+																),
 															toastProps: {
 																autoClose: 5000,
 															},

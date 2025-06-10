@@ -10,7 +10,7 @@ import './index.scss';
 import {format, isBefore} from 'date-fns';
 
 import i18n from '../../../../i18n';
-import {LicenseKey} from '../../../../services/oauth/MarketplaceSpringBootOAuth2';
+import {LicenseKey} from '../../../../services/oauth/types';
 
 type LicenseKeyModalProps = {
 	Header: React.ReactNode;
@@ -37,7 +37,7 @@ const LicenceKeyModalContent = ({Header, modalData}: LicenseKeyModalProps) => {
 
 			<div className="row">
 				<div className="col-3">
-					<h4>{i18n.translate('environment')}</h4>
+					<div className="h4">{i18n.translate('environment')}</div>
 
 					<small className="font-weight-bold">
 						{i18n.translate('environment-type')}
@@ -57,7 +57,7 @@ const LicenceKeyModalContent = ({Header, modalData}: LicenseKeyModalProps) => {
 				</div>
 
 				<div className="col-5">
-					<h4>Server</h4>
+					<div className="h4">Server</div>
 
 					<small className="font-weight-bold">
 						{i18n.translate('key-type')}
@@ -93,7 +93,10 @@ const LicenceKeyModalContent = ({Header, modalData}: LicenseKeyModalProps) => {
 				</div>
 
 				<div className="col-4">
-					<h4> {i18n.translate('activation-status')}</h4>
+					<div className="h4">
+						{' '}
+						{i18n.translate('activation-status')}
+					</div>
 
 					<small className="font-weight-bold">
 						{i18n.translate('status')}
@@ -103,8 +106,10 @@ const LicenceKeyModalContent = ({Header, modalData}: LicenseKeyModalProps) => {
 						className={classNames(
 							'align-items-center d-flex px-3 py-2 rounded font-weight-bold mt-1',
 							{
-								'text-danger license-paragraph-danger': !isActive,
-								'text-success license-paragraph-success': isActive,
+								'text-danger license-paragraph-danger':
+									!isActive,
+								'text-success license-paragraph-success':
+									isActive,
 							}
 						)}
 					>

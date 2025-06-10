@@ -6,11 +6,11 @@ exports[`SelectDataSource should render 1`] = `
     class="select-data-source-root"
   >
     <section>
-      <h4
-        class="text-uppercase section-title"
+      <div
+        class="h4 text-uppercase section-title"
       >
         section 1 title
-      </h4>
+      </div>
       <div
         class="section-items"
       >
@@ -36,13 +36,12 @@ exports[`SelectDataSource should render 1`] = `
             <div
               class="title"
             >
-              <h4>
+              <div
+                class="h4 m-0"
+              >
                 test
-              </h4>
+              </div>
             </div>
-            <div
-              class="subtitle"
-            />
           </div>
         </a>
         <a
@@ -67,23 +66,22 @@ exports[`SelectDataSource should render 1`] = `
             <div
               class="title"
             >
-              <h4>
+              <div
+                class="h4 m-0"
+              >
                 test1
-              </h4>
+              </div>
             </div>
-            <div
-              class="subtitle"
-            />
           </div>
         </a>
       </div>
     </section>
     <section>
-      <h4
-        class="text-uppercase section-title"
+      <div
+        class="h4 text-uppercase section-title"
       >
         section two title
-      </h4>
+      </div>
       <div
         class="section-items"
       >
@@ -109,13 +107,12 @@ exports[`SelectDataSource should render 1`] = `
             <div
               class="title"
             >
-              <h4>
+              <div
+                class="h4 m-0"
+              >
                 test1
-              </h4>
+              </div>
             </div>
-            <div
-              class="subtitle"
-            />
           </div>
         </button>
       </div>

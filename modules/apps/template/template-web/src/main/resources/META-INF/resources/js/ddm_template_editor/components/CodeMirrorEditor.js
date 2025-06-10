@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import CodeMirror from '@liferay/frontend-js-codemirror-web';
+import {CodeMirror} from '@liferay/frontend-js-codemirror-web';
 import {CodeMirrorKeyboardMessage} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useImperativeHandle, useRef, useState} from 'react';
@@ -244,7 +244,7 @@ const CodeMirrorEditor = React.forwardRef(
 		}, [editor, inputChannel]);
 
 		return (
-			<div className="d-flex flex-column flex-grow-1 position-relative">
+			<div className="d-flex flex-column flex-grow-1 overflow-auto position-relative">
 				{isFocused ? (
 					<CodeMirrorKeyboardMessage keyIsEnabled={isEnabled} />
 				) : null}

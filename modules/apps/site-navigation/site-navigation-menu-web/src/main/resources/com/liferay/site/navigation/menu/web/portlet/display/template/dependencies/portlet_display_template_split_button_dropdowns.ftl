@@ -47,18 +47,15 @@
 
 						<#if showChildrenNavItems>
 							<button aria-expanded="false" aria-haspopup="true" class="${nav_item_css_class} btn btn-secondary c-px-2 dropdown-toggle" data-toggle="liferay-dropdown" type="button">
-								<@liferay_aui.icon
-									image="angle-down"
-									markupView="lexicon"
-								/>
+								<@clay["icon"] symbol="angle-down" />
 
 								<span class='sr-only'>${toggle_text}</span>
 							</button>
 
 							<ul aria-expanded="false" class="child-menu dropdown-menu" role="menu">
 								<@buildChildrenNavItems
-									displayDepth=displayDepth
-									navItem=navItem
+									displayDepth = displayDepth
+									navItem = navItem
 								/>
 							</ul>
 

@@ -6,7 +6,10 @@
 package com.liferay.portal.search.opensearch2.internal.groupby;
 
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
+import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.GroupBy;
+import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -20,9 +23,11 @@ import com.liferay.portal.search.test.util.indexing.IndexingFixture;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -42,30 +47,6 @@ public class GroupByTest extends BaseGroupByTestCase {
 	@ClassRule
 	public static OpenSearchTestRule openSearchTestRule =
 		OpenSearchTestRule.INSTANCE;
-
-	@Override
-	@Test
-	public void testFieldNamesDefault() throws Exception {
-		indexDuplicates("one", 1);
-
-		assertSearch(
-			indexingTestHelper -> {
-				indexingTestHelper.define(
-					searchContext -> searchContext.setGroupBy(
-						new GroupBy(GROUP_FIELD)));
-
-				indexingTestHelper.search();
-
-				indexingTestHelper.verify(
-					hits -> assertGroupedHitsFieldNames(
-						"one",
-						Arrays.asList(
-							"companyId", "entryClassName", "entryClassPK",
-							"groupId", SORT_FIELD, "timestamp", "uid",
-							"userName"),
-						hits, indexingTestHelper));
-			});
-	}
 
 	@Test
 	public void testGroupByDocsSizeDefault() throws Exception {
@@ -269,6 +250,28 @@ public class GroupByTest extends BaseGroupByTestCase {
 	@Override
 	protected IndexingFixture createIndexingFixture() {
 		return LiferayOpenSearchIndexingFixtureFactory.getInstance();
+	}
+
+	@Override
+	protected Collection<String> getFieldNames(Hits hits) {
+		Set<String> fieldNames = new HashSet<>();
+
+		Assert.assertNotEquals(0, hits.getLength());
+
+		Document document = hits.doc(0);
+
+		Map<String, Field> fields = document.getFields();
+
+		Assert.assertFalse(fields.isEmpty());
+
+		fields.forEach(
+			(k, v) -> {
+				if (!k.contains(".")) {
+					fieldNames.add(k);
+				}
+			});
+
+		return fieldNames;
 	}
 
 	private void _assertGroupByTermsSortsCountDescKeyDesc(

@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.dao.orm.SessionWrapper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -39,6 +40,7 @@ import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 
 import java.io.Closeable;
@@ -52,9 +54,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.Assert;
@@ -520,17 +524,30 @@ public class DataGuardTestRuleUtil {
 		_getPersistedModelLocalServices() {
 
 		Map<String, PersistedModelLocalService>
-			scrubbedPersistedModelLocalServices = new HashMap<>();
+			scrubbedPersistedModelLocalServices = new LinkedHashMap<>();
 
 		ServiceTrackerMap<String, PersistedModelLocalService>
 			serviceTrackerMap = ReflectionTestUtil.getFieldValue(
 				PersistedModelLocalServiceRegistryUtil.class,
 				"_serviceTrackerMap");
 
-		for (String modeClassName : serviceTrackerMap.keySet()) {
-			if (modeClassName.indexOf(CharPool.POUND) == -1) {
+		for (String modelClassName : _PRIORITIZED_MODEL_CLASS_NAMES) {
+			if (serviceTrackerMap.containsKey(modelClassName) &&
+				(modelClassName.indexOf(CharPool.POUND) == -1)) {
+
 				scrubbedPersistedModelLocalServices.put(
-					modeClassName, serviceTrackerMap.getService(modeClassName));
+					modelClassName,
+					serviceTrackerMap.getService(modelClassName));
+			}
+		}
+
+		for (String modelClassName : serviceTrackerMap.keySet()) {
+			if (!_blacklistedModelClassNames.contains(modelClassName) &&
+				(modelClassName.indexOf(CharPool.POUND) == -1)) {
+
+				scrubbedPersistedModelLocalServices.put(
+					modelClassName,
+					serviceTrackerMap.getService(modelClassName));
 			}
 		}
 
@@ -640,6 +657,13 @@ public class DataGuardTestRuleUtil {
 			basePersistence, "_sessionFactory", originalSessionFactory);
 	}
 
+	private static final String[] _PRIORITIZED_MODEL_CLASS_NAMES = {
+		Company.class.getName()
+	};
+
+	private static final Set<String> _blacklistedModelClassNames =
+		SetUtil.fromArray(
+			"com.liferay.portal.security.audit.storage.model.AuditEvent");
 	private static final ThreadLocal<Map<String, Map<Serializable, String>>>
 		_recordsThreadLocal = new ThreadLocal<>();
 	private static final TransactionConfig _transactionConfig =
@@ -706,7 +730,10 @@ public class DataGuardTestRuleUtil {
 		private void _record(Object object) {
 			BaseModel<?> baseModel = (BaseModel<?>)object;
 
-			if (baseModel.isNew()) {
+			if (baseModel.isNew() &&
+				!_blacklistedModelClassNames.contains(
+					baseModel.getModelClassName())) {
+
 				Map<Serializable, String> map = _records.computeIfAbsent(
 					baseModel.getModelClassName(),
 					className -> new ConcurrentHashMap<>());

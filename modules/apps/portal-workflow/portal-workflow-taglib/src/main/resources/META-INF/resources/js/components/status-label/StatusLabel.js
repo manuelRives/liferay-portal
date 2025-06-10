@@ -11,14 +11,14 @@ import {WorkflowInstanceTracker} from '@liferay/portal-workflow-instance-tracker
 import React, {useState} from 'react';
 
 export default function StatusLabel({
+	baseResourceURL,
 	instanceId,
 	showInstanceTracker,
 	statusMessage,
 	statusStyle,
 }) {
-	const [showInstanceTrackerModal, setShowInstanceTrackerModal] = useState(
-		false
-	);
+	const [showInstanceTrackerModal, setShowInstanceTrackerModal] =
+		useState(false);
 
 	const {observer} = useModal({
 		onClose: () => {
@@ -52,6 +52,7 @@ export default function StatusLabel({
 
 					<ClayModal.Body>
 						<WorkflowInstanceTracker
+							baseResourceURL={baseResourceURL}
 							workflowInstanceId={instanceId}
 						/>
 					</ClayModal.Body>

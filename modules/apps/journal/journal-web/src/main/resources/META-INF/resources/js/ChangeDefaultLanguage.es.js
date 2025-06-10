@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
@@ -30,12 +31,18 @@ function ChangeDefaultLanguage(props) {
 	return (
 		<div className="article-default-language">
 			<p className="mb-0">
-				<b>{`${Liferay.Language.get(
-					'web-content-default-language'
-				)}: `}</b>
+				<b>{`${Liferay.Language.get('default-language')}: `}</b>
 
 				{props.strings[selectedDefaultLanguage]}
 			</p>
+
+			{Liferay.FeatureFlags['LPD-11228'] && (
+				<ClayAlert className="border-0 mt-3 p-0" displayType="info">
+					{Liferay.Language.get(
+						"changing-the-default-language-will-reset-the-article's-history-making-previous-changes-untrackable"
+					)}
+				</ClayAlert>
+			)}
 
 			<ClayDropDown
 				active={active}

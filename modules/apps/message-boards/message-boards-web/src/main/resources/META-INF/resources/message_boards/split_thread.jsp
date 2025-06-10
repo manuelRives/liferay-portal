@@ -92,7 +92,7 @@ if (portletTitleBasedNavigation) {
 
 					<aui:input disabled="<%= thread.isLocked() %>" helpMessage='<%= thread.isLocked() ? LanguageUtil.get(request, "unlock-thread-to-add-an-explanation-post") : StringPool.BLANK %>' label="add-explanation-post-to-the-source-thread" name="addExplanationPost" onClick='<%= liferayPortletResponse.getNamespace() + "toggleExplanationPost();" %>' type="checkbox" />
 
-					<div id="<portlet:namespace />explanationPost" style="display: none;">
+					<div class="hide" id="<portlet:namespace />explanationPost">
 						<div class="alert alert-info">
 							<liferay-ui:message key="the-following-post-will-be-added-in-place-of-the-moved-message" />
 						</div>
@@ -126,13 +126,15 @@ if (portletTitleBasedNavigation) {
 
 <aui:script>
 	function <portlet:namespace />splitThread() {
-		document.<portlet:namespace />fm.<portlet:namespace />body.value = <portlet:namespace />getHTML();
+		document.<portlet:namespace />fm.<portlet:namespace />body.value =
+			<portlet:namespace />getHTML();
 
 		submitForm(document.<portlet:namespace />fm);
 	}
 
 	function <portlet:namespace />selectCategory(categoryId, categoryName) {
-		document.<portlet:namespace />fm.<portlet:namespace />mbCategoryId.value = categoryId;
+		document.<portlet:namespace />fm.<portlet:namespace />mbCategoryId.value =
+			categoryId;
 
 		var nameEl = document.getElementById('<portlet:namespace />categoryName');
 
@@ -154,14 +156,14 @@ if (portletTitleBasedNavigation) {
 			document.getElementById('<portlet:namespace />addExplanationPost')
 				.checked
 		) {
-			document.getElementById(
-				'<portlet:namespace />explanationPost'
-			).style.display = '';
+			document
+				.getElementById('<portlet:namespace />explanationPost')
+				.classList.remove('hide');
 		}
 		else {
-			document.getElementById(
-				'<portlet:namespace />explanationPost'
-			).style.display = 'none';
+			document
+				.getElementById('<portlet:namespace />explanationPost')
+				.classList.add('hide');
 		}
 	}
 </aui:script>

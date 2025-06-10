@@ -14,7 +14,6 @@ import com.liferay.headless.delivery.internal.odata.entity.v1_0.ContentStructure
 import com.liferay.headless.delivery.resource.v1_0.ContentStructureResource;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
@@ -28,9 +27,9 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Collections;
+import jakarta.ws.rs.core.MultivaluedMap;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.Collections;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,7 +42,6 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/content-structure.properties",
 	scope = ServiceScope.PROTOTYPE, service = ContentStructureResource.class
 )
-@CTAware
 public class ContentStructureResourceImpl
 	extends BaseContentStructureResourceImpl {
 
@@ -85,6 +83,8 @@ public class ContentStructureResourceImpl
 				Field.ENTRY_CLASS_PK),
 			searchContext -> {
 				searchContext.addVulcanAggregation(aggregation);
+				searchContext.setAttribute(Field.DESCRIPTION, search);
+				searchContext.setAttribute(Field.NAME, search);
 				searchContext.setAttribute(
 					"searchPermissionContext", StringPool.BLANK);
 				searchContext.setCompanyId(contextCompany.getCompanyId());

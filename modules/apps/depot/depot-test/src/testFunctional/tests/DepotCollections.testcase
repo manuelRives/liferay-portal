@@ -1,14 +1,18 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Depot";
+	property testray.main.component.name = "Asset Libraries";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		JSONDepot.addDepot(
 			depotDescription = "This is the description of a depot",
@@ -196,7 +200,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -1053,7 +1057,7 @@ definition {
 				webContentText = "WC WebContent Text ${i}",
 				webContentTitle = "WC WebContent Title ${i}");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		DepotNavigator.openDepotAssetListsAdmin(depotName = "Test Depot Name");

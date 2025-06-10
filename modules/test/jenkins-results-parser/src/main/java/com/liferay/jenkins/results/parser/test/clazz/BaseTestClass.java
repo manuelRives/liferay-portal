@@ -26,6 +26,11 @@ import org.json.JSONObject;
 public abstract class BaseTestClass implements TestClass {
 
 	@Override
+	public void addTestClassMethod(TestClassMethod testClassMethod) {
+		_testClassMethods.add(testClassMethod);
+	}
+
+	@Override
 	public int compareTo(TestClass testClass) {
 		if (testClass == null) {
 			throw new NullPointerException("Test class is null");
@@ -44,11 +49,7 @@ public abstract class BaseTestClass implements TestClass {
 			return false;
 		}
 
-		if (Objects.equals(hashCode(), object.hashCode())) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(hashCode(), object.hashCode());
 	}
 
 	@Override
@@ -77,6 +78,20 @@ public abstract class BaseTestClass implements TestClass {
 			batchTestClassGroup.getAverageTestOverheadDuration(getTestName());
 
 		return _averageOverheadDuration;
+	}
+
+	@Override
+	public long getAverageTestTaskDuration() {
+		if (_averageTestTaskDuration != null) {
+			return _averageTestTaskDuration;
+		}
+
+		BatchTestClassGroup batchTestClassGroup = getBatchTestClassGroup();
+
+		_averageTestTaskDuration =
+			batchTestClassGroup.getAverageTestTaskDuration(getTestName());
+
+		return _averageTestTaskDuration;
 	}
 
 	@Override
@@ -148,6 +163,13 @@ public abstract class BaseTestClass implements TestClass {
 	}
 
 	@Override
+	public String getTestTaskName() {
+		BatchTestClassGroup batchTestClassGroup = getBatchTestClassGroup();
+
+		return batchTestClassGroup.getTestTaskName(getTestName());
+	}
+
+	@Override
 	public int hashCode() {
 		JSONObject jsonObject = getJSONObject();
 
@@ -213,10 +235,6 @@ public abstract class BaseTestClass implements TestClass {
 		addTestClassMethod(false, methodName);
 	}
 
-	protected void addTestClassMethod(TestClassMethod testClassMethod) {
-		_testClassMethods.add(testClassMethod);
-	}
-
 	protected BatchTestClassGroup getBatchTestClassGroup() {
 		return _batchTestClassGroup;
 	}
@@ -264,6 +282,7 @@ public abstract class BaseTestClass implements TestClass {
 
 	private Long _averageDuration;
 	private Long _averageOverheadDuration;
+	private Long _averageTestTaskDuration;
 	private final BatchTestClassGroup _batchTestClassGroup;
 	private final File _testClassFile;
 	private final List<TestClassMethod> _testClassMethods = new ArrayList<>();

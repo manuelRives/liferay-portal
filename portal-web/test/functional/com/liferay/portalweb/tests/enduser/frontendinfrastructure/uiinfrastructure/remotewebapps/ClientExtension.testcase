@@ -1,10 +1,10 @@
+@component-name = "portal-frontend-infrastructure"
 definition {
 
-	property custom.properties = "feature.flag.LPS-164563=true${line.separator}feature.flag.LPS-167253=true${line.separator}feature.flag.LPS-182184=true";
+	property custom.properties = "feature.flag.LPS-164563=true${line.separator}feature.flag.LPS-167253=true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Client Extensions";
-	property testray.main.component.name = "Client Extensions";
+	property testray.main.component.name = "Client Extension Framework";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -112,52 +112,11 @@ definition {
 		}
 	}
 
-	@description = "LPS-139377. Verify remote app can be displayed under a portlet category"
-	@priority = 3
-	test CanBeAssignedAPortletCategory {
-		property portal.acceptance = "true";
-
-		task ("Create remote app entry with portlet category") {
-			ClientExtensionGeneral.goToRemoteAppsPortlet();
-
-			ClientExtensionGeneral.addEntryWithPortletCategory();
-		}
-
-		task ("Add a public widget page with JSON") {
-			JSONLayout.addPublicLayout(
-				groupName = "Guest",
-				layoutName = "Test Page");
-
-			Navigator.openURL();
-
-			Navigator.gotoPage(pageName = "Test Page");
-		}
-
-		task ("Assert remote app is categorized under correct portlet category") {
-			Click(locator1 = "ControlMenu#ADD");
-
-			AssertElementPresent(locator1 = "ControlMenuAddPanel#SIDEBAR_HEADER");
-
-			Navigator.gotoNavTab(navTab = "Widgets");
-
-			WaitForElementPresent(locator1 = "NavBar#APPLICATION_SEARCH_FIELD");
-
-			Type(
-				locator1 = "NavBar#APPLICATION_SEARCH_FIELD",
-				value1 = "Test Remote App");
-
-			AssertElementPresent(
-				key_category = "Collaboration",
-				locator1 = "ControlMenuAddPanel#WIDGET_CATEGORY");
-		}
-	}
-
 	@description = "LPS-114812. Verify Client Extension can be deleted"
 	@priority = 5
 	@refactordone
 	test CanBeDeleted {
 		property portal.acceptance = "true";
-		property testray.component.names = "Frontend Data Set,Remote Apps";
 
 		var remoteAppName = "My New Remote App To Delete";
 
@@ -423,27 +382,6 @@ definition {
 		}
 	}
 
-	@description = "LPS-141280. Verify that the client extension is not available on the workflow page"
-	@priority = 3
-	test CannotConfigureWorkflowSiteLevel {
-		task ("Given go to Workflow page") {
-			ProductMenu.gotoPortlet(
-				category = "Configuration",
-				portlet = "Workflow",
-				site = ${siteName});
-		}
-
-		task ("When View entry list table") {
-			AssertElementPresent(locator1 = "Pagination#ITEMS_PER_PAGE_SELECT");
-		}
-
-		task ("Then Client Extension* is not") {
-			Search.searchCP(searchTerm = "Client Extension");
-
-			AssertTextPresent(value1 = "No entries were found.");
-		}
-	}
-
 	@description = "LPS-182184. Verify it's not possible to import an invalid file."
 	@priority = 3
 	test CanNotImportAnInvalidFile {
@@ -557,7 +495,6 @@ definition {
 		property environment.acceptance = "true";
 		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
-		property testray.component.names = "Frontend Data Set,Remote Apps";
 
 		task ("Create Vanilla Counter as a Custom Element") {
 			ClientExtensionGeneral.goToRemoteAppsPortlet();
@@ -600,7 +537,6 @@ definition {
 		property test.assert.warning.exceptions = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
-		property testray.component.names = "Client Extensions,Frontend Data Set";
 
 		task ("Given a non-root portal context") {
 			var portalURL = JSONCompany.getPortalURL();
@@ -936,8 +872,6 @@ definition {
 	@description = "LPS-159013. ES module custom element portlets render incorrect script node when dragged in the UI"
 	@priority = 4
 	test CustomElementRendersCorrectlyWhenPlacedOnWidgetPage {
-		property testray.component.names = "Client Extensions";
-
 		task ("Given a custom element with "Use ES Modules" option created") {
 			JSONClientExtension.addCustomElementRemoteAppEntry(
 				customElementCssurl = "https://liferay.github.io/liferay-frontend-projects/index.css",
@@ -1140,7 +1074,6 @@ definition {
 	@priority = 5
 	test IFrameCanBeCreated {
 		property portal.acceptance = "true";
-		property testray.component.names = "Frontend Data Set,Remote Apps";
 
 		ClientExtensionGeneral.goToRemoteAppsPortlet();
 
@@ -1225,7 +1158,7 @@ definition {
 		}
 
 		task ("Then Modified Date column is present") {
-			FrontendDataSetCustomView.assertColumnPresent(key_field = "Modified Date");
+			ClientExtensionGeneral.assertColumnPresent(key_field = "Modified Date");
 		}
 
 		task ("And Then showing Label 'UI' is present") {

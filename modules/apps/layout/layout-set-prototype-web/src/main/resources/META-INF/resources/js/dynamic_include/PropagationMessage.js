@@ -7,7 +7,7 @@ import {ClayButtonWithIcon} from '@clayui/button';
 import ClayLink from '@clayui/link';
 import ClayPopover from '@clayui/popover';
 import {useEventListener} from '@liferay/frontend-js-react-web';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import React, {useRef, useState} from 'react';
 
 export default function ({
@@ -83,14 +83,14 @@ export default function ({
 							message: readyForPropagation
 								? Liferay.Language.get(
 										'propagation-is-disabled-connected-sites-might-not-have-been-updated-yet-propagation-is-only-triggered-when-a-site-created-from-the-template-is-visited'
-								  )
+									)
 								: triggerPropagation
-								? Liferay.Language.get(
-										'propagation-is-enabled-connected-sites-are-being-updated'
-								  )
-								: Liferay.Language.get(
-										'propagation-is-enabled-connected-sites-will-be-updated-once-a-site-page-is-visited'
-								  ),
+									? Liferay.Language.get(
+											'propagation-is-enabled-connected-sites-are-being-updated'
+										)
+									: Liferay.Language.get(
+											'propagation-is-enabled-connected-sites-will-be-updated-once-a-site-page-is-visited'
+										),
 							type: 'info',
 						});
 					}}

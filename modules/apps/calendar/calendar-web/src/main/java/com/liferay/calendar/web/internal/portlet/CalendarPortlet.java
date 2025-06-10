@@ -116,6 +116,18 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.rss.util.RSSUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.IOException;
 
 import java.util.ArrayList;
@@ -131,18 +143,6 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TimeZone;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -165,14 +165,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.icon=/icons/calendar.png",
 		"com.liferay.portlet.instanceable=true",
 		"com.liferay.portlet.preferences-owned-by-group=true",
-		"javax.portlet.display-name=Calendar",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.copy-request-parameters=true",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + CalendarPortletKeys.CALENDAR,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Calendar",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.copy-request-parameters=true",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + CalendarPortletKeys.CALENDAR,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -1323,7 +1323,7 @@ public class CalendarPortlet extends MVCPortlet {
 			resourceRequest, "calendarIds");
 		TimeZone timeZone = _getTimeZone(resourceRequest);
 
-		if (!ArrayUtil.isEmpty(calendarIds)) {
+		if (ArrayUtil.isNotEmpty(calendarIds)) {
 			java.util.Calendar endTimeJCalendar = _getJCalendar(
 				resourceRequest, "endTime");
 			java.util.Calendar startTimeJCalendar = _getJCalendar(
@@ -1336,7 +1336,7 @@ public class CalendarPortlet extends MVCPortlet {
 				new long[0], -1, null, startTimeJCalendar.getTimeInMillis(),
 				endTimeJCalendar.getTimeInMillis(), timeZone, true, statuses,
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-				new CalendarBookingStartTimeComparator(true));
+				CalendarBookingStartTimeComparator.getInstance(true));
 
 			int eventsPerPage = ParamUtil.getInteger(
 				resourceRequest, "eventsPerPage");
@@ -1521,7 +1521,8 @@ public class CalendarPortlet extends MVCPortlet {
 
 			List<User> users = _userLocalService.search(
 				themeDisplay.getCompanyId(), keywords, 0, null, 0,
-				SearchContainer.DEFAULT_DELTA, new UserFirstNameComparator());
+				SearchContainer.DEFAULT_DELTA,
+				UserFirstNameComparator.getInstance(false));
 
 			for (User user : users) {
 				_addCalendar(

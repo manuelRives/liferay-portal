@@ -98,7 +98,7 @@ public class SearchLayoutFactoryImpl implements SearchLayoutFactory {
 		serviceContext.setUserId(group.getCreatorUserId());
 
 		layoutLocalService.addLayout(
-			group.getCreatorUserId(), group.getGroupId(), false,
+			null, group.getCreatorUserId(), group.getGroupId(), false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 			layoutPrototype.getNameMap(), baseLayout.getTitleMap(),
 			layoutPrototype.getDescriptionMap(), baseLayout.getKeywordsMap(),
@@ -131,8 +131,7 @@ public class SearchLayoutFactoryImpl implements SearchLayoutFactory {
 			Locale defaultLocale = LocaleUtil.fromLanguageId(
 				_localization.getDefaultLanguageId(layoutPrototype.getName()));
 
-			String name = LanguageResources.getMessage(
-				defaultLocale, "layout-prototype-search-title");
+			String name = LanguageResources.getMessage(defaultLocale, "search");
 
 			if ((name == null) ||
 				name.equals(layoutPrototype.getName(defaultLocale))) {
@@ -234,7 +233,7 @@ public class SearchLayoutFactoryImpl implements SearchLayoutFactory {
 	}
 
 	private Map<Locale, String> _getSearchTitleLocalizationMap() {
-		return _getLocalizationMap("layout-prototype-search-title");
+		return _getLocalizationMap("search");
 	}
 
 	private boolean _hasSearchLayout(Group group) {

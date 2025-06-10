@@ -30,6 +30,11 @@ String ppid = ParamUtil.getString(request, "p_p_id");
 	<c:when test="<%= layoutTypePortlet.hasStateMax() && Validator.isNotNull(ppid) %>">
 		<liferay-layout:render-state-max-layout-structure />
 	</c:when>
+	<c:when test="<%= layout.getMasterLayoutPlid() > 0 %>">
+		<liferay-layout:render-fragment-layout
+			showPreview="<%= true %>"
+		/>
+	</c:when>
 	<c:otherwise>
 		<div class="layout-content portlet-layout" id="main-content" role="main">
 			<liferay-layout:render-fragment-layout

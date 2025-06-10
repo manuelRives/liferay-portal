@@ -89,7 +89,7 @@ ClickToChatConfiguration clickToChatConfiguration = (ClickToChatConfiguration)re
 	</div>
 
 	<div class="col-md-6">
-		<aui:input disabled="<%= disabled %>" id="chatProviderSecretKey" label="chat-provider-secret-key" name="chatProviderSecretKey" type="text" value="<%= clickToChatConfiguration.chatProviderSecretKey() %>" />
+		<aui:input disabled="<%= disabled %>" id="chatProviderSecretKey" label="secret-key" name="chatProviderSecretKey" type="text" value="<%= clickToChatConfiguration.chatProviderSecretKey() %>" />
 	</div>
 </div>
 
@@ -150,9 +150,8 @@ ClickToChatConfiguration clickToChatConfiguration = (ClickToChatConfiguration)re
 			'<portlet:namespace />chatProviderId'
 		);
 
-		var clickToChatProviderIdOptions = clickToChatChatProviderIdElement.querySelectorAll(
-			'option'
-		);
+		var clickToChatProviderIdOptions =
+			clickToChatChatProviderIdElement.querySelectorAll('option');
 
 		clickToChatProviderIdOptions.forEach((option) => {
 			<portlet:namespace />toggleClickToChatChatProviderLearnMessage(

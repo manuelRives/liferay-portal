@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.segments.model.SegmentsExperiment;
 
@@ -114,11 +115,11 @@ public class SegmentsExperimentLocalServiceUtil {
 	}
 
 	public static SegmentsExperiment deleteSegmentsExperiment(
-			long groupId, long segmentsExperienceId, long plid)
+			long groupId, String segmentsExperienceKey, long plid)
 		throws PortalException {
 
 		return getService().deleteSegmentsExperiment(
-			groupId, segmentsExperienceId, plid);
+			groupId, segmentsExperienceKey, plid);
 	}
 
 	/**
@@ -238,17 +239,17 @@ public class SegmentsExperimentLocalServiceUtil {
 	}
 
 	public static SegmentsExperiment fetchSegmentsExperiment(
-		long groupId, long segmentsExperienceId, long plid) {
-
-		return getService().fetchSegmentsExperiment(
-			groupId, segmentsExperienceId, plid);
-	}
-
-	public static SegmentsExperiment fetchSegmentsExperiment(
 		long groupId, String segmentsExperimentKey) {
 
 		return getService().fetchSegmentsExperiment(
 			groupId, segmentsExperimentKey);
+	}
+
+	public static SegmentsExperiment fetchSegmentsExperiment(
+		long groupId, String segmentsExperienceKey, long plid) {
+
+		return getService().fetchSegmentsExperiment(
+			groupId, segmentsExperienceKey, plid);
 	}
 
 	/**
@@ -460,13 +461,12 @@ public class SegmentsExperimentLocalServiceUtil {
 	}
 
 	public static SegmentsExperimentLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SegmentsExperimentLocalService service) {
-		_service = service;
-	}
-
-	private static volatile SegmentsExperimentLocalService _service;
+	private static final Snapshot<SegmentsExperimentLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			SegmentsExperimentLocalServiceUtil.class,
+			SegmentsExperimentLocalService.class);
 
 }

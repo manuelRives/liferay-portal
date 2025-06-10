@@ -18,6 +18,9 @@ import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.core.Application;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -36,9 +39,6 @@ import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.Application;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -124,6 +124,14 @@ public abstract class BaseCORSClientTestCase {
 			String urlString, String method, boolean allowOrigin)
 		throws Exception {
 
+		assertJsonWSUrl(urlString, method, allowOrigin, _TEST_CORS_URI);
+	}
+
+	protected void assertJsonWSUrl(
+			String urlString, String method, boolean allowOrigin,
+			String allowedOrigin)
+		throws Exception {
+
 		ProcessConfig.Builder builder = _generateTestBuilder();
 
 		ProcessExecutor processExecutor = new LocalProcessExecutor();
@@ -131,7 +139,7 @@ public abstract class BaseCORSClientTestCase {
 		ProcessChannel<String[]> processChannel = processExecutor.execute(
 			builder.build(),
 			new AllowRestrictedHeadersCallable(
-				"http://localhost:8080/api/jsonws" + urlString, _TEST_CORS_URI,
+				"http://localhost:8080/api/jsonws" + urlString, allowedOrigin,
 				method, true));
 
 		Future<String[]> future = processChannel.getProcessNoticeableFuture();
@@ -139,7 +147,7 @@ public abstract class BaseCORSClientTestCase {
 		String[] results = future.get();
 
 		if (allowOrigin) {
-			Assert.assertEquals(_TEST_CORS_URI, results[0]);
+			Assert.assertEquals(allowedOrigin, results[0]);
 		}
 		else {
 			Assert.assertNull(results[0]);

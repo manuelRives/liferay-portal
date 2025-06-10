@@ -6,10 +6,17 @@
 import {FormHTMLAttributes, ReactNode} from 'react';
 import {FormProvider} from 'react-hook-form';
 
+import Checkbox from './Checkbox';
+import FormControl from './FormControl';
 import {HelpMessage} from './HelpMessage';
 import {Input} from './Input';
 import {Label} from './Label';
+import RichTextEditor from './RichText';
 import {SectionWithControllers} from './SectionWithControllers';
+
+function Divider(props: React.HTMLAttributes<HTMLHRElement>) {
+	<hr {...props} />;
+}
 
 type FormProps = {
 	children: ReactNode;
@@ -17,9 +24,13 @@ type FormProps = {
 } & FormHTMLAttributes<HTMLFormElement>;
 
 type FormChildrens = {
+	Checkbox: typeof Checkbox;
+	Divider: typeof Divider;
+	FormControl: typeof FormControl;
 	HelpMessage: typeof HelpMessage;
 	Input: typeof Input;
 	Label: typeof Label;
+	RichTextEditor: typeof RichTextEditor;
 	SectionWithControllers: typeof SectionWithControllers;
 };
 
@@ -35,9 +46,13 @@ const Form: React.FC<FormProps> & FormChildrens = ({
 	</FormProvider>
 );
 
+Form.Checkbox = Checkbox;
+Form.Divider = Divider;
+Form.FormControl = FormControl;
 Form.HelpMessage = HelpMessage;
 Form.Input = Input;
 Form.Label = Label;
+Form.RichTextEditor = RichTextEditor;
 Form.SectionWithControllers = SectionWithControllers;
 
 export default Form;

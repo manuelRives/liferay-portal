@@ -16,18 +16,14 @@ import org.osgi.service.component.annotations.Component;
  * @author Istvan Sajtos
  */
 @Component(
-	property = "javax.portlet.name=" + LoginPortletKeys.CREATE_ACCOUNT,
+	property = "jakarta.portlet.name=" + LoginPortletKeys.CREATE_ACCOUNT,
 	service = PortletManager.class
 )
 public class CreateAccountPortletManager implements PortletManager {
 
 	@Override
 	public boolean isVisible(Layout layout) {
-		if (FeatureFlagManagerUtil.isEnabled("LPD-6378")) {
-			return true;
-		}
-
-		return false;
+		return FeatureFlagManagerUtil.isEnabled("LPD-6378");
 	}
 
 }

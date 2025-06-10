@@ -16,11 +16,11 @@ import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,26 +41,26 @@ public class GetCategoriesStrutsAction implements StrutsAction {
 
 		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
-		List<AssetCategory> categories = getCategories(httpServletRequest);
+		List<AssetCategory> assetCategories = getCategories(httpServletRequest);
 
-		for (AssetCategory category : categories) {
-			List<AssetCategory> childCategories =
+		for (AssetCategory assetCategory : assetCategories) {
+			List<AssetCategory> childAssetCategories =
 				_assetCategoryService.getChildCategories(
-					category.getCategoryId());
+					assetCategory.getCategoryId());
 
 			jsonArray.put(
 				JSONUtil.put(
-					"categoryId", category.getCategoryId()
+					"categoryId", assetCategory.getCategoryId()
 				).put(
-					"childrenCount", childCategories.size()
+					"childrenCount", childAssetCategories.size()
 				).put(
-					"hasChildren", !childCategories.isEmpty()
+					"hasChildren", !childAssetCategories.isEmpty()
 				).put(
-					"name", category.getName()
+					"name", assetCategory.getName()
 				).put(
-					"parentCategoryId", category.getParentCategoryId()
+					"parentCategoryId", assetCategory.getParentCategoryId()
 				).put(
-					"titleCurrentValue", category.getTitleCurrentValue()
+					"titleCurrentValue", assetCategory.getTitleCurrentValue()
 				));
 		}
 
@@ -73,6 +73,8 @@ public class GetCategoriesStrutsAction implements StrutsAction {
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
+		List<AssetCategory> assetCategories = Collections.emptyList();
+
 		long scopeGroupId = ParamUtil.getLong(
 			httpServletRequest, "scopeGroupId");
 		long categoryId = ParamUtil.getLong(httpServletRequest, "categoryId");
@@ -83,15 +85,13 @@ public class GetCategoriesStrutsAction implements StrutsAction {
 		int end = ParamUtil.getInteger(
 			httpServletRequest, "end", QueryUtil.ALL_POS);
 
-		List<AssetCategory> categories = Collections.emptyList();
-
 		if (categoryId > 0) {
 			if (scopeGroupId > 0) {
-				categories = _assetCategoryService.getVocabularyCategories(
+				assetCategories = _assetCategoryService.getVocabularyCategories(
 					scopeGroupId, categoryId, vocabularyId, start, end, null);
 			}
 			else {
-				categories = _assetCategoryService.getChildCategories(
+				assetCategories = _assetCategoryService.getChildCategories(
 					categoryId, start, end, null);
 			}
 		}
@@ -101,17 +101,17 @@ public class GetCategoriesStrutsAction implements StrutsAction {
 				AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID);
 
 			if (scopeGroupId > 0) {
-				categories = _assetCategoryService.getVocabularyCategories(
+				assetCategories = _assetCategoryService.getVocabularyCategories(
 					scopeGroupId, parentCategoryId, vocabularyId, start, end,
 					null);
 			}
 			else {
-				categories = _assetCategoryService.getVocabularyCategories(
+				assetCategories = _assetCategoryService.getVocabularyCategories(
 					parentCategoryId, vocabularyId, start, end, null);
 			}
 		}
 
-		return categories;
+		return assetCategories;
 	}
 
 	@Reference

@@ -9,19 +9,18 @@ import {useEffect, useState} from 'react';
 import {useNavigate, useOutletContext} from 'react-router-dom';
 
 import {DetailedCard} from '../../../../components/DetailedCard/DetailedCard';
-import {getAccountPostalAddressesByAccountId} from '../../../../utils/api';
+import EmptyState from '../../../../components/EmptyState';
+import QATable from '../../../../components/QATable';
+import i18n from '../../../../i18n';
+import HeadlessAdminUser from '../../../../services/rest/HeadlessAdminUser';
 import {getCustomFieldValue} from '../../../../utils/customFieldUtil';
-import {getAccountImage, removeProtocolURL} from '../../../../utils/util';
+import {getAccountImage} from '../../../../utils/util';
 
 import './Accounts.scss';
-import EmptyState from '../../../../components/EmptyState';
-import useMembers from '../../../../components/MembersPage/useMembers';
-import {Liferay} from '../../../../liferay/liferay';
 
 type AccountDetailsPageProps = {
 	selectedAccount: Account;
 	totalApps: number;
-	totalMembers: number;
 };
 
 type AccountHeaderButtonProps = {
@@ -66,12 +65,10 @@ const maskDigits = (str: string) => {
 function AccountDetailsPage({
 	selectedAccount,
 	totalApps,
-	totalMembers,
 }: AccountDetailsPageProps) {
 	const navigate = useNavigate();
-	const [selectedAccountAddress, setSelectedAccountAddress] = useState<
-		AccountPostalAddresses[]
-	>();
+	const [selectedAccountAddress, setSelectedAccountAddress] =
+		useState<AccountPostalAddresses[]>();
 
 	let accountType = '';
 	if (selectedAccount) {
@@ -85,7 +82,7 @@ function AccountDetailsPage({
 
 	useEffect(() => {
 		const makeFetch = async () => {
-			const {items} = await getAccountPostalAddressesByAccountId(
+			const {items} = await HeadlessAdminUser.getAccountPostalAddresses(
 				selectedAccount.id
 			);
 
@@ -120,19 +117,13 @@ function AccountDetailsPage({
 
 						<div className="account-details-header-right-container">
 							<AccountHeaderButton
-								count={(totalApps as unknown) as string}
+								count={totalApps as unknown as string}
 								name="apps"
 								onClick={() => navigate('/')}
 								text="Apps"
 								title="Apps"
 							/>
-							<AccountHeaderButton
-								count={(totalMembers as unknown) as string}
-								name="members"
-								onClick={() => navigate('/members')}
-								text="Items"
-								title="Members"
-							/>
+
 							<AccountHeaderButton
 								count="0"
 								name="solutions"
@@ -145,213 +136,189 @@ function AccountDetailsPage({
 					<div className="account-details-body-container">
 						<DetailedCard
 							cardIconAltText="Profile Icon"
-							cardTitle="Profile"
+							cardTitle={i18n.translate('profile')}
 							clayIcon="user"
 						>
-							<table className="account-details-body-table">
-								<tr className="account-details-body-table-row">
-									<th>Entity Type</th>
-
-									<td className="account-details-body-table-description">
-										{selectedAccount.type}
-									</td>
-								</tr>
-
-								<tr className="account-details-body-table-row">
-									<th>Publisher Name</th>
-
-									<td className="account-details-body-table-description">
-										{selectedAccount.name}
-									</td>
-								</tr>
-
-								<tr className="account-details-body-table-row">
-									<th>Publisher ID</th>
-
-									<td className="account-details-body-table-description">
-										{selectedAccount.id}
-									</td>
-								</tr>
-
-								<tr className="account-details-body-table-row">
-									<th>Github Username</th>
-
-									<td className="account-details-body-table-description">
-										{getCustomFieldValue(
-											selectedAccount?.customFields ?? [],
-											'Github Username'
-										)}
-									</td>
-								</tr>
-
-								<tr className="account-details-body-table-row">
-									<th>Description</th>
-
-									<td className="account-details-body-table-description">
-										{selectedAccount.description}
-									</td>
-								</tr>
-							</table>
+							<QATable
+								items={[
+									{
+										title: i18n.translate('entity-type'),
+										value: selectedAccount.type,
+									},
+									{
+										title: i18n.translate('publisher-name'),
+										value: selectedAccount.name,
+									},
+									{
+										title: i18n.translate('publisher-id'),
+										value: selectedAccount.id,
+									},
+									{
+										title: i18n.translate(
+											'github-username'
+										),
+										value:
+											getCustomFieldValue(
+												selectedAccount?.customFields ??
+													[],
+												'Github Username'
+											) || '-',
+									},
+									{
+										title: i18n.translate('description'),
+										value:
+											selectedAccount.description || '-',
+									},
+								]}
+							/>
 						</DetailedCard>
 
 						<DetailedCard
 							cardIconAltText="Contact Icon"
-							cardTitle="Contact"
+							cardTitle={i18n.translate('contact')}
 							clayIcon="phone"
 						>
-							<table className="account-details-body-table">
-								<tr className="account-details-body-table-row">
-									<th>Phone</th>
-
-									<td className="account-details-body-table-description">
-										{getCustomFieldValue(
-											selectedAccount.customFields ?? [],
-											'Contact Phone'
-										)}
-									</td>
-								</tr>
-
-								<tr className="account-details-body-table-row">
-									<th>Email</th>
-
-									<td className="account-details-body-table-description">
-										{getCustomFieldValue(
-											selectedAccount.customFields ?? [],
-											'Contact Email'
-										)}
-									</td>
-								</tr>
-
-								<tr className="account-details-body-table-row">
-									<th>Website</th>
-
-									<td className="account-details-body-table-description">
-										<a
-											href={
-												`https://` +
-												removeProtocolURL(
-													getCustomFieldValue(
-														selectedAccount.customFields ??
-															[],
-														'Homepage URL'
-													)
-												)
-											}
-											target="_blank"
-										>
-											{getCustomFieldValue(
+							<QATable
+								items={[
+									{
+										title: i18n.translate('phone'),
+										value:
+											getCustomFieldValue(
 												selectedAccount.customFields ??
 													[],
-												'Homepage URL'
-											)}
-										</a>
-									</td>
-								</tr>
-							</table>
+												'Contact Phone'
+											) || '-',
+									},
+									{
+										title: i18n.translate('email'),
+										value:
+											getCustomFieldValue(
+												selectedAccount.customFields ??
+													[],
+												'Contact Email'
+											) || '-',
+									},
+									{
+										title: i18n.translate('website'),
+										value: getCustomFieldValue(
+											selectedAccount.customFields ?? [],
+											'Homepage URL'
+										) ? (
+											<a>
+												{getCustomFieldValue(
+													selectedAccount.customFields ??
+														[],
+													'Homepage URL'
+												)}
+											</a>
+										) : (
+											'-'
+										),
+									},
+								]}
+							/>
 						</DetailedCard>
 
 						<DetailedCard
 							cardIconAltText="Address Icon"
-							cardTitle="Address"
+							cardTitle={i18n.translate('address')}
 							clayIcon="geolocation"
 						>
-							<table className="account-details-body-table">
-								{selectedAccountAddress?.map((address, i) => (
-									<tr
-										className="account-details-body-table-row"
-										key={i}
-									>
-										<th>Business Address</th>
-
-										<td className="account-details-body-table-description">
-											{address.streetAddressLine1}
-											{', '}
-											{address.addressLocality}
-											{', '}
-											{address.addressRegion}{' '}
-											{address.postalCode}
-											{', '}
-											{address.addressCountry}
-										</td>
-									</tr>
-								))}
-							</table>
+							<QATable
+								items={[
+									...(selectedAccountAddress
+										? selectedAccountAddress.map(
+												(address) => ({
+													title: i18n.translate(
+														'business-address'
+													),
+													value: `${address.streetAddressLine1}, 
+															${address.addressLocality}, 
+															${address.addressRegion}, 
+															${address.postalCode}, 
+															${address.addressCountry}`,
+												})
+											)
+										: [{title: '', value: ''}]),
+								]}
+							/>
 						</DetailedCard>
 
 						<DetailedCard
 							cardIconAltText="Agreements Icon"
-							cardTitle="Agreements"
+							cardTitle={i18n.translate('agreements')}
 							clayIcon="info-book"
 						>
-							<table className="account-details-body-table">
-								<tr>
-									<th>
-										Liferay Publisher Program License
-										agreement
-									</th>
-
-									<td className="account-details-body-table-description">
-										<ClayIcon
-											color="black"
-											symbol="download"
-										/>
-									</td>
-								</tr>
-
-								<tr>
-									<th>Liferay Publisher agreement</th>
-
-									<td className="account-details-body-table-description">
-										<ClayIcon
-											color="black"
-											symbol="download"
-										/>
-									</td>
-								</tr>
-							</table>
+							<QATable
+								items={[
+									{
+										title: i18n.translate(
+											'liferay-publisher-license-agreement'
+										),
+										value: (
+											<ClayIcon
+												color="black"
+												symbol="download"
+											/>
+										),
+									},
+									{
+										title: i18n.translate(
+											'end-user-license-agreement'
+										),
+										value: (
+											<ClayIcon
+												color="black"
+												symbol="download"
+											/>
+										),
+									},
+								]}
+							/>
 						</DetailedCard>
 
 						<DetailedCard
 							cardIconAltText="Payment Icon"
-							cardTitle="Payment "
+							cardTitle={i18n.translate('payment')}
 							clayIcon="credit-card"
 						>
-							{getCustomFieldValue(
-								selectedAccount.customFields ?? [],
-								'Paypal Email Address'
-							) ? (
-								<table className="account-details-body-table">
-									<tr className="account-details-body-table-row">
-										<th>Paypal Account</th>
-
-										<td className="account-details-body-table-description">
-											{maskDigits(
-												getCustomFieldValue(
-													selectedAccount.customFields ??
-														[],
-													'Paypal Email Address'
-												)
-											)}
-										</td>
-									</tr>
-
-									<tr className="account-details-body-table-row">
-										<th>Tax ID</th>
-
-										<td className="account-details-body-table-description">
-											{maskDigits(
-												selectedAccount?.taxId ?? ''
-											)}
-										</td>
-									</tr>
-								</table>
-							) : (
-								<div className="account-details-body-empty-payment">
-									Edit your publisher account to provide
-									payment information for sales in the
-									Marketplace
-								</div>
-							)}
+							<QATable
+								items={[
+									...(getCustomFieldValue(
+										selectedAccount.customFields ?? [],
+										'Paypal Email Address'
+									)
+										? [
+												{
+													title: i18n.translate(
+														'paypal-account'
+													),
+													value: maskDigits(
+														getCustomFieldValue(
+															selectedAccount.customFields ??
+																[],
+															'Paypal Email Address'
+														)
+													),
+												},
+												{
+													title: i18n.translate(
+														'paypal-account'
+													),
+													value: maskDigits(
+														selectedAccount?.taxId ??
+															'-'
+													),
+												},
+											]
+										: [
+												{
+													title: '',
+													value: 'Edit your publisher account to provide payment information for sales in the Marketplace',
+												},
+											]),
+								]}
+							/>
 						</DetailedCard>
 					</div>
 				</div>
@@ -368,18 +335,10 @@ function AccountDetailsPage({
 const Accounts = () => {
 	const {appsTotalCount, selectedAccount} = useOutletContext<any>();
 
-	const {data: members = []} = useMembers({
-		accountId: Liferay.CommerceContext.account?.accountId ?? 0,
-		isCustomerDashboard: false,
-		isPublisherDashboard: true,
-		selectedAccount,
-	});
-
 	return (
 		<AccountDetailsPage
 			selectedAccount={selectedAccount}
 			totalApps={appsTotalCount}
-			totalMembers={members?.length ?? 0}
 		/>
 	);
 };

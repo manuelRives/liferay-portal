@@ -53,8 +53,8 @@ public class AssetTestUtil {
 		AssetEntry assetEntry = AssetEntryLocalServiceUtil.createAssetEntry(
 			assetEntryId);
 
-		assetEntry.setClassName(className);
 		assetEntry.setGroupId(groupId);
+		assetEntry.setClassName(className);
 		assetEntry.setClassPK(RandomTestUtil.randomLong());
 		assetEntry.setVisible(true);
 		assetEntry.setPublishDate(publishDate);
@@ -103,10 +103,17 @@ public class AssetTestUtil {
 	public static AssetTag addTag(long groupId, String assetTagName)
 		throws PortalException {
 
+		return addTag(null, groupId, assetTagName);
+	}
+
+	public static AssetTag addTag(
+			String externalReferenceCode, long groupId, String assetTagName)
+		throws PortalException {
+
 		long userId = TestPropsValues.getUserId();
 
 		return AssetTagLocalServiceUtil.addTag(
-			userId, groupId, assetTagName,
+			externalReferenceCode, userId, groupId, assetTagName,
 			ServiceContextTestUtil.getServiceContext(groupId, userId));
 	}
 

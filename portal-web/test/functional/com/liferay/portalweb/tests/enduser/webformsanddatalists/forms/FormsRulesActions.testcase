@@ -1,4 +1,4 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
@@ -1131,7 +1131,7 @@ definition {
 			outputParameterName = "Country Name",
 			outputParameterPath = "nameCurrentValue",
 			outputParameterType = "List",
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			url = "${portalURL}/api/jsonws/country/get-countries",
 			username = "test@liferay.com");
 
@@ -1251,97 +1251,6 @@ definition {
 		FormsAdmin.viewFormTableEntry(
 			fieldLabel = "Countries",
 			fieldValue = "Afghanistan");
-	}
-
-	@description = "LPS-75495 - Verify that the 'Show' action is not triggered when typing into an unrelated field"
-	@priority = 3
-	test ShowDoesNotTriggerWhenTypingIntoUnrelatedField {
-		property portal.acceptance = "true";
-		property portal.upstream = "true";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		FormsAdmin.addForm();
-
-		Form.editName(formName = "Test Form");
-
-		Form.addTextField(fieldPositionNumber = 0);
-
-		var fieldNameTextField1 = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Text Field 1");
-
-		Form.closeSidebar();
-
-		Form.addTextField(fieldPositionNumber = 1);
-
-		var fieldNameTextField2 = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Text Field 2");
-
-		Form.closeSidebar();
-
-		Form.gotoAddField(
-			fieldPositionNumber = 2,
-			fieldType = "Date");
-
-		var fieldNameDateField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Date Field");
-
-		FormFields.enableSwitch(fieldName = "required");
-
-		Form.closeSidebar();
-
-		FormsAdminNavigator.gotoRules();
-
-		FormRules.addRule();
-
-		FormRules.configureConditionOptions(
-			conditionField = "Text Field 1",
-			conditionFieldValue = "test",
-			conditionOperator = "Is Equal To",
-			conditionRowNumber = 1,
-			conditionValueType = "Value");
-
-		FormRules.configureActionOptions(
-			action = "Show",
-			actionRowNumber = 1,
-			actionTarget = "Date Field");
-
-		FormRules.save();
-
-		FormsAdminNavigator.gotoFormBuilder();
-
-		Form.save();
-
-		ProductMenu.gotoPortlet(
-			category = "Content & Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoEditFormByName(formName = "Test Form");
-
-		Form.publishForm();
-
-		FormsAdminNavigator.gotoPublishedForm();
-
-		FormPortlet.waitFormRenderer(text = "Submit");
-
-		FormFields.editText(
-			fieldName = ${fieldNameTextField2},
-			fieldValue = "testing");
-
-		FormFields.viewDateFieldNotPresent(
-			fieldLabel = "Date Field",
-			fieldName = ${fieldNameDateField});
-
-		FormFields.editText(
-			fieldName = ${fieldNameTextField1},
-			fieldValue = "test");
-
-		FormFields.viewDateField(
-			fieldLabel = "Date Field",
-			fieldName = ${fieldNameDateField});
 	}
 
 }

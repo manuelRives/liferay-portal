@@ -30,6 +30,7 @@
 		<column name="errorMessages" type="String" />
 		<column name="languageId" type="String" />
 		<column name="note" type="String" />
+		<column name="payload" type="String" />
 		<column name="paymentIntegrationKey" type="String" />
 		<column name="paymentIntegrationType" type="int" />
 		<column name="paymentStatus" type="int" />
@@ -59,6 +60,13 @@
 			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
+			<finder-column name="type" />
+		</finder>
+		<finder name="C_C_C_P_T" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+			<finder-column name="paymentStatus" />
 			<finder-column name="type" />
 		</finder>
 	</entity>

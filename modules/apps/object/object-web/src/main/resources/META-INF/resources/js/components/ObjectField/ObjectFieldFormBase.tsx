@@ -13,7 +13,6 @@ import {
 	SingleSelect,
 	Toggle,
 } from '@liferay/object-js-components-web';
-import classNames from 'classnames';
 import {createResourceURL} from 'frontend-js-web';
 import React, {
 	ChangeEventHandler,
@@ -41,6 +40,7 @@ import './ObjectFieldFormBase.scss';
 
 import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
+import classNames from 'classnames';
 
 interface ObjectFieldFormBaseProps {
 	baseResourceURL: string;
@@ -161,9 +161,10 @@ async function getObjectFieldSettingsByBusinessType(
 	}
 
 	if (businessType === 'Relationship' && objectRelationshipId !== 0) {
-		const relationshipData = await API.getObjectRelationship<
-			TObjectRelationship
-		>(objectRelationshipId!);
+		const relationshipData =
+			await API.getObjectRelationship<TObjectRelationship>(
+				objectRelationshipId!
+			);
 
 		if (relationshipData.id) {
 			setOneToManyObjectRelationship(relationshipData);
@@ -196,18 +197,13 @@ export default function ObjectFieldFormBase({
 		Partial<ListTypeDefinition>[]
 	>([]);
 
-	const [listTypeDefinitionsURL, setListTypeDefinitionsURL] = useState<
-		string
-	>('');
+	const [listTypeDefinitionsURL, setListTypeDefinitionsURL] =
+		useState<string>('');
 
-	const [
-		oneToManyObjectRelationship,
-		setOneToManyObjectRelationship,
-	] = useState<TObjectRelationship>();
-	const [
-		reloadPicklistSingleSelect,
-		setReloadPicklistSingleSelect,
-	] = useState(false);
+	const [oneToManyObjectRelationship, setOneToManyObjectRelationship] =
+		useState<TObjectRelationship>();
+	const [reloadPicklistSingleSelect, setReloadPicklistSingleSelect] =
+		useState(false);
 	const [selectedOutputValue, setSelectedOutputValue] = useState<string>();
 	const validListTypeDefinitionId =
 		values.listTypeDefinitionId !== undefined &&
@@ -229,11 +225,12 @@ export default function ObjectFieldFormBase({
 	}, [listTypeDefinitions, values.listTypeDefinitionExternalReferenceCode]);
 
 	const handleTypeChange = async (selectedBusinessType: string) => {
-		const selectedObjectFieldBusinessTypeInfo = objectFieldBusinessTypesInfo.find(
-			(objectFieldBusinessTypeInfo) =>
-				objectFieldBusinessTypeInfo.businessType ===
-				selectedBusinessType
-		);
+		const selectedObjectFieldBusinessTypeInfo =
+			objectFieldBusinessTypesInfo.find(
+				(objectFieldBusinessTypeInfo) =>
+					objectFieldBusinessTypeInfo.businessType ===
+					selectedBusinessType
+			);
 
 		const objectFieldSettings: ObjectFieldSetting[] =
 			fieldSettingsMap.get(selectedBusinessType) || [];
@@ -302,7 +299,7 @@ export default function ObjectFieldFormBase({
 			oneToManyObjectRelationship &&
 			oneToManyObjectRelationship.deletionType !== 'disassociate'
 		) {
-			return Liferay.FeatureFlags['LPS-187142']
+			return Liferay.FeatureFlags['LPD-34594']
 				? oneToManyObjectRelationship.edge
 				: false;
 		}
@@ -315,7 +312,11 @@ export default function ObjectFieldFormBase({
 			return true;
 		}
 
-		return !!values.relationshipType || values.localized || values.state;
+		return (
+			!!values.relationshipType ||
+			(!Liferay.FeatureFlags['LPD-32050'] && values.localized) ||
+			values.state
+		);
 	};
 
 	const handleStateToggleChange = (toggled: boolean) => {
@@ -323,9 +324,8 @@ export default function ObjectFieldFormBase({
 		let defaultValueType;
 
 		if (values.id) {
-			const currentDefaultValueSettings = getDefaultValueFieldSettings(
-				values
-			);
+			const currentDefaultValueSettings =
+				getDefaultValueFieldSettings(values);
 			defaultValue = currentDefaultValueSettings.defaultValue;
 			defaultValueType = currentDefaultValueSettings.defaultValueType;
 		}
@@ -381,14 +381,6 @@ export default function ObjectFieldFormBase({
 		}
 	};
 
-	const applyFeatureFlag = () => {
-		return objectFieldBusinessTypesInfo.filter(
-			(objectFieldBusinessTypeInfo) => {
-				return objectFieldBusinessTypeInfo.businessType !== 'Formula';
-			}
-		);
-	};
-
 	useEffect(() => {
 		const makeFetch = async () => {
 			await getObjectFieldSettingsByBusinessType(
@@ -413,6 +405,7 @@ export default function ObjectFieldFormBase({
 		};
 
 		makeFetch();
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [objectRelationshipId, values.businessType]);
 
@@ -448,11 +441,7 @@ export default function ObjectFieldFormBase({
 				className={className}
 				disabled={disabled}
 				error={errors.businessType}
-				items={
-					!Liferay.FeatureFlags['LPS-164948']
-						? applyFeatureFlag()
-						: objectFieldBusinessTypesInfo
-				}
+				items={objectFieldBusinessTypesInfo}
 				label={Liferay.Language.get('type')}
 				onSelectionChange={(value) => {
 					handleTypeChange(value as string);
@@ -530,10 +519,11 @@ export default function ObjectFieldFormBase({
 						let newObjectFieldSettings: ObjectFieldSetting[] = [];
 
 						if (values.objectFieldSettings) {
-							newObjectFieldSettings = values.objectFieldSettings?.filter(
-								(objectFieldSetting) =>
-									objectFieldSetting.name !== 'output'
-							) as ObjectFieldSetting[];
+							newObjectFieldSettings =
+								values.objectFieldSettings?.filter(
+									(objectFieldSetting) =>
+										objectFieldSetting.name !== 'output'
+								) as ObjectFieldSetting[];
 						}
 
 						setValues({
@@ -573,22 +563,22 @@ export default function ObjectFieldFormBase({
 
 			{(values.businessType === 'Picklist' ||
 				values.businessType === 'MultiselectPicklist') && (
-				<div
-					className={classNames(
-						editingObjectField
-							? modelBuilder
-								? 'lfr-objects__object-field-form-base-picklist-edit-field-model-builder'
-								: 'lfr-objects__object-field-form-base-picklist-edit-field'
-							: 'lfr-objects__object-field-form-base-picklist-add-field'
-					)}
-				>
+				<div className="form-group lfr-objects__object-field-form-base-picklist-container">
 					{reloadPicklistSingleSelect ? (
 						<ClayLoadingIndicator
 							displayType="secondary"
 							size="sm"
 						/>
 					) : (
-						<div className="lfr-objects__object-field-form-base-picklist-container">
+						<div
+							className={classNames(
+								'lfr-objects__object-field-form-base-picklist-single-select',
+								{
+									'lfr-objects__object-field-form-base-picklist-single-select-error':
+										errors.listTypeDefinitionId,
+								}
+							)}
+						>
 							<SingleSelect
 								className="lfr-objects__object-field-form-base-picklist-select-field"
 								disabled={disabled}
@@ -597,20 +587,25 @@ export default function ObjectFieldFormBase({
 								items={listTypeDefinitionsItems}
 								label={Liferay.Language.get('picklist')}
 								onSelectionChange={(value) => {
-									const selectedListTypeDefinition = listTypeDefinitions.find(
-										({externalReferenceCode}) =>
-											externalReferenceCode === value
-									);
+									const selectedListTypeDefinition =
+										listTypeDefinitions.find(
+											({externalReferenceCode}) =>
+												externalReferenceCode === value
+										);
 									if (selectedListTypeDefinition) {
 										setValues({
 											listTypeDefinitionExternalReferenceCode:
 												selectedListTypeDefinition.externalReferenceCode,
 											listTypeDefinitionId:
 												selectedListTypeDefinition.id,
-											objectFieldSettings: removeFieldSettings(
-												['defaultValue', 'stateFlow'],
-												values
-											),
+											objectFieldSettings:
+												removeFieldSettings(
+													[
+														'defaultValue',
+														'stateFlow',
+													],
+													values
+												),
 										});
 
 										if (onSubmit) {
@@ -620,13 +615,14 @@ export default function ObjectFieldFormBase({
 													selectedListTypeDefinition.externalReferenceCode,
 												listTypeDefinitionId:
 													selectedListTypeDefinition.id,
-												objectFieldSettings: removeFieldSettings(
-													[
-														'defaultValue',
-														'stateFlow',
-													],
-													values
-												),
+												objectFieldSettings:
+													removeFieldSettings(
+														[
+															'defaultValue',
+															'stateFlow',
+														],
+														values
+													),
 											});
 										}
 									}
@@ -721,19 +717,20 @@ export default function ObjectFieldFormBase({
 					)}
 			</ClayForm.Group>
 
-			{values.businessType === 'Picklist' && validListTypeDefinitionId && (
-				<ClayForm.Group>
-					<Toggle
-						disabled={disabled || !objectDefinition?.modifiable}
-						label={Liferay.Language.get('mark-as-state')}
-						name="state"
-						onToggle={(state) => {
-							handleStateToggleChange(state);
-						}}
-						toggled={values.state}
-					/>
-				</ClayForm.Group>
-			)}
+			{values.businessType === 'Picklist' &&
+				validListTypeDefinitionId && (
+					<ClayForm.Group>
+						<Toggle
+							disabled={disabled || !objectDefinition?.modifiable}
+							label={Liferay.Language.get('mark-as-state')}
+							name="state"
+							onToggle={(state) => {
+								handleStateToggleChange(state);
+							}}
+							toggled={values.state}
+						/>
+					</ClayForm.Group>
+				)}
 
 			{(values.businessType === 'Text' ||
 				values.businessType === 'Integer') && (

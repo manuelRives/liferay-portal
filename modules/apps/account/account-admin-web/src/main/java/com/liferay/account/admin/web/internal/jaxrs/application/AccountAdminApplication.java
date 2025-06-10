@@ -15,18 +15,18 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import java.util.Collections;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -80,8 +80,13 @@ public class AccountAdminApplication extends Application {
 
 		String errorMessage = null;
 
-		if (!accountEntryEmailAddressValidator.isValidEmailAddressFormat(
+		if (accountEntryEmailAddressValidator.isEmailAddressAlreadyUsed(
 				emailAddress)) {
+
+			errorMessage = "x-cannot-be-used-to-invite-a-new-user";
+		}
+		else if (!accountEntryEmailAddressValidator.isValidEmailAddressFormat(
+					emailAddress)) {
 
 			errorMessage = "x-is-not-a-valid-email-address";
 		}

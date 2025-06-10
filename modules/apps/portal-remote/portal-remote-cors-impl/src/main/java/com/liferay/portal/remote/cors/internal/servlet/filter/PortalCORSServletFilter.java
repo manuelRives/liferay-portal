@@ -28,14 +28,14 @@ import com.liferay.portal.remote.cors.internal.configuration.persistence.listene
 import com.liferay.portal.remote.cors.internal.util.PortalCORSRegistryUtil;
 import com.liferay.portal.util.PropsValues;
 
-import java.util.Map;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -70,11 +70,7 @@ public class PortalCORSServletFilter extends BaseFilter {
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse) {
 
-		if (CORSSupport.isCORSRequest(httpServletRequest::getHeader)) {
-			return true;
-		}
-
-		return false;
+		return CORSSupport.isCORSRequest(httpServletRequest::getHeader);
 	}
 
 	@Activate

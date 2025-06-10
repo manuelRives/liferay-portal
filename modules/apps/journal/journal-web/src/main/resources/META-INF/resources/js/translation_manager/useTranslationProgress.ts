@@ -24,14 +24,11 @@ export default function useTranslationProgress({
 	const [translations, setTranslations] = useState(
 		fieldToTranslations(initialFields)
 	);
-	const [
-		translationProgress,
-		setTranslationProgress,
-	] = useState<TranslationProgress | null>();
+	const [translationProgress, setTranslationProgress] =
+		useState<TranslationProgress | null>();
 
-	const [selectedLanguageId, setSelectedLanguageId] = useState<
-		Liferay.Language.Locale
-	>(initialSelectedLanguageId);
+	const [selectedLanguageId, setSelectedLanguageId] =
+		useState<Liferay.Language.Locale>(initialSelectedLanguageId);
 
 	const updateTranslations = useCallback(() => {
 		const localizableFields = getAllLocalizableFields(fields);
@@ -43,7 +40,11 @@ export default function useTranslationProgress({
 						`[type="hidden"][data-field-name="${fieldName}"]`
 					)
 				)
-					.filter((input) => input.value)
+					.filter(
+						(input) =>
+							input.value?.trim() ||
+							input.getAttribute('data-translated') === 'true'
+					)
 					.map(
 						(input) =>
 							input.dataset.languageid as Liferay.Language.Locale
@@ -80,7 +81,7 @@ export default function useTranslationProgress({
 			? {
 					totalItems: Object.keys(fields).length,
 					translatedItems,
-			  }
+				}
 			: null;
 
 		setTranslationProgress(translationProgress);
@@ -100,6 +101,11 @@ export default function useTranslationProgress({
 
 			setDefaultLanguageId(selectedLanguageId);
 			setSelectedLanguageId(selectedLanguageId);
+			Liferay.fire('journal:updateSelectedLanguage', {
+				item: document.querySelector(
+					`[data-languageid="${selectedLanguageId}"][data-value="${selectedLanguageId}"]`
+				),
+			});
 		},
 		[namespace, setDefaultLanguageId, setSelectedLanguageId]
 	);
@@ -146,12 +152,22 @@ export default function useTranslationProgress({
 		};
 	}, [defaultLocaleChangeHandler, localeChangeHandler]);
 
-	return {
-		defaultLanguageId,
-		selectedLanguageId,
-		translationProgress,
-		updateTranslations,
-	};
+	return useMemo(
+		() => ({
+			defaultLanguageId,
+			selectedLanguageId,
+			translationProgress,
+			translations,
+			updateTranslations,
+		}),
+		[
+			defaultLanguageId,
+			selectedLanguageId,
+			translationProgress,
+			translations,
+			updateTranslations,
+		]
+	);
 }
 
 export function fieldToTranslations(fields: Record<string, Field>) {
@@ -178,7 +194,8 @@ export function getAllLocalizableFields(initialFields: Record<string, Field>) {
 	).reduce(
 		(acc, field) => ({
 			...acc,
-			[`${field.dataset.fieldName}${field.dataset.ddmLocalizableFieldId}`]: {},
+			[`${field.dataset.fieldName}${field.dataset.ddmLocalizableFieldId}`]:
+				{},
 		}),
 		{}
 	);

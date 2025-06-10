@@ -11,6 +11,7 @@ import com.liferay.portal.odata.entity.DateTimeEntityField;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.entity.IntegerEntityField;
+import com.liferay.portal.odata.entity.StringEntityField;
 
 import java.util.Map;
 
@@ -26,11 +27,14 @@ public class PaymentEntityModel implements EntityModel {
 					"paymentStatus", locale -> "paymentStatus")),
 			new CollectionEntityField(
 				new IntegerEntityField("type", locale -> "type")),
+			new CollectionEntityField(
+				new StringEntityField("reasonKey", locale -> "reasonKey")),
 			new DateTimeEntityField(
 				"createDate",
 				locale -> Field.getSortableFieldName(Field.CREATE_DATE),
 				locale -> Field.CREATE_DATE),
-			new IntegerEntityField("id", locale -> Field.ENTRY_CLASS_PK));
+			new IntegerEntityField("id", locale -> Field.ENTRY_CLASS_PK),
+			new IntegerEntityField("relatedItemId", locale -> "classPK"));
 	}
 
 	@Override

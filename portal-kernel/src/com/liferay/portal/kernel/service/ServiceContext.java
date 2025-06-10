@@ -33,6 +33,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -45,12 +51,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * Contains context information about a given API call.
@@ -121,12 +121,13 @@ public class ServiceContext implements Cloneable, Serializable {
 		}
 
 		serviceContext.setPortalURL(getPortalURL());
-		serviceContext.setPortletPreferencesIds(getPortletPreferencesIds());
+		serviceContext.setPortletPreferencesIds(_portletPreferencesIds);
 		serviceContext.setRemoteAddr(getRemoteAddr());
 		serviceContext.setRemoteHost(getRemoteHost());
 		serviceContext.setRequest(getRequest());
 		serviceContext.setScopeGroupId(getScopeGroupId());
 		serviceContext.setSignedIn(isSignedIn());
+		serviceContext.setStrictAdd(isStrictAdd());
 
 		if (_userDisplayURL != null) {
 			serviceContext.setUserDisplayURL(_userDisplayURL);
@@ -906,6 +907,10 @@ public class ServiceContext implements Cloneable, Serializable {
 		return _signedIn;
 	}
 
+	public boolean isStrictAdd() {
+		return _strictAdd;
+	}
+
 	/**
 	 * Merges all of the specified service context's non-<code>null</code>
 	 * attributes, attributes greater than <code>0</code>, and fields (except
@@ -1463,6 +1468,10 @@ public class ServiceContext implements Cloneable, Serializable {
 		_signedIn = signedIn;
 	}
 
+	public void setStrictAdd(boolean strictAdd) {
+		_strictAdd = strictAdd;
+	}
+
 	public void setTimeZone(TimeZone timeZone) {
 		_timeZone = timeZone;
 	}
@@ -1567,6 +1576,7 @@ public class ServiceContext implements Cloneable, Serializable {
 	private String _remoteHost;
 	private long _scopeGroupId;
 	private boolean _signedIn;
+	private boolean _strictAdd;
 	private TimeZone _timeZone;
 	private String _userDisplayURL;
 	private long _userId;

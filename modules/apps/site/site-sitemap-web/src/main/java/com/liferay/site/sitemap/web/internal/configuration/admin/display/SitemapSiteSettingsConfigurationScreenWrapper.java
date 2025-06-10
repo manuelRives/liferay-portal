@@ -7,7 +7,6 @@ package com.liferay.site.sitemap.web.internal.configuration.admin.display;
 
 import com.liferay.configuration.admin.display.ConfigurationScreen;
 import com.liferay.configuration.admin.display.ConfigurationScreenWrapper;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -17,11 +16,11 @@ import com.liferay.site.settings.configuration.admin.display.SiteSettingsConfigu
 import com.liferay.site.settings.configuration.admin.display.SiteSettingsConfigurationScreenFactory;
 import com.liferay.site.sitemap.web.internal.display.context.SitemapGroupConfigurationDisplayContext;
 
-import java.util.Locale;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -87,10 +86,6 @@ public class SitemapSiteSettingsConfigurationScreenWrapper
 
 		@Override
 		public boolean isVisible(Group group) {
-			if (!FeatureFlagManagerUtil.isEnabled("LPS-187793")) {
-				return false;
-			}
-
 			return true;
 		}
 

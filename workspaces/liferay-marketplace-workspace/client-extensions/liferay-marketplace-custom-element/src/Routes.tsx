@@ -7,40 +7,44 @@ import React, {Suspense} from 'react';
 
 import Loading from './components/Loading';
 
-const Routes = {
+const lazyRoutes = {
 	'administrator-dashboard': React.lazy(
 		() =>
 			import(
 				'./pages/AdministratorDashboard/AdministratorDashboardRouter'
 			)
 	),
-	'customer-gate': React.lazy(
-		() => import('./pages/CustomerGatePage/CustomerGatePage')
-	),
 	'get-app': React.lazy(() => import('./pages/GetApp/GetAppRouter')),
+	'license-agreement': React.lazy(
+		() => import('./pages/LicenseAgreementPage')
+	),
 	'next-steps': React.lazy(() => import('./pages/NextSteps')),
+	'oauth2-authorize': React.lazy(
+		() => import('./pages/OAuth2Authorize/OAuth2AuthorizeRouter')
+	),
+	'product-purchase': React.lazy(
+		() => import('./pages/ProductPurchase/ProductPurchaseRouter')
+	),
 	'published-apps': React.lazy(
 		() => import('./pages/PublisherDashboard/PublisherDashboardRouter')
 	),
 	'publisher-gate': React.lazy(
-		() => import('./pages/PublisherGate/PublisheGateRouter')
+		() => import('./pages/PublisherGate/PublisherGateRouter')
 	),
 	'purchased-apps': React.lazy(
 		() => import('./pages/CustomerDashboard/CustomerDashboardRouter')
 	),
-	'purchased-solutions': React.lazy(
-		() => import('./pages/GetSolution/GetSolutionRouter')
-	),
 } as const;
 
-export type RouteType = keyof typeof Routes;
+export type RouteType = keyof typeof lazyRoutes;
 
 type AppRoutesProps = {
 	path: RouteType;
+	properties: DefaultProperties;
 };
 
-export default function AppRoutes({path}: AppRoutesProps) {
-	const Route = Routes[path];
+export default function Routes({path, properties}: AppRoutesProps) {
+	const Route = lazyRoutes[path] as React.FC<{properties: DefaultProperties}>;
 
 	if (!Route) {
 		return <h1>Page not found</h1>;
@@ -50,7 +54,7 @@ export default function AppRoutes({path}: AppRoutesProps) {
 		<Suspense
 			fallback={<Loading displayType="secondary" shape="squares" />}
 		>
-			<Route />
+			<Route properties={properties} />
 		</Suspense>
 	);
 }

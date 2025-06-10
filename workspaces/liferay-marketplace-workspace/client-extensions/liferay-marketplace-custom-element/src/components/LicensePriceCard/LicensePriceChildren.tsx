@@ -5,10 +5,11 @@
 
 import ClayIcon from '@clayui/icon';
 
-import './LicensePriceChildren.scss';
 import {CurrencyAbbreviation} from '../../enums/CurrencyAbbreviation';
-import {App} from '../../pages/ReviewAndSubmitAppPage/ReviewAndSubmitAppPageUtil';
+import {App} from '../../pages/PublisherDashboard/pages/Apps/AppCreationFlow/ReviewAndSubmitAppPage/ReviewAndSubmitAppPageUtil';
 import {isTrialSKU} from '../../utils/productUtils';
+
+import './LicensePriceChildren.scss';
 
 export type TierPrices = {
 	skuId: number;
@@ -48,11 +49,8 @@ const LicensePriceChildren = ({
 					</span>
 					<div className="align-items-start d-flex flex-column">
 						{tierPrices.map((tierPrice, indexTP) => {
-							const {
-								currency,
-								priceFormatted,
-								quantity,
-							} = tierPrice;
+							const {currency, priceFormatted, quantity} =
+								tierPrice;
 
 							const minPriceLicenseOption =
 								indexTP === tierPrices?.length - 1;

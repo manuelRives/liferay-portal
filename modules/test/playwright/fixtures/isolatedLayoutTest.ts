@@ -6,7 +6,6 @@
 import {mergeTests} from '@playwright/test';
 
 import {ApiHelpers} from '../helpers/ApiHelpers';
-import {Layout} from '../helpers/json-web-services/JSONWebServicesLayoutApiHelper';
 import getRandomString from '../utils/getRandomString';
 import {backendPageTest} from './backendPageTest';
 
@@ -67,14 +66,14 @@ function isolatedLayoutTest(options: IsolatedLayoutOptions = {}) {
 
 					// Create layout
 
-					layout = await apiHelpers.jsonWebServicesLayout.addLayout(
-						group.groupId,
-						getRandomString(),
-						{
+					layout = await apiHelpers.jsonWebServicesLayout.addLayout({
+						groupId: group.groupId,
+						options: {
 							publish: options.publish,
 							type: options.type,
-						}
-					);
+						},
+						title: getRandomString(),
+					});
 
 					// Run test
 

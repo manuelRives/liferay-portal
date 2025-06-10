@@ -6,11 +6,14 @@ import React from 'react';
 import StatesRenderer from 'shared/components/states-renderer/StatesRenderer';
 import URLConstants from 'shared/util/url-constants';
 import {Routes, toRoute} from 'shared/util/router';
+import {useChannelContext} from 'shared/context/channel';
 import {useCurrentUser} from 'shared/hooks/useCurrentUser';
 import {useDataSource} from 'shared/hooks/useDataSource';
 import {useParams} from 'react-router-dom';
 
 const List = () => {
+	const {selectedChannel} = useChannelContext();
+
 	const {channelId, groupId} = useParams();
 	const currentUser = useCurrentUser();
 
@@ -38,7 +41,7 @@ const List = () => {
 					breadcrumbs.getHome({
 						channelId,
 						groupId,
-						label: Liferay.Language.get('home')
+						label: selectedChannel?.name
 					})
 				]}
 				groupId={groupId}
@@ -56,12 +59,18 @@ const List = () => {
 
 			<BasePage.Body>
 				<StatesRenderer empty={empty} error={error} loading={loading}>
+					<StatesRenderer.Loading />
+
 					<StatesRenderer.Empty
 						description={
 							<>
-								{Liferay.Language.get(
-									'connect-a-data-source-to-get-started'
-								)}
+								{authorized
+									? Liferay.Language.get(
+											'connect-a-data-source-to-get-started'
+									  )
+									: Liferay.Language.get(
+											'please-contact-your-workspace-administrator-to-add-data-sources'
+									  )}
 
 								<ClayLink
 									className='d-block mb-3'

@@ -99,6 +99,13 @@ public abstract class BaseTestResult implements TestResult {
 	}
 
 	@Override
+	public boolean isSkipped() {
+		String status = getStatus();
+
+		return status.equals("SKIPPED");
+	}
+
+	@Override
 	public boolean isUniqueFailure() {
 		if (!isFailing()) {
 			return false;
@@ -226,7 +233,7 @@ public abstract class BaseTestResult implements TestResult {
 	}
 
 	private static final String _URL_BASE_LOGS_DEFAULT =
-		"https://testray.liferay.com/reports/production/logs";
+		"https://storage.cloud.google.com/testray-results";
 
 	private final Build _build;
 	private TestClassResult _testClassResult;

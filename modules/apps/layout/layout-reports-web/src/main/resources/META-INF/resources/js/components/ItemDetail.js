@@ -39,7 +39,7 @@ function FragmentDetail({fragment}) {
 				label: warnings.length >= 100 ? '+100' : warnings.length,
 				title: sub(Liferay.Language.get('x-issues'), warnings.length),
 				type: 'warning',
-		  }
+			}
 		: null;
 
 	return (
@@ -101,7 +101,7 @@ function FragmentDetail({fragment}) {
 	);
 }
 
-function IssueDetail({issue}) {
+export function IssueDetail({issue}) {
 	const {description, failingElements, key, tips} = issue;
 
 	const badge = {

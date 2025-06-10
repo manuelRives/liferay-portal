@@ -16,12 +16,12 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.comparator.PasswordPolicyDescriptionComparator;
 import com.liferay.portal.kernel.util.comparator.PasswordPolicyNameComparator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 /**
  * @author Scott Lee
@@ -85,23 +85,25 @@ public class PasswordPolicySearch extends SearchContainer<PasswordPolicy> {
 	private OrderByComparator<PasswordPolicy> _getOrderByComparator(
 		String orderByCol, String orderByType) {
 
+		OrderByComparator<PasswordPolicy> orderByComparator = null;
+
 		boolean orderByAsc = false;
 
 		if (orderByType.equals("asc")) {
 			orderByAsc = true;
 		}
 
-		OrderByComparator<PasswordPolicy> orderByComparator = null;
-
 		if (orderByCol.equals("name")) {
-			orderByComparator = new PasswordPolicyNameComparator(orderByAsc);
+			orderByComparator = PasswordPolicyNameComparator.getInstance(
+				orderByAsc);
 		}
 		else if (orderByCol.equals("description")) {
-			orderByComparator = new PasswordPolicyDescriptionComparator(
+			orderByComparator = PasswordPolicyDescriptionComparator.getInstance(
 				orderByAsc);
 		}
 		else {
-			orderByComparator = new PasswordPolicyNameComparator(orderByAsc);
+			orderByComparator = PasswordPolicyNameComparator.getInstance(
+				orderByAsc);
 		}
 
 		return orderByComparator;

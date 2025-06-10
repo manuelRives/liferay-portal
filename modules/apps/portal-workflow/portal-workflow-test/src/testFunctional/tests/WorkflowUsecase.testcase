@@ -1,7 +1,9 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Workflow";
 
@@ -9,6 +11,8 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
 	}
 
 	tearDown {
@@ -291,7 +295,6 @@ definition {
 		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
-		property testray.component.names = "Training";
 
 		Workflow.openWorkflowListView();
 
@@ -454,6 +457,8 @@ definition {
 
 	@priority = 4
 	test AddWebContentWithCategorySpecificDefinition {
+		property osgi.module.configuration.file.names = "configuration.override.com.liferay.portal.security.script.management.configuration.ScriptManagementConfiguration.config";
+		property osgi.module.configurations = "allowScriptContentToBeExecutedOrIncluded=B\"true\"";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -671,7 +676,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.gotoPage(pageName = "Wiki Page");
@@ -719,7 +724,7 @@ definition {
 		User.logoutPG();
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com",
 			userScreenName = "usersn");
 
@@ -761,7 +766,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.gotoPage(pageName = "Wiki Page");
@@ -807,7 +812,7 @@ definition {
 			Navigator.openSpecificURL(url = "http://www.able.com:8080");
 
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com",
 				virtualHostsURL = "http://www.able.com:8080");
 
@@ -849,7 +854,7 @@ definition {
 			Navigator.openSpecificURL(url = "http://www.able.com:8080");
 
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com",
 				virtualHostsURL = "http://www.able.com:8080");
 
@@ -950,7 +955,7 @@ definition {
 			assetType = "Blogs Entry",
 			user = "Test Test");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
@@ -966,7 +971,7 @@ definition {
 			workflowAssignedTo = "Test Test",
 			workflowTask = "Review");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 		Button.clickDone();
 
@@ -1239,6 +1244,10 @@ definition {
 
 	@priority = 4
 	test XSSScriptWebContent {
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
+
 		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		Navigator.openURL();

@@ -48,12 +48,14 @@ public class LayoutFixture {
 				String randomString = FriendlyURLNormalizerUtil.normalize(
 					RandomTestUtil.randomString());
 
-				put(LocaleUtil.US, StringPool.SLASH + randomString);
+				put(
+					LocaleUtil.getSiteDefault(),
+					StringPool.SLASH + randomString);
 			}
 		};
 
 		Layout layout = LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
+			null, TestPropsValues.getUserId(), _group.getGroupId(), false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, nameMap.getValues(),
 			titleMap.getValues(), null, null, null,
 			LayoutConstants.TYPE_CONTENT,

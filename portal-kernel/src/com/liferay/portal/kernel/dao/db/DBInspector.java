@@ -7,8 +7,10 @@ package com.liferay.portal.kernel.dao.db;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -83,11 +85,7 @@ public class DBInspector {
 		try (ResultSet resultSet = _getColumnsResultSet(
 				tableName, columnName)) {
 
-			if (!resultSet.next()) {
-				return false;
-			}
-
-			return true;
+			return resultSet.next();
 		}
 		catch (Exception exception) {
 			_log.error(exception);
@@ -278,14 +276,17 @@ public class DBInspector {
 	}
 
 	public boolean isObjectTable(List<Long> companyIds, String tableName) {
+		String lowerCaseTableName = StringUtil.toLowerCase(tableName);
+
 		for (long companyId : companyIds) {
 
 			// See ObjectDefinitionImpl#getExtensionDBTableName and
 			// ObjectDefinitionLocalServiceImpl#_getDBTableName
 
-			if (tableName.endsWith("_x_" + companyId) ||
-				tableName.startsWith("L_" + companyId + "_") ||
-				tableName.startsWith("O_" + companyId + "_")) {
+			if (lowerCaseTableName.endsWith("_x_" + companyId) ||
+				lowerCaseTableName.startsWith("l_" + companyId + "_") ||
+				lowerCaseTableName.startsWith("o_" + companyId + "_") ||
+				lowerCaseTableName.startsWith("r_")) {
 
 				return true;
 			}
@@ -294,14 +295,14 @@ public class DBInspector {
 		return false;
 	}
 
+	public boolean isObjectTable(String tableName) {
+		return isObjectTable(
+			ListUtil.fromArray(PortalInstancePool.getCompanyIds()), tableName);
+	}
+
 	public boolean isPartitionedControlTable(String tableName) {
-		if (_partitionedControlTableNames.contains(
-				StringUtil.toLowerCase(tableName))) {
-
-			return true;
-		}
-
-		return false;
+		return _partitionedControlTableNames.contains(
+			StringUtil.toLowerCase(tableName));
 	}
 
 	public String normalizeName(String name) throws SQLException {
@@ -423,11 +424,7 @@ public class DBInspector {
 
 		typeName = StringUtil.toLowerCase(typeName);
 
-		if (typeName.endsWith("not null")) {
-			return false;
-		}
-
-		return true;
+		return !typeName.endsWith("not null");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(DBInspector.class);

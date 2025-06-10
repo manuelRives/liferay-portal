@@ -4,15 +4,12 @@
  */
 
 import {
-	addParams,
-	createPortletURL,
-	navigate,
 	openCategorySelectionModal,
 	openModal,
 	openSelectionModal,
 	openTagSelectionModal,
-	sub,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {addParams, createPortletURL, navigate, sub} from 'frontend-js-web';
 
 import openDeleteArticleModal from './modals/openDeleteArticleModal';
 import openPublishArticlesModal from './modals/openPublishArticlesModal';
@@ -223,7 +220,8 @@ export default function propsTransformer({
 							navigate(
 								addParams(
 									{
-										[`${portletNamespace}ddmStructureId`]: itemValue.ddmstructureid,
+										[`${portletNamespace}ddmStructureId`]:
+											itemValue.ddmstructureid,
 									},
 									url.href
 								)
@@ -259,7 +257,8 @@ export default function propsTransformer({
 						navigate(
 							addParams(
 								{
-									[`${portletNamespace}ddmStructureId`]: selectedItem.ddmstructureid,
+									[`${portletNamespace}ddmStructureId`]:
+										selectedItem.ddmstructureid,
 								},
 								addArticleURL
 							)

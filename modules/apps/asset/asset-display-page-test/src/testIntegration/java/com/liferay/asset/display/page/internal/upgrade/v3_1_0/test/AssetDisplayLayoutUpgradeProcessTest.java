@@ -9,24 +9,25 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
+import com.liferay.change.tracking.test.util.BaseCTUpgradeProcessTestCase;
 import com.liferay.counter.kernel.service.CounterLocalService;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.test.util.JournalTestUtil;
-import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
-import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.DisplayPageTemplateTestUtil;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
-import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
-import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -48,7 +49,8 @@ import org.junit.runner.RunWith;
  * @author Jürgen Kappler
  */
 @RunWith(Arquillian.class)
-public class AssetDisplayLayoutUpgradeProcessTest {
+public class AssetDisplayLayoutUpgradeProcessTest
+	extends BaseCTUpgradeProcessTestCase {
 
 	@ClassRule
 	@Rule
@@ -66,9 +68,7 @@ public class AssetDisplayLayoutUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessTypeDefaultAssetDisplayPage()
-		throws Exception {
-
+	public void testUpgradeTypeDefaultAssetDisplayPage() throws Exception {
 		JournalArticle journalArticle = JournalTestUtil.addArticle(
 			_group.getGroupId(),
 			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
@@ -85,7 +85,7 @@ public class AssetDisplayLayoutUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessTypeNoneAssetDisplayPage() throws Exception {
+	public void testUpgradeTypeNoneAssetDisplayPage() throws Exception {
 		JournalArticle journalArticle = JournalTestUtil.addArticle(
 			_group.getGroupId(),
 			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
@@ -102,9 +102,7 @@ public class AssetDisplayLayoutUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessTypeSpecificAssetDisplayPage()
-		throws Exception {
-
+	public void testUpgradeTypeSpecificAssetDisplayPage() throws Exception {
 		JournalArticle journalArticle = JournalTestUtil.addArticle(
 			_group.getGroupId(),
 			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
@@ -126,7 +124,7 @@ public class AssetDisplayLayoutUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessTypeSpecificAssetDisplayPageWithWrongPlid()
+	public void testUpgradeTypeSpecificAssetDisplayPageWithWrongPlid()
 		throws Exception {
 
 		JournalArticle journalArticle = JournalTestUtil.addArticle(
@@ -148,7 +146,45 @@ public class AssetDisplayLayoutUpgradeProcessTest {
 			layoutPageTemplateEntry.getPlid());
 	}
 
-	private void _addAssetDisplayPageEntry(
+	@Override
+	protected CTModel<?> addCTModel() throws Exception {
+		JournalArticle journalArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_addLayoutPageTemplateEntry(journalArticle.getDDMStructureId());
+
+		return _addAssetDisplayPageEntry(
+			journalArticle.getResourcePrimKey(),
+			layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
+			AssetDisplayPageConstants.TYPE_SPECIFIC,
+			layoutPageTemplateEntry.getPlid());
+	}
+
+	@Override
+	protected CTService<?> getCTService() {
+		return _assetDisplayPageEntryLocalService;
+	}
+
+	@Override
+	protected void runUpgrade() throws Exception {
+		_runUpgrade();
+	}
+
+	@Override
+	protected CTModel<?> updateCTModel(CTModel<?> ctModel) throws Exception {
+		AssetDisplayPageEntry assetDisplayPageEntry =
+			(AssetDisplayPageEntry)ctModel;
+
+		assetDisplayPageEntry.setLayoutPageTemplateEntryId(0);
+		assetDisplayPageEntry.setType(AssetDisplayPageConstants.TYPE_NONE);
+
+		return _assetDisplayPageEntryLocalService.updateAssetDisplayPageEntry(
+			assetDisplayPageEntry);
+	}
+
+	private AssetDisplayPageEntry _addAssetDisplayPageEntry(
 		long classPK, long layoutPageTemplateEntryId, int type, long plid) {
 
 		AssetDisplayPageEntry assetDisplayPageEntry =
@@ -166,7 +202,7 @@ public class AssetDisplayLayoutUpgradeProcessTest {
 		assetDisplayPageEntry.setType(type);
 		assetDisplayPageEntry.setPlid(plid);
 
-		_assetDisplayPageEntryLocalService.updateAssetDisplayPageEntry(
+		return _assetDisplayPageEntryLocalService.updateAssetDisplayPageEntry(
 			assetDisplayPageEntry);
 	}
 
@@ -174,12 +210,10 @@ public class AssetDisplayLayoutUpgradeProcessTest {
 			long ddmStructureId)
 		throws Exception {
 
-		return _layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-			TestPropsValues.getUserId(), _group.getGroupId(), 0,
+		return DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+			_group.getGroupId(),
 			_portal.getClassNameId(JournalArticle.class.getName()),
-			ddmStructureId, RandomTestUtil.randomString(),
-			LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, false, 0, 0,
-			0, 0, _serviceContext);
+			ddmStructureId, false, WorkflowConstants.STATUS_APPROVED);
 	}
 
 	private void _assertAssetDisplayPageEntry(long classPK, long plid) {
@@ -223,10 +257,6 @@ public class AssetDisplayLayoutUpgradeProcessTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
-
-	@Inject
-	private LayoutPageTemplateEntryLocalService
-		_layoutPageTemplateEntryLocalService;
 
 	@Inject
 	private MultiVMPool _multiVMPool;

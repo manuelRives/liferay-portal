@@ -4,15 +4,12 @@
  */
 
 import {
-	addParams,
-	fetch,
-	objectToFormData,
 	openConfirmModal,
 	openModal,
 	openSelectionModal,
 	openToast,
-	sub,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {addParams, fetch, objectToFormData, sub} from 'frontend-js-web';
 
 import showSuccessMessage from './utils/showSuccessMessage';
 
@@ -70,10 +67,13 @@ const ACTIONS = {
 					body: objectToFormData({
 						[`${portletNamespace}dragAndDrop`]: true,
 						[`${portletNamespace}position`]: index?.next ?? -1,
-						[`${portletNamespace}resourceClassNameId`]: kbObjectClassNameId,
+						[`${portletNamespace}resourceClassNameId`]:
+							kbObjectClassNameId,
 						[`${portletNamespace}resourcePrimKey`]: kbObjectId,
-						[`${portletNamespace}parentResourceClassNameId`]: destinationItem.classNameId,
-						[`${portletNamespace}parentResourcePrimKey`]: destinationItem.id,
+						[`${portletNamespace}parentResourceClassNameId`]:
+							destinationItem.classNameId,
+						[`${portletNamespace}parentResourcePrimKey`]:
+							destinationItem.id,
 					}),
 					method: 'POST',
 				})
@@ -156,10 +156,19 @@ export default function propsTransformer({items, portletNamespace, ...props}) {
 					onClick(event) {
 						const action = child.data?.action;
 
+						if (child.href) {
+							event.stopPropagation();
+						}
+
 						if (action) {
 							event.preventDefault();
+							event.stopPropagation();
 
 							ACTIONS[action](child.data, portletNamespace);
+						}
+
+						if (child.href) {
+							event.stopPropagation();
 						}
 					},
 				})),

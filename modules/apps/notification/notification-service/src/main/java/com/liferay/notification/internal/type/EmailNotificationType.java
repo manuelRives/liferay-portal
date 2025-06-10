@@ -7,8 +7,10 @@ package com.liferay.notification.internal.type;
 
 import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
+import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldValue;
+import com.liferay.info.field.type.RelationshipInfoFieldType;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
@@ -36,21 +38,24 @@ import com.liferay.notification.util.NotificationRecipientSettingUtil;
 import com.liferay.object.action.util.ObjectActionThreadLocal;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.MessageBusUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.EmailAddressValidator;
+import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
@@ -62,13 +67,15 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.template.StringTemplateResource;
 import com.liferay.portal.kernel.template.Template;
 import com.liferay.portal.kernel.template.TemplateConstants;
+import com.liferay.portal.kernel.template.TemplateContextContributor;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.templateparser.TemplateNode;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
-import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.KeyValuePair;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -77,6 +84,10 @@ import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 import com.liferay.template.transformer.TemplateNodeFactory;
+
+import jakarta.mail.internet.InternetAddress;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.StringWriter;
 
@@ -88,13 +99,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.mail.internet.InternetAddress;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -141,23 +149,16 @@ public class EmailNotificationType extends BaseNotificationType {
 
 	@Override
 	public Set<String> getAllowedNotificationRecipientSettingsNames() {
-		Set<String> names = SetUtil.fromArray(
+		return SetUtil.fromArray(
 			NotificationRecipientSettingConstants.NAME_BCC,
+			NotificationRecipientSettingConstants.NAME_BCC_TYPE,
 			NotificationRecipientSettingConstants.NAME_CC,
+			NotificationRecipientSettingConstants.NAME_CC_TYPE,
 			NotificationRecipientSettingConstants.NAME_FROM,
 			NotificationRecipientSettingConstants.NAME_FROM_NAME,
 			NotificationRecipientSettingConstants.NAME_SINGLE_RECIPIENT,
-			NotificationRecipientSettingConstants.NAME_TO);
-
-		if (FeatureFlagManagerUtil.isEnabled("LPD-11165")) {
-			names.addAll(
-				SetUtil.fromArray(
-					NotificationRecipientSettingConstants.NAME_BCC_TYPE,
-					NotificationRecipientSettingConstants.NAME_CC_TYPE,
-					NotificationRecipientSettingConstants.NAME_TO_TYPE));
-		}
-
-		return names;
+			NotificationRecipientSettingConstants.NAME_TO,
+			NotificationRecipientSettingConstants.NAME_TO_TYPE);
 	}
 
 	@Override
@@ -233,6 +234,11 @@ public class EmailNotificationType extends BaseNotificationType {
 
 		Group userGroup = user.getGroup();
 
+		if ((userGroup == null) && user.isGuestUser()) {
+			userGroup = _groupLocalService.getGroup(
+				user.getCompanyId(), GroupConstants.GUEST);
+		}
+
 		if (userGroup != null) {
 			groupId = userGroup.getGroupId();
 		}
@@ -241,11 +247,20 @@ public class EmailNotificationType extends BaseNotificationType {
 
 		userLocale = user.getLocale();
 
+		if (user.isGuestUser() &&
+			notificationContext.isUsePreferredLanguageForGuests()) {
+
+			userLocale = LocaleUtil.fromLanguageId(
+				notificationContext.getPreferredLanguageId());
+		}
+
+		notificationContext.setUserLocale(userLocale);
+
 		NotificationTemplate notificationTemplate =
 			notificationContext.getNotificationTemplate();
 
 		String body = _formatBody(
-			notificationTemplate.getBodyMap(), groupId, notificationContext);
+			notificationTemplate.getBodyMap(), userGroup, notificationContext);
 		NotificationRecipient notificationRecipient =
 			notificationTemplate.getNotificationRecipient();
 		String subject = formatLocalizedContent(
@@ -467,9 +482,20 @@ public class EmailNotificationType extends BaseNotificationType {
 			new RoleEmailProvider(
 				_accountEntryLocalService,
 				_accountEntryOrganizationRelLocalService,
+				_accountEntryUserRelLocalService, _groupLocalService,
 				_objectDefinitionLocalService, _objectFieldLocalService,
-				_organizationLocalService, _roleLocalService,
-				_userGroupRoleLocalService, _userLocalService));
+				_organizationLocalService, _permissionCheckerFactory,
+				_roleLocalService, _userGroupRoleLocalService,
+				_userLocalService));
+
+		_serviceTrackerList = ServiceTrackerListFactory.open(
+			bundleContext, TemplateContextContributor.class,
+			"(type=" + TemplateContextContributor.TYPE_GLOBAL + ")");
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerList.close();
 	}
 
 	private void _addFileAttachments(
@@ -486,8 +512,7 @@ public class EmailNotificationType extends BaseNotificationType {
 						notificationQueueEntryAttachment.getFileEntryId());
 
 				mailMessage.addFileAttachment(
-					FileUtil.createTempFile(fileEntry.getContentStream()),
-					fileEntry.getFileName());
+					fileEntry.getFileName(), fileEntry.getContentStream());
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
@@ -498,7 +523,7 @@ public class EmailNotificationType extends BaseNotificationType {
 	}
 
 	private String _formatBody(
-			Map<Locale, String> bodyMap, long groupId,
+			Map<Locale, String> bodyMap, Group group,
 			NotificationContext notificationContext)
 		throws PortalException {
 
@@ -528,6 +553,12 @@ public class EmailNotificationType extends BaseNotificationType {
 				body),
 			!PropsValues.NOTIFICATION_EMAIL_TEMPLATE_ENABLED);
 
+		for (TemplateContextContributor templateContextContributor :
+				_serviceTrackerList) {
+
+			templateContextContributor.prepare(template, null);
+		}
+
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
 		themeDisplay.setLocale(siteDefaultLocale);
@@ -541,10 +572,12 @@ public class EmailNotificationType extends BaseNotificationType {
 				getPersistedModelLocalService(
 					notificationContext.getClassName());
 
+		HttpServletRequest httpServletRequest =
+			ObjectActionThreadLocal.getHttpServletRequest();
+
 		ServiceContextThreadLocal.pushServiceContext(
 			_getServiceContext(
-				_groupLocalService.getGroup(groupId),
-				notificationContext.getUserId()));
+				group, httpServletRequest, notificationContext.getUserId()));
 
 		try {
 			InfoItemFieldValues infoItemFieldValues =
@@ -564,6 +597,20 @@ public class EmailNotificationType extends BaseNotificationType {
 					continue;
 				}
 
+				if (Objects.equals(
+						infoField.getInfoFieldType(),
+						RelationshipInfoFieldType.INSTANCE) &&
+					(infoFieldValue.getValue() instanceof KeyValuePair)) {
+
+					KeyValuePair keyValuePair =
+						(KeyValuePair)infoFieldValue.getValue();
+
+					infoFieldValue = new InfoFieldValue<>(
+						infoField,
+						GetterUtil.getObject(
+							keyValuePair.getKey(), StringPool.BLANK));
+				}
+
 				TemplateNode templateNode =
 					_templateNodeFactory.createTemplateNode(
 						infoFieldValue, themeDisplay);
@@ -572,10 +619,8 @@ public class EmailNotificationType extends BaseNotificationType {
 				template.put(infoField.getUniqueId(), templateNode);
 			}
 
-			HttpServletRequest httpServletRequest =
-				ObjectActionThreadLocal.getHttpServletRequest();
-
 			if (httpServletRequest != null) {
+				template.put("locale", portal.getLocale(httpServletRequest));
 				template.put(
 					"portalURL", portal.getPortalURL(httpServletRequest));
 			}
@@ -589,7 +634,9 @@ public class EmailNotificationType extends BaseNotificationType {
 		return stringWriter.toString();
 	}
 
-	private ServiceContext _getServiceContext(Group group, long userId) {
+	private ServiceContext _getServiceContext(
+		Group group, HttpServletRequest httpServletRequest, long userId) {
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -602,6 +649,7 @@ public class EmailNotificationType extends BaseNotificationType {
 		serviceContext.setCompanyId(group.getCompanyId());
 		serviceContext.setLanguageId(
 			_language.getLanguageId(siteDefaultLocale));
+		serviceContext.setRequest(httpServletRequest);
 		serviceContext.setScopeGroupId(group.getGroupId());
 		serviceContext.setUserId(userId);
 
@@ -622,6 +670,13 @@ public class EmailNotificationType extends BaseNotificationType {
 					_log.info("Invalid email address " + emailAddress);
 				}
 
+				continue;
+			}
+
+			User user = _userLocalService.fetchUserByEmailAddress(
+				companyId, emailAddress);
+
+			if ((user != null) && !user.isActive()) {
 				continue;
 			}
 
@@ -709,6 +764,9 @@ public class EmailNotificationType extends BaseNotificationType {
 	private AccountEntryOrganizationRelLocalService
 		_accountEntryOrganizationRelLocalService;
 
+	@Reference
+	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
+
 	private final Map<String, EmailProvider> _emailProviders = new HashMap<>();
 
 	@Reference
@@ -734,10 +792,16 @@ public class EmailNotificationType extends BaseNotificationType {
 	private OrganizationLocalService _organizationLocalService;
 
 	@Reference
+	private PermissionCheckerFactory _permissionCheckerFactory;
+
+	@Reference
 	private PortletFileRepository _portletFileRepository;
 
 	@Reference
 	private RoleLocalService _roleLocalService;
+
+	private volatile ServiceTrackerList<TemplateContextContributor>
+		_serviceTrackerList;
 
 	@Reference
 	private TemplateNodeFactory _templateNodeFactory;

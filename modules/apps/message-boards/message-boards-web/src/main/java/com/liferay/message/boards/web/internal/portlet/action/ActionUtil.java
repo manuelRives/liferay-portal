@@ -28,9 +28,9 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -95,9 +95,9 @@ public class ActionUtil {
 	public static MBMessage getMessage(HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		long messageId = ParamUtil.getLong(httpServletRequest, "messageId");
-
 		MBMessage message = null;
+
+		long messageId = ParamUtil.getLong(httpServletRequest, "messageId");
 
 		if (messageId > 0) {
 			message = MBMessageServiceUtil.getMessage(messageId);
@@ -120,6 +120,8 @@ public class ActionUtil {
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		MBMessageDisplay messageDisplay = null;
+
 		long messageId = ParamUtil.getLong(httpServletRequest, "messageId");
 
 		ThemeDisplay themeDisplay =
@@ -128,8 +130,6 @@ public class ActionUtil {
 
 		PermissionChecker permissionChecker =
 			themeDisplay.getPermissionChecker();
-
-		MBMessageDisplay messageDisplay = null;
 
 		if (permissionChecker.isContentReviewer(
 				themeDisplay.getUserId(), themeDisplay.getScopeGroupId())) {

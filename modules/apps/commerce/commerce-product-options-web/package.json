@@ -1,14 +1,19 @@
 {
 	"dependencies": {
+		"@clayui/autocomplete": "3.138.0",
+		"@clayui/form": "3.137.0",
+		"@clayui/icon": "3.128.0",
 		"commerce-frontend-js": "*",
-		"frontend-js-web": "*"
+		"frontend-js-components-web": "*",
+		"frontend-js-web": "*",
+		"react": "18.2.0"
 	},
 	"main": "js/index.js",
 	"name": "commerce-product-options-web",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format"
 	},
-	"version": "4.0.68"
+	"version": "4.0.88"
 }

@@ -18,9 +18,8 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.test.util.DLTestUtil;
-import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
-import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.DisplayPageTemplateTestUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.cache.MultiVMPool;
@@ -28,7 +27,6 @@ import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -39,6 +37,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -49,10 +48,8 @@ import com.liferay.portal.upgrade.test.util.UpgradeTestUtil;
 
 import java.util.UUID;
 
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -71,18 +68,6 @@ public class UpgradeAssetDisplayPageEntryTest {
 			new LiferayIntegrationTestRule(),
 			PermissionCheckerMethodTestRule.INSTANCE);
 
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-		_originalName = PrincipalThreadLocal.getName();
-
-		PrincipalThreadLocal.setName(TestPropsValues.getUserId());
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws Exception {
-		PrincipalThreadLocal.setName(_originalName);
-	}
-
 	@Before
 	public void setUp() throws Exception {
 		_classNameId = _portal.getClassNameId(FileEntry.class.getName());
@@ -93,14 +78,13 @@ public class UpgradeAssetDisplayPageEntryTest {
 			_group.getGroupId());
 
 		_layoutPageTemplateEntry =
-			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
-				_classNameId, 0, RandomTestUtil.randomString(),
-				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, false, 0,
-				0, 0, 0, _serviceContext);
+			DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+				_group.getGroupId(), _classNameId, 0, false,
+				WorkflowConstants.STATUS_APPROVED);
 
-		_layoutPageTemplateEntryLocalService.updateLayoutPageTemplateEntry(
-			_layoutPageTemplateEntry.getLayoutPageTemplateEntryId(), true);
+		DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+			_group.getGroupId(), _classNameId, 0, true,
+			WorkflowConstants.STATUS_APPROVED);
 	}
 
 	@Test
@@ -140,7 +124,7 @@ public class UpgradeAssetDisplayPageEntryTest {
 	}
 
 	@Test
-	public void testUpgradeProcessWithPublication() throws Exception {
+	public void testUpgradeProcessWithCTCollection() throws Exception {
 		try (CompanyConfigurationTemporarySwapper
 				companyConfigurationTemporarySwapper =
 					new CompanyConfigurationTemporarySwapper(
@@ -283,8 +267,6 @@ public class UpgradeAssetDisplayPageEntryTest {
 		"com.liferay.asset.display.page.internal.upgrade.v3_0_0." +
 			"UpgradeAssetDisplayPageEntry";
 
-	private static String _originalName;
-
 	@Inject(
 		filter = "(&(component.name=com.liferay.asset.display.page.internal.upgrade.registry.AssetDisplayPageServiceUpgradeStepRegistrator))"
 	)
@@ -312,10 +294,6 @@ public class UpgradeAssetDisplayPageEntryTest {
 	private Group _group;
 
 	private LayoutPageTemplateEntry _layoutPageTemplateEntry;
-
-	@Inject
-	private LayoutPageTemplateEntryLocalService
-		_layoutPageTemplateEntryLocalService;
 
 	@Inject
 	private MultiVMPool _multiVMPool;

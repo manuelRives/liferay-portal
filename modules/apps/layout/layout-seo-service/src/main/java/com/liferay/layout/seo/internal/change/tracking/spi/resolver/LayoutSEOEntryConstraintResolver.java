@@ -8,6 +8,7 @@ package com.liferay.layout.seo.internal.change.tracking.spi.resolver;
 import com.liferay.change.tracking.spi.resolver.ConstraintResolver;
 import com.liferay.change.tracking.spi.resolver.context.ConstraintResolverContext;
 import com.liferay.layout.seo.model.LayoutSEOEntry;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
 import java.util.Locale;
@@ -34,7 +35,7 @@ public class LayoutSEOEntryConstraintResolver
 
 	@Override
 	public String getResolutionDescriptionKey() {
-		return "discard-the-page-seo-entry-in-the-publication";
+		return "duplicate-page-seo-entry-was-removed";
 	}
 
 	@Override
@@ -49,7 +50,10 @@ public class LayoutSEOEntryConstraintResolver
 
 	@Override
 	public void resolveConflict(
-		ConstraintResolverContext<LayoutSEOEntry> constraintResolverContext) {
+			ConstraintResolverContext<LayoutSEOEntry> constraintResolverContext)
+		throws PortalException {
+
+		constraintResolverContext.mergeSourceCTModelIntoTargetCTModel();
 	}
 
 }

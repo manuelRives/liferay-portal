@@ -1,9 +1,10 @@
 @component-name = "portal-frontend-infrastructure"
 definition {
 
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
-	property testray.component.names = "WYSIWYG";
 	property testray.main.component.name = "User Interface";
 
 	var pageName = "CKEditor Page";
@@ -12,6 +13,8 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
 
 		HeadlessSite.addSite(siteName = "WYSIWYG Site Name");
 	}
@@ -138,6 +141,8 @@ definition {
 			navTab = "URL");
 
 		PortletEntry.publish();
+
+		Click(locator1 = "//button[contains(@class, 'dropdown-item') and contains(., 'Publish')]");
 
 		WebContentNavigator.gotoPreviewEntryCP(webContentTitle = "Web Content Title");
 
@@ -317,6 +322,8 @@ definition {
 		SelectFrame(value1 = "relative=top");
 
 		PortletEntry.publish();
+
+		Click(locator1 = "//button[contains(@class, 'dropdown-item') and contains(., 'Publish')]");
 
 		WebContentNavigator.gotoPreviewEntryCP(webContentTitle = "Web Content Title");
 

@@ -19,7 +19,7 @@
 			<artifactId>release.${liferayProduct}.api</artifactId>
 			<scope>provided</scope>
 		</dependency>
-#if (${liferayVersion.startsWith("7.3")} || (${liferayVersion.startsWith("7.4")} || ${liferayVersion.startsWith("20")}))
+#if (${liferayVersion.startsWith("20")} || ${liferayVersion.startsWith("7.3")} || ${liferayVersion.startsWith("7.4")}))
 		<dependency>
 			<groupId>javax.annotation</groupId>
 			<artifactId>javax.annotation-api</artifactId>
@@ -42,6 +42,8 @@
 				<version>1.0.93</version>
 #elseif(${liferayVersion.startsWith("7.3")})
 				<version>1.0.212</version>
+#elseif(${liferayVersion.startsWith("7.4")})
+				<version>1.0.407</version>
 #else
 				<version>@com.liferay.portal.tools.rest.builder.version@</version>
 #end

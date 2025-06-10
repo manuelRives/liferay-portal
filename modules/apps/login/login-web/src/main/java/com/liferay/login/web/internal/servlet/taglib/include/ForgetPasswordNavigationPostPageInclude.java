@@ -8,7 +8,7 @@ package com.liferay.login.web.internal.servlet.taglib.include;
 import com.liferay.layout.utility.page.kernel.constants.LayoutUtilityPageEntryConstants;
 import com.liferay.layout.utility.page.kernel.provider.LayoutUtilityPageEntryLayoutProvider;
 import com.liferay.login.web.constants.LoginPortletKeys;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -20,14 +20,14 @@ import com.liferay.taglib.include.PageInclude;
 import com.liferay.taglib.portlet.RenderURLTag;
 import com.liferay.taglib.ui.IconTag;
 
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.Objects;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,7 +51,7 @@ public class ForgetPasswordNavigationPostPageInclude implements PageInclude {
 		String mvcRenderCommandName = httpServletRequest.getParameter(
 			"mvcRenderCommandName");
 
-		if (_featureFlagManager.isEnabled("LPD-6378")) {
+		if (FeatureFlagManagerUtil.isEnabled("LPD-6378")) {
 			PortletConfig portletConfig =
 				(PortletConfig)httpServletRequest.getAttribute(
 					JavaConstants.JAVAX_PORTLET_CONFIG);
@@ -120,9 +120,6 @@ public class ForgetPasswordNavigationPostPageInclude implements PageInclude {
 			throw new JspException(exception);
 		}
 	}
-
-	@Reference
-	private FeatureFlagManager _featureFlagManager;
 
 	@Reference
 	private LayoutUtilityPageEntryLayoutProvider

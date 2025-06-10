@@ -4,12 +4,11 @@
  */
 
 import {
-	fetch,
-	getCheckedCheckboxes,
 	openConfirmModal,
 	openSimpleInputModal,
 	openToast,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {fetch, getCheckedCheckboxes} from 'frontend-js-web';
 
 function handleCreationMenuClick(
 	event,
@@ -18,7 +17,7 @@ function handleCreationMenuClick(
 	repositoryBrowserURL
 ) {
 	if (item?.data?.action === 'addFolder') {
-		const createFolderURL = `${repositoryBrowserURL}?repositoryId=${item.data.repositoryId}&parentFolderId=${item.data.parentFolderId}`;
+		const createFolderURL = `${repositoryBrowserURL}?repositoryId=${item.data.repositoryId}&parentFolderId=${item.data.parentFolderId}&viewableByGuest=${item.data.viewableByGuest}`;
 
 		openSimpleInputModal({
 			dialogTitle: Liferay.Language.get('add-folder'),

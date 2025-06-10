@@ -39,6 +39,8 @@ if (modifierType.equals(CommercePriceModifierConstants.MODIFIER_TYPE_PERCENTAGE)
 	<aui:input name="commercePriceListId" type="hidden" value="<%= commercePriceListDisplayContext.getCommercePriceListId() %>" />
 	<aui:input name="commercePriceModifierId" type="hidden" value="<%= commercePriceModifierId %>" />
 
+	<liferay-ui:error exception="<%= CommercePriceModifierAmountException.class %>" message="please-enter-a-valid-amount" />
+
 	<aui:model-context bean="<%= commercePriceModifier %>" model="<%= CommercePriceModifier.class %>" />
 
 	<commerce-ui:panel
@@ -116,15 +118,16 @@ if (modifierType.equals(CommercePriceModifierConstants.MODIFIER_TYPE_PERCENTAGE)
 	</aui:button-row>
 </aui:form>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	const {createPortletURL} = frontendJsWeb;
-
+<aui:script sandbox="<%= true %>">
 	Liferay.provide(window, '<portlet:namespace />selectType', () => {
-		const portletURL = createPortletURL('<%= currentURLObj %>', {
-			modifierType: document.getElementById(
-				'<portlet:namespace />modifierType'
-			).value,
-		});
+		const portletURL = Liferay.Util.PortletURL.createPortletURL(
+			'<%= currentURLObj %>',
+			{
+				modifierType: document.getElementById(
+					'<portlet:namespace />modifierType'
+				).value,
+			}
+		);
 
 		window.location.replace(portletURL.toString());
 	});

@@ -40,7 +40,6 @@ import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ModuleFrameworkPropsValues;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.kernel.util.PortalLifecycleUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.log4j.Log4JUtil;
 import com.liferay.portal.module.framework.ModuleFrameworkUtil;
@@ -55,6 +54,9 @@ import com.liferay.portal.util.InitUtil;
 import com.liferay.portal.util.PortalClassPathUtil;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
 
 import java.beans.PropertyDescriptor;
 
@@ -84,9 +86,6 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
 
 import javax.sql.DataSource;
 
@@ -143,13 +142,6 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 			_log.error(exception);
 		}
 
-		try {
-			PortalLifecycleUtil.reset();
-		}
-		catch (Exception exception) {
-			_log.error(exception);
-		}
-
 		if (DBManagerUtil.getDBType() == DBType.HYPERSONIC) {
 			try (Connection connection = DataAccess.getConnection();
 				Statement statement = connection.createStatement()) {
@@ -161,7 +153,8 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 			}
 		}
 
-		closeDataSource("liferayDataSource");
+		DataSource dataSource = (DataSource)PortalBeanLocatorUtil.locate(
+			"liferayDataSource");
 
 		super.contextDestroyed(servletContextEvent);
 
@@ -169,6 +162,8 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 			(SessionFactory)InfrastructureUtil.getSessionFactory();
 
 		sessionFactory.close();
+
+		closeDataSource(dataSource);
 
 		_cleanUpJDBCDrivers();
 
@@ -236,9 +231,7 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 		}
 	}
 
-	protected void closeDataSource(String name) {
-		DataSource dataSource = (DataSource)PortalBeanLocatorUtil.locate(name);
-
+	protected void closeDataSource(DataSource dataSource) {
 		if (dataSource instanceof DelegatingDataSource) {
 			DelegatingDataSource delegatingDataSource =
 				(DelegatingDataSource)dataSource;
@@ -366,7 +359,7 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 		ExecutorService executorService =
 			SystemExecutorServiceUtil.getExecutorService();
 
-		Future<?> future = executorService.submit(
+		Future<Future<?>> future1 = executorService.submit(
 			() -> {
 				DBInitUtil.init();
 
@@ -374,7 +367,7 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 
 				InfrastructureUtil.setDataSource(dataSource);
 
-				executorService.submit(
+				return executorService.submit(
 					() -> {
 						PortalHibernateConfiguration
 							portalHibernateConfiguration =
@@ -395,13 +388,13 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 
 						return null;
 					});
-
-				return null;
 			});
 
 		ModuleFrameworkUtil.initFramework();
 
-		future.get();
+		Future<?> future2 = future1.get();
+
+		future2.get();
 
 		ClassLoader portalClassLoader = PortalClassLoaderUtil.getClassLoader();
 
@@ -444,8 +437,6 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 			springInitTask.get();
 		}
 
-		InitUtil.registerSpringInitialized();
-
 		ServletContextPool.put(_portalServletContextName, servletContext);
 
 		ApplicationContext applicationContext =
@@ -472,12 +463,25 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 
 		dynamicProxyCreator.clear();
 
-		if (DBUpgrader.isUpgradeDatabaseAutoRunEnabled()) {
+		boolean upgradeDatabaseAutoRun =
+			DBUpgrader.isUpgradeDatabaseAutoRunEnabled();
+
+		if (upgradeDatabaseAutoRun) {
 			StartupHelperUtil.setUpgrading(true);
 
-			DBUpgrader.upgradePortal();
+			try {
+				DBUpgrader.upgradePortal();
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
 		}
-		else {
+
+		ModuleFrameworkUtil.registerContext(applicationContext);
+
+		CustomJspBagRegistryUtil.getCustomJspBags();
+
+		if (!upgradeDatabaseAutoRun) {
 
 			// Check class names
 
@@ -485,13 +489,14 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 				_log.debug("Check class names");
 			}
 
-			DBPartitionUtil.forEachCompanyId(
-				companyId -> ClassNameLocalServiceUtil.checkClassNames());
+			try {
+				DBPartitionUtil.forEachCompanyId(
+					companyId -> ClassNameLocalServiceUtil.checkClassNames());
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
 		}
-
-		ModuleFrameworkUtil.registerContext(applicationContext);
-
-		CustomJspBagRegistryUtil.getCustomJspBags();
 	}
 
 	private void _logJVMArguments() {

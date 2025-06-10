@@ -13,16 +13,17 @@ String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwit
 
 <div class="card d-flex flex-column<%= Validator.isNotNull(elementClasses) ? StringPool.SPACE + elementClasses : StringPool.BLANK %>">
 	<c:if test="<%= Validator.isNotNull(actionLabel) || Validator.isNotNull(actionIcon) || Validator.isNotNull(title) %>">
-		<h4 class="align-items-center card-header d-flex justify-content-between py-3">
+		<div class="align-items-center card-header d-flex h4 justify-content-between py-3">
 			<%= HtmlUtil.escape(title) %>
 
 			<c:if test="<%= Validator.isNotNull(actionTargetId) %>">
 				<aui:script>
-					var link = document.getElementById('<%= HtmlUtil.escapeJS(linkId) %>');
+					var link = document.getElementById('<%= linkId %>');
 
 					if (link) {
 						link.addEventListener('click', (e) => {
 							e.preventDefault();
+
 							Liferay.fire('open-modal', {
 								id: '<%= HtmlUtil.escapeJS(actionTargetId) %>',
 							});
@@ -33,9 +34,36 @@ String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwit
 
 			<c:choose>
 				<c:when test="<%= Validator.isNotNull(actionLabel) %>">
+
+					<%
+					String href = Validator.isNotNull(actionUrl) ? actionUrl : "#";
+					%>
+
+					<c:if test="<%= actionContext != null %>">
+
+						<%
+						href = "#";
+						%>
+
+						<liferay-frontend:component
+							context='<%=
+								HashMapBuilder.<String, Object>put(
+									"title", title
+								).put(
+									"url", actionUrl
+								).putAll(
+									actionContext
+								).put(
+									"linkId", linkId
+								).build()
+							%>'
+							module="{ModalActionContextHandler} from commerce-frontend-taglib"
+						/>
+					</c:if>
+
 					<clay:link
-						href='<%= (Validator.isNotNull(actionUrl) && Validator.isNull(actionTargetId)) ? actionUrl : "#" %>'
-						id="<%= HtmlUtil.escape(linkId) %>"
+						href="<%= href %>"
+						id="<%= linkId %>"
 						label="<%= HtmlUtil.escape(actionLabel) %>"
 					/>
 				</c:when>
@@ -89,9 +117,9 @@ String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwit
 					<span class="d-flex mr-n2">
 						<c:if test="<%= Validator.isNotNull(collapseLabel) %>">
 							<label for="<%= HtmlUtil.escapeAttribute(collapseSwitchId) %>" id="<%= HtmlUtil.escapeAttribute(randomNamespace) %>toggle-label">
-								<h5 class="mb-0 mr-3">
+								<div class="h5 mb-0 mr-3">
 									<%= HtmlUtil.escape(collapseLabel) %>
-								</h5>
+								</div>
 							</label>
 						</c:if>
 
@@ -116,7 +144,7 @@ String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwit
 					</span>
 				</c:when>
 			</c:choose>
-		</h4>
+		</div>
 	</c:if>
 
 	<div class="collapse<%= collapsed ? StringPool.BLANK : " show" %>" id="<%= randomNamespace %>collapse">

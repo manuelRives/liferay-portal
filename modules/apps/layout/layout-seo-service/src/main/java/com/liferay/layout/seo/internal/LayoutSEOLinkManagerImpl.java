@@ -13,6 +13,7 @@ import com.liferay.layout.seo.kernel.LayoutSEOLink;
 import com.liferay.layout.seo.kernel.LayoutSEOLinkManager;
 import com.liferay.layout.seo.model.LayoutSEOEntry;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -34,13 +35,14 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -78,17 +80,13 @@ public class LayoutSEOLinkManagerImpl implements LayoutSEOLinkManager {
 			layout, portletId, tilesTitle, titleListMergeable,
 			subtitleListMergeable, locale);
 
-		LayoutSEOGeneralGroupConfiguration layoutSEOGeneralGroupConfiguration =
-			_configurationProvider.getGroupConfiguration(
-				LayoutSEOGeneralGroupConfiguration.class, layout.getGroupId());
+		String suffix = _getPageTitleSuffix(layout, companyName);
 
-		if (layoutSEOGeneralGroupConfiguration.showOnlyLayoutTitle()) {
-			return layoutTitle;
+		if (Validator.isNotNull(suffix)) {
+			return _merge(layoutTitle, suffix);
 		}
 
-		String siteAndCompanyName = _getPageTitleSuffix(layout, companyName);
-
-		return _merge(layoutTitle, siteAndCompanyName);
+		return layoutTitle;
 	}
 
 	@Override
@@ -113,17 +111,23 @@ public class LayoutSEOLinkManagerImpl implements LayoutSEOLinkManager {
 			getCanonicalLayoutSEOLink(
 				layout, locale, canonicalURL, themeDisplay));
 
-		alternateURLs.forEach(
-			(urlLocale, url) -> layoutSEOLinks.add(
-				new LayoutSEOLinkImpl(
-					HtmlUtil.escapeAttribute(
-						_getAlternateCustomCanonicalURL(
-							layout, urlLocale, url)),
-					LocaleUtil.toW3cLanguageId(urlLocale),
-					LayoutSEOLink.Relationship.ALTERNATE)));
+		Locale siteDefaultLocale = _portal.getSiteDefaultLocale(
+			layout.getGroupId());
 
-		String defaultLocaleURL = alternateURLs.get(
-			_portal.getSiteDefaultLocale(layout.getGroupId()));
+		Map<Locale, String> alternateCanonicalURLs = _getAlternateCanonicalURLs(
+			alternateURLs, layout, siteDefaultLocale);
+
+		for (Map.Entry<Locale, String> entry :
+				alternateCanonicalURLs.entrySet()) {
+
+			layoutSEOLinks.add(
+				new LayoutSEOLinkImpl(
+					HtmlUtil.escapeAttribute(entry.getValue()),
+					LocaleUtil.toW3cLanguageId(entry.getKey()),
+					LayoutSEOLink.Relationship.ALTERNATE));
+		}
+
+		String defaultLocaleURL = alternateCanonicalURLs.get(siteDefaultLocale);
 
 		if (defaultLocaleURL == null) {
 			return layoutSEOLinks;
@@ -169,8 +173,9 @@ public class LayoutSEOLinkManagerImpl implements LayoutSEOLinkManager {
 		_alternateURLMapperProvider = null;
 	}
 
-	private String _getAlternateCustomCanonicalURL(
-		Layout layout, Locale locale, String alternateURL) {
+	private Map<Locale, String> _getAlternateCanonicalURLs(
+		Map<Locale, String> alternateURLs, Layout layout,
+		Locale siteDefaultLocale) {
 
 		LayoutSEOEntry layoutSEOEntry =
 			_layoutSEOEntryLocalService.fetchLayoutSEOEntry(
@@ -180,10 +185,10 @@ public class LayoutSEOLinkManagerImpl implements LayoutSEOLinkManager {
 		if ((layoutSEOEntry == null) ||
 			!layoutSEOEntry.isCanonicalURLEnabled()) {
 
-			return alternateURL;
+			return alternateURLs;
 		}
 
-		Locale siteDefaultLocale = LocaleUtil.getSiteDefault();
+		Map<Locale, String> alternateCanonicalURLs = new HashMap<>();
 
 		try {
 			siteDefaultLocale = _portal.getSiteDefaultLocale(
@@ -195,13 +200,23 @@ public class LayoutSEOLinkManagerImpl implements LayoutSEOLinkManager {
 
 		String currentCanonicalURL = layoutSEOEntry.getCanonicalURL(
 			siteDefaultLocale);
-		String alternateCanonicalURL = layoutSEOEntry.getCanonicalURL(locale);
 
-		if (currentCanonicalURL.equals(alternateCanonicalURL)) {
-			return alternateURL;
+		for (Map.Entry<Locale, String> entry : alternateURLs.entrySet()) {
+			Locale locale = entry.getKey();
+
+			String alternateCanonicalURL = layoutSEOEntry.getCanonicalURL(
+				locale);
+
+			if (!locale.equals(siteDefaultLocale) &&
+				currentCanonicalURL.equals(alternateCanonicalURL)) {
+
+				alternateCanonicalURL = entry.getValue();
+			}
+
+			alternateCanonicalURLs.put(locale, alternateCanonicalURL);
 		}
 
-		return alternateCanonicalURL;
+		return alternateCanonicalURLs;
 	}
 
 	private HttpServletRequest _getHttpServletRequest() {
@@ -244,15 +259,37 @@ public class LayoutSEOLinkManagerImpl implements LayoutSEOLinkManager {
 	private String _getPageTitleSuffix(Layout layout, String companyName)
 		throws PortalException {
 
-		Group group = layout.getGroup();
+		LayoutSEOGeneralGroupConfiguration layoutSEOGeneralGroupConfiguration =
+			_configurationProvider.getGroupConfiguration(
+				LayoutSEOGeneralGroupConfiguration.class, layout.getGroupId());
 
-		if (group.isControlPanel() || group.isLayoutPrototype() ||
-			StringUtil.equals(companyName, group.getDescriptiveName())) {
+		if (!layoutSEOGeneralGroupConfiguration.includeInstanceName() &&
+			!layoutSEOGeneralGroupConfiguration.includeSiteName()) {
 
+			return StringPool.BLANK;
+		}
+
+		if (layoutSEOGeneralGroupConfiguration.includeInstanceName() &&
+			layoutSEOGeneralGroupConfiguration.includeSiteName()) {
+
+			Group group = layout.getGroup();
+
+			if (group.isControlPanel() || group.isLayoutPrototype() ||
+				StringUtil.equals(companyName, group.getDescriptiveName())) {
+
+				return companyName;
+			}
+
+			return _merge(group.getDescriptiveName(), companyName);
+		}
+
+		if (layoutSEOGeneralGroupConfiguration.includeInstanceName()) {
 			return companyName;
 		}
 
-		return _merge(group.getDescriptiveName(), companyName);
+		Group group = layout.getGroup();
+
+		return group.getDescriptiveName();
 	}
 
 	private ThemeDisplay _getThemeDisplay() {

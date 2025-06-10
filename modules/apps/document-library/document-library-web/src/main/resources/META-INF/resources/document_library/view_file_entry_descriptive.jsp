@@ -80,6 +80,22 @@ else {
 	>
 		<%= latestFileVersion.getTitle() %>
 	</aui:a>
+
+	<span>
+
+		<%
+		DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDisplayContext(liferayPortletRequest, liferayPortletResponse);
+		%>
+
+		<c:if test="<%= !dlViewEntriesDisplayContext.hasGuestViewPermission(fileEntry) %>">
+			<clay:icon
+				aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+				cssClass="c-ml-2 c-mt-1 lfr-portal-tooltip text-4 text-secondary"
+				data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+				symbol="password-policies"
+			/>
+		</c:if>
+	</span>
 </h2>
 
 <span>
@@ -103,7 +119,7 @@ else {
 </c:if>
 
 <span class="file-entry-status">
-	<c:if test='<%= FeatureFlagManagerUtil.isEnabled(latestFileVersion.getCompanyId(), "LPD-10701") && !latestFileVersion.isApproved() && dlViewFileVersionDisplayContext.hasApprovedVersion() %>'>
+	<c:if test="<%= !latestFileVersion.isApproved() && dlViewFileVersionDisplayContext.hasApprovedVersion() %>">
 		<liferay-portal-workflow:status
 			showStatusLabel="<%= false %>"
 			status="<%= WorkflowConstants.STATUS_APPROVED %>"
@@ -115,7 +131,7 @@ else {
 		status="<%= latestFileVersion.getStatus() %>"
 	/>
 
-	<c:if test='<%= FeatureFlagManagerUtil.isEnabled(latestFileVersion.getCompanyId(), "LPD-10701") && latestFileVersion.isScheduled() %>'>
+	<c:if test="<%= latestFileVersion.isScheduled() %>">
 
 		<%
 		String displayDateString = StringPool.BLANK;
@@ -142,7 +158,7 @@ else {
 		<c:when test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
 			<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "locked-document") %>">
 				<clay:icon
-					aria-label="<%= LanguageUtil.get(request, "locked-document") %>"
+					aria-label='<%= LanguageUtil.get(request, "locked-document") %>'
 					cssClass="inline-item inline-item-after state-icon"
 					symbol="lock"
 				/>

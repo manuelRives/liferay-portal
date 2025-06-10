@@ -21,6 +21,8 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -33,12 +35,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -298,6 +300,7 @@ public class EditAssetListDisplayContextTest {
 		).thenReturn(
 			classTypeId
 		);
+
 		Mockito.when(
 			classType.getName()
 		).thenReturn(
@@ -372,11 +375,13 @@ public class EditAssetListDisplayContextTest {
 		).thenReturn(
 			assetEntrySubtype
 		);
+
 		Mockito.when(
 			assetListEntry.getAssetEntryType()
 		).thenReturn(
 			assetEntryType
 		);
+
 		Mockito.when(
 			assetListEntry.getTypeSettings(Mockito.anyLong())
 		).thenReturn(
@@ -392,10 +397,18 @@ public class EditAssetListDisplayContextTest {
 			assetListEntry
 		);
 
-		AssetListEntryLocalServiceUtil assetListEntryLocalServiceUtil =
-			new AssetListEntryLocalServiceUtil();
+		ReflectionTestUtil.setFieldValue(
+			AssetListEntryLocalServiceUtil.class, "_serviceSnapshot",
+			new Snapshot<AssetListEntryLocalService>(
+				AssetListEntryLocalServiceUtil.class,
+				AssetListEntryLocalService.class) {
 
-		assetListEntryLocalServiceUtil.setService(assetListEntryLocalService);
+				@Override
+				public AssetListEntryLocalService get() {
+					return assetListEntryLocalService;
+				}
+
+			});
 	}
 
 	private void _setUpAssetRendererFactoryRegistryUtil(

@@ -5,18 +5,31 @@
 
 package com.liferay.marketplace;
 
+import com.liferay.client.extension.util.spring.boot3.BaseRestController;
+import com.liferay.headless.commerce.admin.order.client.dto.v1_0.Order;
+import com.liferay.marketplace.service.ConsoleService;
+import com.liferay.marketplace.service.MarketplaceService;
+import com.liferay.marketplace.util.MarketplaceUtil;
+
+import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author Keven Leone
@@ -39,79 +52,97 @@ public class ConsoleRestController extends BaseRestController {
 				));
 		}
 
-		String finalEmailAddress = emailAddress;
-
-		return WebClient.create(
-			_consoleAuthURL
-		).get(
-		).uri(
-			uriBuilder -> uriBuilder.path(
-				"/admin/user-projects-plan-usage"
-			).queryParam(
-				"userEmail", finalEmailAddress
-			).build()
-		).header(
-			HttpHeaders.AUTHORIZATION, "Bearer " + _getAuthorization()
-		).retrieve(
-		).bodyToMono(
-			String.class
-		).block();
+		return _consoleService.getProjectsUsage(emailAddress);
 	}
 
-	private String _getAuthorization() throws Exception {
-		if ((_accessToken != null) &&
-			(System.currentTimeMillis() < (_tokenExpirationMillis - 30000))) {
+	@GetMapping("subscriptions/{orderId}")
+	public String getSubscriptions(@PathVariable("orderId") long orderId)
+		throws Exception {
 
-			return _accessToken;
-		}
+		Order order = _marketplaceService.getOrder(orderId);
 
-		String response = WebClient.create(
-			_consoleAuthURL
-		).post(
-		).uri(
-			"/login"
-		).accept(
-			MediaType.APPLICATION_JSON
-		).contentType(
-			MediaType.APPLICATION_JSON
-		).bodyValue(
-			new JSONObject(
-			).put(
-				"email", _consoleAuthEmailAddress
-			).put(
-				"password", _consoleAuthPassword
-			).toString()
-		).retrieve(
-		).bodyToMono(
-			String.class
-		).block();
+		Map<String, String> customFields =
+			(Map<String, String>)order.getCustomFields();
 
-		if (response == null) {
-			throw new Exception("Unable to get authorization");
-		}
-
-		_accessToken = new JSONObject(
-			response
-		).getString(
-			"token"
-		);
-
-		_tokenExpirationMillis = System.currentTimeMillis() + 900000;
-
-		return _accessToken;
+		return customFields.get("cloud-provisioning");
 	}
 
-	private String _accessToken;
+	@PostMapping("provisioning/{orderId}")
+	public void postProvisioning(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable("orderId") long orderId, @RequestBody String json)
+		throws Exception {
 
-	@Value("${liferay.marketplace.console.auth.email.address}")
-	private String _consoleAuthEmailAddress;
+		if (_log.isInfoEnabled()) {
+			_log.info("Provisioning order " + orderId);
+		}
 
-	@Value("${liferay.marketplace.console.auth.password}")
-	private String _consoleAuthPassword;
+		Order order = _marketplaceService.getOrder(orderId);
+
+		_marketplaceService.deployCloudService(new JSONObject(json), order);
+	}
+
+	@PostMapping("uninstall-app/{orderId}")
+	public void uninstallApp(
+			@PathVariable("orderId") long orderId, @RequestBody String json)
+		throws Exception {
+
+		try {
+			_consoleService.uninstallApp(orderId);
+
+			JSONObject jsonObject = new JSONObject(json);
+
+			Order order = _marketplaceService.getOrder(orderId);
+
+			Map<String, String> customFields =
+				(Map<String, String>)order.getCustomFields();
+
+			JSONArray cloudProvisioningJSONArray = new JSONArray(
+				customFields.get("cloud-provisioning"));
+
+			JSONObject cloudProvisioningJSONObject =
+				MarketplaceUtil.getCloudProvisioningJSONObject(
+					cloudProvisioningJSONArray,
+					jsonObject.getLong("orderItemId"));
+
+			MarketplaceUtil.deleteDeployment(
+				jsonObject.getString("id"), cloudProvisioningJSONObject);
+
+			cloudProvisioningJSONObject.put(
+				"shippedQuantity",
+				cloudProvisioningJSONObject.getJSONArray(
+					"deployments"
+				).length());
+
+			customFields.put(
+				"cloud-provisioning", cloudProvisioningJSONArray.toString());
+
+			_marketplaceService.updateOrder(
+				customFields, orderId, order.getOrderStatus());
+
+			if (_log.isInfoEnabled()) {
+				_log.info("Uninstalled app for order " + orderId);
+			}
+		}
+		catch (Exception exception) {
+			_log.error(exception);
+
+			_log.error("Unable to uninstall app for order " + orderId);
+
+			throw exception;
+		}
+	}
+
+	private static final Log _log = LogFactory.getLog(
+		ConsoleRestController.class);
 
 	@Value("${liferay.marketplace.console.auth.url}")
 	private String _consoleAuthURL;
 
-	private long _tokenExpirationMillis;
+	@Autowired
+	private ConsoleService _consoleService;
+
+	@Autowired
+	private MarketplaceService _marketplaceService;
 
 }

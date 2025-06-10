@@ -8,8 +8,7 @@ import ClayDatePicker from '@clayui/date-picker';
 import ClayForm, {ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
-import {sub} from 'frontend-js-web';
-import moment from 'moment/min/moment-with-locales';
+import {dateUtils, sub} from 'frontend-js-web';
 import React, {useEffect} from 'react';
 
 export default function ScheduleOptions({
@@ -25,24 +24,16 @@ export default function ScheduleOptions({
 
 	useEffect(() => {
 		if (displayDate) {
-			if (!moment(displayDate, 'yyyy-MM-DD HH:mm', true).isValid()) {
+			if (displayDate.length !== 16 || !dateUtils.isValid(displayDate)) {
 				setError(Liferay.Language.get('please-enter-a-valid-date'));
 
 				return;
-			}
-
-			const date = new Date(displayDate);
-
-			if (date.valueOf() <= new Date().valueOf()) {
-				setError(
-					Liferay.Language.get('the-date-entered-is-in-the-past')
-				);
 			}
 			else {
 				setError('');
 			}
 		}
-	}, [setError, displayDate]);
+	}, [displayDate, setError, timeZone]);
 
 	return (
 		<>
@@ -66,7 +57,7 @@ export default function ScheduleOptions({
 					placeholder="YYYY-MM-DD HH:mm"
 					required
 					time
-					timezone={timeZone}
+					timezone={timeZone.name}
 					value={displayDate || ''}
 					years={{
 						end: 9999,
@@ -89,7 +80,7 @@ export default function ScheduleOptions({
 			</ClayForm.Group>
 
 			<p className="mt-1 text-3 text-secondary">
-				{sub(Liferay.Language.get('time-zone-x'), timeZone)}
+				{sub(Liferay.Language.get('time-zone-x'), timeZone.name)}
 			</p>
 
 			<ClayInput
@@ -108,7 +99,7 @@ export default function ScheduleOptions({
 
 			<ClayInput
 				form={formId}
-				name={`${portletNamespace}displayDateMinutes`}
+				name={`${portletNamespace}displayDateMinute`}
 				type="hidden"
 				value={minutes}
 			/>
@@ -133,9 +124,7 @@ export default function ScheduleOptions({
 function getDate(value) {
 	const date = new Date(value);
 
-	if (moment(date).isValid()) {
-		const date = new Date(value);
-
+	if (dateUtils.isValid(date)) {
 		return {
 			day: date.getDate(),
 			hour: date.getHours(),

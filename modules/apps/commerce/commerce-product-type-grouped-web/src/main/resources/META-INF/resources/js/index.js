@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openConfirmModal, openSelectionModal} from 'frontend-js-web';
+import {openConfirmModal, openSelectionModal} from 'frontend-js-components-web';
 
 export function CPDefinitionGroupedManagementToolbarPropsTransformer({
 	portletNamespace,
@@ -51,9 +51,10 @@ export function CPDefinitionGroupedManagementToolbarPropsTransformer({
 							);
 						}
 
-						const addCPDefinitionGroupedEntryFm = document.getElementById(
-							`${portletNamespace}addCPDefinitionGroupedEntryFm`
-						);
+						const addCPDefinitionGroupedEntryFm =
+							document.getElementById(
+								`${portletNamespace}addCPDefinitionGroupedEntryFm`
+							);
 
 						if (addCPDefinitionGroupedEntryFm) {
 							submitForm(addCPDefinitionGroupedEntryFm);

@@ -21,16 +21,13 @@ function Actions({
 	actions,
 	itemData,
 	itemId,
-	menuActive,
-	onMenuActiveChange,
 }: {
 	actions: Array<IItemsActions>;
 	itemData: any;
 	itemId: string | number;
-	menuActive: boolean;
-	onMenuActiveChange: Function;
 }) {
 	const {
+		allItemsSelectedActive,
 		executeAsyncItemAction,
 		highlightItems,
 		inlineEditingSettings,
@@ -38,6 +35,7 @@ function Actions({
 		onActionDropdownItemClick,
 		openModal,
 		openSidePanel,
+		selectedItemsValue,
 		toggleItemInlineEdit,
 	}: IFrontendDataSetContext = useContext(FrontendDataSetContext);
 
@@ -48,9 +46,17 @@ function Actions({
 	]: any = useContext(ViewsContext);
 
 	const [loading, setLoading] = useState(false);
+	const [menuActive, setMenuActive] = useState(false);
+
+	const isRowSelected =
+		allItemsSelectedActive ||
+		selectedItemsValue?.some(
+			(selectedItemValue) => String(selectedItemValue) === String(itemId)
+		);
 
 	const inlineEditingAvailable =
 		inlineEditingSettings && itemData.actions?.update;
+
 	const inlineEditingAlwaysOn =
 		inlineEditingAvailable && inlineEditingSettings.alwaysOn;
 
@@ -92,17 +98,20 @@ function Actions({
 
 	return (
 		<>
-			{quickActionsEnabled && formattedActions.length > 1 && (
-				<QuickActions
-					actions={formattedActions.slice(
-						0,
-						QUICK_ACTIONS_MAX_NUMBER
-					)}
-					itemData={itemData}
-					itemId={itemId}
-					onClick={handleClick}
-				/>
-			)}
+			{quickActionsEnabled &&
+				formattedActions.length > 1 &&
+				!isRowSelected && (
+					<QuickActions
+						actions={formattedActions.slice(
+							0,
+							QUICK_ACTIONS_MAX_NUMBER
+						)}
+						itemData={itemData}
+						itemId={itemId}
+						onClick={handleClick}
+					/>
+				)}
+
 			<ActionsDropdown
 				actions={formattedActions}
 				itemData={itemData}
@@ -110,7 +119,7 @@ function Actions({
 				loading={loading}
 				menuActive={menuActive}
 				onClick={handleClick}
-				onMenuActiveChange={onMenuActiveChange}
+				onMenuActiveChange={setMenuActive}
 				setLoading={setLoading}
 			/>
 		</>

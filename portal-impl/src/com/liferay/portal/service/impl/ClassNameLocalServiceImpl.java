@@ -5,7 +5,7 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.db.partition.util.DBPartitionUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.cache.CacheRegistryItem;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.db.partition.DBPartition;
@@ -14,8 +14,10 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.impl.ClassNameImpl;
 import com.liferay.portal.service.base.ClassNameLocalServiceBaseImpl;
@@ -23,6 +25,7 @@ import com.liferay.portal.service.base.ClassNameLocalServiceBaseImpl;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -153,13 +156,45 @@ public class ClassNameLocalServiceImpl
 	}
 
 	@Override
+	public Supplier<long[]> getClassNameIdsSupplier(String[] classNames) {
+		Map<Long, long[]> classNameIds = new ConcurrentHashMap<>();
+
+		return () -> classNameIds.computeIfAbsent(
+			_getCompanyId(),
+			key -> TransformUtil.transformToLongArray(
+				ListUtil.fromArray(classNames),
+				className -> getClassNameId(className)));
+	}
+
+	@Override
+	public Supplier<Long> getClassNameIdSupplier(String className) {
+		return () -> getClassNameId(className);
+	}
+
+	@Override
 	public String getRegistryName() {
 		return ClassNameLocalServiceImpl.class.getName();
 	}
 
 	@Override
 	public void invalidate() {
+		if (DBPartition.isPartitionEnabled() &&
+			(CompanyThreadLocal.getCompanyId() != CompanyConstants.SYSTEM)) {
+
+			ClassNamePool.invalidate(CompanyThreadLocal.getCompanyId());
+
+			return;
+		}
+
 		ClassNamePool.invalidate();
+	}
+
+	private static long _getCompanyId() {
+		if (DBPartition.isPartitionEnabled()) {
+			return CompanyThreadLocal.getNonsystemCompanyId();
+		}
+
+		return CompanyConstants.SYSTEM;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -213,6 +248,11 @@ public class ClassNameLocalServiceImpl
 			}
 		}
 
+		public static void invalidate(long companyId) {
+			_classNameIdsMap.remove(companyId);
+			_classNamesMap.remove(companyId);
+		}
+
 		public static void remove(ClassName className) {
 			_classNameIdsMap.computeIfPresent(
 				_getCompanyId(),
@@ -229,14 +269,6 @@ public class ClassNameLocalServiceImpl
 
 					return classNames;
 				});
-		}
-
-		private static long _getCompanyId() {
-			if (DBPartition.isPartitionEnabled()) {
-				return DBPartitionUtil.getCurrentCompanyId();
-			}
-
-			return CompanyConstants.SYSTEM;
 		}
 
 		private static <S, T> Map<S, T> _getMap(Map<Long, Map<S, T>> map) {

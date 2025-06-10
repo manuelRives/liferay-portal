@@ -10,30 +10,31 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.util.TypeLiteral;
+
+import jakarta.mvc.Models;
+import jakarta.mvc.binding.ParamError;
+import jakarta.mvc.engine.ViewEngine;
+import jakarta.mvc.engine.ViewEngineException;
+
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletSession;
+
+import jakarta.ws.rs.core.Configuration;
+
 import java.lang.annotation.Annotation;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.util.TypeLiteral;
-
-import javax.mvc.Models;
-import javax.mvc.binding.ParamError;
-import javax.mvc.engine.ViewEngine;
-import javax.mvc.engine.ViewEngineException;
-
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletSession;
-
-import javax.ws.rs.core.Configuration;
 
 /**
  * @author Neil Griffin
@@ -117,7 +118,9 @@ public class ViewRendererMVCImpl implements ViewRenderer {
 			}
 
 			try {
-				_beanManager.fireEvent(
+				Event<Object> event = _beanManager.getEvent();
+
+				event.fire(
 					new BeforeProcessViewEventImpl(
 						viewName, supportingViewEngine.getClass()));
 
@@ -126,7 +129,7 @@ public class ViewRendererMVCImpl implements ViewRenderer {
 						configuration, portletRequest.getLocale(), mimeResponse,
 						models, portletRequest));
 
-				_beanManager.fireEvent(
+				event.fire(
 					new AfterProcessViewEventImpl(
 						viewName, supportingViewEngine.getClass()));
 			}
@@ -135,25 +138,30 @@ public class ViewRendererMVCImpl implements ViewRenderer {
 			}
 		}
 
-		if (_importsMvcBindingPackage) {
-			MutableBindingResult mutableBindingResult =
-				BeanUtil.getMutableBindingResult(_beanManager);
+		if (!_importsMvcBindingPackage) {
+			return;
+		}
 
-			if ((mutableBindingResult != null) &&
-				!mutableBindingResult.isConsulted()) {
+		MutableBindingResult mutableBindingResult =
+			BeanUtil.getMutableBindingResult(_beanManager);
 
-				Set<ParamError> allErrors = mutableBindingResult.getAllErrors();
+		if ((mutableBindingResult == null) ||
+			mutableBindingResult.isConsulted()) {
 
-				for (ParamError paramError : allErrors) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							StringBundler.concat(
-								"A BindingResult error was not processed for ",
-								paramError.getParamName(), ": ",
-								paramError.getMessage()));
-					}
-				}
+			return;
+		}
+
+		Set<ParamError> paramErrors = mutableBindingResult.getAllErrors();
+
+		for (ParamError paramError : paramErrors) {
+			if (!_log.isWarnEnabled()) {
+				continue;
 			}
+
+			_log.warn(
+				StringBundler.concat(
+					"A BindingResult error was not processed for ",
+					paramError.getParamName(), ": ", paramError.getMessage()));
 		}
 	}
 
@@ -174,10 +182,10 @@ public class ViewRendererMVCImpl implements ViewRenderer {
 	}
 
 	private List<ViewEngine> _getViewEngines(BeanManager beanManager) {
+		List<ViewEngine> viewEngines = new ArrayList<>();
+
 		Set<Bean<?>> beans = beanManager.getBeans(
 			_viewEnginesTypeLiteral.getType(), _viewEngines);
-
-		List<ViewEngine> viewEngines = new ArrayList<>();
 
 		Bean<?> bean = beanManager.resolve(beans);
 

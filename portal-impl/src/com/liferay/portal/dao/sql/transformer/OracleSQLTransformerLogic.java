@@ -24,7 +24,8 @@ public class OracleSQLTransformerLogic extends BaseSQLTransformerLogic {
 		super(db);
 
 		Function[] functions = {
-			getBooleanFunction(), getCastClobTextFunction(),
+			getAggregationFunction(), getBooleanFunction(),
+			getCastClobTextFunction(), getCastFloatFunction(),
 			getCastLongFunction(), getCastTextFunction(), getConcatFunction(),
 			getDropTableIfExistsTextFunction(), getIntegerDivisionFunction(),
 			getNullDateFunction(), _getEscapeFunction(),

@@ -5,13 +5,12 @@
 
 /* eslint-disable @liferay/no-use-strict-in-module */
 
-import State from '../src/main/resources/META-INF/resources/State';
-import {withEnv} from './helpers';
-
-import type {
+import {
 	Atom,
 	Selector,
-} from '../src/main/resources/META-INF/resources/State';
+	default as State,
+} from '../src/main/resources/META-INF/resources/main/State';
+import {withEnv} from './helpers';
 
 describe('State', () => {
 	beforeEach(() => {
@@ -129,9 +128,12 @@ describe('State', () => {
 
 				const value = State.readAtom(atom);
 
-				// @ts-expect-error TS2339: Property 'added' does not exist
+				expect(() => {
 
-				value.added = true;
+					// @ts-expect-error TS2339: Property 'added' does not exist
+
+					value.added = true;
+				}).toThrow(TypeError);
 
 				// @ts-expect-error TS2339: Property 'added' does not exist
 
@@ -289,9 +291,12 @@ describe('State', () => {
 
 				const value = State.readSelector(selector);
 
-				// @ts-expect-error TS2339: Property 'added' does not exist
+				expect(() => {
 
-				value.added = 'thing';
+					// @ts-expect-error TS2339: Property 'added' does not exist
+
+					value.added = 'thing';
+				}).toThrow(TypeError);
 
 				// @ts-expect-error TS2339: Property 'added' does not exist
 

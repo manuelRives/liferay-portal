@@ -3,23 +3,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 
-export default function usePagination(urlParams?: URLSearchParams) {
-	const [pageSize, setPageSize] = useState<number>(
-		urlParams?.get('pagesize') ? Number(urlParams.get('pagesize')) : 20
-	);
+export default function usePagination() {
+	const [pageSize, setPageSize] = useState<number>(20);
 
-	const [page, setPage] = useState<number>(
-		urlParams?.get('page') ? Number(urlParams.get('page')) : 1
-	);
-
-	useEffect(() => {
-		if (urlParams) {
-			urlParams.set('pagesize', `${pageSize}`);
-			urlParams.set('page', `${page}`);
-		}
-	}, [page, pageSize, urlParams]);
+	const [page, setPage] = useState<number>(1);
 
 	const deltas = [
 		{

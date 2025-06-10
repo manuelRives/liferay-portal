@@ -7,14 +7,15 @@ package com.liferay.portal.search.rest.internal.graphql.mutation.v1_0;
 
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.search.rest.dto.v1_0.EmbeddingProviderConfiguration;
+import com.liferay.portal.search.rest.dto.v1_0.EmbeddingProviderValidationResult;
 import com.liferay.portal.search.rest.dto.v1_0.SearchRequestBody;
 import com.liferay.portal.search.rest.dto.v1_0.SearchResult;
 import com.liferay.portal.search.rest.dto.v1_0.SuggestionsContributorConfiguration;
 import com.liferay.portal.search.rest.dto.v1_0.SuggestionsContributorResults;
+import com.liferay.portal.search.rest.resource.v1_0.EmbeddingProviderValidationResultResource;
 import com.liferay.portal.search.rest.resource.v1_0.SearchResultResource;
 import com.liferay.portal.search.rest.resource.v1_0.SuggestionResource;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
@@ -25,14 +26,14 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -42,6 +43,15 @@ import org.osgi.service.component.ComponentServiceObjects;
  */
 @Generated("")
 public class Mutation {
+
+	public static void
+		setEmbeddingProviderValidationResultResourceComponentServiceObjects(
+			ComponentServiceObjects<EmbeddingProviderValidationResultResource>
+				embeddingProviderValidationResultResourceComponentServiceObjects) {
+
+		_embeddingProviderValidationResultResourceComponentServiceObjects =
+			embeddingProviderValidationResultResourceComponentServiceObjects;
+	}
 
 	public static void setSearchResultResourceComponentServiceObjects(
 		ComponentServiceObjects<SearchResultResource>
@@ -59,11 +69,29 @@ public class Mutation {
 			suggestionResourceComponentServiceObjects;
 	}
 
+	@GraphQLField
+	public EmbeddingProviderValidationResult
+			createEmbeddingValidateProviderConfiguration(
+				@GraphQLName("embeddingProviderConfiguration")
+					EmbeddingProviderConfiguration
+						embeddingProviderConfiguration)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_embeddingProviderValidationResultResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			embeddingProviderValidationResultResource ->
+				embeddingProviderValidationResultResource.
+					postEmbeddingValidateProviderConfiguration(
+						embeddingProviderConfiguration));
+	}
+
 	@GraphQLField(
-		description = "Search the company index for matching content. This endpoint is beta and requires setting the portal property 'feature.flag.LPS-179669' to true or enabling via Instance Settings > Feature Flags: Beta."
+		description = "Search the company index for matching content. This endpoint requires setting the portal property 'feature.flag.LPS-179669' to true or enabling via Instance Settings > Feature Flags: Release."
 	)
 	public java.util.Collection<SearchResult> createSearchPage(
 			@GraphQLName("entryClassNames") String entryClassNames,
+			@GraphQLName("scope") String scope,
 			@GraphQLName("search") String search,
 			@GraphQLName("filter") String filterString,
 			@GraphQLName("pageSize") int pageSize,
@@ -78,7 +106,7 @@ public class Mutation {
 			this::_populateResourceContext,
 			searchResultResource -> {
 				Page paginationPage = searchResultResource.postSearchPage(
-					entryClassNames, search,
+					entryClassNames, scope, search,
 					_filterBiFunction.apply(searchResultResource, filterString),
 					Pagination.of(page, pageSize),
 					_sortsBiFunction.apply(searchResultResource, sortsString),
@@ -157,6 +185,26 @@ public class Mutation {
 	}
 
 	private void _populateResourceContext(
+			EmbeddingProviderValidationResultResource
+				embeddingProviderValidationResultResource)
+		throws Exception {
+
+		embeddingProviderValidationResultResource.setContextAcceptLanguage(
+			_acceptLanguage);
+		embeddingProviderValidationResultResource.setContextCompany(_company);
+		embeddingProviderValidationResultResource.setContextHttpServletRequest(
+			_httpServletRequest);
+		embeddingProviderValidationResultResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		embeddingProviderValidationResultResource.setContextUriInfo(_uriInfo);
+		embeddingProviderValidationResultResource.setContextUser(_user);
+		embeddingProviderValidationResultResource.setGroupLocalService(
+			_groupLocalService);
+		embeddingProviderValidationResultResource.setRoleLocalService(
+			_roleLocalService);
+	}
+
+	private void _populateResourceContext(
 			SearchResultResource searchResultResource)
 		throws Exception {
 
@@ -190,6 +238,9 @@ public class Mutation {
 		suggestionResource.setRoleLocalService(_roleLocalService);
 	}
 
+	private static ComponentServiceObjects
+		<EmbeddingProviderValidationResultResource>
+			_embeddingProviderValidationResultResourceComponentServiceObjects;
 	private static ComponentServiceObjects<SearchResultResource>
 		_searchResultResourceComponentServiceObjects;
 	private static ComponentServiceObjects<SuggestionResource>
@@ -197,12 +248,15 @@ public class Mutation {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 	private VulcanBatchEngineExportTaskResource

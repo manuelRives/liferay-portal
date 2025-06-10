@@ -87,8 +87,8 @@ public class ExportImportMasterLayoutsTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry1 =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				_serviceContext1.getUserId(),
-				_serviceContext1.getScopeGroupId(), 0,
+				null, _serviceContext1.getUserId(),
+				_serviceContext1.getScopeGroupId(), 0, null,
 				StringUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 				WorkflowConstants.STATUS_APPROVED, _serviceContext1);

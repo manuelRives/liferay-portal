@@ -1,7 +1,9 @@
 liferay-marketplace-custom-element:
     properties:
-        featureFlags: LPD-20229
+        cloudConsoleURL: https://console.marketplace.liferay.sh
+        featureFlags: LPD-24546
+        useSiteTaxonomyVocabularyQuery: true
     urls:
-        - http://localhost:5173/@vite/client
-        - http://localhost:5173/@vite/refresh.ts
-        - http://localhost:5173/src/main.tsx
+        -   http://localhost:5173/@vite/client
+        -   http://localhost:5173/@vite/refresh.ts
+        -   http://localhost:5173/src/main.tsx

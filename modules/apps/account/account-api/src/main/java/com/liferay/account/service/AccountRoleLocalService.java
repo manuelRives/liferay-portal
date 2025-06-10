@@ -71,8 +71,9 @@ public interface AccountRoleLocalService
 	public AccountRole addAccountRole(AccountRole accountRole);
 
 	public AccountRole addAccountRole(
-			long userId, long accountEntryId, String name,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap)
+			String externalReferenceCode, long userId, long accountEntryId,
+			String name, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap)
 		throws PortalException;
 
 	public void associateUser(
@@ -214,6 +215,10 @@ public interface AccountRoleLocalService
 	public AccountRole fetchAccountRole(long accountRoleId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AccountRole fetchAccountRoleByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AccountRole fetchAccountRoleByRoleId(long roleId);
 
 	/**
@@ -225,6 +230,11 @@ public interface AccountRoleLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AccountRole getAccountRole(long accountRoleId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AccountRole getAccountRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -270,6 +280,12 @@ public interface AccountRoleLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AccountRole getOrAddIncompleteAccountRole(
+			String externalReferenceCode, long companyId, long userId,
+			long accountEntryId, String name)
+		throws Exception;
 
 	/**
 	 * Returns the OSGi service identifier.

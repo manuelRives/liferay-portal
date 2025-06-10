@@ -6,6 +6,7 @@
 package com.liferay.asset.display.page.service;
 
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -30,24 +31,24 @@ public class AssetDisplayPageEntryServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.asset.display.page.service.impl.AssetDisplayPageEntryServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static AssetDisplayPageEntry addAssetDisplayPageEntry(
-			long userId, long groupId, long classNameId, long classPK,
+			long groupId, long classNameId, long classPK,
 			long layoutPageTemplateEntryId, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws Exception {
 
 		return getService().addAssetDisplayPageEntry(
-			userId, groupId, classNameId, classPK, layoutPageTemplateEntryId,
-			type, serviceContext);
+			groupId, classNameId, classPK, layoutPageTemplateEntryId, type,
+			serviceContext);
 	}
 
 	public static AssetDisplayPageEntry addAssetDisplayPageEntry(
-			long userId, long groupId, long classNameId, long classPK,
+			long groupId, long classNameId, long classPK,
 			long layoutPageTemplateEntryId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws Exception {
 
 		return getService().addAssetDisplayPageEntry(
-			userId, groupId, classNameId, classPK, layoutPageTemplateEntryId,
+			groupId, classNameId, classPK, layoutPageTemplateEntryId,
 			serviceContext);
 	}
 
@@ -132,13 +133,12 @@ public class AssetDisplayPageEntryServiceUtil {
 	}
 
 	public static AssetDisplayPageEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(AssetDisplayPageEntryService service) {
-		_service = service;
-	}
-
-	private static volatile AssetDisplayPageEntryService _service;
+	private static final Snapshot<AssetDisplayPageEntryService>
+		_serviceSnapshot = new Snapshot<>(
+			AssetDisplayPageEntryServiceUtil.class,
+			AssetDisplayPageEntryService.class);
 
 }

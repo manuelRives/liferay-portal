@@ -5,6 +5,7 @@
 
 package com.liferay.portal.background.task.internal;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -31,6 +32,7 @@ public class BackgroundTaskThreadLocalManagerImplTest
 	@Test
 	public void testDeserializeThreadLocals() {
 		backgroundTaskThreadLocalManagerImpl.deserializeThreadLocals(
+			COMPANY_ID,
 			HashMapBuilder.<String, Serializable>put(
 				BackgroundTaskThreadLocalManagerImpl.KEY_THREAD_LOCAL_VALUES,
 				initializeThreadLocalValues()
@@ -41,32 +43,33 @@ public class BackgroundTaskThreadLocalManagerImplTest
 
 	@Test
 	public void testGetThreadLocalValues() {
-		initalizeThreadLocals();
-
-		assertThreadLocalValues(
-			backgroundTaskThreadLocalManagerImpl.getThreadLocalValues());
+		try (SafeCloseable safeCloseable = initalizeThreadLocals()) {
+			assertThreadLocalValues(
+				backgroundTaskThreadLocalManagerImpl.getThreadLocalValues());
+		}
 	}
 
 	@Test
 	public void testSerializeThreadLocals() {
-		initalizeThreadLocals();
+		try (SafeCloseable safeCloseable = initalizeThreadLocals()) {
+			Map<String, Serializable> taskContextMap = new HashMap<>();
 
-		Map<String, Serializable> taskContextMap = new HashMap<>();
+			backgroundTaskThreadLocalManagerImpl.serializeThreadLocals(
+				taskContextMap);
 
-		backgroundTaskThreadLocalManagerImpl.serializeThreadLocals(
-			taskContextMap);
+			Map<String, Serializable> threadLocalValues =
+				(Map<String, Serializable>)taskContextMap.get(
+					BackgroundTaskThreadLocalManagerImpl.
+						KEY_THREAD_LOCAL_VALUES);
 
-		Map<String, Serializable> threadLocalValues =
-			(Map<String, Serializable>)taskContextMap.get(
-				BackgroundTaskThreadLocalManagerImpl.KEY_THREAD_LOCAL_VALUES);
-
-		assertThreadLocalValues(threadLocalValues);
+			assertThreadLocalValues(threadLocalValues);
+		}
 	}
 
 	@Test
 	public void testSetThreadLocalValues() {
 		backgroundTaskThreadLocalManagerImpl.setThreadLocalValues(
-			initializeThreadLocalValues());
+			COMPANY_ID, initializeThreadLocalValues());
 
 		assertThreadLocalValues();
 	}

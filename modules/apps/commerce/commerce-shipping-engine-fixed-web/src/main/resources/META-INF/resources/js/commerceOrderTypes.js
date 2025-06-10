@@ -8,12 +8,11 @@ import {
 	ItemFinder,
 	commerceEvents,
 } from 'commerce-frontend-js';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 export default function ({dataSetId, rootPortletId, shippingFixedOptionId}) {
-	const shippingFixedOptionOrderTypesResource = CommerceServiceProvider.AdminChannelAPI(
-		'v1'
-	);
+	const shippingFixedOptionOrderTypesResource =
+		CommerceServiceProvider.AdminChannelAPI('v1');
 
 	function selectItem(orderType) {
 		const orderTypeData = {

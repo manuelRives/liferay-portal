@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import useSWR from 'swr';
+import useSWR, {SWRConfiguration} from 'swr';
 
 import HeadlessCommerceDeliveryOrder from '../../services/rest/HeadlessCommerceDeliveryOrder';
 
@@ -13,6 +13,8 @@ type Props = {
 	orderTypeExternalReferenceCodes: string[];
 	page: number;
 	pageSize: number;
+	refreshInterval?: number;
+	swrConfig?: SWRConfiguration;
 };
 
 const usePurchasedOrders = ({
@@ -21,6 +23,7 @@ const usePurchasedOrders = ({
 	orderTypeExternalReferenceCodes,
 	page,
 	pageSize,
+	swrConfig,
 }: Props) => {
 	const key = `/placed-orders/${accountId}/${channelId}/${page}/${pageSize}`;
 
@@ -29,22 +32,24 @@ const usePurchasedOrders = ({
 			? `/placed-orders/${accountId}/${channelId}/${page}/${pageSize}`
 			: null,
 		async () => {
-			const placedOrders = await HeadlessCommerceDeliveryOrder.getPlacedOrders(
-				channelId,
-				accountId,
-				new URLSearchParams({
-					nestedFields: 'placedOrderItems',
-					page: page.toString(),
-					pageSize: pageSize.toString(),
-				})
-			);
+			const placedOrders =
+				await HeadlessCommerceDeliveryOrder.getPlacedOrders(
+					channelId,
+					accountId,
+					new URLSearchParams({
+						nestedFields: 'placedOrderItems',
+						page: page.toString(),
+						pageSize: pageSize.toString(),
+						sort: 'createDate:desc',
+					})
+				);
 
 			const placedOrdersFiltered = placedOrders.items.filter(
 				({orderTypeExternalReferenceCode}) =>
 					orderTypeExternalReferenceCodes.length
 						? orderTypeExternalReferenceCodes.includes(
 								orderTypeExternalReferenceCode
-						  )
+							)
 						: true
 			);
 
@@ -52,7 +57,8 @@ const usePurchasedOrders = ({
 				...placedOrders,
 				items: placedOrdersFiltered,
 			};
-		}
+		},
+		swrConfig
 	);
 
 	return {key, ...swr};

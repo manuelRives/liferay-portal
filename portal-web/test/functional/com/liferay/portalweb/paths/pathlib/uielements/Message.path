@@ -102,7 +102,7 @@
 </tr>
 <tr>
 	<td>ERROR</td>
-	<td>//div[contains(@class,'alert') and (contains(@class,'alert-error') or contains(@class,'alert-danger'))][not(contains(@style,'display: none'))]</td>
+	<td>//div[(contains(@class,'upload-error-message') and contains(normalize-space(text()), '${value1}')) or (contains(@class,'alert') and (contains(@class,'alert-error') or contains(@class,'alert-danger')) and not(contains(@style,'display: none')))]</td>
 	<td></td>
 </tr>
 <tr>
@@ -416,6 +416,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>RECYCLE_BIN_WORKFLOW_STATUS</td>
+	<td>//span[contains(@class,'label-info')]/span</td>
+	<td></td>
+</tr>
+<tr>
 	<td>REQUIRED_INFO</td>
 	<td>//div[contains(@class,'required') and contains(@role,'alert')]</td>
 	<td></td>
@@ -523,6 +528,11 @@
 <tr>
 	<td>WARNING_FEEDBACK</td>
 	<td>//div[contains(@class,'form-feedback-item')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>WARNING_FEEDBACK_SPECIFIC</td>
+	<td>//div[contains(@class,'form-feedback-item') and contains(.,'${key_warningMessage}')]</td>
 	<td></td>
 </tr>
 <tr>

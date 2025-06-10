@@ -67,7 +67,9 @@ const ActionContentCalculate = ({
 const ActionCalculate = ({children}) => (
 	<>
 		<Timeline.FormGroupItem className="form-group-item-label form-group-item-shrink">
-			<h4>{Liferay.Language.get('choose-a-field-to-show-the-result')}</h4>
+			<div className="h4">
+				{Liferay.Language.get('choose-a-field-to-show-the-result')}
+			</div>
 		</Timeline.FormGroupItem>
 		{children}
 	</>
@@ -242,7 +244,9 @@ const ActionContentAutoFill = ({
 const ActionAutoFill = ({children}) => (
 	<>
 		<Timeline.FormGroupItem className="form-group-item-label form-group-item-shrink">
-			<h4>{Liferay.Language.get('from-data-provider')}</h4>
+			<div className="h4">
+				{Liferay.Language.get('from-data-provider')}
+			</div>
 		</Timeline.FormGroupItem>
 		{children}
 	</>
@@ -316,9 +320,10 @@ function Target({
 						switch (action) {
 							case 'auto-fill':
 								onChange({
-									ddmDataProviderInstanceUUID: dataProvider.find(
-										({id}) => id === value
-									).uuid,
+									ddmDataProviderInstanceUUID:
+										dataProvider.find(
+											({id}) => id === value
+										).uuid,
 									value,
 								});
 								break;
@@ -444,8 +449,7 @@ export function Actions({
 												...event,
 												loc: index,
 											},
-											type:
-												ACTIONS_TYPES.CHANGE_ACTION_TARGET,
+											type: ACTIONS_TYPES.CHANGE_ACTION_TARGET,
 										})
 									}
 									pages={pages}
@@ -461,11 +465,11 @@ export function Actions({
 									openModal({
 										payload: {
 											body: (
-												<h4>
+												<div className="h4">
 													{Liferay.Language.get(
 														'are-you-sure-you-want-to-delete-this-action'
 													)}
-												</h4>
+												</div>
 											),
 											footer: [
 												null,
@@ -489,8 +493,7 @@ export function Actions({
 																payload: {
 																	loc: index,
 																},
-																type:
-																	ACTIONS_TYPES.DELETE_ACTION,
+																type: ACTIONS_TYPES.DELETE_ACTION,
 															});
 															modal.onClose();
 														}}

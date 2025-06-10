@@ -21,7 +21,11 @@ import {
 import React, {useEffect, useState} from 'react';
 
 import {NotificationTemplateError} from '../EditNotificationTemplate';
-import {getCheckedChildren} from './rolesUtils';
+import {
+	getCheckedChildren,
+	handleMultiSelectRoleItemsChange,
+	uncheckMultiSelectItemChildrens,
+} from './rolesUtil';
 
 interface PrimaryRecipientProps {
 	emailNotificationRoles: MultiSelectItem[];
@@ -45,30 +49,6 @@ export function PrimaryRecipient({
 	const [recipient] = values.recipients as EmailRecipients[];
 	const [toRolesList, setToRolesList] = useState<MultiSelectItem[]>([]);
 
-	const handleMultiSelectItemsChange = (items: MultiSelectItem[]) => {
-		const newRecipients: EmailNotificationRecipients[] = [];
-
-		if (items.length) {
-			const [itemsGroup] = items as MultiSelectItem[];
-
-			itemsGroup.children.forEach((child) => {
-				if (child.checked) {
-					newRecipients.push({['roleName']: child.value});
-				}
-			});
-		}
-
-		setValues({
-			...values,
-			recipients: [
-				{
-					...recipient,
-					to: newRecipients,
-				},
-			],
-		});
-	};
-
 	useEffect(() => {
 		if (emailNotificationRoles.length && !toRolesList.length) {
 			setToRolesList(emailNotificationRoles);
@@ -81,21 +61,24 @@ export function PrimaryRecipient({
 			(!!toRolesList.length || !!emailNotificationRoles.length)
 		) {
 			const baseRoleList = toRolesList.length
-				? toRolesList[0]
-				: emailNotificationRoles[0];
+				? toRolesList
+				: emailNotificationRoles;
 
-			setToRolesList([
-				{
-					...baseRoleList,
-					children: getCheckedChildren(
-						recipient.to,
-						baseRoleList.children
-					),
-				},
-			]);
+			setToRolesList(
+				baseRoleList.map((baseRoleElement) => {
+					return {
+						...baseRoleElement,
+						children: getCheckedChildren(
+							recipient.to as EmailNotificationRecipients[],
+							baseRoleElement.children
+						),
+					};
+				})
+			);
 
 			return;
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [emailNotificationRoles, recipient.to]);
 
@@ -103,9 +86,15 @@ export function PrimaryRecipient({
 		<>
 			<SingleSelect<LabelValueObject>
 				disabled={values.system}
+				id="primaryRecipientType"
 				items={recipientOptions}
 				label={Liferay.Language.get('type')}
 				onSelectionChange={(value) => {
+					if (value === 'email') {
+						const newToRoleList =
+							uncheckMultiSelectItemChildrens(toRolesList);
+						setToRolesList(newToRoleList);
+					}
 					setValues({
 						...values,
 						recipients: [
@@ -129,6 +118,7 @@ export function PrimaryRecipient({
 						helpMessage={Liferay.Language.get(
 							'you-can-use-a-comma-to-enter-multiple-users'
 						)}
+						id="primaryRecipients"
 						label={Liferay.Language.get('recipients')}
 						name="recipients"
 						onChange={(translation) => {
@@ -155,6 +145,7 @@ export function PrimaryRecipient({
 					<MultipleSelect
 						disabled={values.system}
 						error={errors.to}
+						id="primaryRecipientRoles"
 						label={Liferay.Language.get('role')}
 						options={toRolesList}
 						placeholder={Liferay.Language.get('select-role')}
@@ -165,7 +156,19 @@ export function PrimaryRecipient({
 						)}
 						selectAllOption
 						setOptions={(items) => {
-							handleMultiSelectItemsChange(items);
+							const newRecipients =
+								handleMultiSelectRoleItemsChange(items);
+
+							setValues({
+								...values,
+								recipients: [
+									{
+										...recipient,
+										to: newRecipients,
+									},
+								],
+							});
+
 							setToRolesList(items);
 						}}
 					/>

@@ -33,14 +33,14 @@ import com.liferay.portal.kernel.util.comparator.GroupFriendlyURLComparator;
 import com.liferay.portal.kernel.xml.Namespace;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -169,7 +169,7 @@ public class WebDAVUtil {
 		Set<Group> groups = new HashSet<>();
 
 		OrderByComparator<Group> orderByComparator =
-			new GroupFriendlyURLComparator(true);
+			GroupFriendlyURLComparator.getInstance(true);
 
 		groups.addAll(
 			GroupLocalServiceUtil.search(

@@ -40,6 +40,9 @@
 
 		<!-- Finder methods -->
 
+		<finder name="SegmentsEntryId" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="segmentsEntryId" />
+		</finder>
 		<finder name="GroupId" return-type="Collection">
 			<finder-column arrayable-operator="OR" name="groupId" />
 		</finder>
@@ -141,7 +144,7 @@
 			<finder-column name="roleId" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="SegmentsExperience" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="SegmentsExperience" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 

@@ -5,6 +5,7 @@
 
 import {Locator, Page} from '@playwright/test';
 
+import {waitForAlert} from '../../utils/waitForAlert';
 import {ApplicationsMenuPage} from '../product-navigation-applications-menu/ApplicationsMenuPage';
 
 export class UserPersonalBarPage {
@@ -30,7 +31,7 @@ export class UserPersonalBarPage {
 		this.editConfigurationSubmitButton = page.getByTestId(
 			'submitConfiguration'
 		);
-		this.notificationBadge = page.getByTestId('notificationsCount');
+		this.notificationBadge = page.getByLabel('New Notification');
 		this.page = page;
 		this.processBuilderConfigurationTab = page.getByRole('link', {
 			name: 'Configuration',
@@ -77,18 +78,9 @@ export class UserPersonalBarPage {
 		await this.applicationsMenuPage.goToInstanceSettings();
 		await this.usersSetting.click();
 		await this.showNotificationBadgeInPersonalMenuLabel.uncheck();
-		await Promise.all([
-			this.editConfigurationSubmitButton.click(),
-			this.page.waitForResponse(
-				(resp) =>
-					resp.status() === 200 &&
-					resp
-						.url()
-						.includes(
-							'p_p_id=com_liferay_configuration_admin_web_portlet_InstanceSettingsPortlet'
-						)
-			),
-		]);
+		await this.editConfigurationSubmitButton.click();
+
+		await waitForAlert(this.page);
 	}
 
 	async disableSingleApproverWorkflowProduct() {
@@ -109,18 +101,9 @@ export class UserPersonalBarPage {
 		await this.applicationsMenuPage.goToInstanceSettings();
 		await this.usersSetting.click();
 		await this.showNotificationBadgeInPersonalMenuLabel.check();
-		await Promise.all([
-			this.editConfigurationSubmitButton.click(),
-			this.page.waitForResponse(
-				(resp) =>
-					resp.status() === 200 &&
-					resp
-						.url()
-						.includes(
-							'p_p_id=com_liferay_configuration_admin_web_portlet_InstanceSettingsPortlet'
-						)
-			),
-		]);
+		await this.editConfigurationSubmitButton.click();
+
+		await waitForAlert(this.page);
 	}
 
 	async enableSingleApproverWorkflowProduct() {

@@ -11,9 +11,9 @@ import com.liferay.exportimport.resources.importer.internal.util.Importer;
 import com.liferay.exportimport.resources.importer.internal.util.ImporterException;
 import com.liferay.exportimport.resources.importer.internal.util.ImporterFactory;
 import com.liferay.exportimport.resources.importer.internal.util.PluginPackageProperties;
-import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapper;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -33,12 +33,11 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.ServletContext;
+
 import java.util.Dictionary;
 
-import javax.servlet.ServletContext;
-
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -57,32 +56,24 @@ public class ResourcesImporterHotDeployMessageListener
 	extends HotDeployMessageListener {
 
 	@Activate
-	protected void activate(final BundleContext bundleContext) {
+	protected void activate(BundleContext bundleContext) {
 		_bundleContext = bundleContext;
 
 		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
 			bundleContext, ServletContext.class, null,
-			new ServiceReferenceMapper<String, ServletContext>() {
+			(serviceReference, emitter) -> {
+				try {
+					ServletContext servletContext = bundleContext.getService(
+						serviceReference);
 
-				@Override
-				public void map(
-					ServiceReference<ServletContext> serviceReference,
-					ServiceReferenceMapper.Emitter<String> emitter) {
+					String servletContextName = GetterUtil.getString(
+						servletContext.getServletContextName());
 
-					try {
-						ServletContext servletContext =
-							bundleContext.getService(serviceReference);
-
-						String servletContextName = GetterUtil.getString(
-							servletContext.getServletContextName());
-
-						emitter.emit(servletContextName);
-					}
-					finally {
-						bundleContext.ungetService(serviceReference);
-					}
+					emitter.emit(servletContextName);
 				}
-
+				finally {
+					bundleContext.ungetService(serviceReference);
+				}
 			});
 
 		DestinationConfiguration destinationConfiguration =
@@ -106,8 +97,6 @@ public class ResourcesImporterHotDeployMessageListener
 	protected void deactivate() {
 		_serviceRegistration.unregister();
 
-		_destination.destroy();
-
 		_serviceTrackerMap.close();
 
 		_bundleContext = null;
@@ -124,10 +113,9 @@ public class ResourcesImporterHotDeployMessageListener
 			String messageResponseId)
 		throws Exception {
 
-		long companyId = CompanyThreadLocal.getCompanyId();
-
-		try {
-			CompanyThreadLocal.setCompanyId(company.getCompanyId());
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					company.getCompanyId())) {
 
 			Importer importer = _importerFactory.createImporter(
 				company.getCompanyId(), servletContext,
@@ -188,7 +176,8 @@ public class ResourcesImporterHotDeployMessageListener
 				message.setResponseId(messageResponseId);
 			}
 
-			_messageBus.sendMessage("liferay/resources_importer", message);
+			_messageBus.sendMessage(
+				ResourcesImporterDestinationNames.RESOURCES_IMPORTER, message);
 		}
 		catch (ImporterException importerException) {
 			Message message = new Message();
@@ -202,10 +191,8 @@ public class ResourcesImporterHotDeployMessageListener
 				pluginPackageProperties.getTargetClassName());
 			message.put("targetClassPK", 0);
 
-			_messageBus.sendMessage("liferay/resources_importer", message);
-		}
-		finally {
-			CompanyThreadLocal.setCompanyId(companyId);
+			_messageBus.sendMessage(
+				ResourcesImporterDestinationNames.RESOURCES_IMPORTER, message);
 		}
 	}
 
@@ -254,9 +241,6 @@ public class ResourcesImporterHotDeployMessageListener
 	@Reference
 	private CompanyLocalService _companyLocalService;
 
-	@Reference(
-		target = "(destination.name=" + DestinationNames.HOT_DEPLOY + ")"
-	)
 	private Destination _destination;
 
 	@Reference

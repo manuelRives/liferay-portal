@@ -25,7 +25,7 @@ const SelectDataSource: React.FC<ISelectDataSourceProps> = ({
 	<div className={getCN('select-data-source-root', className)}>
 		{sections.map(({dataSources, title}) => (
 			<section key={title}>
-				<h4 className='text-uppercase section-title'>{title}</h4>
+				<div className='h4 text-uppercase section-title'>{title}</div>
 
 				<div className='section-items'>
 					{dataSources.map(
@@ -47,12 +47,20 @@ const SelectDataSource: React.FC<ISelectDataSourceProps> = ({
 
 									<div className='details'>
 										<div className='title'>
-											<h4>{name}</h4>
+											<div
+												className={getCN('h4', {
+													'm-0': !subtitle
+												})}
+											>
+												{name}
+											</div>
 										</div>
 
-										<div className='subtitle'>
-											{subtitle}
-										</div>
+										{subtitle && (
+											<div className='subtitle'>
+												{subtitle}
+											</div>
+										)}
 									</div>
 								</ClayLink>
 							) : (
@@ -71,12 +79,20 @@ const SelectDataSource: React.FC<ISelectDataSourceProps> = ({
 
 									<div className='details'>
 										<div className='title'>
-											<h4>{name}</h4>
+											<div
+												className={getCN('h4', {
+													'm-0': !subtitle
+												})}
+											>
+												{name}
+											</div>
 										</div>
 
-										<div className='subtitle'>
-											{subtitle}
-										</div>
+										{subtitle && (
+											<div className='subtitle'>
+												{subtitle}
+											</div>
+										)}
 									</div>
 								</ClayButton>
 							)

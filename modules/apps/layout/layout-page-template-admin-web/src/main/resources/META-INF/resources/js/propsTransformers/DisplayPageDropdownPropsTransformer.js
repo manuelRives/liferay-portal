@@ -9,9 +9,8 @@ import {
 	openModal,
 	openSelectionModal,
 	openSimpleInputModal,
-	setFormValues,
-	sub,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {setFormValues, sub} from 'frontend-js-web';
 
 import openContentTypeModal from '../commands/openContentTypeModal';
 import openDeletePageTemplateModal from '../commands/openDeletePageTemplateModal';
@@ -39,7 +38,7 @@ const ACTIONS = {
 				description: hasMissingType
 					? Liferay.Language.get(
 							'this-display-page-template-does-not-have-any-content-type-assigned-you-must-select-one-to-edit-it'
-					  )
+						)
 					: '',
 				disableWarning: Boolean(hasMissingType) || !assetType,
 				formSubmitURL: changeContentTypeURL,
@@ -113,6 +112,7 @@ const ACTIONS = {
 			itemSelectorURL,
 			layoutPageTemplateEntryId,
 			layoutPageTemplateEntryName,
+			moveSelectedDisplayPageURL,
 		},
 		portletNamespace
 	) {
@@ -124,12 +124,13 @@ const ACTIONS = {
 				);
 
 				setFormValues(form, {
+					copyPermissions: true,
 					layoutPageTemplateEntriesIds: layoutPageTemplateEntryId,
-					targetLayoutPageTemplateCollectionId:
+					layoutParentPageTemplateCollectionId:
 						selectedItem.resourceid,
 				});
 
-				submitForm(form);
+				submitForm(form, moveSelectedDisplayPageURL);
 			},
 			selectEventName: 'selectFolder',
 			size: 'md',
@@ -217,7 +218,10 @@ function send(url) {
 export default function DisplayPageDropdownPropsTransformer({
 	actions,
 	additionalProps,
+	inputName,
+	inputValue,
 	portletNamespace,
+	title,
 	...otherProps
 }) {
 	const updateItem = (item) => {
@@ -247,5 +251,11 @@ export default function DisplayPageDropdownPropsTransformer({
 	return {
 		...otherProps,
 		actions: actions?.map(updateItem),
+		checkboxProps: {
+			'aria-label': sub(Liferay.Language.get('select-x'), title),
+			'name': inputName,
+			'value': inputValue,
+		},
+		title,
 	};
 }

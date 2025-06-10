@@ -43,14 +43,14 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.lang.reflect.Constructor;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -218,7 +218,7 @@ public class AssetEntriesCheckerHelperTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(),
 				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
 
@@ -229,8 +229,8 @@ public class AssetEntriesCheckerHelperTest {
 		}
 
 		portletPreferences.setValue(
-			"assetListEntryId",
-			String.valueOf(assetListEntry.getAssetListEntryId()));
+			"assetListEntryExternalReferenceCode",
+			assetListEntry.getExternalReferenceCode());
 		portletPreferences.setValue("selectionStyle", "asset-list");
 
 		portletPreferences.store();
@@ -299,9 +299,6 @@ public class AssetEntriesCheckerHelperTest {
 		ReflectionTestUtil.setFieldValue(
 			_assetEntriesCheckerHelper, "_assetListAssetEntryProvider",
 			_assetListAssetEntryProvider);
-		ReflectionTestUtil.setFieldValue(
-			_assetEntriesCheckerHelper, "_assetListEntryLocalService",
-			_assetListEntryLocalService);
 		ReflectionTestUtil.setFieldValue(
 			_assetEntriesCheckerHelper,
 			"_assetListEntrySegmentsEntryRelLocalService",

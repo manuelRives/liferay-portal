@@ -4,7 +4,7 @@
  */
 
 import ClayIcon from '@clayui/icon';
-import CodeMirror from '@liferay/frontend-js-codemirror-web';
+import {CodeMirror} from '@liferay/frontend-js-codemirror-web';
 import {CodeMirrorKeyboardMessage} from 'frontend-js-components-web';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 
@@ -159,10 +159,15 @@ const escapeChars = (string) => string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 
 const noop = () => {};
 
-const FixedText = ({helpText, text = ''}) => {
+const FixedText = ({helpText, texts = []}) => {
 	return (
 		<div className="source-editor__fixed-text">
-			<code className="source-editor__fixed-text__content">{text}</code>
+			<code
+				className="source-editor__fixed-text__content"
+				style={{whiteSpace: 'pre-line'}}
+			>
+				{texts.join('\n')}
+			</code>
 
 			{helpText && (
 				<span
@@ -186,7 +191,7 @@ const CodeMirrorEditor = ({
 	onChange = noop,
 	mode = 'html',
 	codeFooterText,
-	codeHeaderText,
+	codeHeaderTexts,
 	codeHeaderHelpText,
 	content = '',
 	readOnly,
@@ -240,7 +245,11 @@ const CodeMirrorEditor = ({
 					'Ctrl-Space': readOnly ? '' : 'autocomplete',
 				},
 				foldGutter: true,
-				gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+				gutters: [
+					'CodeMirror-warning',
+					'CodeMirror-linenumbers',
+					'CodeMirror-foldgutter',
+				],
 				hintOptions: {
 					completeSingle: false,
 					customDataAttributes,
@@ -261,7 +270,44 @@ const CodeMirrorEditor = ({
 				viewportMargin: Infinity,
 			});
 
+			const updateWarningsInGutter = () => {
+				codeMirror.clearGutter('CodeMirror-warning');
+				const lineCount = codeMirror.lineCount();
+
+				const widgetRegex = new RegExp('<lfr-widget(?:-[^>]+)?>', 'g');
+
+				for (let i = 0; i < lineCount; i++) {
+					const lineContent = codeMirror.getLine(i);
+
+					if (
+						widgetRegex.test(lineContent) ||
+						lineContent.includes('[@liferay_portlet["runtime"]')
+					) {
+						const warningIcon = document.createElement('div');
+						warningIcon.className = 'warning-icon';
+						warningIcon.title =
+							'Embedding widgets within fragments is a deprecated practice that can cause performance issues.';
+						warningIcon.dataset.tooltipAlign = 'right';
+						warningIcon.innerHTML = `
+						<svg class="lexicon-icon lexicon-icon-warning-full" focusable="false">
+							<use href="${Liferay.Icons.spritemap}#warning-full" />
+						</svg>`;
+
+						codeMirror.setGutterMarker(
+							i,
+							'CodeMirror-warning',
+							warningIcon
+						);
+					}
+				}
+			};
+
 			codeMirror.on('change', (cm) => {
+				if (Liferay.FeatureFlags['LPD-40535']) {
+					codeMirror.operation(() => {
+						updateWarningsInGutter();
+					});
+				}
 				onChange(cm.getValue());
 			});
 
@@ -335,10 +381,10 @@ const CodeMirrorEditor = ({
 				</nav>
 			)}
 
-			{(codeHeaderHelpText || codeHeaderText) && (
+			{(codeHeaderHelpText || codeHeaderTexts) && (
 				<FixedText
 					helpText={codeHeaderHelpText}
-					text={codeHeaderText}
+					texts={codeHeaderTexts}
 				/>
 			)}
 
@@ -353,14 +399,14 @@ const CodeMirrorEditor = ({
 							? null
 							: Liferay.Language.get(
 									'use-ctrl-m-to-enable-or-disable-the-tab-key'
-							  )
+								)
 					}
 					className="codemirror-editor-wrapper h-100"
 					ref={ref}
 				></div>
 			</div>
 
-			{codeFooterText && <FixedText text={codeFooterText} />}
+			{codeFooterText && <FixedText texts={[codeFooterText]} />}
 		</>
 	);
 };

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
 
 export default function propsTransformer({
 	actions,
@@ -20,9 +20,8 @@ export default function propsTransformer({
 
 				const searchContainerName = `${portletNamespace}assetLinksSearchContainer`;
 
-				const searchContainer = Liferay.SearchContainer.get(
-					searchContainerName
-				);
+				const searchContainer =
+					Liferay.SearchContainer.get(searchContainerName);
 
 				let searchContainerData = searchContainer.getData();
 
@@ -54,16 +53,16 @@ export default function propsTransformer({
 									) {
 										const rowColumns = [];
 
-										rowColumns.push(`<h4 class="list-group-title">
+										rowColumns.push(`<div class="list-group-title">
 												${Liferay.Util.escapeHTML(assetEntry.title)}
-											</h4>
+											</div>
 											<p class="list-group-subtitle">
 												${Liferay.Util.escapeHTML(assetEntry.assetType)}
 											</p>
 											<p class="list-group-subtitle">
 												${Liferay.Language.get('scope')}: ${Liferay.Util.escapeHTML(
-											assetEntry.groupDescriptiveName
-										)}
+													assetEntry.groupDescriptiveName
+												)}
 											</p>`);
 
 										rowColumns.push(

@@ -8,7 +8,7 @@ import {
 	ItemFinder,
 	commerceEvents,
 } from 'commerce-frontend-js';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 export default function ({
 	accountEntryTypes,
@@ -17,9 +17,8 @@ export default function ({
 	dataSetId,
 	rootPortletId,
 }) {
-	const ChannelAccountResource = CommerceServiceProvider.AdminChannelAPI(
-		'v1'
-	);
+	const ChannelAccountResource =
+		CommerceServiceProvider.AdminChannelAPI('v1');
 
 	function selectItem(account) {
 		const accountData = {

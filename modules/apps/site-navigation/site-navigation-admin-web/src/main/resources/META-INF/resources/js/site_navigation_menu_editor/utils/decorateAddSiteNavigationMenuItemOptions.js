@@ -3,13 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	createPortletURL,
-	fetch,
-	objectToFormData,
-	openModal,
-	openSelectionModal,
-} from 'frontend-js-web';
+import {openModal, openSelectionModal} from 'frontend-js-components-web';
+import {createPortletURL, fetch, objectToFormData} from 'frontend-js-web';
 
 export default function decorateAddSiteNavigationMenuItemOptions({
 	addSiteNavigationMenuItemOptions,
@@ -47,12 +42,12 @@ export default function decorateAddSiteNavigationMenuItemOptions({
 										portletNamespace,
 										selection,
 										data.siteNavigationMenuId
-								  )
+									)
 								: getNamespacedInfoItem(
 										portletNamespace,
 										selection,
 										data.siteNavigationMenuId
-								  )
+									)
 						),
 						method: 'POST',
 					}).then(() => {

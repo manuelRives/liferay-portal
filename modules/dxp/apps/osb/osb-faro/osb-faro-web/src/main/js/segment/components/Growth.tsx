@@ -401,7 +401,7 @@ export const SegmentGrowthChart: React.FC<ISegmentGrowthChartProps> = ({
 					<Legend
 						align='left'
 						formatter={(value, {count}) => (
-							<span>
+							<span className='legend-text-color'>
 								{`${value}:`}
 
 								<b className='ml-1'>{count}</b>
@@ -544,7 +544,7 @@ export const SegmentGrowthChart: React.FC<ISegmentGrowthChartProps> = ({
 
 export const SelectedPointInfo: React.FC = () => (
 	<div className='selected-point-info'>
-		<h4>{Liferay.Language.get('known-members')}</h4>
+		<div className='h4'>{Liferay.Language.get('known-members')}</div>
 	</div>
 );
 

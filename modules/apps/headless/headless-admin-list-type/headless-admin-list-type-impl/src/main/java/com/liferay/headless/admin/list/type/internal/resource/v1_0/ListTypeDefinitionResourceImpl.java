@@ -30,9 +30,9 @@ import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Locale;
+import jakarta.ws.rs.core.MultivaluedMap;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -133,8 +133,10 @@ public class ListTypeDefinitionResourceImpl
 		return _toListTypeDefinition(
 			_listTypeDefinitionService.addListTypeDefinition(
 				listTypeDefinition.getExternalReferenceCode(),
-				LocalizedMapUtil.getLocalizedMap(
-					listTypeDefinition.getName_i18n()),
+				LocalizedMapUtil.populateLocalizedMap(
+					listTypeDefinition.getDefaultLanguageId(),
+					listTypeDefinition.getName_i18n(),
+					listTypeDefinition.getName()),
 				GetterUtil.getBoolean(listTypeDefinition.getSystem()),
 				transformToList(
 					listTypeDefinition.getListTypeEntries(),
@@ -151,8 +153,10 @@ public class ListTypeDefinitionResourceImpl
 			_listTypeDefinitionService.updateListTypeDefinition(
 				listTypeDefinition.getExternalReferenceCode(),
 				listTypeDefinitionId,
-				LocalizedMapUtil.getLocalizedMap(
-					listTypeDefinition.getName_i18n()),
+				LocalizedMapUtil.populateLocalizedMap(
+					listTypeDefinition.getDefaultLanguageId(),
+					listTypeDefinition.getName_i18n(),
+					listTypeDefinition.getName()),
 				transformToList(
 					listTypeDefinition.getListTypeEntries(),
 					listTypeEntry -> ListTypeEntryUtil.toListTypeEntry(

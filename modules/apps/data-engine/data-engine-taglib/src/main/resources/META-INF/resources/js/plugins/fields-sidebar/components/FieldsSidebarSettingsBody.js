@@ -19,30 +19,33 @@ import {useSettingsContextFilter} from '../../../utils/settingsForm.es';
 /**
  * This component will override the Column from Form Renderer.
  */
-const getColumn = ({objectFields}) => ({children, column, index}) => {
-	if (!column.fields.length) {
-		return null;
-	}
+const getColumn =
+	({objectFields}) =>
+	({children, column, index}) => {
+		if (!column.fields.length) {
+			return null;
+		}
 
-	return (
-		<ClayLayout.Col key={index} md={column.size}>
-			{column.fields.map((field, index) => {
-				const {fieldName} = field;
+		return (
+			<ClayLayout.Col key={index} md={column.size}>
+				{column.fields.map((field, index) => {
+					const {fieldName} = field;
 
-				// Avoid using repeatable and searchable fields when object storage type is selected
+					// Avoid using repeatable and searchable fields when object storage type is selected
 
-				if (
-					!!objectFields.length &&
-					(fieldName === 'repeatable' || fieldName === 'indexType')
-				) {
-					return <React.Fragment key={index} />;
-				}
+					if (
+						!!objectFields.length &&
+						(fieldName === 'repeatable' ||
+							fieldName === 'indexType')
+					) {
+						return <React.Fragment key={index} />;
+					}
 
-				return children({field, index});
-			})}
-		</ClayLayout.Col>
-	);
-};
+					return children({field, index});
+				})}
+			</ClayLayout.Col>
+		);
+	};
 
 export default function FieldsSidebarSettingsBody({field}) {
 	const {
@@ -92,12 +95,17 @@ export default function FieldsSidebarSettingsBody({field}) {
 
 						// eslint-disable-next-line no-fallthrough
 						case CORE_EVENT_TYPES.FIELD.CHANGE: {
-							if (payload.fieldInstance.fieldName !== 'options') {
+							if (
+								payload.fieldInstance.fieldName === 'options' &&
+								Object.hasOwn(
+									payload.focusedField,
+									'nativeField'
+								)
+							) {
 								dispatch({
 									payload: {
-										propertyName:
-											payload.fieldInstance.fieldName,
-										propertyValue: payload.value,
+										propertyName: focusedField.fieldName,
+										propertyValue: focusedField.options,
 									},
 									type,
 								});
@@ -105,8 +113,9 @@ export default function FieldsSidebarSettingsBody({field}) {
 							else {
 								dispatch({
 									payload: {
-										propertyName: focusedField.fieldName,
-										propertyValue: focusedField.options,
+										propertyName:
+											payload.fieldInstance.fieldName,
+										propertyValue: payload.value,
 									},
 									type,
 								});

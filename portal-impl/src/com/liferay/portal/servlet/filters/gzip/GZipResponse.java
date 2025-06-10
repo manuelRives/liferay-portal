@@ -5,6 +5,8 @@
 
 package com.liferay.portal.servlet.filters.gzip;
 
+import com.liferay.petra.io.OutputStreamWriter;
+import com.liferay.petra.io.unsync.UnsyncPrintWriter;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedOutputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.log.Log;
@@ -12,8 +14,11 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.ServletOutputStreamAdapter;
 import com.liferay.portal.kernel.util.ContentTypes;
-import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,10 +26,6 @@ import java.io.PrintWriter;
 
 import java.util.Objects;
 import java.util.zip.GZIPOutputStream;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
 /**
  * @author Jayson Falkner
@@ -93,8 +94,9 @@ public class GZipResponse extends HttpServletResponseWrapper {
 
 		_servletOutputStream = getOutputStream();
 
-		_printWriter = UnsyncPrintWriterPool.borrow(
-			_servletOutputStream, getCharacterEncoding());
+		_printWriter = new UnsyncPrintWriter(
+			new OutputStreamWriter(
+				_servletOutputStream, getCharacterEncoding(), true));
 
 		return _printWriter;
 	}

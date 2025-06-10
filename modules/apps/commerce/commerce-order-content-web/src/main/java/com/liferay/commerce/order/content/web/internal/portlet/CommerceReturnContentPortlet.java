@@ -15,20 +15,22 @@ import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.commerce.util.CommerceQuantityFormatter;
 import com.liferay.list.type.service.ListTypeDefinitionService;
 import com.liferay.list.type.service.ListTypeEntryService;
+import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
+import com.liferay.portal.kernel.comment.DiscussionPermission;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,13 +51,13 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Returns",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/returns/view.jsp",
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_RETURN_CONTENT,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Returns",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/returns/view.jsp",
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_RETURN_CONTENT,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -78,8 +80,10 @@ public class CommerceReturnContentPortlet extends MVCPortlet {
 							_commerceOrderItemService, _commerceOrderService,
 							_commercePaymentMethodGroupRelLocalService,
 							_commercePriceFormatter, _commerceQuantityFormatter,
-							_language, _listTypeDefinitionService,
-							_listTypeEntryService, _objectEntryLocalService,
+							_discussionPermission, _language,
+							_listTypeDefinitionService, _listTypeEntryService,
+							_objectDefinitionLocalService,
+							_objectEntryLocalService,
 							_objectRelationshipLocalService,
 							_portal.getHttpServletRequest(renderRequest));
 
@@ -115,6 +119,9 @@ public class CommerceReturnContentPortlet extends MVCPortlet {
 	private CommerceQuantityFormatter _commerceQuantityFormatter;
 
 	@Reference
+	private DiscussionPermission _discussionPermission;
+
+	@Reference
 	private Language _language;
 
 	@Reference
@@ -122,6 +129,9 @@ public class CommerceReturnContentPortlet extends MVCPortlet {
 
 	@Reference
 	private ListTypeEntryService _listTypeEntryService;
+
+	@Reference
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
 
 	@Reference
 	private ObjectEntryLocalService _objectEntryLocalService;

@@ -2,17 +2,17 @@
 definition {
 
 	property custom.properties = "feature.flag.LPS-178642=true";
+	property portal.acceptance = "quarantine";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Object";
-	property testray.main.component.name = "Headless Builder";
+	property testray.main.component.name = "API Builder";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
 
-		task ("Given Custom Object Definition University with text field 'name' created and one-to-many relationship UniversityAddresses created and published") {
+		task ("Given Custom Object Definition University with text field 'name' created and one-to-many relationship UniversityAPISorts created and published") {
 			var universityId = ObjectDefinitionAPI.createAndPublishObjectDefinition(
 				en_US_label = "University",
 				en_US_plural_label = "Universities",
@@ -20,14 +20,14 @@ definition {
 				objectDefinitionExternalReferenceCode = "university",
 				requiredStringFieldName = "name",
 				requiredStringFieldNameExternalReferenceCode = "universityName");
-			var addressId = ObjectDefinitionAPI.getObjectDefinitionIdByName(name = "Address");
+			var apiSortId = ObjectDefinitionAPI.getObjectDefinitionIdByName(name = "APISort");
 
 			ObjectDefinitionAPI.createRelationship(
 				deletionType = "cascade",
-				en_US_label = "UniversityAddresses",
-				name = "universityAddresses",
+				en_US_label = "UniversityAPISorts",
+				name = "universityAPISorts",
 				objectDefinitionId1 = ${universityId},
-				objectDefinitionId2 = ${addressId},
+				objectDefinitionId2 = ${apiSortId},
 				type = "oneToMany");
 		}
 
@@ -59,8 +59,6 @@ definition {
 
 	@priority = 4
 	test CanAddPropertiesFromSidebarToList {
-		property portal.acceptance = "true";
-
 		task ("When adding the 'name' field from University section of Properties sidebar to 'Drop properties' box") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Schemas",
@@ -104,7 +102,7 @@ definition {
 				locator1 = "APIBuilder#PROPERTY_CONTAINER");
 
 			AssertElementPresent(
-				key_commentValue = "External Reference Code",
+				key_commentValue = "externalReferenceCode",
 				locator1 = "PublicationsChanges#COMMENT_VALUE");
 		}
 
@@ -114,20 +112,18 @@ definition {
 				value1 = "name");
 
 			DragAndDrop.dragAndDrop(
-				key_commentValue = "External Reference Code",
+				key_commentValue = "externalReferenceCode",
 				locator1 = "PublicationsChanges#COMMENT_VALUE",
 				value1 = "0,45");
 
 			AssertTextPresent(
 				locator1 = "APIBuilder#LAST_ELEMENT_IN_PROPERTY_BOX",
-				value1 = "External Reference Code");
+				value1 = "externalReferenceCode");
 		}
 	}
 
 	@priority = 4
 	test CanSearchThroughPropertiesFromTheList {
-		property portal.acceptance = "true";
-
 		task ("And Given 'name', 'External Reference Code', 'Create Date', 'ID' fields placed in Properties") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Schemas",
@@ -147,7 +143,7 @@ definition {
 		task ("When searching property 'External Reference Code' with Search box") {
 			Type(
 				locator1 = "TextInput#SEARCH",
-				value1 = "External Reference Code");
+				value1 = "externalReferenceCode");
 		}
 
 		task ("Then only 'External Reference Code' present in Properties list") {
@@ -160,34 +156,34 @@ definition {
 			}
 
 			AssertElementPresent(
-				key_commentValue = "External Reference Code",
+				key_commentValue = "externalReferenceCode",
 				locator1 = "PublicationsChanges#COMMENT_VALUE");
 		}
 	}
 
 	@priority = 3
 	test DroppedIntoPropertiesListObjectFieldIsDisabledInPropertiesSidebar {
-		task ("And Given fields of Address object definition present through View Related Objects'") {
+		task ("And Given fields of APISort object definition present through View Related Objects'") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Schemas",
 				name = "University",
 				tabEntity = "Properties",
 				title = "My-app");
 
-			APIBuilderUI.gotoRelatedObjectsProperties(relatedObjectName = "Postal Address");
+			APIBuilderUI.gotoRelatedObjectsProperties(relatedObjectName = "API Sort");
 		}
 
-		task ("When adding 'ID' of Address to properties box") {
+		task ("When adding 'ID' of APISort to properties box") {
 			Click(
 				key_text = "ID",
 				locator1 = "APIBuilder#PROPERTY_CONTAINER");
 
 			AssertElementPresent(
-				key_commentValue = "ID",
+				key_commentValue = "id",
 				locator1 = "PublicationsChanges#COMMENT_VALUE");
 		}
 
-		task ("Then 'ID' of Address disabled in Properties sidebar") {
+		task ("Then 'ID' of APISort disabled in Properties sidebar") {
 			AssertElementPresent(
 				key_text = "ID",
 				locator1 = "APIBuilder#DISABLED_PROPERTY_CONTAINER");
@@ -206,19 +202,17 @@ definition {
 
 	@priority = 4
 	test DroppedIntoPropertiesListRelatedObjectFieldIsDisabledInPropertiesSidebar {
-		property portal.acceptance = "true";
-
-		task ("And Given fields of Address object definition present through View Related Objects'") {
+		task ("And Given fields of APISort object definition present through View Related Objects'") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Schemas",
 				name = "University",
 				tabEntity = "Properties",
 				title = "My-app");
 
-			APIBuilderUI.gotoRelatedObjectsProperties(relatedObjectName = "Postal Address");
+			APIBuilderUI.gotoRelatedObjectsProperties(relatedObjectName = "API Sort");
 		}
 
-		task ("When adding 'External Reference Code' of Address to 'Drop properties' box") {
+		task ("When adding 'External Reference Code' of APISort to 'Drop properties' box") {
 			Click(
 				key_text = "External Reference Code",
 				locator1 = "APIBuilder#PROPERTY_CONTAINER");
@@ -226,15 +220,13 @@ definition {
 
 		task ("Then 'External Reference Code' is placed in Properties") {
 			AssertElementPresent(
-				key_commentValue = "External Reference Code",
+				key_commentValue = "externalReferenceCode",
 				locator1 = "PublicationsChanges#COMMENT_VALUE");
 		}
 	}
 
 	@priority = 4
 	test FieldsOfRelatedObjectsAreAccessibleFromPropertiesSidebar {
-		property portal.acceptance = "true";
-
 		task ("When clicking 'View Related Objects' option in Properties sidebar") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Schemas",
@@ -242,11 +234,11 @@ definition {
 				tabEntity = "Properties",
 				title = "My-app");
 
-			APIBuilderUI.gotoRelatedObjectsProperties(relatedObjectName = "Postal Address");
+			APIBuilderUI.gotoRelatedObjectsProperties(relatedObjectName = "API Sort");
 		}
 
-		task ("Then all fields of Address object definition are present") {
-			var fieldNameList = "Author,Create Date,External Reference Code,ID,Modified Date,Status,Name,Street 1,UniversityAddresses";
+		task ("Then all fields of APISort object definition are present") {
+			var fieldNameList = "Author,Create Date,External Reference Code,ID,Modified Date,Status,OData Sort";
 
 			for (var fieldName : list ${fieldNameList}) {
 				AssertElementPresent(
@@ -258,8 +250,6 @@ definition {
 
 	@priority = 5
 	test ObjectFieldsArePresentInPropertiesSidebar {
-		property portal.acceptance = "true";
-
 		task ("When going to Properties section in Schemas > University") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Schemas",
@@ -305,23 +295,21 @@ definition {
 
 		task ("When removing 'Create Date' from Properties list") {
 			Click(
-				key_commentValue = "Create Date",
+				key_commentValue = "createDate",
 				locator1 = "PublicationsChanges#COMMENT_VALUE");
 
 			Click(
-				key_commentValue = "Create Date",
+				key_commentValue = "createDate",
 				locator1 = "APIBuilder#DELETE_BUTTON_FROM_PROPERTY_BOX");
 		}
 
 		AssertElementNotPresent(
-			key_text = "Create Date",
+			key_text = "createDate",
 			locator1 = "APIBuilder#DISABLED_PROPERTY_CONTAINER");
 	}
 
 	@priority = 5
 	test PropertiesSectionIsPresentForSchema {
-		property portal.acceptance = "true";
-
 		task ("When in Schemas of APIApplication a 'University1' Schema based on University object created") {
 			APIBuilderUI.switchToRelatedEntryInEditApplication(
 				entity = "Schemas",
@@ -343,8 +331,6 @@ definition {
 
 	@priority = 5
 	test PropertiesSidebarIsPresentForSchema {
-		property portal.acceptance = "true";
-
 		task ("When going to Properties section in Schemas > University") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Schemas",
@@ -362,8 +348,6 @@ definition {
 
 	@priority = 4
 	test RelatedObjectsOptionIsPresentInPropertiesSidebar {
-		property portal.acceptance = "true";
-
 		task ("When going to Properties section in Schemas > University") {
 			APIBuilderUI.goToEditRelatedEntryInEditApplication(
 				entity = "Schemas",

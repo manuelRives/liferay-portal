@@ -22,18 +22,11 @@ portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 %>
 
-<liferay-portlet:renderURL var="editCommerceReturnExternalReferenceCodeURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
-	<portlet:param name="mvcRenderCommandName" value="/commerce_return_content/edit_commerce_return_external_reference_code" />
-	<portlet:param name="redirect" value="<%= currentURL %>" />
-	<portlet:param name="commerceReturnId" value="<%= String.valueOf(commerceReturnContentDisplayContext.getCommerceReturnId()) %>" />
-</liferay-portlet:renderURL>
-
 <commerce-ui:header
 	actions="<%= commerceReturnContentDisplayContext.getHeaderActionModels() %>"
-	bean="<%= (commerceReturn == null) ? null : commerceReturn.getObjectEntry() %>"
-	beanIdLabel='<%= (commerceReturn == null) ? null : "id" %>'
+	additionalStatusLabel="<%= commerceReturn.getReturnStatus() %>"
+	additionalStatusLabelStyle="<%= CommerceReturnConstants.getReturnStatusLabelStyle(commerceReturn.getReturnStatus()) %>"
 	externalReferenceCode="<%= (commerceReturn == null) ? StringPool.BLANK : commerceReturn.getExternalReferenceCode() %>"
-	externalReferenceCodeEditUrl="<%= (commerceReturn == null) ? null : editCommerceReturnExternalReferenceCodeURL %>"
 	model="<%= ObjectEntry.class %>"
 	title="<%= (commerceReturn == null) ? StringPool.BLANK : String.valueOf(commerceReturn.getId()) %>"
 />
@@ -52,11 +45,13 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 				/>
 			</c:when>
 			<c:otherwise>
-				<clay:alert
-					dismissible="<%= true %>"
-					displayType="warning"
-					message="please-review-the-details-of-the-returning-items-before-submitting-the-request"
-				/>
+				<c:if test='<%= Objects.equals(commerceReturn.getReturnStatus(), "draft") %>'>
+					<clay:alert
+						dismissible="<%= true %>"
+						displayType="warning"
+						message="please-review-the-details-of-the-returning-items-before-submitting-the-request"
+					/>
+				</c:if>
 			</c:otherwise>
 		</c:choose>
 
@@ -108,35 +103,24 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 						</div>
 
 						<div class="col-4">
-							<commerce-ui:info-box
-								elementClasses="py-3"
-								title='<%= LanguageUtil.get(request, "return-status") %>'
-							>
-								<clay:label
-									cssClass="mb-0"
-									displayType="<%= commerceReturnContentDisplayContext.getReturnStatusDisplayType() %>"
-									label="<%= commerceReturnContentDisplayContext.getReturnStatus() %>"
-								/>
-							</commerce-ui:info-box>
-
 							<liferay-portlet:renderURL var="editCommerceReturnNoteURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
 								<portlet:param name="mvcRenderCommandName" value="/commerce_return_content/edit_commerce_return_note" />
 								<portlet:param name="redirect" value="<%= currentURL %>" />
 								<portlet:param name="commerceReturnId" value="<%= String.valueOf(commerceReturnContentDisplayContext.getCommerceReturnId()) %>" />
 							</liferay-portlet:renderURL>
 
-							<commerce-ui:modal
-								id="commerce-return-note-modal"
-								refreshPageOnClose="<%= true %>"
-								size="lg"
-								title='<%= LanguageUtil.get(request, "note") %>'
-								url="<%= editCommerceReturnNoteURL %>"
-							/>
-
 							<c:if test="<%= commerceReturn != null %>">
 								<commerce-ui:info-box
+									actionContext='<%=
+										HashMapBuilder.<String, Object>put(
+											"namespace", liferayPortletResponse.getNamespace()
+										).put(
+											"refreshOnClose", true
+										).put(
+											"size", "lg"
+										).build()
+									%>'
 									actionLabel='<%= Objects.equals(commerceReturn.getReturnStatus(), "draft") ? LanguageUtil.get(request, Validator.isNull(note) ? "add" : "edit") : null %>'
-									actionTargetId='<%= Objects.equals(commerceReturn.getReturnStatus(), "draft") ? "commerce-return-note-modal" : null %>'
 									actionUrl='<%= Objects.equals(commerceReturn.getReturnStatus(), "draft") ? editCommerceReturnNoteURL : null %>'
 									elementClasses="py-3"
 									title='<%= LanguageUtil.get(request, "note") %>'
@@ -173,10 +157,23 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 							creationMenu="<%= commerceReturnContentDisplayContext.getCommerceReturnItemCreationMenu() %>"
 							fdsActionDropdownItems="<%= commerceReturnContentDisplayContext.getCommerceReturnItemFDSActionDropdownItems() %>"
 							formName="fm"
-							id="<%= CommerceOrderFDSNames.RETURN_ITEMS %>"
+							id="<%= ((commerceReturn == null) || Objects.equals(commerceReturn.getReturnStatus(), CommerceReturnConstants.RETURN_STATUS_DRAFT)) ? CommerceOrderFDSNames.DRAFT_RETURN_ITEMS : CommerceOrderFDSNames.RETURN_ITEMS %>"
 							itemsPerPage="<%= 10 %>"
 							propsTransformer="{commerceReturnItemsPropsTransformer} from commerce-order-content-web"
 							style="stacked"
+						/>
+
+						<liferay-frontend:component
+							context='<%=
+								HashMapBuilder.<String, Object>put(
+									"namespace", liferayPortletResponse.getNamespace()
+								).put(
+									"returnableOrderItemsContextParams", commerceReturnContentDisplayContext.getReturnableOrderItemsContextParams()
+								).put(
+									"viewReturnableOrderItemsURL", commerceReturnContentDisplayContext.getViewReturnableOrderItemsURL()
+								).build()
+							%>'
+							module="{viewCommerceOrderDetailsCTAs} from commerce-order-content-web"
 						/>
 					</div>
 				</commerce-ui:panel>
@@ -217,11 +214,11 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 
 					<div class="row summary-table text-right">
 						<div class="col-6 col-md-9">
-							<h4 class="my-2 summary-table-item-big"><liferay-ui:message key="total-estimated-refund" /></h4>
+							<div class="h4 my-2 summary-table-item-big"><liferay-ui:message key="total-estimated-refund" /></div>
 						</div>
 
 						<div class="col-6 col-md-3">
-							<h4 class="my-2 summary-table-item-big"><%= commerceReturnContentDisplayContext.getTotalEstimatedRefund() %></h4>
+							<div class="h4 my-2 summary-table-item-big"><%= commerceReturnContentDisplayContext.getTotalEstimatedRefund() %></div>
 						</div>
 					</div>
 				</commerce-ui:panel>
@@ -237,7 +234,7 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 		).put(
 			"redirectURL", currentURL
 		).put(
-			"returnStatus", "completed"
+			"returnStatus", CommerceReturnConstants.RETURN_STATUS_PENDING
 		).build()
 	%>'
 	module="{editCommerceReturn} from commerce-order-content-web"

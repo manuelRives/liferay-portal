@@ -61,7 +61,6 @@ exports[`OptionFieldKeyValue has a helptext 1`] = `
           data-field-name="OptionFieldKeyValue"
         >
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -69,7 +68,6 @@ exports[`OptionFieldKeyValue has a helptext 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueDisplayNameOptionFieldKeyValue"
@@ -84,13 +82,12 @@ exports[`OptionFieldKeyValue has a helptext 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -100,17 +97,14 @@ exports[`OptionFieldKeyValue has a helptext 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="OptionFieldKeyValue_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="OptionFieldKeyValue_fieldError"
             />
-            <div
-              id="OptionFieldKeyValue_fieldHelp"
-            >
+            <div>
               Type something
             </div>
           </div>
@@ -132,7 +126,6 @@ exports[`OptionFieldKeyValue has a helptext 1`] = `
           class="form-group hide"
         >
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -140,7 +133,6 @@ exports[`OptionFieldKeyValue has a helptext 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -155,13 +147,12 @@ exports[`OptionFieldKeyValue has a helptext 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -171,17 +162,14 @@ exports[`OptionFieldKeyValue has a helptext 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="undefined_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="undefined_fieldError"
             />
-            <div
-              id="undefined_fieldHelp"
-            >
+            <div>
               Type something
             </div>
           </div>
@@ -264,7 +252,6 @@ exports[`OptionFieldKeyValue has a label 1`] = `
             label
           </label>
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -272,7 +259,6 @@ exports[`OptionFieldKeyValue has a label 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueDisplayNameOptionFieldKeyValue"
@@ -287,13 +273,12 @@ exports[`OptionFieldKeyValue has a label 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -303,13 +288,12 @@ exports[`OptionFieldKeyValue has a label 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="OptionFieldKeyValue_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="OptionFieldKeyValue_fieldError"
             />
           </div>
           <span
@@ -335,7 +319,6 @@ exports[`OptionFieldKeyValue has a label 1`] = `
             label
           </label>
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -343,7 +326,6 @@ exports[`OptionFieldKeyValue has a label 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -358,13 +340,12 @@ exports[`OptionFieldKeyValue has a label 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -374,13 +355,12 @@ exports[`OptionFieldKeyValue has a label 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="undefined_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="undefined_fieldError"
             />
           </div>
           <span
@@ -452,12 +432,10 @@ exports[`OptionFieldKeyValue has a predefined Value 1`] = `
           display-name
         </label>
         <div
-          aria-labelledby="OptionFieldKeyValue_fieldDetails"
           class="form-group hide"
           data-field-name="OptionFieldKeyValue"
         >
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -466,7 +444,6 @@ exports[`OptionFieldKeyValue has a predefined Value 1`] = `
               title="Option 1"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueDisplayNameOptionFieldKeyValue"
@@ -482,13 +459,12 @@ exports[`OptionFieldKeyValue has a predefined Value 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -498,13 +474,12 @@ exports[`OptionFieldKeyValue has a predefined Value 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="OptionFieldKeyValue_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="OptionFieldKeyValue_fieldError"
             />
           </div>
         </div>
@@ -515,11 +490,9 @@ exports[`OptionFieldKeyValue has a predefined Value 1`] = `
           option-reference
         </label>
         <div
-          aria-labelledby="undefined_fieldDetails"
           class="form-group hide"
         >
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -527,7 +500,6 @@ exports[`OptionFieldKeyValue has a predefined Value 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -542,13 +514,12 @@ exports[`OptionFieldKeyValue has a predefined Value 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -558,13 +529,12 @@ exports[`OptionFieldKeyValue has a predefined Value 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="undefined_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="undefined_fieldError"
             />
           </div>
         </div>
@@ -630,12 +600,10 @@ exports[`OptionFieldKeyValue has a value 1`] = `
           display-name
         </label>
         <div
-          aria-labelledby="OptionFieldKeyValue_fieldDetails"
           class="form-group hide"
           data-field-name="OptionFieldKeyValue"
         >
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -644,7 +612,6 @@ exports[`OptionFieldKeyValue has a value 1`] = `
               title="value"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueDisplayNameOptionFieldKeyValue"
@@ -659,13 +626,12 @@ exports[`OptionFieldKeyValue has a value 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -675,13 +641,12 @@ exports[`OptionFieldKeyValue has a value 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="OptionFieldKeyValue_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="OptionFieldKeyValue_fieldError"
             />
           </div>
         </div>
@@ -692,11 +657,9 @@ exports[`OptionFieldKeyValue has a value 1`] = `
           option-reference
         </label>
         <div
-          aria-labelledby="undefined_fieldDetails"
           class="form-group hide"
         >
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -704,7 +667,6 @@ exports[`OptionFieldKeyValue has a value 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -719,13 +681,12 @@ exports[`OptionFieldKeyValue has a value 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -735,13 +696,12 @@ exports[`OptionFieldKeyValue has a value 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="undefined_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="undefined_fieldError"
             />
           </div>
         </div>
@@ -807,12 +767,10 @@ exports[`OptionFieldKeyValue has an id 1`] = `
           display-name
         </label>
         <div
-          aria-labelledby="Id_fieldDetails"
           class="form-group hide"
           data-field-name="OptionFieldKeyValue"
         >
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -820,7 +778,6 @@ exports[`OptionFieldKeyValue has an id 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueDisplayNameOptionFieldKeyValue"
@@ -835,13 +792,12 @@ exports[`OptionFieldKeyValue has an id 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -851,13 +807,12 @@ exports[`OptionFieldKeyValue has an id 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="Id_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="Id_fieldError"
             />
           </div>
         </div>
@@ -868,11 +823,9 @@ exports[`OptionFieldKeyValue has an id 1`] = `
           option-reference
         </label>
         <div
-          aria-labelledby="Id_fieldDetails"
           class="form-group hide"
         >
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -880,7 +833,6 @@ exports[`OptionFieldKeyValue has an id 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -895,13 +847,12 @@ exports[`OptionFieldKeyValue has an id 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -911,13 +862,12 @@ exports[`OptionFieldKeyValue has an id 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="Id_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="Id_fieldError"
             />
           </div>
         </div>
@@ -983,12 +933,10 @@ exports[`OptionFieldKeyValue is not editable 1`] = `
           display-name
         </label>
         <div
-          aria-labelledby="OptionFieldKeyValue_fieldDetails"
           class="form-group hide"
           data-field-name="OptionFieldKeyValue"
         >
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -996,7 +944,6 @@ exports[`OptionFieldKeyValue is not editable 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 disabled=""
@@ -1012,13 +959,12 @@ exports[`OptionFieldKeyValue is not editable 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -1028,13 +974,12 @@ exports[`OptionFieldKeyValue is not editable 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="OptionFieldKeyValue_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="OptionFieldKeyValue_fieldError"
             />
           </div>
         </div>
@@ -1045,11 +990,9 @@ exports[`OptionFieldKeyValue is not editable 1`] = `
           option-reference
         </label>
         <div
-          aria-labelledby="undefined_fieldDetails"
           class="form-group hide"
         >
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -1057,7 +1000,6 @@ exports[`OptionFieldKeyValue is not editable 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -1072,13 +1014,12 @@ exports[`OptionFieldKeyValue is not editable 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -1088,13 +1029,12 @@ exports[`OptionFieldKeyValue is not editable 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="undefined_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="undefined_fieldError"
             />
           </div>
         </div>
@@ -1160,12 +1100,10 @@ exports[`OptionFieldKeyValue is not required 1`] = `
           display-name
         </label>
         <div
-          aria-labelledby="OptionFieldKeyValue_fieldDetails"
           class="form-group hide"
           data-field-name="OptionFieldKeyValue"
         >
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -1173,7 +1111,6 @@ exports[`OptionFieldKeyValue is not required 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 aria-required="false"
                 class="form-control ddm-field-text"
@@ -1189,13 +1126,12 @@ exports[`OptionFieldKeyValue is not required 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -1205,13 +1141,12 @@ exports[`OptionFieldKeyValue is not required 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="OptionFieldKeyValue_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="OptionFieldKeyValue_fieldError"
             />
           </div>
         </div>
@@ -1222,11 +1157,9 @@ exports[`OptionFieldKeyValue is not required 1`] = `
           option-reference
         </label>
         <div
-          aria-labelledby="undefined_fieldDetails"
           class="form-group hide"
         >
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -1234,7 +1167,6 @@ exports[`OptionFieldKeyValue is not required 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -1249,13 +1181,12 @@ exports[`OptionFieldKeyValue is not required 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -1265,13 +1196,12 @@ exports[`OptionFieldKeyValue is not required 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="undefined_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="undefined_fieldError"
             />
           </div>
         </div>
@@ -1347,7 +1277,6 @@ exports[`OptionFieldKeyValue renders Label if showLabel is true 1`] = `
             text
           </label>
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -1355,7 +1284,6 @@ exports[`OptionFieldKeyValue renders Label if showLabel is true 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueDisplayNameOptionFieldKeyValue"
@@ -1370,13 +1298,12 @@ exports[`OptionFieldKeyValue renders Label if showLabel is true 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -1386,13 +1313,12 @@ exports[`OptionFieldKeyValue renders Label if showLabel is true 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="OptionFieldKeyValue_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="OptionFieldKeyValue_fieldError"
             />
           </div>
           <span
@@ -1418,7 +1344,6 @@ exports[`OptionFieldKeyValue renders Label if showLabel is true 1`] = `
             text
           </label>
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -1426,7 +1351,6 @@ exports[`OptionFieldKeyValue renders Label if showLabel is true 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -1441,13 +1365,12 @@ exports[`OptionFieldKeyValue renders Label if showLabel is true 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -1457,13 +1380,12 @@ exports[`OptionFieldKeyValue renders Label if showLabel is true 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="undefined_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="undefined_fieldError"
             />
           </div>
           <span
@@ -1535,12 +1457,10 @@ exports[`OptionFieldKeyValue renders component with a key 1`] = `
           display-name
         </label>
         <div
-          aria-labelledby="OptionFieldKeyValue_fieldDetails"
           class="form-group hide"
           data-field-name="OptionFieldKeyValue"
         >
           <div
-            aria-labelledby="keyValueDisplayNameOptionFieldKeyValue_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueDisplayNameOptionFieldKeyValue"
           >
@@ -1548,7 +1468,6 @@ exports[`OptionFieldKeyValue renders component with a key 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueDisplayNameOptionFieldKeyValue_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueDisplayNameOptionFieldKeyValue"
@@ -1563,13 +1482,12 @@ exports[`OptionFieldKeyValue renders component with a key 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueDisplayNameOptionFieldKeyValue_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueDisplayNameOptionFieldKeyValue_fieldError"
               />
             </div>
           </div>
@@ -1579,13 +1497,12 @@ exports[`OptionFieldKeyValue renders component with a key 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="OptionFieldKeyValue_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="OptionFieldKeyValue_fieldError"
             />
           </div>
         </div>
@@ -1596,11 +1513,9 @@ exports[`OptionFieldKeyValue renders component with a key 1`] = `
           option-reference
         </label>
         <div
-          aria-labelledby="undefined_fieldDetails"
           class="form-group hide"
         >
           <div
-            aria-labelledby="keyValueReferenceundefined_fieldDetails"
             class="form-group hide"
             data-field-name="keyValueReferenceundefined"
           >
@@ -1608,7 +1523,6 @@ exports[`OptionFieldKeyValue renders component with a key 1`] = `
               data-tooltip-align="top"
             >
               <input
-                aria-describedby="keyValueReferenceundefined_fieldError"
                 aria-invalid="true"
                 class="form-control ddm-field-text"
                 id="keyValueReferenceundefined"
@@ -1623,13 +1537,12 @@ exports[`OptionFieldKeyValue renders component with a key 1`] = `
               value="false"
             />
             <div
-              aria-hidden="true"
-              class="form-feedback-group lfr-de__field-feedback"
+              class="form-feedback-group field-feedback"
+              id="keyValueReferenceundefined_fieldFeedback"
             >
               <div
                 aria-live="assertive"
                 class="form-feedback-item"
-                id="keyValueReferenceundefined_fieldError"
               />
             </div>
           </div>
@@ -1639,13 +1552,12 @@ exports[`OptionFieldKeyValue renders component with a key 1`] = `
             value="false"
           />
           <div
-            aria-hidden="true"
-            class="form-feedback-group lfr-de__field-feedback"
+            class="form-feedback-group field-feedback"
+            id="undefined_fieldFeedback"
           >
             <div
               aria-live="assertive"
               class="form-feedback-item"
-              id="undefined_fieldError"
             />
           </div>
         </div>

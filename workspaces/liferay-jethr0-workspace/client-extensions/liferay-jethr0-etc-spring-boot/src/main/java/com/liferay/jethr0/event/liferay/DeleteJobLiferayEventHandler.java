@@ -5,10 +5,16 @@
 
 package com.liferay.jethr0.event.liferay;
 
-import com.liferay.jethr0.event.EventHandlerContext;
 import com.liferay.jethr0.job.JobEntity;
 import com.liferay.jethr0.job.queue.JobQueue;
 import com.liferay.jethr0.job.repository.JobEntityRepository;
+import com.liferay.jethr0.util.Jethr0ContextUtil;
+import com.liferay.jethr0.util.StringUtil;
+
+import java.util.Date;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.json.JSONObject;
 
@@ -19,23 +25,41 @@ public class DeleteJobLiferayEventHandler extends BaseJobLiferayEventHandler {
 
 	@Override
 	public String process() {
-		JobEntityRepository jobEntityRepository = getJobEntityRepository();
+		if (_log.isInfoEnabled()) {
+			_log.info("Deleting job at " + StringUtil.toString(new Date()));
+		}
 
-		JobEntity jobEntity = jobEntityRepository.add(getJobJSONObject());
+		JobEntityRepository jobEntityRepository =
+			Jethr0ContextUtil.getJobEntityRepository();
 
-		if (jobEntity != null) {
-			JobQueue jobQueue = getJobQueue();
+		JSONObject jobJSONObject = getJobJSONObject();
 
-			jobQueue.removeJobEntity(jobEntity);
+		JobEntity jobEntity = jobEntityRepository.getById(
+			jobJSONObject.getLong("id"));
+
+		if (jobEntity == null) {
+			return null;
+		}
+
+		JobQueue jobQueue = Jethr0ContextUtil.getJobQueue();
+
+		jobQueue.removeJobEntity(jobEntity);
+
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				StringUtil.combine(
+					"Deleted job ", jobEntity.getEntityURL(), " at ",
+					StringUtil.toString(new Date())));
 		}
 
 		return String.valueOf(jobEntity);
 	}
 
-	protected DeleteJobLiferayEventHandler(
-		EventHandlerContext eventHandlerContext, JSONObject jsonObject) {
-
-		super(eventHandlerContext, jsonObject);
+	protected DeleteJobLiferayEventHandler(JSONObject messageJSONObject) {
+		super(messageJSONObject);
 	}
+
+	private static final Log _log = LogFactory.getLog(
+		DeleteJobLiferayEventHandler.class);
 
 }

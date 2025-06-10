@@ -6,6 +6,7 @@
 package com.liferay.fragment.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.fragment.exception.DuplicateFragmentCollectionExternalReferenceCodeException;
 import com.liferay.fragment.exception.NoSuchCollectionException;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.service.FragmentCollectionLocalServiceUtil;
@@ -122,6 +123,9 @@ public class FragmentCollectionPersistenceTest {
 
 		newFragmentCollection.setUuid(RandomTestUtil.randomString());
 
+		newFragmentCollection.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newFragmentCollection.setGroupId(RandomTestUtil.nextLong());
 
 		newFragmentCollection.setCompanyId(RandomTestUtil.nextLong());
@@ -141,6 +145,8 @@ public class FragmentCollectionPersistenceTest {
 
 		newFragmentCollection.setDescription(RandomTestUtil.randomString());
 
+		newFragmentCollection.setMarketplace(RandomTestUtil.randomBoolean());
+
 		newFragmentCollection.setLastPublishDate(RandomTestUtil.nextDate());
 
 		_fragmentCollections.add(_persistence.update(newFragmentCollection));
@@ -158,6 +164,9 @@ public class FragmentCollectionPersistenceTest {
 		Assert.assertEquals(
 			existingFragmentCollection.getUuid(),
 			newFragmentCollection.getUuid());
+		Assert.assertEquals(
+			existingFragmentCollection.getExternalReferenceCode(),
+			newFragmentCollection.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingFragmentCollection.getFragmentCollectionId(),
 			newFragmentCollection.getFragmentCollectionId());
@@ -190,9 +199,34 @@ public class FragmentCollectionPersistenceTest {
 			existingFragmentCollection.getDescription(),
 			newFragmentCollection.getDescription());
 		Assert.assertEquals(
+			existingFragmentCollection.isMarketplace(),
+			newFragmentCollection.isMarketplace());
+		Assert.assertEquals(
 			Time.getShortTimestamp(
 				existingFragmentCollection.getLastPublishDate()),
 			Time.getShortTimestamp(newFragmentCollection.getLastPublishDate()));
+	}
+
+	@Test(
+		expected = DuplicateFragmentCollectionExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		FragmentCollection fragmentCollection = addFragmentCollection();
+
+		FragmentCollection newFragmentCollection = addFragmentCollection();
+
+		newFragmentCollection.setGroupId(fragmentCollection.getGroupId());
+
+		newFragmentCollection = _persistence.update(newFragmentCollection);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newFragmentCollection);
+
+		newFragmentCollection.setExternalReferenceCode(
+			fragmentCollection.getExternalReferenceCode());
+
+		_persistence.update(newFragmentCollection);
 	}
 
 	@Test
@@ -260,6 +294,49 @@ public class FragmentCollectionPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_M() throws Exception {
+		_persistence.countByG_M(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
+
+		_persistence.countByG_M(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByG_MArrayable() throws Exception {
+		_persistence.countByG_M(
+			new long[] {RandomTestUtil.nextLong(), 0L},
+			RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByG_LikeN_M() throws Exception {
+		_persistence.countByG_LikeN_M(
+			RandomTestUtil.nextLong(), "", RandomTestUtil.randomBoolean());
+
+		_persistence.countByG_LikeN_M(
+			0L, "null", RandomTestUtil.randomBoolean());
+
+		_persistence.countByG_LikeN_M(
+			0L, (String)null, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByG_LikeN_MArrayable() throws Exception {
+		_persistence.countByG_LikeN_M(
+			new long[] {RandomTestUtil.nextLong(), 0L},
+			RandomTestUtil.randomString(), RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		FragmentCollection newFragmentCollection = addFragmentCollection();
 
@@ -286,10 +363,11 @@ public class FragmentCollectionPersistenceTest {
 	protected OrderByComparator<FragmentCollection> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"FragmentCollection", "mvccVersion", true, "ctCollectionId", true,
-			"uuid", true, "fragmentCollectionId", true, "groupId", true,
-			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "fragmentCollectionKey", true, "name",
-			true, "description", true, "lastPublishDate", true);
+			"uuid", true, "externalReferenceCode", true, "fragmentCollectionId",
+			true, "groupId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true,
+			"fragmentCollectionKey", true, "name", true, "description", true,
+			"marketplace", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -589,6 +667,17 @@ public class FragmentCollectionPersistenceTest {
 			ReflectionTestUtil.invoke(
 				fragmentCollection, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "fragmentCollectionKey"));
+
+		Assert.assertEquals(
+			fragmentCollection.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				fragmentCollection, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(fragmentCollection.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				fragmentCollection, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected FragmentCollection addFragmentCollection() throws Exception {
@@ -601,6 +690,9 @@ public class FragmentCollectionPersistenceTest {
 		fragmentCollection.setCtCollectionId(RandomTestUtil.nextLong());
 
 		fragmentCollection.setUuid(RandomTestUtil.randomString());
+
+		fragmentCollection.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		fragmentCollection.setGroupId(RandomTestUtil.nextLong());
 
@@ -620,6 +712,8 @@ public class FragmentCollectionPersistenceTest {
 		fragmentCollection.setName(RandomTestUtil.randomString());
 
 		fragmentCollection.setDescription(RandomTestUtil.randomString());
+
+		fragmentCollection.setMarketplace(RandomTestUtil.randomBoolean());
 
 		fragmentCollection.setLastPublishDate(RandomTestUtil.nextDate());
 

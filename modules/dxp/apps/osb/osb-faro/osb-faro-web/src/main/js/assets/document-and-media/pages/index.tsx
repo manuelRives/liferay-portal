@@ -2,9 +2,7 @@ import * as breadcrumbs from 'shared/util/breadcrumbs';
 import BasePage from 'shared/components/base-page';
 import BundleRouter from 'route-middleware/BundleRouter';
 import DownloadCSVReport from 'shared/components/download-report/DownloadCSVReport';
-import DownloadPDFReport, {
-	Containers
-} from 'shared/components/download-report/DownloadPDFReport';
+import DownloadPDFReport from 'shared/components/download-report/DownloadPDFReport';
 import Filter from '../hocs/Filter';
 import getCN from 'classnames';
 import Loading from 'shared/components/Loading';
@@ -101,13 +99,6 @@ const DocumentAndMedia: React.FC<{
 				<BasePage.SubHeader>
 					<div className='d-flex justify-content-end w-100'>
 						<DownloadPDFReport
-							containers={[
-								Containers.VisitorsBehaviorCard,
-								Containers.AudienceCard,
-								Containers.DownloadsByLocationCard,
-								Containers.DownloadsByTechnologyCard,
-								Containers.AssetAppearsOnCard
-							]}
 							disabled={dataSourceStates.empty}
 							subtitle={selectedChannel?.name}
 							title={
@@ -129,9 +120,7 @@ const DocumentAndMedia: React.FC<{
 							assetType='document'
 							disabled={dataSourceStates.empty}
 							type={CSVType.Individual}
-							typeLang={Liferay.Language.get(
-								'documents-and-media'
-							)}
+							typeLang={Liferay.Language.get('known-individuals')}
 						/>
 					</div>
 				</BasePage.SubHeader>

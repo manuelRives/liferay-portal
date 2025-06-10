@@ -184,25 +184,6 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 
 		<c:if test="<%= cpDefinition != null %>">
 			<div class="col-12">
-				<div id="item-finder-root"></div>
-
-				<liferay-frontend:component
-					context='<%=
-						HashMapBuilder.<String, Object>put(
-							"portletId", portletDisplay.getRootPortletId()
-						).put(
-							"productDefinitonSpecifications", CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS
-						).put(
-							"productId", cpDefinition.getCProductId()
-						).put(
-							"spritemap", themeDisplay.getPathThemeSpritemap()
-						).build()
-					%>'
-					module="{detailsItemFinder} from commerce-product-definitions-web"
-				/>
-			</div>
-
-			<div class="col-12">
 				<commerce-ui:panel
 					bodyClasses="p-0"
 					title='<%= LanguageUtil.get(request, "specifications") %>'
@@ -213,12 +194,14 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 								"cpDefinitionId", String.valueOf(cpDefinitionId)
 							).build()
 						%>'
+						creationMenu="<%= cpDefinitionsDisplayContext.getCPDefinitionSpecificationOptionValueCreationMenu() %>"
 						dataProviderKey="<%= CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS %>"
 						formName="fm"
 						id="<%= CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS %>"
 						itemsPerPage="<%= 10 %>"
 						selectedItemsKey="cpdefinitionSpecificationOptionValueId"
-						showManagementBar="<%= false %>"
+						showManagementBar="<%= true %>"
+						showSearch="<%= true %>"
 					/>
 				</commerce-ui:panel>
 			</div>

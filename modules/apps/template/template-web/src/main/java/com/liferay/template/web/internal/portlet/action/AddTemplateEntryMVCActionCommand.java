@@ -37,12 +37,12 @@ import com.liferay.template.constants.TemplatePortletKeys;
 import com.liferay.template.model.TemplateEntry;
 import com.liferay.template.service.TemplateEntryLocalService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + TemplatePortletKeys.TEMPLATE,
+		"jakarta.portlet.name=" + TemplatePortletKeys.TEMPLATE,
 		"mvc.command.name=/template/add_template_entry"
 	},
 	service = MVCActionCommand.class
@@ -84,7 +84,8 @@ public class AddTemplateEntryMVCActionCommand
 
 		try {
 			DDMTemplate ddmTemplate = _ddmTemplateLocalService.addTemplate(
-				themeDisplay.getUserId(), serviceContext.getScopeGroupId(),
+				null, themeDisplay.getUserId(),
+				serviceContext.getScopeGroupId(),
 				_portal.getClassNameId(TemplateEntry.class), 0,
 				_portal.getClassNameId(TemplateEntry.class), nameMap,
 				Collections.emptyMap(),
@@ -96,7 +97,8 @@ public class AddTemplateEntryMVCActionCommand
 
 			TemplateEntry templateEntry =
 				_templateEntryLocalService.addTemplateEntry(
-					themeDisplay.getUserId(), serviceContext.getScopeGroupId(),
+					null, themeDisplay.getUserId(),
+					serviceContext.getScopeGroupId(),
 					ddmTemplate.getTemplateId(), infoItemClassName,
 					infoItemFormVariationKey, serviceContext);
 

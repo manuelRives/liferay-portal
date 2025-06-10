@@ -23,14 +23,14 @@ import com.liferay.segments.configuration.SegmentsCompanyConfiguration;
 import com.liferay.segments.configuration.SegmentsConfiguration;
 import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 
 import java.util.Dictionary;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.service.cm.Configuration;
@@ -137,11 +137,7 @@ public class SegmentsConfigurationProviderImpl
 			_configurationProvider.getCompanyConfiguration(
 				SegmentsCompanyConfiguration.class, companyId);
 
-		if (!segmentsCompanyConfiguration.roleSegmentationEnabled()) {
-			return false;
-		}
-
-		return true;
+		return segmentsCompanyConfiguration.roleSegmentationEnabled();
 	}
 
 	@Override
@@ -165,11 +161,7 @@ public class SegmentsConfigurationProviderImpl
 			_configurationProvider.getCompanyConfiguration(
 				SegmentsCompanyConfiguration.class, companyId);
 
-		if (!segmentsCompanyConfiguration.segmentationEnabled()) {
-			return false;
-		}
-
-		return true;
+		return segmentsCompanyConfiguration.segmentationEnabled();
 	}
 
 	@Override

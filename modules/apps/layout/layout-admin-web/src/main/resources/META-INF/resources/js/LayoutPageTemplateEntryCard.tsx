@@ -7,7 +7,8 @@ import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayCard from '@clayui/card';
 import ClayIcon from '@clayui/icon';
 import ClayModal, {useModal} from '@clayui/modal';
-import {createPortletURL, fetch, openModal} from 'frontend-js-web';
+import {openModal} from 'frontend-js-components-web';
+import {createPortletURL, fetch} from 'frontend-js-web';
 import {
 	KeyboardEvent,
 	MouseEvent,
@@ -66,10 +67,8 @@ export default function LayoutPageTemplateEntryCard({
 	};
 
 	const [entryIndex, setEntryIndex] = useState(0);
-	const [
-		layoutPageTemplateEntryList,
-		setLayoutPageTemplateEntryList,
-	] = useState<LayoutPageTemplateEntryList | null>(null);
+	const [layoutPageTemplateEntryList, setLayoutPageTemplateEntryList] =
+		useState<LayoutPageTemplateEntryList | null>(null);
 
 	const updateEntryIndex = (direction: 'previous' | 'next') => {
 		setEntryIndex((previousIndex) => {
@@ -230,7 +229,8 @@ function PreviewModalContent({
 	setLayoutPageTemplateEntryList,
 	updateEntryIndex,
 }: IPreviewModalContentProps) {
-	const iframeRef = useRef() as React.MutableRefObject<HTMLIFrameElement | null>;
+	const iframeRef =
+		useRef() as React.MutableRefObject<HTMLIFrameElement | null>;
 
 	const layoutPageTemplateEntry = layoutPageTemplateEntryList
 		? layoutPageTemplateEntryList[entryIndex]

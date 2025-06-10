@@ -74,7 +74,7 @@ public class CommerceOrderModelImpl
 		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
 		{"modifiedDate", Types.TIMESTAMP}, {"billingAddressId", Types.BIGINT},
 		{"commerceAccountId", Types.BIGINT},
-		{"commerceCurrencyId", Types.BIGINT},
+		{"commerceCurrencyCode", Types.VARCHAR},
 		{"commerceOrderTypeId", Types.BIGINT},
 		{"commerceShippingMethodId", Types.BIGINT},
 		{"deliveryCommerceTermEntryId", Types.BIGINT},
@@ -85,8 +85,8 @@ public class CommerceOrderModelImpl
 		{"deliveryCTermEntryDescription", Types.CLOB},
 		{"deliveryCommerceTermEntryName", Types.VARCHAR},
 		{"lastPriceUpdateDate", Types.TIMESTAMP},
-		{"manuallyAdjusted", Types.BOOLEAN}, {"orderDate", Types.TIMESTAMP},
-		{"orderStatus", Types.INTEGER},
+		{"manuallyAdjusted", Types.BOOLEAN}, {"name", Types.VARCHAR},
+		{"orderDate", Types.TIMESTAMP}, {"orderStatus", Types.INTEGER},
 		{"paymentCTermEntryDescription", Types.CLOB},
 		{"paymentCommerceTermEntryName", Types.VARCHAR},
 		{"paymentStatus", Types.INTEGER}, {"printedNote", Types.VARCHAR},
@@ -147,7 +147,7 @@ public class CommerceOrderModelImpl
 		TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("billingAddressId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("commerceAccountId", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("commerceCurrencyId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("commerceCurrencyCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("commerceOrderTypeId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("commerceShippingMethodId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("deliveryCommerceTermEntryId", Types.BIGINT);
@@ -160,6 +160,7 @@ public class CommerceOrderModelImpl
 		TABLE_COLUMNS_MAP.put("deliveryCommerceTermEntryName", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("lastPriceUpdateDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("manuallyAdjusted", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("orderDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("orderStatus", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("paymentCTermEntryDescription", Types.CLOB);
@@ -215,7 +216,7 @@ public class CommerceOrderModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CommerceOrder (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,commerceOrderId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,billingAddressId LONG,commerceAccountId LONG,commerceCurrencyId LONG,commerceOrderTypeId LONG,commerceShippingMethodId LONG,deliveryCommerceTermEntryId LONG,paymentCommerceTermEntryId LONG,shippingAddressId LONG,advanceStatus VARCHAR(75) null,commercePaymentMethodKey VARCHAR(75) null,couponCode VARCHAR(75) null,deliveryCTermEntryDescription TEXT null,deliveryCommerceTermEntryName VARCHAR(75) null,lastPriceUpdateDate DATE null,manuallyAdjusted BOOLEAN,orderDate DATE null,orderStatus INTEGER,paymentCTermEntryDescription TEXT null,paymentCommerceTermEntryName VARCHAR(75) null,paymentStatus INTEGER,printedNote STRING null,purchaseOrderNumber VARCHAR(75) null,requestedDeliveryDate DATE null,shippable BOOLEAN,shippingAmount BIGDECIMAL null,shippingDiscountAmount BIGDECIMAL null,shippingDiscountPercentLevel1 BIGDECIMAL null,shippingDiscountPercentLevel2 BIGDECIMAL null,shippingDiscountPercentLevel3 BIGDECIMAL null,shippingDiscountPercentLevel4 BIGDECIMAL null,shippingDiscountPctLev1WithTax BIGDECIMAL null,shippingDiscountPctLev2WithTax BIGDECIMAL null,shippingDiscountPctLev3WithTax BIGDECIMAL null,shippingDiscountPctLev4WithTax BIGDECIMAL null,shippingDiscountWithTaxAmount BIGDECIMAL null,shippingOptionName VARCHAR(255) null,shippingWithTaxAmount BIGDECIMAL null,subtotal BIGDECIMAL null,subtotalDiscountAmount BIGDECIMAL null,subtotalDiscountPercentLevel1 BIGDECIMAL null,subtotalDiscountPercentLevel2 BIGDECIMAL null,subtotalDiscountPercentLevel3 BIGDECIMAL null,subtotalDiscountPercentLevel4 BIGDECIMAL null,subtotalDiscountPctLev1WithTax BIGDECIMAL null,subtotalDiscountPctLev2WithTax BIGDECIMAL null,subtotalDiscountPctLev3WithTax BIGDECIMAL null,subtotalDiscountPctLev4WithTax BIGDECIMAL null,subtotalDiscountWithTaxAmount BIGDECIMAL null,subtotalWithTaxAmount BIGDECIMAL null,taxAmount BIGDECIMAL null,total BIGDECIMAL null,totalDiscountAmount BIGDECIMAL null,totalDiscountPercentageLevel1 BIGDECIMAL null,totalDiscountPercentageLevel2 BIGDECIMAL null,totalDiscountPercentageLevel3 BIGDECIMAL null,totalDiscountPercentageLevel4 BIGDECIMAL null,totalDiscountPctLev1WithTax BIGDECIMAL null,totalDiscountPctLev2WithTax BIGDECIMAL null,totalDiscountPctLev3WithTax BIGDECIMAL null,totalDiscountPctLev4WithTax BIGDECIMAL null,totalDiscountWithTaxAmount BIGDECIMAL null,totalWithTaxAmount BIGDECIMAL null,transactionId TEXT null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null)";
+		"create table CommerceOrder (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,commerceOrderId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,billingAddressId LONG,commerceAccountId LONG,commerceCurrencyCode VARCHAR(75) null,commerceOrderTypeId LONG,commerceShippingMethodId LONG,deliveryCommerceTermEntryId LONG,paymentCommerceTermEntryId LONG,shippingAddressId LONG,advanceStatus VARCHAR(75) null,commercePaymentMethodKey VARCHAR(75) null,couponCode VARCHAR(75) null,deliveryCTermEntryDescription TEXT null,deliveryCommerceTermEntryName VARCHAR(75) null,lastPriceUpdateDate DATE null,manuallyAdjusted BOOLEAN,name VARCHAR(75) null,orderDate DATE null,orderStatus INTEGER,paymentCTermEntryDescription TEXT null,paymentCommerceTermEntryName VARCHAR(75) null,paymentStatus INTEGER,printedNote STRING null,purchaseOrderNumber VARCHAR(75) null,requestedDeliveryDate DATE null,shippable BOOLEAN,shippingAmount BIGDECIMAL null,shippingDiscountAmount BIGDECIMAL null,shippingDiscountPercentLevel1 BIGDECIMAL null,shippingDiscountPercentLevel2 BIGDECIMAL null,shippingDiscountPercentLevel3 BIGDECIMAL null,shippingDiscountPercentLevel4 BIGDECIMAL null,shippingDiscountPctLev1WithTax BIGDECIMAL null,shippingDiscountPctLev2WithTax BIGDECIMAL null,shippingDiscountPctLev3WithTax BIGDECIMAL null,shippingDiscountPctLev4WithTax BIGDECIMAL null,shippingDiscountWithTaxAmount BIGDECIMAL null,shippingOptionName VARCHAR(255) null,shippingWithTaxAmount BIGDECIMAL null,subtotal BIGDECIMAL null,subtotalDiscountAmount BIGDECIMAL null,subtotalDiscountPercentLevel1 BIGDECIMAL null,subtotalDiscountPercentLevel2 BIGDECIMAL null,subtotalDiscountPercentLevel3 BIGDECIMAL null,subtotalDiscountPercentLevel4 BIGDECIMAL null,subtotalDiscountPctLev1WithTax BIGDECIMAL null,subtotalDiscountPctLev2WithTax BIGDECIMAL null,subtotalDiscountPctLev3WithTax BIGDECIMAL null,subtotalDiscountPctLev4WithTax BIGDECIMAL null,subtotalDiscountWithTaxAmount BIGDECIMAL null,subtotalWithTaxAmount BIGDECIMAL null,taxAmount BIGDECIMAL null,total BIGDECIMAL null,totalDiscountAmount BIGDECIMAL null,totalDiscountPercentageLevel1 BIGDECIMAL null,totalDiscountPercentageLevel2 BIGDECIMAL null,totalDiscountPercentageLevel3 BIGDECIMAL null,totalDiscountPercentageLevel4 BIGDECIMAL null,totalDiscountPctLev1WithTax BIGDECIMAL null,totalDiscountPctLev2WithTax BIGDECIMAL null,totalDiscountPctLev3WithTax BIGDECIMAL null,totalDiscountPctLev4WithTax BIGDECIMAL null,totalDiscountWithTaxAmount BIGDECIMAL null,totalWithTaxAmount BIGDECIMAL null,transactionId TEXT null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null)";
 
 	public static final String TABLE_SQL_DROP = "drop table CommerceOrder";
 
@@ -224,6 +225,9 @@ public class CommerceOrderModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CommerceOrder.createDate ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY commerceOrder.createDate ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -364,7 +368,7 @@ public class CommerceOrderModelImpl
 			attributeGetterFunctions.put(
 				"commerceAccountId", CommerceOrder::getCommerceAccountId);
 			attributeGetterFunctions.put(
-				"commerceCurrencyId", CommerceOrder::getCommerceCurrencyId);
+				"commerceCurrencyCode", CommerceOrder::getCommerceCurrencyCode);
 			attributeGetterFunctions.put(
 				"commerceOrderTypeId", CommerceOrder::getCommerceOrderTypeId);
 			attributeGetterFunctions.put(
@@ -395,6 +399,7 @@ public class CommerceOrderModelImpl
 				"lastPriceUpdateDate", CommerceOrder::getLastPriceUpdateDate);
 			attributeGetterFunctions.put(
 				"manuallyAdjusted", CommerceOrder::getManuallyAdjusted);
+			attributeGetterFunctions.put("name", CommerceOrder::getName);
 			attributeGetterFunctions.put(
 				"orderDate", CommerceOrder::getOrderDate);
 			attributeGetterFunctions.put(
@@ -598,9 +603,9 @@ public class CommerceOrderModelImpl
 				(BiConsumer<CommerceOrder, Long>)
 					CommerceOrder::setCommerceAccountId);
 			attributeSetterBiConsumers.put(
-				"commerceCurrencyId",
-				(BiConsumer<CommerceOrder, Long>)
-					CommerceOrder::setCommerceCurrencyId);
+				"commerceCurrencyCode",
+				(BiConsumer<CommerceOrder, String>)
+					CommerceOrder::setCommerceCurrencyCode);
 			attributeSetterBiConsumers.put(
 				"commerceOrderTypeId",
 				(BiConsumer<CommerceOrder, Long>)
@@ -649,6 +654,9 @@ public class CommerceOrderModelImpl
 				"manuallyAdjusted",
 				(BiConsumer<CommerceOrder, Boolean>)
 					CommerceOrder::setManuallyAdjusted);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<CommerceOrder, String>)CommerceOrder::setName);
 			attributeSetterBiConsumers.put(
 				"orderDate",
 				(BiConsumer<CommerceOrder, Date>)CommerceOrder::setOrderDate);
@@ -1158,17 +1166,22 @@ public class CommerceOrderModelImpl
 
 	@JSON
 	@Override
-	public long getCommerceCurrencyId() {
-		return _commerceCurrencyId;
+	public String getCommerceCurrencyCode() {
+		if (_commerceCurrencyCode == null) {
+			return "";
+		}
+		else {
+			return _commerceCurrencyCode;
+		}
 	}
 
 	@Override
-	public void setCommerceCurrencyId(long commerceCurrencyId) {
+	public void setCommerceCurrencyCode(String commerceCurrencyCode) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_commerceCurrencyId = commerceCurrencyId;
+		_commerceCurrencyCode = commerceCurrencyCode;
 	}
 
 	@JSON
@@ -1406,6 +1419,26 @@ public class CommerceOrderModelImpl
 		}
 
 		_manuallyAdjusted = manuallyAdjusted;
+	}
+
+	@JSON
+	@Override
+	public String getName() {
+		if (_name == null) {
+			return "";
+		}
+		else {
+			return _name;
+		}
+	}
+
+	@Override
+	public void setName(String name) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_name = name;
 	}
 
 	@JSON
@@ -2456,7 +2489,7 @@ public class CommerceOrderModelImpl
 		commerceOrderImpl.setModifiedDate(getModifiedDate());
 		commerceOrderImpl.setBillingAddressId(getBillingAddressId());
 		commerceOrderImpl.setCommerceAccountId(getCommerceAccountId());
-		commerceOrderImpl.setCommerceCurrencyId(getCommerceCurrencyId());
+		commerceOrderImpl.setCommerceCurrencyCode(getCommerceCurrencyCode());
 		commerceOrderImpl.setCommerceOrderTypeId(getCommerceOrderTypeId());
 		commerceOrderImpl.setCommerceShippingMethodId(
 			getCommerceShippingMethodId());
@@ -2475,6 +2508,7 @@ public class CommerceOrderModelImpl
 			getDeliveryCommerceTermEntryName());
 		commerceOrderImpl.setLastPriceUpdateDate(getLastPriceUpdateDate());
 		commerceOrderImpl.setManuallyAdjusted(isManuallyAdjusted());
+		commerceOrderImpl.setName(getName());
 		commerceOrderImpl.setOrderDate(getOrderDate());
 		commerceOrderImpl.setOrderStatus(getOrderStatus());
 		commerceOrderImpl.setPaymentCommerceTermEntryDescription(
@@ -2591,8 +2625,8 @@ public class CommerceOrderModelImpl
 			this.<Long>getColumnOriginalValue("billingAddressId"));
 		commerceOrderImpl.setCommerceAccountId(
 			this.<Long>getColumnOriginalValue("commerceAccountId"));
-		commerceOrderImpl.setCommerceCurrencyId(
-			this.<Long>getColumnOriginalValue("commerceCurrencyId"));
+		commerceOrderImpl.setCommerceCurrencyCode(
+			this.<String>getColumnOriginalValue("commerceCurrencyCode"));
 		commerceOrderImpl.setCommerceOrderTypeId(
 			this.<Long>getColumnOriginalValue("commerceOrderTypeId"));
 		commerceOrderImpl.setCommerceShippingMethodId(
@@ -2619,6 +2653,7 @@ public class CommerceOrderModelImpl
 			this.<Date>getColumnOriginalValue("lastPriceUpdateDate"));
 		commerceOrderImpl.setManuallyAdjusted(
 			this.<Boolean>getColumnOriginalValue("manuallyAdjusted"));
+		commerceOrderImpl.setName(this.<String>getColumnOriginalValue("name"));
 		commerceOrderImpl.setOrderDate(
 			this.<Date>getColumnOriginalValue("orderDate"));
 		commerceOrderImpl.setOrderStatus(
@@ -2887,7 +2922,17 @@ public class CommerceOrderModelImpl
 
 		commerceOrderCacheModel.commerceAccountId = getCommerceAccountId();
 
-		commerceOrderCacheModel.commerceCurrencyId = getCommerceCurrencyId();
+		commerceOrderCacheModel.commerceCurrencyCode =
+			getCommerceCurrencyCode();
+
+		String commerceCurrencyCode =
+			commerceOrderCacheModel.commerceCurrencyCode;
+
+		if ((commerceCurrencyCode != null) &&
+			(commerceCurrencyCode.length() == 0)) {
+
+			commerceOrderCacheModel.commerceCurrencyCode = null;
+		}
 
 		commerceOrderCacheModel.commerceOrderTypeId = getCommerceOrderTypeId();
 
@@ -2965,6 +3010,14 @@ public class CommerceOrderModelImpl
 		}
 
 		commerceOrderCacheModel.manuallyAdjusted = isManuallyAdjusted();
+
+		commerceOrderCacheModel.name = getName();
+
+		String name = commerceOrderCacheModel.name;
+
+		if ((name != null) && (name.length() == 0)) {
+			commerceOrderCacheModel.name = null;
+		}
 
 		Date orderDate = getOrderDate();
 
@@ -3252,7 +3305,7 @@ public class CommerceOrderModelImpl
 	private boolean _setModifiedDate;
 	private long _billingAddressId;
 	private long _commerceAccountId;
-	private long _commerceCurrencyId;
+	private String _commerceCurrencyCode;
 	private long _commerceOrderTypeId;
 	private long _commerceShippingMethodId;
 	private long _deliveryCommerceTermEntryId;
@@ -3265,6 +3318,7 @@ public class CommerceOrderModelImpl
 	private String _deliveryCommerceTermEntryName;
 	private Date _lastPriceUpdateDate;
 	private boolean _manuallyAdjusted;
+	private String _name;
 	private Date _orderDate;
 	private int _orderStatus;
 	private String _paymentCommerceTermEntryDescription;
@@ -3361,7 +3415,8 @@ public class CommerceOrderModelImpl
 		_columnOriginalValues.put("modifiedDate", _modifiedDate);
 		_columnOriginalValues.put("billingAddressId", _billingAddressId);
 		_columnOriginalValues.put("commerceAccountId", _commerceAccountId);
-		_columnOriginalValues.put("commerceCurrencyId", _commerceCurrencyId);
+		_columnOriginalValues.put(
+			"commerceCurrencyCode", _commerceCurrencyCode);
 		_columnOriginalValues.put("commerceOrderTypeId", _commerceOrderTypeId);
 		_columnOriginalValues.put(
 			"commerceShippingMethodId", _commerceShippingMethodId);
@@ -3381,6 +3436,7 @@ public class CommerceOrderModelImpl
 			"deliveryCommerceTermEntryName", _deliveryCommerceTermEntryName);
 		_columnOriginalValues.put("lastPriceUpdateDate", _lastPriceUpdateDate);
 		_columnOriginalValues.put("manuallyAdjusted", _manuallyAdjusted);
+		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("orderDate", _orderDate);
 		_columnOriginalValues.put("orderStatus", _orderStatus);
 		_columnOriginalValues.put(

@@ -275,11 +275,22 @@ AUI.add(
 				_uiSetColor(value) {
 					const instance = this;
 					const node = instance.get('node');
-					const opacity = instance._isPastEvent() ? '26' : 'B3';
+					const eventStatus = instance.get('status');
+					const isPastEvent = instance._isPastEvent();
 
-					node.setStyles({
-						backgroundColor: value + opacity,
-					});
+					if (eventStatus === 0 && !isPastEvent) {
+						node.setStyles({
+							backgroundColor: value,
+						});
+					}
+					else {
+						node.setStyles({
+							backgroundColor: value,
+							opacity: '0.8',
+						});
+
+						node.toggleClass('scheduler-event-past', isPastEvent);
+					}
 				},
 
 				_uiSetEndDate(val) {
@@ -480,9 +491,10 @@ AUI.add(
 
 					const scheduler = instance.get('scheduler');
 
-					const schedulerEvents = scheduler.getEventsByCalendarBookingId(
-						calendarBookingId
-					);
+					const schedulerEvents =
+						scheduler.getEventsByCalendarBookingId(
+							calendarBookingId
+						);
 
 					const remoteServices = scheduler.get('remoteServices');
 
@@ -651,15 +663,19 @@ AUI.add(
 					const scheduler = instance.get('scheduler');
 
 					const activeView = scheduler.get('activeView');
+
+					if (!activeView) {
+						return;
+					}
+
 					const eventsPerPage = scheduler.get('eventsPerPage');
 					const filterCalendarBookings = scheduler.get(
 						'filterCalendarBookings'
 					);
 					const maxDaysDisplayed = scheduler.get('maxDaysDisplayed');
 
-					const calendarContainer = scheduler.get(
-						'calendarContainer'
-					);
+					const calendarContainer =
+						scheduler.get('calendarContainer');
 
 					const calendarIds = Object.keys(
 						calendarContainer.get('availableCalendars')

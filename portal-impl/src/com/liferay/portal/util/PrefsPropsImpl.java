@@ -7,12 +7,24 @@ package com.liferay.portal.util;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.cluster.ClusterExecutorUtil;
+import com.liferay.portal.kernel.cluster.ClusterInvokeThreadLocal;
+import com.liferay.portal.kernel.cluster.ClusterRequest;
+import com.liferay.portal.kernel.exception.ModelListenerException;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.BaseModelListener;
+import com.liferay.portal.kernel.model.ModelListener;
+import com.liferay.portal.kernel.model.PortalPreferenceValue;
 import com.liferay.portal.kernel.model.PortalPreferences;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.service.PortalPreferenceValueLocalService;
 import com.liferay.portal.kernel.service.PortalPreferencesLocalService;
+import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MethodHandler;
+import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -21,17 +33,37 @@ import com.liferay.portlet.PortalPreferencesImpl;
 import com.liferay.portlet.PortalPreferencesWrapper;
 import com.liferay.portlet.PortletPreferencesImpl;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
+import jakarta.portlet.ValidatorException;
+
 import java.io.IOException;
 
 import java.util.Enumeration;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
-import javax.portlet.PortletPreferences;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class PrefsPropsImpl implements PrefsProps {
+
+	public void afterPropertiesSet() {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		_serviceRegistration = bundleContext.registerService(
+			ModelListener.class, new PortalPreferenceValueModelListener(),
+			null);
+	}
+
+	public void destroy() {
+		_serviceRegistration.unregister();
+	}
 
 	@Override
 	public boolean getBoolean(long companyId, String name) {
@@ -208,15 +240,24 @@ public class PrefsPropsImpl implements PrefsProps {
 
 	@Override
 	public PortletPreferences getPreferences() {
-		return _portalPreferencesLocalService.getPreferences(
-			PortletKeys.PREFS_OWNER_ID_DEFAULT,
-			PortletKeys.PREFS_OWNER_TYPE_COMPANY);
+		return getPreferences(PortletKeys.PREFS_OWNER_ID_DEFAULT);
 	}
 
 	@Override
 	public PortletPreferences getPreferences(long companyId) {
-		return _portalPreferencesLocalService.getPreferences(
-			companyId, PortletKeys.PREFS_OWNER_TYPE_COMPANY);
+		PortletPreferences portletPreferences = _fetchPreferences(companyId);
+
+		if (portletPreferences == _emptyPortletPreferences) {
+			return new LazyPortletPreferences(
+				_emptyPortletPreferences,
+				() -> _portalPreferencesLocalService.getPreferences(
+					companyId, PortletKeys.PREFS_OWNER_TYPE_COMPANY));
+		}
+
+		PortalPreferencesWrapper portalPreferencesWrapper =
+			(PortalPreferencesWrapper)portletPreferences;
+
+		return portalPreferencesWrapper.clone();
 	}
 
 	@Override
@@ -425,14 +466,41 @@ public class PrefsPropsImpl implements PrefsProps {
 		return null;
 	}
 
+	private static void _removePortletPreference(long companyId) {
+		_portletPreferences.remove(companyId);
+
+		if (ClusterExecutorUtil.isEnabled() &&
+			ClusterInvokeThreadLocal.isEnabled()) {
+
+			ClusterRequest clusterRequest =
+				ClusterRequest.createMulticastRequest(
+					new MethodHandler(
+						_removePortletPreferenceMethodKey, companyId),
+					true);
+
+			clusterRequest.setFireAndForget(true);
+
+			ClusterExecutorUtil.execute(clusterRequest);
+		}
+	}
+
 	private PortletPreferences _fetchPreferences() {
 		return _fetchPreferences(PortletKeys.PREFS_OWNER_ID_DEFAULT);
 	}
 
 	private PortletPreferences _fetchPreferences(long companyId) {
+		if (_skipCache.get()) {
+			return _getPortletPreferences(companyId);
+		}
+
+		return _portletPreferences.computeIfAbsent(
+			companyId, this::_getPortletPreferences);
+	}
+
+	private PortletPreferences _getPortletPreferences(long companyId) {
 		PortalPreferences portalPreferences =
-			_portalPreferencesLocalService.fetchCompanyPortalPreferences(
-				companyId);
+			_portalPreferencesLocalService.fetchPortalPreferences(
+				companyId, PortletKeys.PREFS_OWNER_TYPE_COMPANY);
 
 		if (portalPreferences == null) {
 			return _emptyPortletPreferences;
@@ -448,6 +516,14 @@ public class PrefsPropsImpl implements PrefsProps {
 
 	private static final Log _log = LogFactoryUtil.getLog(PrefsPropsImpl.class);
 
+	private static final Map<Long, PortletPreferences> _portletPreferences =
+		new ConcurrentHashMap<>();
+	private static final MethodKey _removePortletPreferenceMethodKey =
+		new MethodKey(
+			PrefsPropsImpl.class, "_removePortletPreference", long.class);
+	private static final ThreadLocal<Boolean> _skipCache =
+		ThreadLocal.withInitial(() -> false);
+
 	private final PortletPreferences _emptyPortletPreferences =
 		new PortletPreferencesImpl();
 
@@ -457,5 +533,154 @@ public class PrefsPropsImpl implements PrefsProps {
 	@BeanReference(type = PortalPreferenceValueLocalService.class)
 	private PortalPreferenceValueLocalService
 		_portalPreferenceValueLocalService;
+
+	private ServiceRegistration<?> _serviceRegistration;
+
+	private static class LazyPortletPreferences implements PortletPreferences {
+
+		@Override
+		public Map<String, String[]> getMap() {
+			return _portletPreferences.getMap();
+		}
+
+		@Override
+		public Enumeration<String> getNames() {
+			return _portletPreferences.getNames();
+		}
+
+		@Override
+		public String getValue(String key, String def) {
+			return _portletPreferences.getValue(key, def);
+		}
+
+		@Override
+		public String[] getValues(String key, String[] def) {
+			return _portletPreferences.getValues(key, def);
+		}
+
+		@Override
+		public boolean isReadOnly(String key) {
+			return _portletPreferences.isReadOnly(key);
+		}
+
+		@Override
+		public void reset(String key) throws ReadOnlyException {
+			_ensureLoaded();
+
+			_portletPreferences.reset(key);
+		}
+
+		@Override
+		public void setValue(String key, String value)
+			throws ReadOnlyException {
+
+			_ensureLoaded();
+
+			_portletPreferences.setValue(key, value);
+		}
+
+		@Override
+		public void setValues(String key, String... values)
+			throws ReadOnlyException {
+
+			_ensureLoaded();
+
+			_portletPreferences.setValues(key, values);
+		}
+
+		@Override
+		public void store() throws IOException, ValidatorException {
+			_ensureLoaded();
+
+			_portletPreferences.store();
+		}
+
+		private LazyPortletPreferences(
+			PortletPreferences portletPreferences,
+			Supplier<PortletPreferences> writePortletPreferencesSupplier) {
+
+			_portletPreferences = portletPreferences;
+			_writePortletPreferencesSupplier = writePortletPreferencesSupplier;
+		}
+
+		private void _ensureLoaded() {
+			if (!_loaded) {
+				_portletPreferences = _writePortletPreferencesSupplier.get();
+
+				_loaded = true;
+			}
+		}
+
+		private boolean _loaded;
+		private PortletPreferences _portletPreferences;
+		private final Supplier<PortletPreferences>
+			_writePortletPreferencesSupplier;
+
+	}
+
+	private class PortalPreferenceValueModelListener
+		extends BaseModelListener<PortalPreferenceValue> {
+
+		@Override
+		public Class<?> getModelClass() {
+			return PortalPreferenceValue.class;
+		}
+
+		@Override
+		public void onBeforeCreate(PortalPreferenceValue portalPreferenceValue)
+			throws ModelListenerException {
+
+			_clearPortletPreferencce(portalPreferenceValue);
+		}
+
+		@Override
+		public void onBeforeRemove(PortalPreferenceValue portalPreferenceValue)
+			throws ModelListenerException {
+
+			_clearPortletPreferencce(portalPreferenceValue);
+		}
+
+		@Override
+		public void onBeforeUpdate(
+			PortalPreferenceValue originalPortalPreferenceValue,
+			PortalPreferenceValue portalPreferenceValue) {
+
+			_clearPortletPreferencce(portalPreferenceValue);
+		}
+
+		private void _clearPortletPreferencce(
+			PortalPreferenceValue portalPreferenceValue) {
+
+			if (_skipCache.get()) {
+				return;
+			}
+
+			try {
+				PortalPreferences portalPreferences =
+					_portalPreferencesLocalService.getPortalPreferences(
+						portalPreferenceValue.getPortalPreferencesId());
+
+				if (portalPreferences.getOwnerType() ==
+						PortletKeys.PREFS_OWNER_TYPE_COMPANY) {
+
+					_skipCache.set(true);
+
+					TransactionCommitCallbackUtil.registerCallback(
+						() -> {
+							_removePortletPreference(
+								portalPreferenceValue.getCompanyId());
+
+							_skipCache.set(false);
+
+							return null;
+						});
+				}
+			}
+			catch (PortalException portalException) {
+				throw new ModelListenerException(portalException);
+			}
+		}
+
+	}
 
 }

@@ -6,7 +6,6 @@
 package com.liferay.account.admin.web.internal.display.context;
 
 import com.liferay.account.admin.web.internal.security.permission.resource.AccountEntryPermission;
-import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryLocalServiceUtil;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalServiceUtil;
@@ -28,9 +27,9 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author Pei-Jung Lan
@@ -51,7 +50,7 @@ public class ViewAccountOrganizationsManagementToolbarDisplayContext
 
 	@Override
 	public List<DropdownItem> getActionDropdownItems() {
-		if (!_hasManageOrganizationsPermission()) {
+		if (!_hasEditOrManageOrganizationsPermission()) {
 			return null;
 		}
 
@@ -145,12 +144,12 @@ public class ViewAccountOrganizationsManagementToolbarDisplayContext
 
 	@Override
 	public Boolean isSelectable() {
-		return _hasManageOrganizationsPermission();
+		return _hasEditOrManageOrganizationsPermission();
 	}
 
 	@Override
 	public Boolean isShowCreationMenu() {
-		return _hasManageOrganizationsPermission();
+		return _hasEditOrManageOrganizationsPermission();
 	}
 
 	@Override
@@ -168,14 +167,13 @@ public class ViewAccountOrganizationsManagementToolbarDisplayContext
 		return ParamUtil.getLong(liferayPortletRequest, "accountEntryId");
 	}
 
-	private boolean _hasManageOrganizationsPermission() {
+	private boolean _hasEditOrManageOrganizationsPermission() {
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		return AccountEntryPermission.contains(
-			themeDisplay.getPermissionChecker(), _getAccountEntryId(),
-			AccountActionKeys.MANAGE_ORGANIZATIONS);
+		return AccountEntryPermission.hasEditOrManageOrganizationsPermission(
+			themeDisplay.getPermissionChecker(), _getAccountEntryId());
 	}
 
 }

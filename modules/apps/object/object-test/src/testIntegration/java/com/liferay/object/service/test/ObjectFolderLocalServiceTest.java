@@ -38,6 +38,7 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
@@ -153,7 +154,7 @@ public class ObjectFolderLocalServiceTest {
 		ObjectFolder objectFolder = null;
 
 		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setWithSafeCloseable(
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					company.getCompanyId())) {
 
 			User user = UserTestUtil.getAdminUser(company.getCompanyId());
@@ -167,11 +168,13 @@ public class ObjectFolderLocalServiceTest {
 			objectFolder = _addObjectFolder(user);
 
 			ObjectDefinitionTestUtil.addCustomObjectDefinition(
-				objectFolder.getObjectFolderId(),
-				_objectDefinitionLocalService);
+				objectFolder.getObjectFolderId(), false,
+				ObjectDefinitionTestUtil.getRandomName(),
+				Collections.emptyList(), user.getUserId());
 			ObjectDefinitionTestUtil.addCustomObjectDefinition(
-				objectFolder.getObjectFolderId(),
-				_objectDefinitionLocalService);
+				objectFolder.getObjectFolderId(), false,
+				ObjectDefinitionTestUtil.getRandomName(),
+				Collections.emptyList(), user.getUserId());
 
 			Assert.assertNotNull(
 				_objectFolderLocalService.getObjectFolder(
@@ -205,9 +208,9 @@ public class ObjectFolderLocalServiceTest {
 		ObjectFolder objectFolder = _addObjectFolder(TestPropsValues.getUser());
 
 		ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			objectFolder.getObjectFolderId(), _objectDefinitionLocalService);
+			objectFolder.getObjectFolderId());
 		ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			objectFolder.getObjectFolderId(), _objectDefinitionLocalService);
+			objectFolder.getObjectFolderId());
 
 		int count =
 			_objectDefinitionLocalService.getObjectFolderObjectDefinitionsCount(

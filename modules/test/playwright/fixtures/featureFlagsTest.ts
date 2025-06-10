@@ -7,13 +7,19 @@ import {Page, mergeTests} from '@playwright/test';
 
 import {backendPageTest} from './backendPageTest';
 
+interface FeatureFlagValue {
+	enabled: boolean;
+	system?: boolean;
+}
+
 export interface FeatureFlagsOptions {
-	[key: string]: boolean;
+	[key: string]: FeatureFlagValue;
 }
 
 export interface FeatureFlag {
-	readonly enabled: boolean;
+	readonly enabled?: boolean;
 	readonly key: string;
+	readonly system?: boolean;
 }
 
 export interface FeatureFlags {
@@ -42,7 +48,7 @@ const test = mergeTests(backendPageTest);
  *
  * export const testWithFF = mergeTests(
  *   featureFlagsTest({
- *     'LPS-148856': true,
+ *     'LPS-148856': {enabled: true},
  *   }),
  *   loginTest
  * );
@@ -59,18 +65,15 @@ function featureFlagsTest(options: FeatureFlagsOptions) {
 
 				const originalFeatureFlags: FeatureFlagResult[] = [];
 
-				for (const key of Object.keys(options)) {
+				for (const [key, value] of Object.entries(options)) {
 					const reply = await invokeServer<IsEnabledResult>(
 						backendPage,
 						'/o/com-liferay-feature-flag-web/is-enabled',
 						{
+							...value,
 							key,
 						}
 					);
-
-					if (reply.error) {
-						throw new Error(reply.error);
-					}
 
 					const {result} = reply;
 
@@ -82,12 +85,12 @@ function featureFlagsTest(options: FeatureFlagsOptions) {
 
 					// Set requested state of FFs
 
-					for (const [key, enabled] of Object.entries(options)) {
+					for (const [key, value] of Object.entries(options)) {
 						await invokeServer<SetEnabledResult>(
 							backendPage,
 							'/o/com-liferay-feature-flag-web/set-enabled',
 							{
-								enabled,
+								...value,
 								key,
 							}
 						);
@@ -101,9 +104,9 @@ function featureFlagsTest(options: FeatureFlagsOptions) {
 
 					await use(
 						Object.entries(options).reduce(
-							(featureFlags: FeatureFlag[], [key, enabled]) => {
+							(featureFlags: FeatureFlag[], [key, value]) => {
 								featureFlags.push({
-									enabled,
+									...value,
 									key,
 								});
 
@@ -161,32 +164,42 @@ interface FeatureFlagResult {
 async function invokeServer<T>(
 	page: Page,
 	url: string,
-	partialBody: object
+	partialBody: FeatureFlag
 ): Promise<ServerReply<T>> {
 	return await page.evaluate(
 		async ({partialBody, url}) =>
 			new Promise((resolve, reject) => {
 				Liferay.Util.fetch(url, {
 					body: Liferay.Util.objectToFormData({
-						companyId: Liferay.ThemeDisplay.getCompanyId(),
+						companyId: partialBody.system
+							? 0
+							: Number(Liferay.ThemeDisplay.getCompanyId()),
 						...partialBody,
 					}),
 					method: 'POST',
 				})
-					.then((response) => response.text())
-					.then((text) => {
-						const json = JSON.parse(text);
+					.then(async (response) => {
+						if (!response?.ok) {
+							if (response?.status === 404) {
+								reject(
+									`Feature flag "${partialBody.key}" is not available`
+								);
+							}
+							else if (response?.status === 500) {
+								reject('An unexpected error has occurred');
+							}
+							else {
+								reject(
+									`Unable to fetch feature flag "${partialBody.key}"`
+								);
+							}
+						}
 
-						if (json.error) {
-							resolve({
-								error: json.error,
-							});
-						}
-						else {
-							resolve({
-								result: json,
-							});
-						}
+						const json = JSON.parse(await response.text());
+
+						resolve({
+							result: json,
+						});
 					})
 					.catch(reject);
 			}),

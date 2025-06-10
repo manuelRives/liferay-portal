@@ -5,30 +5,25 @@
 
 package com.liferay.fragment.entry.processor.portlet.internal.model.listener;
 
-import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.PortletRegistry;
-import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
-import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
-import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.layout.service.LayoutClassedModelUsageLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.BaseModelListener;
-import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.model.PortletPreferences;
-import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.service.PortletLocalService;
-import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
-import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PortletKeys;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,63 +39,23 @@ public class FragmentEntryLinkModelListener
 	public void onAfterRemove(FragmentEntryLink fragmentEntryLink)
 		throws ModelListenerException {
 
-		if (ExportImportThreadLocal.isImportInProcess()) {
-			return;
-		}
+		List<String> portletIds =
+			_portletRegistry.getFragmentEntryLinkPortletIds(fragmentEntryLink);
 
-		for (String portletId :
-				_portletRegistry.getFragmentEntryLinkPortletIds(
-					fragmentEntryLink)) {
+		List<String> usedPortletNames = _getUsedNoninstanceablePortletNames(
+			fragmentEntryLink, portletIds);
+
+		for (String portletId : portletIds) {
+			if (usedPortletNames.contains(
+					PortletIdCodec.decodePortletName(portletId))) {
+
+				continue;
+			}
 
 			try {
 				_portletLocalService.deletePortlet(
 					fragmentEntryLink.getCompanyId(), portletId,
 					fragmentEntryLink.getPlid());
-
-				LayoutPageTemplateEntry layoutPageTemplateEntry =
-					_layoutPageTemplateEntryLocalService.
-						fetchLayoutPageTemplateEntryByPlid(
-							fragmentEntryLink.getPlid());
-
-				if ((layoutPageTemplateEntry != null) &&
-					Objects.equals(
-						layoutPageTemplateEntry.getType(),
-						LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT)) {
-
-					long[] excludedPlids = {
-						PortletKeys.PREFS_PLID_SHARED,
-						fragmentEntryLink.getPlid()
-					};
-
-					Layout masterDraftLayout = _layoutLocalService.fetchLayout(
-						_portal.getClassNameId(Layout.class),
-						fragmentEntryLink.getPlid());
-
-					if (masterDraftLayout != null) {
-						excludedPlids = ArrayUtil.append(
-							excludedPlids, masterDraftLayout.getPlid());
-					}
-
-					List<PortletPreferences> portletPreferences =
-						_portletPreferencesLocalService.
-							getPortletPreferencesByPortletId(portletId);
-
-					for (PortletPreferences curPortletPreferences :
-							portletPreferences) {
-
-						if (ArrayUtil.contains(
-								excludedPlids,
-								curPortletPreferences.getPlid())) {
-
-							continue;
-						}
-
-						_portletPreferencesLocalService.
-							deletePortletPreferences(
-								curPortletPreferences.
-									getPortletPreferencesId());
-					}
-				}
 
 				_layoutClassedModelUsageLocalService.
 					deleteLayoutClassedModelUsages(
@@ -115,28 +70,73 @@ public class FragmentEntryLinkModelListener
 		}
 	}
 
+	private List<String> _getUsedNoninstanceablePortletNames(
+			FragmentEntryLink fragmentEntryLink, List<String> portletIds)
+		throws ModelListenerException {
+
+		List<String> portletNames = TransformUtil.transform(
+			portletIds,
+			portletId -> {
+				Portlet portlet = _portletLocalService.getPortletById(
+					fragmentEntryLink.getCompanyId(), portletId);
+
+				if (portlet.isInstanceable()) {
+					return null;
+				}
+
+				return PortletIdCodec.decodePortletName(portletId);
+			});
+
+		if (ListUtil.isEmpty(portletNames)) {
+			return Collections.emptyList();
+		}
+
+		List<String> usedPortletNames = new ArrayList<>();
+
+		for (FragmentEntryLink curFragmentEntryLink :
+				_fragmentEntryLinkLocalService.
+					getFragmentEntryLinksBySegmentsExperienceId(
+						fragmentEntryLink.getGroupId(),
+						fragmentEntryLink.getSegmentsExperienceId(),
+						fragmentEntryLink.getPlid(), false)) {
+
+			if (curFragmentEntryLink.getFragmentEntryLinkId() ==
+					fragmentEntryLink.getFragmentEntryLinkId()) {
+
+				continue;
+			}
+
+			for (String portletId :
+					_portletRegistry.getFragmentEntryLinkPortletIds(
+						null, curFragmentEntryLink)) {
+
+				String portletName = PortletIdCodec.decodePortletName(
+					portletId);
+
+				if (portletNames.contains(portletName)) {
+					usedPortletNames.add(portletName);
+				}
+			}
+		}
+
+		return usedPortletNames;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		FragmentEntryLinkModelListener.class);
+
+	@Reference
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
 
 	@Reference
 	private LayoutClassedModelUsageLocalService
 		_layoutClassedModelUsageLocalService;
 
 	@Reference
-	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private LayoutPageTemplateEntryLocalService
-		_layoutPageTemplateEntryLocalService;
-
-	@Reference
 	private Portal _portal;
 
 	@Reference
 	private PortletLocalService _portletLocalService;
-
-	@Reference
-	private PortletPreferencesLocalService _portletPreferencesLocalService;
 
 	@Reference
 	private PortletRegistry _portletRegistry;

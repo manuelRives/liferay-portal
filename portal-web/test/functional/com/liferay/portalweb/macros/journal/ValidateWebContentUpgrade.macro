@@ -49,7 +49,7 @@ definition {
 			webContentText = "WC WebContent Text",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
 
@@ -119,7 +119,7 @@ definition {
 			webContentText = "This is a Text field Edit",
 			webContentTitle = "Web Content Title Edit");
 
-		PortletEntry.publish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContent.viewWithStructureCP(
 			webContentText = "This is a Text field Edit",
@@ -176,24 +176,6 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentStatus = "Approved",
 			webContentTitle = "Web Content Title");
-	}
-
-	@summary = "Default summary"
-	macro viewNestedPortlets() {
-		Navigator.gotoPage(pageName = "Nested Portlets");
-
-		AssertTextEquals(
-			key_portletName = "Nested Applications",
-			locator1 = "Portlet#TITLE",
-			value1 = "Nested Applications");
-
-		AssertTextNotEquals(
-			locator1 = "Message#INFO",
-			value1 = "Drag applications below to nest them.");
-
-		NestedPortlets.viewPG(
-			nestedColumnNumber = 1,
-			portletName = "Web Content Display");
 	}
 
 	@summary = "Default summary"

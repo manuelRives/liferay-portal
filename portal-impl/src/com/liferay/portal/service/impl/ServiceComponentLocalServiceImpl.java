@@ -6,6 +6,7 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.petra.concurrent.DCLSingleton;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -243,27 +244,17 @@ public class ServiceComponentLocalServiceImpl
 	}
 
 	protected List<String> getModelNames(String xml) throws DocumentException {
-		List<String> modelNames = new ArrayList<>();
-
 		Document document = UnsecureSAXReaderUtil.read(xml);
 
 		Element rootElement = document.getRootElement();
 
-		List<Element> modelElements = rootElement.elements("model");
-
-		for (Element modelElement : modelElements) {
-			String name = modelElement.attributeValue("name");
-
-			modelNames.add(name);
-		}
-
-		return modelNames;
+		return TransformUtil.transform(
+			rootElement.elements("model"),
+			modelElement -> modelElement.attributeValue("name"));
 	}
 
 	protected List<String> getModifiedTableNames(
 		String previousTablesSQL, String tablesSQL) {
-
-		List<String> modifiedTableNames = new ArrayList<>();
 
 		List<String> previousTablesSQLParts = ListUtil.fromArray(
 			StringUtil.split(previousTablesSQL, StringPool.SEMICOLON));
@@ -272,14 +263,14 @@ public class ServiceComponentLocalServiceImpl
 
 		tablesSQLParts.removeAll(previousTablesSQLParts);
 
-		for (String tablesSQLPart : tablesSQLParts) {
-			int x = tablesSQLPart.indexOf("create table ");
-			int y = tablesSQLPart.indexOf(" (");
+		return TransformUtil.transform(
+			tablesSQLParts,
+			tablesSQLPart -> {
+				int x = tablesSQLPart.indexOf("create table ");
+				int y = tablesSQLPart.indexOf(" (");
 
-			modifiedTableNames.add(tablesSQLPart.substring(x + 13, y));
-		}
-
-		return modifiedTableNames;
+				return tablesSQLPart.substring(x + 13, y);
+			});
 	}
 
 	protected UpgradeTableListener getUpgradeTableListener(
@@ -435,9 +426,9 @@ public class ServiceComponentLocalServiceImpl
 				_log.info("Running " + buildNamespace + " SQL scripts");
 			}
 
-			db.runSQLTemplateString(tablesSQL, false);
-			db.runSQLTemplateString(sequencesSQL, false);
-			db.runSQLTemplateString(indexesSQL, false);
+			db.runSQLTemplate(tablesSQL, false);
+			db.runSQLTemplate(sequencesSQL, false);
+			db.runSQLTemplate(indexesSQL, false);
 		}
 		else if (PropsValues.SCHEMA_MODULE_BUILD_AUTO_UPGRADE) {
 			if (_log.isWarnEnabled()) {
@@ -455,7 +446,7 @@ public class ServiceComponentLocalServiceImpl
 					_log.info("Upgrading database with tables.sql");
 				}
 
-				db.runSQLTemplateString(tablesSQL, false);
+				db.runSQLTemplate(tablesSQL, false);
 
 				upgradeModels(classLoader, previousServiceComponent, tablesSQL);
 			}
@@ -467,7 +458,7 @@ public class ServiceComponentLocalServiceImpl
 					_log.info("Upgrading database with sequences.sql");
 				}
 
-				db.runSQLTemplateString(sequencesSQL, false);
+				db.runSQLTemplate(sequencesSQL, false);
 			}
 
 			if (!indexesSQL.equals(previousServiceComponent.getIndexesSQL()) ||
@@ -477,7 +468,7 @@ public class ServiceComponentLocalServiceImpl
 					_log.info("Upgrading database with indexes.sql");
 				}
 
-				db.runSQLTemplateString(indexesSQL, false);
+				db.runSQLTemplate(indexesSQL, false);
 			}
 		}
 	}

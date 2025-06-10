@@ -14,10 +14,11 @@ definition {
 		}
 
 		var api = "headless-builder/properties";
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/${api} \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-H Content-Type: application/json
 		''';
 
@@ -38,7 +39,7 @@ definition {
 			"name": "${name}",
 			"objectFieldERC": "${objectFieldERC}",
 			"objectRelationshipNames": "${relationshipName}",
-			"r_apiSchemaToAPIProperties_c_apiSchemaERC": "${schemaERC}"
+			"r_apiSchemaToAPIProperties_l_apiSchemaERC": "${schemaERC}"
 		''';
 
 		var curl = StringUtil.add(${curl}, " -d { ${body} }", "");

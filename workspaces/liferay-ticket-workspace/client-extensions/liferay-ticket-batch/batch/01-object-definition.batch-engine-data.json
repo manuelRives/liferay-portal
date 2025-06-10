@@ -5,9 +5,9 @@
 			"containsHeaders": "true",
 			"createStrategy": "UPSERT",
 			"onErrorFail": "false",
+			"taskItemDelegateName": "DEFAULT",
 			"updateStrategy": "UPDATE"
-		},
-		"taskItemDelegateName": "DEFAULT"
+		}
 	},
 	"items": [
 		{
@@ -54,7 +54,7 @@
 					}
 				},
 				{
-					"active": false,
+					"active": true,
 					"conditionExpression": "ticketStatus == 'open'",
 					"description": "",
 					"errorMessage": {

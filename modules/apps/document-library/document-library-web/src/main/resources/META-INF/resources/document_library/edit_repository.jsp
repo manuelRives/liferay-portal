@@ -26,6 +26,7 @@ renderResponse.setTitle(headerTitle);
 
 <clay:container-fluid
 	cssClass="container-form-lg"
+	size="lg"
 >
 	<portlet:actionURL name="/document_library/edit_repository" var="editRepositoryURL">
 		<portlet:param name="mvcRenderCommandName" value="/document_library/edit_repository" />
@@ -176,9 +177,8 @@ renderResponse.setTitle(headerTitle);
 
 	function showConfiguration(select) {
 		if (settingsParametersContainer && settingsSupported) {
-			var settingsParametersElement = settingsParametersContainer.querySelector(
-				'.settings-parameters'
-			);
+			var settingsParametersElement =
+				settingsParametersContainer.querySelector('.settings-parameters');
 
 			if (settingsParametersElement) {
 				settingsSupported.append(settingsParametersElement);

@@ -11,21 +11,21 @@ import {useMemo, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import useSWR, {KeyedMutator} from 'swr';
 
-import circleFullIcon from '../../../../assets/icons/circle_fill_icon.svg';
-import {ReviewAndSubmitAppPage} from '../../../ReviewAndSubmitAppPage/ReviewAndSubmitAppPage';
-
-import './App.scss';
 import {useMarketplaceContext} from '../../../../context/MarketplaceContext';
-import {PRODUCT_WORKFLOW_STATUS_CODE} from '../../../../enums/Product';
-import useMarketplaceSpringBootOAuth2 from '../../../../hooks/useMarketplaceSpringBootOAuth2';
+import {ProductWorkflowStatusCode} from '../../../../enums/Product';
 import i18n from '../../../../i18n';
 import {Liferay} from '../../../../liferay/liferay';
-import HeadlessCommerceAdminCatalogImpl from '../../../../services/rest/HeadlessCommerceAdminCatalog';
+import koroneikiOAuth2 from '../../../../services/oauth/Koroneiki';
+import HeadlessCommerceAdminCatalog from '../../../../services/rest/HeadlessCommerceAdminCatalog';
 import {
 	getProductVersionFromSpecifications,
 	getThumbnailByProductAttachment,
 	showAppImage,
 } from '../../../../utils/util';
+import {ReviewAndSubmitAppPage} from './AppCreationFlow/ReviewAndSubmitAppPage/ReviewAndSubmitAppPage';
+import AppDetail from './AppDetail';
+
+import './App.scss';
 
 type AppProps = {
 	isAdministratorDashboard?: boolean;
@@ -43,17 +43,15 @@ const AdministratorButtons: React.FC<AdministratorButtons> = ({
 	selectedApp,
 }) => {
 	const [loading, setLoading] = useState(false);
-	const marketplaceSpringBootOAuth2 = useMarketplaceSpringBootOAuth2();
 
 	const isDraft =
-		selectedApp.workflowStatusInfo.code ===
-		PRODUCT_WORKFLOW_STATUS_CODE.DRAFT;
+		selectedApp.workflowStatusInfo.code === ProductWorkflowStatusCode.DRAFT;
 
 	const onUpdateRequestStatus = async (
-		workflowStatus: PRODUCT_WORKFLOW_STATUS_CODE
+		workflowStatus: ProductWorkflowStatusCode
 	) => {
 		try {
-			await HeadlessCommerceAdminCatalogImpl.updateProductByExternalReferenceCode(
+			await HeadlessCommerceAdminCatalog.updateProductByExternalReferenceCode(
 				selectedApp.externalReferenceCode,
 				{workflowStatusInfo: workflowStatus}
 			);
@@ -65,7 +63,7 @@ const AdministratorButtons: React.FC<AdministratorButtons> = ({
 				type: 'success',
 			});
 		}
-		catch (error) {
+		catch {
 			Liferay.Util.openToast({
 				message: i18n.translate('an-unexpected-error-occurred'),
 				type: 'danger',
@@ -82,8 +80,8 @@ const AdministratorButtons: React.FC<AdministratorButtons> = ({
 				onClick={() => {
 					setLoading(true);
 
-					marketplaceSpringBootOAuth2
-						.syncKoroneikiProduct(productId)
+					koroneikiOAuth2
+						.syncProduct(productId)
 						.then(() =>
 							Liferay.Util.openToast({
 								message: 'Koroneiki Sync Successfully',
@@ -110,11 +108,11 @@ const AdministratorButtons: React.FC<AdministratorButtons> = ({
 					displayType="primary"
 					onClick={() =>
 						onUpdateRequestStatus(
-							PRODUCT_WORKFLOW_STATUS_CODE.APPROVED
+							ProductWorkflowStatusCode.APPROVED
 						)
 					}
 				>
-					{i18n.translate('aprove')}
+					{i18n.translate('approve')}
 				</ClayButton>
 			)}
 		</>
@@ -122,21 +120,23 @@ const AdministratorButtons: React.FC<AdministratorButtons> = ({
 };
 
 const App: React.FC<AppProps> = ({isAdministratorDashboard}) => {
-	const {appId} = useParams();
-	const {myUserAccount} = useMarketplaceContext();
+	const {productId} = useParams();
+	const {myUserAccount, properties} = useMarketplaceContext();
 	const navigate = useNavigate();
 
-	const productId = Number(appId) + 1;
+	const isNewAppEnabled = properties.featureFlags.includes('LPD-24546');
 
-	const {data: selectedApp, isLoading, mutate} = useSWR(
-		`/published-app/${productId}`,
-		() =>
-			HeadlessCommerceAdminCatalogImpl.getProduct(
-				productId,
-				new URLSearchParams({
-					nestedFields: 'attachments,images,productSpecifications',
-				})
-			)
+	const {
+		data: selectedApp,
+		isLoading,
+		mutate,
+	} = useSWR(`/published-app/${productId}`, () =>
+		HeadlessCommerceAdminCatalog.getProduct(
+			productId as unknown as number,
+			new URLSearchParams({
+				nestedFields: 'attachments,images,productSpecifications',
+			})
+		)
 	);
 
 	const appVersion = useMemo(
@@ -163,12 +163,12 @@ const App: React.FC<AppProps> = ({isAdministratorDashboard}) => {
 			<ClayButton
 				className="align-items-center d-flex"
 				displayType="unstyled"
-				onClick={() =>
-					navigate(isAdministratorDashboard ? '/apps' : '..')
-				}
+				onClick={() => navigate('..')}
 			>
 				<ClayIcon className="mr-2" symbol="order-arrow-left" />
-				<h5 className="mt-1">{i18n.translate('back-to-apps')}</h5>
+				<span className="h5 mt-1">
+					{i18n.translate('back-to-apps')}
+				</span>
 			</ClayButton>
 
 			{status === 'Draft' && (
@@ -178,10 +178,9 @@ const App: React.FC<AppProps> = ({isAdministratorDashboard}) => {
 				>
 					<span className="app-details-page-alert-text">
 						This submission is currently under review by Liferay.
-						Once the process is complete, you will be able to
-						publish it to the marketplace. Meanwhile, any
-						information or data from this app submission cannot be
-						updated.
+						Once the process is complete, we will publish it into
+						Marketplace. Meanwhile, any information or data from
+						this app submission cannot be updated.
 					</span>
 				</ClayAlert>
 			)}
@@ -197,7 +196,10 @@ const App: React.FC<AppProps> = ({isAdministratorDashboard}) => {
 					</div>
 
 					<div>
-						<span className="app-details-page-app-info-title">
+						<span
+							className="app-details-page-app-info-title d-block text-truncate"
+							title={selectedApp.name?.en_US}
+						>
 							{selectedApp.name?.en_US}
 						</span>
 
@@ -208,8 +210,8 @@ const App: React.FC<AppProps> = ({isAdministratorDashboard}) => {
 								</span>
 							)}
 
-							<img
-								alt="status icon"
+							<ClayIcon
+								aria-label="status icon"
 								className={classNames(
 									'app-details-page-app-info-subtitle-icon',
 									{
@@ -224,7 +226,7 @@ const App: React.FC<AppProps> = ({isAdministratorDashboard}) => {
 												.label === 'approved',
 									}
 								)}
-								src={circleFullIcon}
+								symbol="circle"
 							/>
 
 							<span className="app-details-page-app-info-subtitle-text">
@@ -235,26 +237,30 @@ const App: React.FC<AppProps> = ({isAdministratorDashboard}) => {
 				</div>
 
 				{isAdministratorDashboard &&
-					myUserAccount.roleBriefs.some(
+					myUserAccount?.roleBriefs.some(
 						({name}) => name === 'Administrator'
 					) && (
 						<div className="app-details-page-app-info-buttons-container">
 							<AdministratorButtons
 								mutate={mutate}
-								productId={productId}
+								productId={productId as unknown as number}
 								selectedApp={selectedApp}
 							/>
 						</div>
 					)}
 			</div>
 			<div>
-				<ReviewAndSubmitAppPage
-					onClickBack={() => {}}
-					onClickContinue={() => {}}
-					productERC={selectedApp.externalReferenceCode}
-					productId={selectedApp.productId}
-					readonly
-				/>
+				{isNewAppEnabled ? (
+					<AppDetail />
+				) : (
+					<ReviewAndSubmitAppPage
+						onClickBack={() => {}}
+						onClickContinue={() => {}}
+						productERC={selectedApp.externalReferenceCode}
+						productId={selectedApp.productId}
+						readonly
+					/>
+				)}
 			</div>
 		</div>
 	);

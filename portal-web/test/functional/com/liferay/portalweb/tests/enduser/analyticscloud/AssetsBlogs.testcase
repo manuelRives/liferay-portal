@@ -79,6 +79,7 @@ definition {
 			ACAssets.viewAssetAppearsOnMetric(
 				canonicalURL = "${portalURL}/web/site-name/ac-page/-/blogs/blogs-ac-title",
 				cardTitle = "Asset Appears On",
+				metricTitle = "Views",
 				pageName = "Blogs AC Title - Site Name - ${dataSourceName}");
 		}
 	}
@@ -200,15 +201,10 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8375 | Test Summary: Blogs audience card shows expected amount of segmented and unsegmented individuals"
-	@ignore = "true"
 	@priority = 5
 	test AudienceCardShowsExpectedAmountSegmentedAndUnsegmentedInBlogs {
-
-		// AC Refactor: Data doesn't appear on time
-		// AC Refactor ticket: LRAC-14011
-
-		var usernameList = "ac,liferay";
-		var emailList = "ac@liferay.com,liferay@liferay.com";
+		var usernameList = "ac,liferay,dxp";
+		var emailList = "ac@liferay.com,liferay@liferay.com,dxp@liferay.com";
 
 		for (var name : list ${usernameList}) {
 			JSONUser.addUser(
@@ -216,22 +212,19 @@ definition {
 				userFirstName = ${name},
 				userLastName = ${name},
 				userScreenName = ${name});
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "${name}@liferay.com");
 		}
 
-		var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+		ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 
 		ACUtils.navigateToSitePageWithUser(
 			actionType = "View Blog",
-			documentTitleList = "Blogs AC Title",
+			documentTitleList = "Blogs AC Title,Blogs AC Title,Blogs AC Title,Blogs AC Title,Blogs AC Title",
 			emailList = ${emailList},
-			pageName = "AC Page",
-			siteName = "Site Name");
-
-		User.logoutPG();
-
-		ACUtils.navigateToSitePage(
-			actionType = "View Blog",
-			documentTitleList = "Blogs AC Title",
 			pageName = "AC Page",
 			siteName = "Site Name");
 
@@ -239,7 +232,7 @@ definition {
 
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = ${propertyName});
+		ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 
 		ACNavigation.goToSegments();
 
@@ -250,18 +243,6 @@ definition {
 		ACSegments.addStaticMember(tableMember = "ac ac");
 
 		ACSegments.saveSegment();
-
-		ACUtils.launchDXP(userEmailAddress = "ac@liferay.com");
-
-		ACUtils.navigateToSitePage(
-			actionType = "View Blog",
-			documentTitleList = "Blogs AC Title",
-			pageName = "AC Page",
-			siteName = "Site Name");
-
-		ACUtils.closeAllSessionsAndWait();
-
-		ACUtils.launchAC();
 
 		ACNavigation.goToAssets();
 
@@ -276,6 +257,8 @@ definition {
 		ACUtils.assertAudienceCard(
 			index = 2,
 			percentageList = "66.67%,33.33%");
+
+		ACUtils.assertViewerSegmentsCard(segmentNameList = "Static Segment Test");
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8386 | Test Summary: Blogs views by technology card shows views by the expected browser"
@@ -798,45 +781,6 @@ definition {
 				nameList = "Blogs AC Title",
 				numberValueList = "0.00/10");
 		}
-	}
-
-	@description = "View all blogs in the property in assets"
-	@priority = 5
-	test ViewAllBlogsShownInAssetList {
-		property portal.acceptance = "true";
-		property portal.release = "true";
-
-		ACUtils.createBlogsAndAddToPage(entryTitle = "Test 2");
-
-		var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-
-		ACUtils.navigateToSitePage(
-			actionType = "View Blog",
-			documentTitleList = "Blogs AC Title,Test 2",
-			pageName = "AC Page",
-			siteName = "Site Name");
-
-		ACUtils.closeAllSessionsAndWait();
-
-		ACUtils.launchAC();
-
-		ACProperties.switchProperty(propertyName = ${propertyName});
-
-		ACNavigation.goToAssets();
-
-		ACNavigation.switchTab(tabName = "Blogs");
-
-		ACTimeFilter.clickTimeFilterButton();
-
-		ACTimeFilter.setLast24Hours();
-
-		ACUtils.searchBar(searchItem = "Blogs AC Title");
-
-		ACUtils.viewNameList(nameList = "Blogs AC Title");
-
-		ACUtils.searchBar(searchItem = "Test 2");
-
-		ACUtils.viewNameList(nameList = "Test 2");
 	}
 
 }

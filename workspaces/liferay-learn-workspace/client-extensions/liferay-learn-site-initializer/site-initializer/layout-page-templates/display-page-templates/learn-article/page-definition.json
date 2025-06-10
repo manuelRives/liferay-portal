@@ -3,26 +3,47 @@
 		"pageElements": [
 			{
 				"definition": {
+					"cssClasses": [
+						"learn-article-page-container"
+					],
+					"customCSSViewports": [
+						{
+							"customCSS": ".[$FRAGMENT_CLASS$] {\nposition: relative;\nflex-wrap: wrap;\n}",
+							"id": "landscapeMobile"
+						}
+					],
 					"fragmentStyle": {
-						"marginLeft": "3",
-						"marginRight": "3",
-						"marginTop": "3"
+						"fontFamily": "\"Source Sans 3\", system-ui",
+						"paddingBottom": "4",
+						"paddingLeft": "4",
+						"paddingRight": "4",
+						"paddingTop": "9"
 					},
 					"indexed": true,
 					"layout": {
 						"contentDisplay": "FlexRow",
-						"marginLeft": 1,
-						"marginRight": 1,
-						"marginTop": 1
+						"justify": "Center",
+						"paddingBottom": 2,
+						"paddingLeft": 2,
+						"paddingRight": 2,
+						"widthType": "Fixed"
 					}
 				},
 				"pageElements": [
 					{
 						"definition": {
+							"cssClasses": [
+								"learn-article-nav-container"
+							],
+							"customCSS": ".[$FRAGMENT_CLASS$]  {\n}",
+							"customCSSViewports": [
+								{
+									"customCSS": ".[$FRAGMENT_CLASS$] > div {\n  display: flex;\n  height: 100%;\n  width: 100%;\n  .component-html {\n    width: 100%;\n  }\n}",
+									"id": "landscapeMobile"
+								}
+							],
 							"fragment": {
 								"key": "BASIC_COMPONENT-html"
-							},
-							"fragmentConfig": {
 							},
 							"fragmentFields": [
 								{
@@ -40,38 +61,78 @@
 								}
 							],
 							"fragmentStyle": {
+								"fontWeight": "400",
 								"marginRight": "3",
-								"maxWidth": "336px"
+								"maxWidth": "336px",
+								"width": "100%"
 							},
+							"fragmentViewports": [
+								{
+									"fragmentViewportStyle": {
+										"marginRight": "0",
+										"maxWidth": "100%"
+									},
+									"id": "landscapeMobile"
+								}
+							],
 							"indexed": true
 						},
 						"type": "Fragment"
 					},
 					{
 						"definition": {
-							"fragment": {
-								"key": "BASIC_COMPONENT-html"
-							},
-							"fragmentConfig": {
-							},
-							"fragmentFields": [
+							"customCSSViewports": [
 								{
-									"id": "element-html",
-									"value": {
-										"html": {
-											"mapping": {
-												"fieldKey": "_ddmTemplate_LEARN_ARTICLE",
-												"itemReference": {
-													"contextSource": "DisplayPageItem"
+									"customCSS": ".[$FRAGMENT_CLASS$] {\n  .learn-article {\n    padding: var(--spacer-4) var(--spacer-2, 0.5rem);\n  }\n  .learn-article-page-nav {\n    display: none;\n  }\n}",
+									"id": "landscapeMobile"
+								}
+							],
+							"indexed": true,
+							"layout": {
+								"contentDisplay": "FlexColumn",
+								"widthType": "Fixed"
+							}
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"fragment": {
+										"key": "BASIC_COMPONENT-html"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-html",
+											"value": {
+												"html": {
+													"mapping": {
+														"fieldKey": "_ddmTemplate_LEARN_ARTICLE",
+														"itemReference": {
+															"contextSource": "DisplayPageItem"
+														}
+													}
 												}
 											}
 										}
-									}
-								}
-							],
-							"indexed": true
-						},
-						"type": "Fragment"
+									],
+									"fragmentStyle": {
+										"fontWeight": "400"
+									},
+									"indexed": true
+								},
+								"type": "Fragment"
+							},
+							{
+								"definition": {
+									"fragment": {
+										"key": "article-related-recipes",
+										"siteKey": "Guest"
+									},
+									"indexed": true
+								},
+								"type": "Fragment"
+							}
+						],
+						"type": "Section"
 					}
 				],
 				"type": "Section"
@@ -80,9 +141,15 @@
 		"type": "Root"
 	},
 	"settings": {
+		"colorSchemeName": "01",
 		"masterPage": {
 			"key": "liferay-learn"
-		}
+		},
+		"styleBook": {
+			"key": "liferay-learn",
+			"name": "Liferay Learn"
+		},
+		"themeName": "Dialect"
 	},
-	"version": 1.0
+	"version": 1.1
 }

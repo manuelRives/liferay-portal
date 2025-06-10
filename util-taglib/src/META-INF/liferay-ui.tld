@@ -12,6 +12,17 @@
 	<short-name>liferay-ui</short-name>
 	<uri>http://liferay.com/tld/ui</uri>
 	<tag>
+		<name>csp</name>
+		<tag-class>com.liferay.taglib.ui.CSPTag</tag-class>
+		<body-content>JSP</body-content>
+		<attribute>
+			<name>recursive</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
+	</tag>
+	<tag>
 		<description>Deprecated as of 7.4.0, replaced by the <![CDATA[<code>liferay-frontend:logo-selector</code>]]> tag.</description>
 		<name>empty-result-message</name>
 		<tag-class>com.liferay.taglib.ui.EmptyResultMessageTag</tag-class>
@@ -1586,6 +1597,7 @@
 		</attribute>
 	</tag>
 	<tag>
+		<description>Deprecated as of 7.4.0, replaced by the <![CDATA[<code>liferay-site-navigation:language</code>]]> tag.</description>
 		<name>language</name>
 		<tag-class>com.liferay.taglib.ui.LanguageTag</tag-class>
 		<body-content>JSP</body-content>
@@ -2679,6 +2691,11 @@
 		<tei-class>com.liferay.taglib.ui.SearchContainerRowTei</tei-class>
 		<body-content>JSP</body-content>
 		<attribute>
+			<name>ariaLabel</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
 			<name>bold</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
@@ -2744,6 +2761,11 @@
 		</attribute>
 		<attribute>
 			<name>stringKey</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>tabIndex</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>

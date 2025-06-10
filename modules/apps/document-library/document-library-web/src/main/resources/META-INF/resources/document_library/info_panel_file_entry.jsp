@@ -56,19 +56,23 @@ long assetClassPK = DLAssetHelperUtil.getAssetClassPK(fileEntry, fileVersion);
 			</clay:content-section>
 		</clay:content-col>
 
-		<%
-		DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletInstanceSettingsHelper(dlRequestHelper);
-		%>
+		<clay:content-col>
+			<ul class="autofit-padded-no-gutters autofit-row">
+				<li class="autofit-col">
+					<liferay-util:include page="/document_library/subscribe_file_entry.jsp" servletContext="<%= application %>" />
+				</li>
 
-		<c:if test="<%= !hideActions && dlPortletInstanceSettingsHelper.isShowActions() %>">
-			<clay:content-col>
-				<ul class="autofit-padded-no-gutters autofit-row">
+				<%
+				DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletInstanceSettingsHelper(dlRequestHelper);
+				%>
+
+				<c:if test="<%= !hideActions && dlPortletInstanceSettingsHelper.isShowActions() %>">
 					<li class="autofit-col">
 						<liferay-util:include page="/document_library/file_entry_action.jsp" servletContext="<%= application %>" />
 					</li>
-				</ul>
-			</clay:content-col>
-		</c:if>
+				</c:if>
+			</ul>
+		</clay:content-col>
 	</clay:content-row>
 </div>
 
@@ -519,7 +523,7 @@ long assetClassPK = DLAssetHelperUtil.getAssetClassPK(fileEntry, fileVersion);
 
 				<%
 				try {
-					List<DDMStructure> ddmStructures = DDMStructureLocalServiceUtil.getClassStructures(company.getCompanyId(), PortalUtil.getClassNameId(RawMetadataProcessor.class), StructureStructureKeyComparator.INSTANCE_DESCENDING);
+					List<DDMStructure> ddmStructures = DDMStructureLocalServiceUtil.getClassStructures(company.getCompanyId(), PortalUtil.getClassNameId(RawMetadataProcessor.class), StructureStructureKeyComparator.getInstance(false));
 
 					for (DDMStructure ddmStructure : ddmStructures) {
 						DDMFormValues ddmFormValues = null;

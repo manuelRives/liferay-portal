@@ -9,7 +9,8 @@ import ClayForm, {ClayInput, ClayRadio, ClayRadioGroup} from '@clayui/form';
 import ClayModal from '@clayui/modal';
 import ClayMultiSelect from '@clayui/multi-select';
 import classNames from 'classnames';
-import {fetch, openToast, sub} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, sub} from 'frontend-js-web';
 import React, {useContext, useMemo, useState} from 'react';
 
 import ChartContext from '../ChartContext';
@@ -142,14 +143,14 @@ export default function AddOrganizationModal({
 										'1-account-was-added-to-x'
 									),
 									parentData.name
-							  )
+								)
 							: sub(
 									Liferay.Language.get(
 										'x-accounts-were-added-to-x'
 									),
 									nodeChildren.length,
 									parentData.name
-							  );
+								);
 
 					openToast({
 						message,

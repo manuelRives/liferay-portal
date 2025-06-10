@@ -5,7 +5,8 @@
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
-import {openConfirmModal, openToast, sub} from 'frontend-js-web';
+import {openConfirmModal, openToast} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useContext, useEffect, useState} from 'react';
 
@@ -60,6 +61,7 @@ function ViewAccountInfoPanel({
 					type: 'danger',
 				});
 			});
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [accountData.id]);
 
@@ -208,7 +210,7 @@ function ViewAccountInfoPanel({
 							: sub(
 									Liferay.Language.get('custom-x'),
 									Liferay.Language.get('image')
-							  )}
+								)}
 					</div>
 				</div>
 

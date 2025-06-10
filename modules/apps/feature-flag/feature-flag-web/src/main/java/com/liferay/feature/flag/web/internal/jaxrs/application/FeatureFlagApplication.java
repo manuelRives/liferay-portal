@@ -16,23 +16,25 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.FormParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -71,7 +73,8 @@ public class FeatureFlagApplication extends Application {
 				TransformUtil.transform(
 					_getDependentFeatureFlags(featureFlagsBag, key),
 					featureFlag -> _toMap(
-						companyId, featureFlag, featureFlagsBag))
+						companyId, featureFlag, featureFlagsBag,
+						_portal.getLocale(httpServletRequest)))
 			).build(),
 			MediaType.APPLICATION_JSON
 		).build();
@@ -95,15 +98,12 @@ public class FeatureFlagApplication extends Application {
 			FeatureFlag featureFlag = featureFlagsBag.getFeatureFlag(key);
 
 			if (featureFlag == null) {
-				return Response.ok(
-					HashMapBuilder.<String, Object>put(
-						"error",
-						"Feature flag \"" + HtmlUtil.escape(key) +
-							"\" is not available"
-					).build(),
-					MediaType.APPLICATION_JSON
+				return Response.status(
+					Response.Status.NOT_FOUND
 				).build();
 			}
+
+			Locale locale = _portal.getLocale(httpServletRequest);
 
 			return Response.ok(
 				HashMapBuilder.<String, Object>put(
@@ -111,20 +111,20 @@ public class FeatureFlagApplication extends Application {
 					TransformUtil.transform(
 						_getDependentFeatureFlags(featureFlagsBag, key),
 						dependentFeatureFlag -> _toMap(
-							companyId, dependentFeatureFlag, featureFlagsBag))
+							companyId, dependentFeatureFlag, featureFlagsBag,
+							locale))
 				).put(
 					"featureFlag",
-					_toMap(companyId, featureFlag, featureFlagsBag)
+					_toMap(companyId, featureFlag, featureFlagsBag, locale)
 				).build(),
 				MediaType.APPLICATION_JSON
 			).build();
 		}
 		catch (Exception exception) {
-			return Response.ok(
-				HashMapBuilder.<String, Object>put(
-					"error", exception.toString()
-				).build(),
-				MediaType.APPLICATION_JSON
+			_log.error(exception);
+
+			return Response.status(
+				Response.Status.INTERNAL_SERVER_ERROR
 			).build();
 		}
 	}
@@ -159,13 +159,13 @@ public class FeatureFlagApplication extends Application {
 
 	private Map<String, Object> _toMap(
 		long companyId, FeatureFlag featureFlag,
-		FeatureFlagsBag featureFlagsBag) {
+		FeatureFlagsBag featureFlagsBag, Locale locale) {
 
 		FeatureFlagDisplay featureFlagDisplay = new FeatureFlagDisplay(
 			companyId,
 			_getDependencyFeatureFlags(
 				companyId, featureFlagsBag, featureFlag.getKey()),
-			featureFlag, null);
+			featureFlag, locale);
 
 		return HashMapBuilder.<String, Object>put(
 			"companyId", featureFlagDisplay.getCompanyId()
@@ -192,5 +192,8 @@ public class FeatureFlagApplication extends Application {
 
 	@Reference
 	private FeatureFlagsBagProvider _featureFlagsBagProvider;
+
+	@Reference
+	private Portal _portal;
 
 }

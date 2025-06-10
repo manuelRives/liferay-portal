@@ -20,6 +20,7 @@ import com.liferay.dynamic.data.mapping.exception.TemplateScriptException;
 import com.liferay.dynamic.data.mapping.exception.TemplateSmallImageContentException;
 import com.liferay.dynamic.data.mapping.exception.TemplateSmallImageNameException;
 import com.liferay.dynamic.data.mapping.exception.TemplateSmallImageSizeException;
+import com.liferay.dynamic.data.mapping.internal.model.listener.DDMTemplateModelListener;
 import com.liferay.dynamic.data.mapping.internal.search.util.DDMSearchUtil;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.model.DDMTemplateVersion;
@@ -38,6 +39,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Image;
+import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
@@ -74,9 +76,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BiFunction;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
@@ -115,6 +121,7 @@ public class DDMTemplateLocalServiceImpl
 	/**
 	 * Adds a template.
 	 *
+	 * @param  externalReferenceCode the template's external reference code
 	 * @param  userId the primary key of the template's creator/owner
 	 * @param  groupId the primary key of the group
 	 * @param  classNameId the primary key of the class name for the template's
@@ -139,21 +146,23 @@ public class DDMTemplateLocalServiceImpl
 	 */
 	@Override
 	public DDMTemplate addTemplate(
-			long userId, long groupId, long classNameId, long classPK,
-			long resourceClassNameId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String type, String mode,
-			String language, String script, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long classNameId, long classPK, long resourceClassNameId,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			String type, String mode, String language, String script,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		return addTemplate(
-			userId, groupId, classNameId, classPK, resourceClassNameId, null,
-			nameMap, descriptionMap, type, mode, language, script, false, false,
-			null, null, serviceContext);
+			externalReferenceCode, userId, groupId, classNameId, classPK,
+			resourceClassNameId, null, nameMap, descriptionMap, type, mode,
+			language, script, false, false, null, null, serviceContext);
 	}
 
 	/**
 	 * Adds a template with additional parameters.
 	 *
+	 * @param  externalReferenceCode the template's external reference code
 	 * @param  userId the primary key of the template's creator/owner
 	 * @param  groupId the primary key of the group
 	 * @param  classNameId the primary key of the class name for the template's
@@ -187,12 +196,13 @@ public class DDMTemplateLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public DDMTemplate addTemplate(
-			long userId, long groupId, long classNameId, long classPK,
-			long resourceClassNameId, String templateKey,
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String type, String mode, String language, String script,
-			boolean cacheable, boolean smallImage, String smallImageURL,
-			File smallImageFile, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long classNameId, long classPK, long resourceClassNameId,
+			String templateKey, Map<Locale, String> nameMap,
+			Map<Locale, String> descriptionMap, String type, String mode,
+			String language, String script, boolean cacheable,
+			boolean smallImage, String smallImageURL, File smallImageFile,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		// Template
@@ -233,9 +243,10 @@ public class DDMTemplateLocalServiceImpl
 			smallImageBytes);
 
 		DDMTemplate template = _addTemplate(
-			user, groupId, classNameId, classPK, resourceClassNameId,
-			templateKey, nameMap, descriptionMap, type, mode, language, script,
-			cacheable, smallImage, smallImageURL, serviceContext);
+			externalReferenceCode, user, groupId, classNameId, classPK,
+			resourceClassNameId, templateKey, nameMap, descriptionMap, type,
+			mode, language, script, cacheable, smallImage, smallImageURL,
+			serviceContext);
 
 		// Resources
 
@@ -466,6 +477,16 @@ public class DDMTemplateLocalServiceImpl
 		ddmTemplateLocalService.deleteTemplate(template);
 	}
 
+	@Override
+	public DDMTemplate deleteTemplate(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return ddmTemplateLocalService.deleteTemplate(
+			getDDMTemplateByExternalReferenceCode(
+				externalReferenceCode, groupId));
+	}
+
 	/**
 	 * Deletes all the templates of the group.
 	 *
@@ -492,6 +513,36 @@ public class DDMTemplateLocalServiceImpl
 		for (DDMTemplate template : templates) {
 			ddmTemplateLocalService.deleteTemplate(template);
 		}
+	}
+
+	@Override
+	public DDMTemplate fetchDDMTemplateByExternalReferenceCode(
+		String externalReferenceCode, long groupId,
+		boolean includeAncestorTemplates) {
+
+		DDMTemplate template = ddmTemplatePersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
+
+		if (template != null) {
+			return template;
+		}
+
+		if (!includeAncestorTemplates) {
+			return null;
+		}
+
+		for (long ancestorSiteGroupId :
+				_getAncestorSiteAndDepotGroupIds(groupId)) {
+
+			template = ddmTemplatePersistence.fetchByERC_G(
+				externalReferenceCode, ancestorSiteGroupId);
+
+			if (template != null) {
+				return template;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -1561,8 +1612,27 @@ public class DDMTemplateLocalServiceImpl
 	}
 
 	@Activate
+	protected void activate(
+		BundleContext bundleContext, Map<String, Object> properties) {
+
+		if (_textReplacerBiFunction != null) {
+			_serviceRegistration = bundleContext.registerService(
+				ModelListener.class,
+				new DDMTemplateModelListener(_textReplacerBiFunction), null);
+		}
+
+		modified(properties);
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		if (_serviceRegistration != null) {
+			_serviceRegistration.unregister();
+		}
+	}
+
 	@Modified
-	protected void activate(Map<String, Object> properties) {
+	protected void modified(Map<String, Object> properties) {
 		ddmWebConfiguration = ConfigurableUtil.createConfigurable(
 			DDMWebConfiguration.class, properties);
 	}
@@ -1570,11 +1640,12 @@ public class DDMTemplateLocalServiceImpl
 	protected volatile DDMWebConfiguration ddmWebConfiguration;
 
 	private DDMTemplate _addTemplate(
-			User user, long groupId, long classNameId, long classPK,
-			long resourceClassNameId, String templateKey,
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String type, String mode, String language, String script,
-			boolean cacheable, boolean smallImage, String smallImageURL,
+			String externalReferenceCode, User user, long groupId,
+			long classNameId, long classPK, long resourceClassNameId,
+			String templateKey, Map<Locale, String> nameMap,
+			Map<Locale, String> descriptionMap, String type, String mode,
+			String language, String script, boolean cacheable,
+			boolean smallImage, String smallImageURL,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -1583,6 +1654,7 @@ public class DDMTemplateLocalServiceImpl
 		DDMTemplate template = ddmTemplatePersistence.create(templateId);
 
 		template.setUuid(serviceContext.getUuid());
+		template.setExternalReferenceCode(externalReferenceCode);
 		template.setGroupId(groupId);
 		template.setCompanyId(user.getCompanyId());
 		template.setUserId(user.getUserId());
@@ -1686,12 +1758,13 @@ public class DDMTemplateLocalServiceImpl
 			sourceTemplate.getSmallImageURL(), smallImageFile, smallImageBytes);
 
 		DDMTemplate targetTemplate = _addTemplate(
-			user, sourceTemplate.getGroupId(), sourceTemplate.getClassNameId(),
-			classPK, sourceTemplate.getResourceClassNameId(), templateKey,
-			nameMap, descriptionMap, sourceTemplate.getType(),
-			sourceTemplate.getMode(), sourceTemplate.getLanguage(),
-			sourceTemplate.getScript(), sourceTemplate.isCacheable(),
-			smallImage, sourceTemplate.getSmallImageURL(), serviceContext);
+			null, user, sourceTemplate.getGroupId(),
+			sourceTemplate.getClassNameId(), classPK,
+			sourceTemplate.getResourceClassNameId(), templateKey, nameMap,
+			descriptionMap, sourceTemplate.getType(), sourceTemplate.getMode(),
+			sourceTemplate.getLanguage(), sourceTemplate.getScript(),
+			sourceTemplate.isCacheable(), smallImage,
+			sourceTemplate.getSmallImageURL(), serviceContext);
 
 		// Resources
 
@@ -1910,6 +1983,32 @@ public class DDMTemplateLocalServiceImpl
 		_siteConnectedGroupGroupProviderSnapshot = new Snapshot<>(
 			DDMTemplateLocalServiceImpl.class,
 			SiteConnectedGroupGroupProvider.class, null, true);
+	private static final BiFunction<String, String, String>
+		_textReplacerBiFunction;
+
+	static {
+		ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+
+		Object instance = null;
+
+		try {
+			Class<?> clazz = classLoader.loadClass(
+				"com.liferay.portal.tools.jakarta.ee.transformer.function." +
+					"TextReplacerBiFunction");
+
+			instance = clazz.newInstance();
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			if (!(reflectiveOperationException instanceof
+					ClassNotFoundException)) {
+
+				throw new ExceptionInInitializerError(
+					reflectiveOperationException);
+			}
+		}
+
+		_textReplacerBiFunction = (BiFunction<String, String, String>)instance;
+	}
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
@@ -1934,6 +2033,8 @@ public class DDMTemplateLocalServiceImpl
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;
+
+	private ServiceRegistration<?> _serviceRegistration;
 
 	@Reference
 	private UserLocalService _userLocalService;

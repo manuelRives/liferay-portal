@@ -214,11 +214,11 @@ export const List: React.FC<IListProps> = ({
 		open(modalTypes.CONFIRMATION_MODAL, {
 			message: (
 				<div>
-					<h4 className='text-secondary'>
+					<div className='h4 text-secondary'>
 						{Liferay.Language.get(
 							'are-you-sure-you-want-to-delete-this-segment'
 						)}
-					</h4>
+					</div>
 
 					<p>
 						{Liferay.Language.get(
@@ -305,11 +305,10 @@ export const List: React.FC<IListProps> = ({
 					groupId
 				})
 			),
-			label: Liferay.Language.get('dynamic-segment'),
-			onClick: () =>
-				analytics.track('Dynamic Segment Creation - Clicked Create')
+			label: Liferay.Language.get('dynamic-segment')
 		},
 		{
+			deprecated: true,
 			href: setUriQueryValues(
 				{type: SegmentTypes.Static},
 				toRoute(Routes.CONTACTS_SEGMENT_CREATE, {
@@ -317,9 +316,7 @@ export const List: React.FC<IListProps> = ({
 					groupId
 				})
 			),
-			label: Liferay.Language.get('static-segment'),
-			onClick: () =>
-				analytics.track('Static Segment Creation - Clicked Create')
+			label: Liferay.Language.get('static-segment')
 		}
 	];
 

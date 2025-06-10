@@ -164,11 +164,15 @@ public class AddressPersistenceTest {
 
 		newAddress.setStreet3(RandomTestUtil.randomString());
 
+		newAddress.setSubtype(RandomTestUtil.randomString());
+
 		newAddress.setValidationDate(RandomTestUtil.nextDate());
 
 		newAddress.setValidationStatus(RandomTestUtil.nextInt());
 
 		newAddress.setZip(RandomTestUtil.randomString());
+
+		newAddress.setStatus(RandomTestUtil.nextInt());
 
 		_addresses.add(_persistence.update(newAddress));
 
@@ -227,12 +231,16 @@ public class AddressPersistenceTest {
 		Assert.assertEquals(
 			existingAddress.getStreet3(), newAddress.getStreet3());
 		Assert.assertEquals(
+			existingAddress.getSubtype(), newAddress.getSubtype());
+		Assert.assertEquals(
 			Time.getShortTimestamp(existingAddress.getValidationDate()),
 			Time.getShortTimestamp(newAddress.getValidationDate()));
 		Assert.assertEquals(
 			existingAddress.getValidationStatus(),
 			newAddress.getValidationStatus());
 		Assert.assertEquals(existingAddress.getZip(), newAddress.getZip());
+		Assert.assertEquals(
+			existingAddress.getStatus(), newAddress.getStatus());
 	}
 
 	@Test(expected = DuplicateAddressExternalReferenceCodeException.class)
@@ -393,8 +401,8 @@ public class AddressPersistenceTest {
 			"countryId", true, "listTypeId", true, "regionId", true, "city",
 			true, "description", true, "latitude", true, "longitude", true,
 			"mailing", true, "name", true, "primary", true, "street1", true,
-			"street2", true, "street3", true, "validationDate", true,
-			"validationStatus", true, "zip", true);
+			"street2", true, "street3", true, "subtype", true, "validationDate",
+			true, "validationStatus", true, "zip", true, "status", true);
 	}
 
 	@Test
@@ -714,11 +722,15 @@ public class AddressPersistenceTest {
 
 		address.setStreet3(RandomTestUtil.randomString());
 
+		address.setSubtype(RandomTestUtil.randomString());
+
 		address.setValidationDate(RandomTestUtil.nextDate());
 
 		address.setValidationStatus(RandomTestUtil.nextInt());
 
 		address.setZip(RandomTestUtil.randomString());
+
+		address.setStatus(RandomTestUtil.nextInt());
 
 		_addresses.add(_persistence.update(address));
 

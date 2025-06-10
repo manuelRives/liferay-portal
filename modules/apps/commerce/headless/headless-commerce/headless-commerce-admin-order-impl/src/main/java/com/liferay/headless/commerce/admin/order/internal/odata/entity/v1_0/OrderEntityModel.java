@@ -8,6 +8,7 @@ package com.liferay.headless.commerce.admin.order.internal.odata.entity.v1_0;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.odata.entity.CollectionEntityField;
 import com.liferay.portal.odata.entity.DateTimeEntityField;
+import com.liferay.portal.odata.entity.DoubleEntityField;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.entity.IntegerEntityField;
@@ -25,16 +26,12 @@ public class OrderEntityModel implements EntityModel {
 			new CollectionEntityField(
 				new IntegerEntityField(
 					"accountId", locale -> "commerceAccountId")),
-			new IntegerEntityField("channelId", locale -> "commerceChannelId"),
 			new CollectionEntityField(
 				new IntegerEntityField("orderStatus", locale -> "orderStatus")),
-			new IntegerEntityField("orderId", locale -> Field.ENTRY_CLASS_PK),
 			new DateTimeEntityField(
 				"createDate",
 				locale -> Field.getSortableFieldName(Field.CREATE_DATE),
 				locale -> Field.CREATE_DATE),
-			new StringEntityField(
-				"creatorEmailAddress", locale -> "orderCreatorEmailAddress"),
 			new DateTimeEntityField(
 				"modifiedDate",
 				locale -> Field.getSortableFieldName(Field.MODIFIED_DATE),
@@ -42,11 +39,16 @@ public class OrderEntityModel implements EntityModel {
 			new DateTimeEntityField(
 				"orderDate", locale -> Field.getSortableFieldName("orderDate"),
 				locale -> "orderDate"),
+			new DoubleEntityField("totalAmount", locale -> "totalAmount"),
+			new IntegerEntityField("channelId", locale -> "commerceChannelId"),
+			new IntegerEntityField("orderId", locale -> Field.ENTRY_CLASS_PK),
+			new IntegerEntityField(
+				"orderTypeId", locale -> "commerceOrderTypeId"),
+			new StringEntityField(
+				"creatorEmailAddress", locale -> "orderCreatorEmailAddress"),
 			new StringEntityField(
 				"orderTypeExternalReferenceCode",
-				locale -> "commerceOrderTypeExternalReferenceCode"),
-			new IntegerEntityField(
-				"orderTypeId", locale -> "commerceOrderTypeId"));
+				locale -> "commerceOrderTypeExternalReferenceCode"));
 	}
 
 	@Override

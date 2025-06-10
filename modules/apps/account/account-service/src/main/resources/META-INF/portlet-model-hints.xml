@@ -69,6 +69,7 @@
 			<validator name="required" />
 		</field>
 		<field name="type" type="String" />
+		<field name="status" type="int" />
 	</model>
 	<model name="com.liferay.account.model.AccountGroupRel">
 		<field name="mvccVersion" type="long" />
@@ -84,6 +85,7 @@
 	</model>
 	<model name="com.liferay.account.model.AccountRole">
 		<field name="mvccVersion" type="long" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="accountRoleId" type="long" />
 		<field name="companyId" type="long" />
 		<field name="accountEntryId" type="long" />

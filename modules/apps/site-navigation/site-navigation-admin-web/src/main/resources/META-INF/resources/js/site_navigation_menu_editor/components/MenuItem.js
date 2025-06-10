@@ -9,7 +9,8 @@ import ClayIcon from '@clayui/icon';
 import ClayLabel from '@clayui/label';
 import ClayLayout from '@clayui/layout';
 import classNames from 'classnames';
-import {fetch, objectToFormData, openToast, sub} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, objectToFormData, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useMemo} from 'react';
 
@@ -34,10 +35,8 @@ export function MenuItem({item, onMenuItemRemoved, sidebarPanelRef}) {
 	const setItems = useSetItems();
 	const setSelectedMenuItemId = useSetSelectedMenuItemId();
 	const setSidebarPanelId = useSetSidebarPanelId();
-	const {
-		editSiteNavigationMenuItemParentURL,
-		portletNamespace,
-	} = useConstants();
+	const {editSiteNavigationMenuItemParentURL, portletNamespace} =
+		useConstants();
 
 	const items = useItems();
 	const {
@@ -96,16 +95,15 @@ export function MenuItem({item, onMenuItemRemoved, sidebarPanelRef}) {
 	const setKeyboardDragLayer = useSetDragLayer();
 	const {handlerRef, isDragging} = useDragItem(item, updateMenuItemParent);
 
-	const {isOver, isOverFirstItem, nestingLevel, targetRef} = useDropTarget(
-		item
-	);
+	const {isOver, isOverFirstItem, nestingLevel, targetRef} =
+		useDropTarget(item);
 
 	const isKeyboardDragging = useMemo(
 		() =>
 			keyboardDragLayer?.siteNavigationMenuItemId
 				? getItemPath(siteNavigationMenuItemId, items).includes(
 						keyboardDragLayer.siteNavigationMenuItemId
-				  )
+					)
 				: false,
 		[
 			items,
@@ -123,14 +121,8 @@ export function MenuItem({item, onMenuItemRemoved, sidebarPanelRef}) {
 	const parentItemId =
 		itemPath.length > 1 ? itemPath[itemPath.length - 2] : '0';
 
-	const {
-		element,
-		isTarget,
-		onBlur,
-		onFocus,
-		onKeyDown,
-		setElement,
-	} = useKeyboardNavigation();
+	const {element, isTarget, onBlur, onFocus, onKeyDown, setElement} =
+		useKeyboardNavigation();
 
 	const onDragHandlerKeyDown = (event) => {
 		if (event.key === 'Enter') {
@@ -247,15 +239,15 @@ export function MenuItem({item, onMenuItemRemoved, sidebarPanelRef}) {
 									'open-x-configuration-panel'
 								),
 								`${title} (${type})`
-						  )}. ${Liferay.Language.get(
+							)}. ${Liferay.Language.get(
 								'this-item-does-not-have-a-display-page'
-						  )}`
+							)}`
 						: sub(
 								Liferay.Language.get(
 									'open-x-configuration-panel'
 								),
 								`${title} (${type})`
-						  )
+							)
 				}
 				aria-level={itemPath.length}
 				className={classNames(
@@ -326,6 +318,19 @@ export function MenuItem({item, onMenuItemRemoved, sidebarPanelRef}) {
 										)}
 									/>
 								</ClayLayout.ContentCol>
+
+								{item.displayIcon && (
+									<ClayLayout.ContentCol gutters>
+										<ClayIcon
+											className="lfr-portal-tooltip mr-3"
+											style={{
+												height: '1.5rem',
+												width: '1.5rem',
+											}}
+											symbol={item.displayIcon}
+										/>
+									</ClayLayout.ContentCol>
+								)}
 
 								<ClayLayout.ContentCol expand>
 									<ClayCard.Description

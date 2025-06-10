@@ -3,12 +3,32 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ApiHelpers} from './ApiHelpers';
+import {ApiHelpers, DataApiHelpers} from './ApiHelpers';
+
+type TCart = {
+	accountId: number;
+	author?: string;
+	billingAddressId?: number;
+	cartItems?: TCartItem[];
+	createDate?: string;
+	currencyCode?: string;
+	id?: number;
+	modifiedDate?: string;
+	paymentMethod?: string;
+	shippingAddressId?: number;
+	shippingMethod?: string;
+	shippingOption?: string;
+};
 
 type TCartItem = {
+	deliveryGroupName?: string;
+	id?: number;
 	options?: string;
+	price?: any;
 	quantity: number;
 	replacedSkuId?: number;
+	requestedDeliveryDate?: string;
+	shippingAddressId?: string;
 	skuId: number;
 	skuUnitOfMeasure?: TCartItemUOM;
 };
@@ -17,20 +37,19 @@ type TCartItemUOM = {
 	key: string;
 };
 
-type TCart = {
-	accountId: number;
-	cartItems?: TCartItem[];
-	currencyCode?: string;
-	id?: number;
-};
-
 export class HeadlessCommerceDeliveryCartApiHelper {
-	readonly apiHelpers: ApiHelpers;
+	readonly apiHelpers: ApiHelpers | DataApiHelpers;
 	readonly basePath: string;
 
-	constructor(apiHelpers: ApiHelpers) {
+	constructor(apiHelpers: ApiHelpers | DataApiHelpers) {
 		this.apiHelpers = apiHelpers;
 		this.basePath = 'headless-commerce-delivery-cart/v1.0/';
+	}
+
+	async checkoutCart(cartId: number) {
+		return this.apiHelpers.post(
+			`${this.apiHelpers.baseUrl}${this.basePath}/carts/${cartId}/checkout`
+		);
 	}
 
 	async deleteCart(cartId: number) {
@@ -39,10 +58,46 @@ export class HeadlessCommerceDeliveryCartApiHelper {
 		);
 	}
 
+	async getCart(cartId: number) {
+		return await this.apiHelpers.get(
+			`${this.apiHelpers.baseUrl}${this.basePath}/carts/${cartId}`
+		);
+	}
+
+	async getCartItems(cartId: number) {
+		return await this.apiHelpers.get(
+			`${this.apiHelpers.baseUrl}${this.basePath}/carts/${cartId}/items`
+		);
+	}
+
+	async getComments(cartId: number) {
+		return this.apiHelpers.get(
+			`${this.apiHelpers.baseUrl}${this.basePath}/carts/${cartId}/comments`
+		);
+	}
+
+	async patchCart(cart: TCart, id: number): Promise<TCart> {
+		const patchCart = await this.apiHelpers.patch(
+			`${this.apiHelpers.baseUrl}${this.basePath}/carts/${id}`,
+			cart
+		);
+
+		return patchCart;
+	}
+
 	async postCart(cart: TCart, channelId: number): Promise<TCart> {
-		return await this.apiHelpers.post(
+		const postCart = await this.apiHelpers.post(
 			`${this.apiHelpers.baseUrl}${this.basePath}/channels/${channelId}/carts?nestedFields=cartItems`,
 			{data: {accountId: 0, cartItems: [], currencyCode: 'USD', ...cart}}
 		);
+
+		if (this.apiHelpers instanceof DataApiHelpers) {
+			this.apiHelpers.data.push({
+				id: postCart.id,
+				type: 'order',
+			});
+		}
+
+		return postCart;
 	}
 }

@@ -11,7 +11,10 @@ import org.osgi.annotation.versioning.ProviderType;
 
 /**
  * @author Pavel Savinov
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *             com.liferay.portal.kernel.service.LayoutLocalService}
  */
+@Deprecated
 @ProviderType
 public interface LayoutCopyHelper {
 
@@ -19,12 +22,8 @@ public interface LayoutCopyHelper {
 		throws Exception;
 
 	public Layout copyLayoutContent(
-			long segmentsExperienceId, Layout sourceLayout, Layout targetLayout)
-		throws Exception;
-
-	public Layout copyLayoutContent(
-			long[] segmentsExperienceIds, Layout sourceLayout,
-			Layout targetLayout)
+			long sourceSegmentsExperienceId, Layout sourceLayout,
+			long targetSegmentsExperienceId, Layout targetLayout)
 		throws Exception;
 
 }

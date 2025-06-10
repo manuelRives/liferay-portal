@@ -26,7 +26,9 @@ PortletConfigurationTemplatesDisplayContext portletConfigurationTemplatesDisplay
 				propsTransformer="{ManagementToolbarPropsTransformer} from portlet-configuration-web"
 			/>
 
-			<clay:container-fluid>
+			<clay:container-fluid
+				size="xxxl"
+			>
 				<liferay-ui:error exception="<%= NoSuchPortletItemException.class %>" message="the-setup-could-not-be-found" />
 
 				<div class="button-holder text-center">
@@ -66,9 +68,9 @@ PortletConfigurationTemplatesDisplayContext portletConfigurationTemplatesDisplay
 										<liferay-ui:message arguments="<%= new String[] {LanguageUtil.getTimeDescription(locale, System.currentTimeMillis() - archivedSettings.getModifiedDate().getTime(), true), HtmlUtil.escape(archivedSettings.getUserName())} %>" key="x-ago-by-x" translateArguments="<%= false %>" />
 									</div>
 
-									<h5>
+									<div class="h5">
 										<%= HtmlUtil.escape(archivedSettings.getName()) %>
-									</h5>
+									</div>
 								</liferay-ui:search-container-column-text>
 
 								<liferay-ui:search-container-column-text>

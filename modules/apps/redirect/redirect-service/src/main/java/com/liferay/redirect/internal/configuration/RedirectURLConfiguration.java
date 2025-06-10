@@ -23,8 +23,9 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface RedirectURLConfiguration {
 
 	@Meta.AD(
-		deflt = "localhost|PORTAL_DOMAIN", description = "allowed-domains-help",
-		name = "allowed-domains", required = false
+		deflt = "localhost|PORTAL_DOMAINS",
+		description = "allowed-domains-help", name = "allowed-domains",
+		required = false
 	)
 	public String[] allowedDomains();
 
@@ -33,6 +34,12 @@ public interface RedirectURLConfiguration {
 		name = "allowed-ips", required = false
 	)
 	public String[] allowedIPs();
+
+	@Meta.AD(
+		deflt = "http|https", description = "allowed-protocols-help",
+		name = "allowed-protocols", required = false
+	)
+	public String[] allowedProtocols();
 
 	@Meta.AD(
 		deflt = "domain", description = "security-mode-help",

@@ -11,8 +11,6 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.io.Serializable;
 
 import java.util.Iterator;
@@ -44,7 +42,7 @@ public class TestrayBuildAutofill implements Serializable {
 			TestrayBuildAutofill.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getCaseAmount() {
 		if (_caseAmountSupplier != null) {
 			caseAmount = _caseAmountSupplier.get();
@@ -84,6 +82,88 @@ public class TestrayBuildAutofill implements Serializable {
 
 	@JsonIgnore
 	private Supplier<Integer> _caseAmountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Long getTestrayRunId1() {
+		if (_testrayRunId1Supplier != null) {
+			testrayRunId1 = _testrayRunId1Supplier.get();
+
+			_testrayRunId1Supplier = null;
+		}
+
+		return testrayRunId1;
+	}
+
+	public void setTestrayRunId1(Long testrayRunId1) {
+		this.testrayRunId1 = testrayRunId1;
+
+		_testrayRunId1Supplier = null;
+	}
+
+	@JsonIgnore
+	public void setTestrayRunId1(
+		UnsafeSupplier<Long, Exception> testrayRunId1UnsafeSupplier) {
+
+		_testrayRunId1Supplier = () -> {
+			try {
+				return testrayRunId1UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Long testrayRunId1;
+
+	@JsonIgnore
+	private Supplier<Long> _testrayRunId1Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Long getTestrayRunId2() {
+		if (_testrayRunId2Supplier != null) {
+			testrayRunId2 = _testrayRunId2Supplier.get();
+
+			_testrayRunId2Supplier = null;
+		}
+
+		return testrayRunId2;
+	}
+
+	public void setTestrayRunId2(Long testrayRunId2) {
+		this.testrayRunId2 = testrayRunId2;
+
+		_testrayRunId2Supplier = null;
+	}
+
+	@JsonIgnore
+	public void setTestrayRunId2(
+		UnsafeSupplier<Long, Exception> testrayRunId2UnsafeSupplier) {
+
+		_testrayRunId2Supplier = () -> {
+			try {
+				return testrayRunId2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Long testrayRunId2;
+
+	@JsonIgnore
+	private Supplier<Long> _testrayRunId2Supplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -125,13 +205,37 @@ public class TestrayBuildAutofill implements Serializable {
 			sb.append(caseAmount);
 		}
 
+		Long testrayRunId1 = getTestrayRunId1();
+
+		if (testrayRunId1 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"testrayRunId1\": ");
+
+			sb.append(testrayRunId1);
+		}
+
+		Long testrayRunId2 = getTestrayRunId2();
+
+		if (testrayRunId2 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"testrayRunId2\": ");
+
+			sb.append(testrayRunId2);
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.testray.rest.dto.v1_0.TestrayBuildAutofill",
 		name = "x-class-name"
 	)
@@ -177,7 +281,10 @@ public class TestrayBuildAutofill implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

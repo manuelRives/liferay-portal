@@ -10,16 +10,16 @@ import com.liferay.portal.vulcan.internal.jaxrs.lifecycle.SafeReleaseInstanceRes
 import com.liferay.portal.vulcan.jaxrs.constants.JaxRsConstants;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriInfo;
 
 import org.apache.cxf.jaxrs.impl.ResourceContextImpl;
 import org.apache.cxf.jaxrs.impl.UriInfoImpl;
@@ -40,15 +40,14 @@ public class ContextProviderUtil {
 	public static EntityModel getEntityModel(Message message) throws Exception {
 		Object matchedResource = getMatchedResource(message);
 
-		if (matchedResource instanceof EntityModelResource) {
-			EntityModelResource entityModelResource =
-				(EntityModelResource)matchedResource;
-
-			return entityModelResource.getEntityModel(
-				_getPathParameters(message));
+		if (!(matchedResource instanceof EntityModelResource)) {
+			return null;
 		}
 
-		return null;
+		EntityModelResource entityModelResource =
+			(EntityModelResource)matchedResource;
+
+		return entityModelResource.getEntityModel(_getPathParameters(message));
 	}
 
 	public static HttpServletRequest getHttpServletRequest(Message message) {
@@ -57,6 +56,59 @@ public class ContextProviderUtil {
 	}
 
 	public static Object getMatchedResource(Message message) {
+		return _getMatchedResource(true, message);
+	}
+
+	public static MultivaluedHashMap<String, String> getMultivaluedHashMap(
+		Map<String, String[]> parameterMap) {
+
+		return new MultivaluedHashMap<String, String>() {
+			{
+				for (Entry<String, String[]> entry : parameterMap.entrySet()) {
+					put(entry.getKey(), Arrays.asList(entry.getValue()));
+				}
+			}
+		};
+	}
+
+	public static void releaseResourceInstance(Message message) {
+		Exchange exchange = message.getExchange();
+
+		Object resource = _getMatchedResource(false, message);
+
+		if (resource == null) {
+			return;
+		}
+
+		OperationResourceInfo operationResourceInfo = exchange.get(
+			OperationResourceInfo.class);
+
+		ClassResourceInfo classResourceInfo =
+			operationResourceInfo.getClassResourceInfo();
+
+		ResourceProvider resourceProvider =
+			classResourceInfo.getResourceProvider();
+
+		if (resourceProvider != null) {
+			resourceProvider.releaseInstance(message, resource);
+		}
+	}
+
+	private static Object _fetchExistingResource(
+		Exchange exchange, String... keys) {
+
+		Object resource = null;
+
+		for (int i = 0; (i < keys.length) && (resource == null); i++) {
+			resource = exchange.get(keys[i]);
+		}
+
+		return resource;
+	}
+
+	private static Object _getMatchedResource(
+		boolean initialize, Message message) {
+
 		Exchange exchange = message.getExchange();
 
 		Object resource = _fetchExistingResource(
@@ -93,7 +145,9 @@ public class ContextProviderUtil {
 
 			Object instance = resourceProvider.getInstance(message);
 
-			resourceContext.initResource(instance);
+			if (initialize) {
+				resourceContext.initResource(instance);
+			}
 
 			return instance;
 		}
@@ -105,53 +159,6 @@ public class ContextProviderUtil {
 		Class<?> matchedResourceClass = (Class<?>)matchedResources.get(0);
 
 		return resourceContext.getResource(matchedResourceClass);
-	}
-
-	public static MultivaluedHashMap<String, String> getMultivaluedHashMap(
-		Map<String, String[]> parameterMap) {
-
-		return new MultivaluedHashMap<String, String>() {
-			{
-				for (Entry<String, String[]> entry : parameterMap.entrySet()) {
-					put(entry.getKey(), Arrays.asList(entry.getValue()));
-				}
-			}
-		};
-	}
-
-	public static void releaseResourceInstance(Message message) {
-		Exchange exchange = message.getExchange();
-
-		Object resource = getMatchedResource(message);
-
-		if (resource == null) {
-			return;
-		}
-
-		OperationResourceInfo operationResourceInfo = exchange.get(
-			OperationResourceInfo.class);
-
-		ClassResourceInfo classResourceInfo =
-			operationResourceInfo.getClassResourceInfo();
-
-		ResourceProvider resourceProvider =
-			classResourceInfo.getResourceProvider();
-
-		if (resourceProvider != null) {
-			resourceProvider.releaseInstance(message, resource);
-		}
-	}
-
-	private static Object _fetchExistingResource(
-		Exchange exchange, String... keys) {
-
-		Object resource = null;
-
-		for (int i = 0; (i < keys.length) && (resource == null); i++) {
-			resource = exchange.get(keys[i]);
-		}
-
-		return resource;
 	}
 
 	private static MultivaluedMap<String, String> _getPathParameters(

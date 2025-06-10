@@ -8,13 +8,21 @@ package com.liferay.source.formatter.dependencies.upgrade;
 public class UpgradeJavaBasePanelAppExtendedClassesCheck extends BasePanelApp {
 
 	@Reference(
-		target = "(javax.portlet.name=" + CacheManagementPortletKeys.CACHE_MANAGEMENT_PORTLET + ")"
+		target = "(jakarta.portlet.name=" + CacheManagementPortletKeys.CACHE_MANAGEMENT_PORTLET + ")"
 	)
 	private Portlet _portlet;
 
 	@Override
 	public Portlet getPortlet() {
 		return _portlet;
+	}
+
+	@Override
+	public void setUserNotificationEventLocalService(
+		UserNotificationEventLocalService userNotificationEventLocalService) {
+
+		super.setUserNotificationEventLocalService(
+			userNotificationEventLocalService);
 	}
 
 }

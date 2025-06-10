@@ -58,26 +58,34 @@ public class CompanyLocalServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.model.Company addCompany(
 			Long companyId, String webId, String virtualHostname, String mx,
-			int maxUsers, boolean active, String defaultAdminPassword,
-			String defaultAdminScreenName, String defaultAdminEmailAddress,
-			String defaultAdminFirstName, String defaultAdminMiddleName,
-			String defaultAdminLastName)
+			int maxUsers, boolean active, boolean addDefaultAdminUser,
+			String defaultAdminPassword, String defaultAdminScreenName,
+			String defaultAdminEmailAddress, String defaultAdminFirstName,
+			String defaultAdminMiddleName, String defaultAdminLastName)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _companyLocalService.addCompany(
 			companyId, webId, virtualHostname, mx, maxUsers, active,
-			defaultAdminPassword, defaultAdminScreenName,
+			addDefaultAdminUser, defaultAdminPassword, defaultAdminScreenName,
 			defaultAdminEmailAddress, defaultAdminFirstName,
 			defaultAdminMiddleName, defaultAdminLastName);
 	}
 
 	@Override
 	public com.liferay.portal.kernel.model.Company addDBPartitionCompany(
-			long companyId, String name, String virtualHostName, String webId)
+			long companyId, String name, String virtualHostname, String webId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _companyLocalService.addDBPartitionCompany(
-			companyId, name, virtualHostName, webId);
+			companyId, name, virtualHostname, webId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.model.Company checkCompany(
+			com.liferay.portal.kernel.model.Company company, boolean newCompany)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _companyLocalService.checkCompany(company, newCompany);
 	}
 
 	/**
@@ -107,6 +115,16 @@ public class CompanyLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_companyLocalService.checkCompanyKey(companyId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.model.Company copyDBPartitionCompany(
+			long fromCompanyId, Long toCompanyId, String name,
+			String virtualHostname, String webId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _companyLocalService.copyDBPartitionCompany(
+			fromCompanyId, toCompanyId, name, virtualHostname, webId);
 	}
 
 	/**
@@ -296,11 +314,10 @@ public class CompanyLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.kernel.model.Company extractDBPartitionCompany(
-			long companyId)
+	public com.liferay.portal.kernel.model.Company exportCompany(long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _companyLocalService.extractDBPartitionCompany(companyId);
+		return _companyLocalService.exportCompany(companyId);
 	}
 
 	@Override
@@ -447,33 +464,6 @@ public class CompanyLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _companyLocalService.getCompanyById(companyId);
-	}
-
-	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return the company with the logo
-	 */
-	@Override
-	public com.liferay.portal.kernel.model.Company getCompanyByLogoId(
-			long logoId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _companyLocalService.getCompanyByLogoId(logoId);
-	}
-
-	/**
-	 * Returns the company with the mail domain.
-	 *
-	 * @param mx the company's mail domain
-	 * @return the company with the mail domain
-	 */
-	@Override
-	public com.liferay.portal.kernel.model.Company getCompanyByMx(String mx)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _companyLocalService.getCompanyByMx(mx);
 	}
 
 	/**

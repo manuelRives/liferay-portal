@@ -10,6 +10,7 @@ import com.liferay.adaptive.media.exception.AMImageConfigurationException.Invali
 import com.liferay.adaptive.media.exception.AMRuntimeException;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationEntry;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationHelper;
+import com.liferay.adaptive.media.image.internal.configuration.util.AMImageConfigurationEntryParserUtil;
 import com.liferay.adaptive.media.image.service.AMImageEntryLocalService;
 import com.liferay.journal.util.JournalContent;
 import com.liferay.petra.function.transform.TransformUtil;
@@ -25,6 +26,9 @@ import com.liferay.portal.kernel.settings.SettingsException;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ValidatorException;
+
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -36,9 +40,6 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.ValidatorException;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -463,7 +464,7 @@ public class AMImageConfigurationHelperImpl
 									companyId,
 									AMImageCompanyConfiguration.class.
 										getName()))),
-						_amImageConfigurationEntryParser::parse);
+						AMImageConfigurationEntryParserUtil::parse);
 
 			PortalCacheHelperUtil.putWithoutReplicator(
 				_portalCache, companyId, amImageConfigurationEntries);
@@ -536,7 +537,7 @@ public class AMImageConfigurationHelperImpl
 				"imageVariants",
 				TransformUtil.transformToArray(
 					amImageConfigurationEntries,
-					_amImageConfigurationEntryParser::getConfigurationString,
+					AMImageConfigurationEntryParserUtil::getConfigurationString,
 					String.class));
 
 			modifiableSettings.store();
@@ -554,9 +555,6 @@ public class AMImageConfigurationHelperImpl
 	private static final Pattern _positiveNumberPattern = Pattern.compile(
 		"\\d*[1-9]\\d*");
 	private static final Pattern _uuidPattern = Pattern.compile("^(?:\\w|-)+$");
-
-	@Reference
-	private AMImageConfigurationEntryParser _amImageConfigurationEntryParser;
 
 	@Reference
 	private AMImageEntryLocalService _amImageEntryLocalService;

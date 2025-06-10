@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {fetch, openConfirmModal, sub} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {fetch, sub} from 'frontend-js-web';
 
 const CONFIRM_DISCARD_IMAGES = Liferay.Language.get(
 	'uploads-are-in-progress-confirmation'
@@ -64,9 +65,8 @@ class WikiPortlet {
 		const formatSelect = document.getElementById(`${namespace}format`);
 
 		if (formatSelect) {
-			this._currentFormatLabel = formatSelect.options[
-				formatSelect.selectedIndex
-			].text.trim();
+			this._currentFormatLabel =
+				formatSelect.options[formatSelect.selectedIndex].text.trim();
 			this._currentFormatIndex = formatSelect.selectedIndex;
 
 			this._addEventListener(formatSelect, 'change', (event) => {
@@ -80,7 +80,8 @@ class WikiPortlet {
 
 		if (publishButton) {
 			this._addEventListener(publishButton, 'click', () => {
-				this.workflowActionInputNode.value = this._constants.ACTION_PUBLISH;
+				this.workflowActionInputNode.value =
+					this._constants.ACTION_PUBLISH;
 				this._save();
 			});
 		}
@@ -89,7 +90,8 @@ class WikiPortlet {
 
 		if (saveButton) {
 			this._addEventListener(saveButton, 'click', () => {
-				this.workflowActionInputNode.value = this._constants.ACTION_SAVE_DRAFT;
+				this.workflowActionInputNode.value =
+					this._constants.ACTION_SAVE_DRAFT;
 				this._save();
 			});
 		}
@@ -119,9 +121,8 @@ class WikiPortlet {
 	_changeWikiFormat(event) {
 		const formatSelect = event.currentTarget;
 
-		const newFormat = formatSelect.options[
-			formatSelect.selectedIndex
-		].text.trim();
+		const newFormat =
+			formatSelect.options[formatSelect.selectedIndex].text.trim();
 
 		const confirmMessage = sub(
 			this._strings.confirmLoseFormatting,
@@ -211,16 +212,14 @@ class WikiPortlet {
 		const namespace = this._namespace;
 
 		this._maybeRemoveTempImages(() => {
-			document.getElementById(
-				namespace + this._constants.CMD
-			).value = this._currentAction;
+			document.getElementById(namespace + this._constants.CMD).value =
+				this._currentAction;
 
 			const contentEditor = window[`${namespace}contentEditor`];
 
 			if (contentEditor) {
-				document.getElementById(
-					`${namespace}content`
-				).value = contentEditor.getHTML();
+				document.getElementById(`${namespace}content`).value =
+					contentEditor.getHTML();
 			}
 
 			submitForm(document[`${namespace}fm`]);

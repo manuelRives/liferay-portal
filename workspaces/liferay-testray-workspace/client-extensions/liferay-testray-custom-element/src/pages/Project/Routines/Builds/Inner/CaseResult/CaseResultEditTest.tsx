@@ -1,4 +1,5 @@
 /* eslint-disable @liferay/portal/no-global-fetch */
+
 /**
  * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
@@ -6,7 +7,6 @@
 
 import ClayAlert from '@clayui/alert';
 import {yupResolver} from '@hookform/resolvers/yup';
-import {useContext} from 'react';
 import {useForm} from 'react-hook-form';
 import {useOutletContext, useParams} from 'react-router-dom';
 import {KeyedMutator} from 'swr';
@@ -14,7 +14,6 @@ import {InferType} from 'yup';
 import Form from '~/components/Form';
 import Footer from '~/components/Form/Footer';
 import Container from '~/components/Layout/Container';
-import {TestrayContext} from '~/context/TestrayContext';
 import {withPagePermission} from '~/hoc/withPagePermission';
 import useFormActions from '~/hooks/useFormActions';
 import i18n from '~/i18n';
@@ -23,6 +22,7 @@ import {Liferay} from '~/services/liferay';
 import {
 	MessageBoardMessage,
 	TestrayCaseResult,
+	testrayBuildImpl,
 	testrayCaseResultImpl,
 } from '~/services/rest';
 import {CaseResultStatuses} from '~/util/statuses';
@@ -40,15 +40,11 @@ const CaseResultEditTest = () => {
 		form: {onClose, onError, onSave, onSubmit, submitting},
 	} = useFormActions();
 
+	const {buildId} = useParams();
 	const {caseResultId} = useParams();
 
-	const [{myUserAccount}] = useContext(TestrayContext);
-
-	const {
-		caseResult,
-		mbMessage,
-		mutateCaseResult,
-	}: OutletContext = useOutletContext();
+	const {caseResult, mbMessage, mutateCaseResult}: OutletContext =
+		useOutletContext();
 
 	const {
 		formState: {errors},
@@ -65,7 +61,7 @@ const CaseResultEditTest = () => {
 						? CaseResultStatuses.PASSED
 						: caseResult?.dueStatus.key,
 					issues: caseResult.issues,
-			  } as any)
+				} as any)
 			: {},
 		resolver: yupResolver(yupSchema.caseResult),
 	});
@@ -99,6 +95,10 @@ const CaseResultEditTest = () => {
 				}
 			);
 
+			if (buildId !== undefined) {
+				testrayBuildImpl.updateBuildSummary(buildId);
+			}
+
 			mutateCaseResult({
 				...response,
 			});
@@ -118,14 +118,6 @@ const CaseResultEditTest = () => {
 
 	return (
 		<Container>
-			{!myUserAccount?.jiraAuthorization && (
-				<ClayAlert displayType="danger">
-					{i18n.translate(
-						'this-user-does-not-have-authentication-with-jira'
-					)}
-				</ClayAlert>
-			)}
-
 			<ClayAlert displayType="info">
 				{i18n.translate(
 					'clicking-save-will-assign-you-to-this-case-result'

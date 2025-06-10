@@ -62,10 +62,10 @@ import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import com.liferay.portal.upgrade.test.util.UpgradeTestUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -151,7 +151,7 @@ public class JournalArticleLayoutClassedModelUsageUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcess() throws Exception {
+	public void testUpgrade() throws Exception {
 		_assertAssetEntryLayoutClassedModelUsages();
 
 		Group stagingGroup = _liveGroup.getStagingGroup();
@@ -181,7 +181,7 @@ public class JournalArticleLayoutClassedModelUsageUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessExistingLayoutClassedModelUsagesByPlid()
+	public void testUpgradeExistingLayoutClassedModelUsagesByPlid()
 		throws Exception {
 
 		_assertAssetEntryLayoutClassedModelUsages();

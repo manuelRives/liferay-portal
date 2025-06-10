@@ -5,9 +5,15 @@
 
 package com.liferay.portal.dao.jdbc.util;
 
+import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.spring.hibernate.SpringHibernateThreadLocalUtil;
+import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpSession;
 
 import java.io.PrintWriter;
 
@@ -105,7 +111,37 @@ public class DynamicDataSource implements DataSource {
 	}
 
 	private DataSource _getDataSource() {
-		if (SpringHibernateThreadLocalUtil.isCurrentTransactionReadOnly()) {
+		if (!_writeDynamicDataSource.get() &&
+			SpringHibernateThreadLocalUtil.isCurrentTransactionReadOnly()) {
+
+			if (PropsValues.JDBC_READ_DATA_SOURCE_UNAVAILABLE_TIMEOUT > 0) {
+				HttpSession httpSession =
+					PortalSessionThreadLocal.getHttpSession();
+
+				if (httpSession == null) {
+					if (_log.isTraceEnabled()) {
+						_log.trace(
+							"No context HTTP session exists, skip getting " +
+								"the write data source's last used date");
+					}
+				}
+				else {
+					long lastUsedDate = GetterUtil.getLong(
+						httpSession.getAttribute(
+							_WRITE_DATA_SOURCE_LAST_USED_DATE));
+
+					if (PropsValues.JDBC_READ_DATA_SOURCE_UNAVAILABLE_TIMEOUT >
+							(System.currentTimeMillis() - lastUsedDate)) {
+
+						if (_log.isTraceEnabled()) {
+							_log.trace("Returning write data source");
+						}
+
+						return _writeDataSource;
+					}
+				}
+			}
+
 			if (_log.isTraceEnabled()) {
 				_log.trace("Returning read data source");
 			}
@@ -113,15 +149,43 @@ public class DynamicDataSource implements DataSource {
 			return _readDataSource;
 		}
 
+		if ((PropsValues.JDBC_READ_DATA_SOURCE_UNAVAILABLE_TIMEOUT > 0) &&
+			!SpringHibernateThreadLocalUtil.isCurrentTransactionReadOnly()) {
+
+			HttpSession httpSession = PortalSessionThreadLocal.getHttpSession();
+
+			if (httpSession == null) {
+				if (_log.isTraceEnabled()) {
+					_log.trace(
+						"No context HTTP session exists, skip setting the " +
+							"write data source's last used date");
+				}
+			}
+			else {
+				httpSession.setAttribute(
+					_WRITE_DATA_SOURCE_LAST_USED_DATE,
+					System.currentTimeMillis());
+			}
+		}
+
 		if (_log.isTraceEnabled()) {
 			_log.trace("Returning write data source");
 		}
 
+		_writeDynamicDataSource.set(true);
+
 		return _writeDataSource;
 	}
 
+	private static final String _WRITE_DATA_SOURCE_LAST_USED_DATE =
+		"WRITE_DATA_SOURCE_LAST_USED_DATE";
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		DynamicDataSource.class);
+
+	private static final ThreadLocal<Boolean> _writeDynamicDataSource =
+		new CentralizedThreadLocal<>(
+			DynamicDataSource.class + "._writeDynamicDataSource", () -> false);
 
 	private final DataSource _readDataSource;
 	private final DataSource _writeDataSource;

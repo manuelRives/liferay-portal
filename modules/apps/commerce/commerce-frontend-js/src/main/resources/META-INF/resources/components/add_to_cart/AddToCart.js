@@ -15,7 +15,7 @@ import {
 	CP_UNIT_OF_MEASURE_SELECTOR_CHANGED,
 } from '../../utilities/eventsDefinitions';
 import {useCommerceAccount, useCommerceCart} from '../../utilities/hooks';
-import {getMinQuantity} from '../../utilities/quantities';
+import {getMinQuantity, getMultipleQuantity} from '../../utilities/quantities';
 import QuantitySelector from '../quantity_selector/QuantitySelector';
 import UnitOfMeasureSelector from '../unit_of_measure_selector/UnitOfMeasureSelector';
 import AddToCartButton from './AddToCartButton';
@@ -35,8 +35,11 @@ function getQuantity(settings, skuUnitOfMeasure) {
 			skuUnitOfMeasure
 				? settings?.productConfiguration?.minOrderQuantity
 				: Math.ceil(settings?.productConfiguration?.minOrderQuantity),
-			skuUnitOfMeasure?.incrementalOrderQuantity ||
+			getMultipleQuantity(
+				skuUnitOfMeasure?.incrementalOrderQuantity,
 				settings?.productConfiguration?.multipleOrderQuantity,
+				skuUnitOfMeasure?.precision || 0
+			),
 			skuUnitOfMeasure?.precision || 0
 		)
 	);
@@ -49,19 +52,19 @@ function AddToCart({
 	channel,
 	cpInstance: initialCpInstance,
 	disabled: initialDisabled,
+	guestOrderEnabled,
 	productId,
 	settings,
-	showOrderTypeModal,
-	showOrderTypeModalURL,
 }) {
 	const account = useCommerceAccount({id: initialAccountId});
-	const cart = useCommerceCart(
-		{
+	const cart = useCommerceCart({
+		channelGroupId: channel.groupId,
+		guestOrderEnabled,
+		initialCart: {
 			UUID: initialCartUUID,
 			id: initialCartId,
 		},
-		channel.groupId
-	);
+	});
 	const [cpInstance, setCpInstance] = useState({
 		...initialCpInstance,
 		quantity: getQuantity(settings, initialCpInstance.skuUnitOfMeasure),
@@ -226,7 +229,8 @@ function AddToCart({
 			<div
 				className={classnames({
 					'd-flex': true,
-					'justify-content-center': !settings.showUnitOfMeasureSelector,
+					'justify-content-center':
+						!settings.showUnitOfMeasureSelector,
 					'mb-3': true,
 				})}
 			>
@@ -261,6 +265,11 @@ function AddToCart({
 						accountId={account.id}
 						channelId={channel.id}
 						cpInstanceId={cpInstance.skuId}
+						currencyCode={
+							Liferay.CommerceContext
+								? Liferay.CommerceContext.currency.currencyCode
+								: ''
+						}
 						namespace={settings.namespace}
 						productConfiguration={settings.productConfiguration}
 						productId={productId}
@@ -283,18 +292,7 @@ function AddToCart({
 						inCart: true,
 					}));
 				}}
-				onClick={
-					cpInstance.validQuantity
-						? null
-						: (event) => {
-								event.preventDefault();
-
-								inputRef.current?.focus();
-						  }
-				}
 				settings={settings}
-				showOrderTypeModal={showOrderTypeModal}
-				showOrderTypeModalURL={showOrderTypeModalURL}
 			/>
 		</div>
 	);
@@ -323,8 +321,6 @@ AddToCart.propTypes = {
 		showUnitOfMeasureSelector: PropTypes.bool,
 		size: PropTypes.oneOf(['lg', 'md', 'sm']),
 	}),
-	showOrderTypeModal: PropTypes.bool,
-	showOrderTypeModalURL: PropTypes.string,
 };
 
 export default AddToCart;

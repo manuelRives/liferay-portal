@@ -136,9 +136,8 @@ export function ModalAddFilter({
 
 	const [selectedFilterBy, setSelectedFilterBy] = useState<ObjectField>();
 
-	const [selectedFilterTypeValue, setSelectedFilterTypeValue] = useState<
-		string
-	>();
+	const [selectedFilterTypeValue, setSelectedFilterTypeValue] =
+		useState<string>();
 	const [value, setValue] = useState<string>();
 
 	const [errors, setErrors] = useState<FilterErrors>({});
@@ -153,11 +152,12 @@ export function ModalAddFilter({
 
 	const filterByItems = useMemo(() => {
 		return objectFields.map(({id, label, name}) => ({
-			label: stringUtils.getLocalizableLabel(
-				creationLanguageId as Liferay.Language.Locale,
-				label,
-				name
-			),
+			label: stringUtils.getLocalizableLabel({
+				fallbackLabel: name,
+				fallbackLanguageId:
+					creationLanguageId as Liferay.Language.Locale,
+				labels: label,
+			}),
 			value: id,
 		})) as LabelValueObject<number>[];
 	}, [creationLanguageId, objectFields]);
@@ -194,9 +194,10 @@ export function ModalAddFilter({
 			) {
 				const makeFetch = async () => {
 					if (objectField.listTypeDefinitionId) {
-						const items = await API.getListTypeDefinitionListTypeEntries(
-							objectField.listTypeDefinitionId
-						);
+						const items =
+							await API.getListTypeDefinitionListTypeEntries(
+								objectField.listTypeDefinitionId
+							);
 
 						if (editingFilter) {
 							setItems(
@@ -301,27 +302,29 @@ export function ModalAddFilter({
 									value: system
 										? String(objectEntry.id)
 										: objectEntry.externalReferenceCode,
-								} as LabelValueObject;
+								};
 
 								if (titleObjectField.system) {
 									return getSystemObjectFieldLabelFromObjectEntry(
 										titleObjectField.name,
 										objectEntry,
 										newItemsObject
-									) as LabelValueObject;
+									);
 								}
 
-								let label = objectEntry[
-									titleObjectField?.name
-								] as string;
+								let label = String(
+									objectEntry[titleObjectField?.name]
+								);
 
 								if (
 									titleObjectField.businessType ===
 									'Attachment'
 								) {
-									label = (objectEntry as {
-										[key: string]: AttachmentEntry;
-									})[titleObjectField.name].name;
+									label = (
+										objectEntry as {
+											[key: string]: AttachmentEntry;
+										}
+									)[titleObjectField.name].name;
 								}
 
 								return {
@@ -346,6 +349,7 @@ export function ModalAddFilter({
 				makeFetch();
 			}
 		},
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[]
 	);
@@ -419,8 +423,8 @@ export function ModalAddFilter({
 				valueList: isMultiSelectValue()
 					? checkedItems
 					: selectedFilterBy?.businessType === 'Date'
-					? items
-					: undefined,
+						? items
+						: undefined,
 			});
 		}
 
@@ -433,9 +437,7 @@ export function ModalAddFilter({
 		}
 		else {
 			if (selectedFilterBy) {
-				setFieldValues(
-					(selectedFilterBy as unknown) as ObjectFieldView
-				);
+				setFieldValues(selectedFilterBy as unknown as ObjectFieldView);
 			}
 			else {
 				const objectField = objectFields.find(
@@ -465,9 +467,7 @@ export function ModalAddFilter({
 		}
 		else {
 			if (selectedFilterBy) {
-				setFieldValues(
-					(selectedFilterBy as unknown) as ObjectFieldView
-				);
+				setFieldValues(selectedFilterBy as unknown as ObjectFieldView);
 			}
 			else {
 				const objectField = objectFields.find(
@@ -511,11 +511,12 @@ export function ModalAddFilter({
 								({id}) => id.toString() === value
 							);
 
-							const userRelationship = !!selectedField?.objectFieldSettings?.find(
-								({name, value}) =>
-									name === 'objectDefinition1ShortName' &&
-									value === 'User'
-							);
+							const userRelationship =
+								!!selectedField?.objectFieldSettings?.find(
+									({name, value}) =>
+										name === 'objectDefinition1ShortName' &&
+										value === 'User'
+								);
 
 							setSelectedFilterBy(selectedField);
 							setValue('');

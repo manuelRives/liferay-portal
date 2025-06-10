@@ -31,6 +31,10 @@ public class ObjectRelationshipModelDocumentContributor
 			"localized_label", objectRelationship.getLabelMap(), true, true);
 		document.addKeyword(
 			"objectDefinitionId", objectRelationship.getObjectDefinitionId1());
+		document.addKeyword(
+			"objectRelationshipId",
+			objectRelationship.getObjectRelationshipId());
+		document.addKeyword("system", objectRelationship.isSystem());
 
 		document.remove(Field.USER_NAME);
 	}

@@ -9,6 +9,7 @@ import com.liferay.asset.kernel.exception.AssetCategoryException;
 import com.liferay.asset.kernel.exception.AssetTagException;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.document.library.configuration.DLConfiguration;
+import com.liferay.document.library.configuration.DLFileEntryMimeTypeConfiguration;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.exception.DLStorageQuotaExceededException;
 import com.liferay.document.library.kernel.antivirus.AntivirusScannerException;
@@ -49,8 +50,8 @@ import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -112,6 +113,14 @@ import com.liferay.portal.util.RepositoryUtil;
 import com.liferay.trash.service.TrashEntryService;
 import com.liferay.upload.UploadResponseHandler;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -127,14 +136,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileUploadBase;
 
@@ -154,9 +155,9 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	configurationPid = "com.liferay.document.library.configuration.DLConfiguration",
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/edit_file_entry",
 		"mvc.command.name=/document_library/upload_multiple_file_entries"
 	},
@@ -399,21 +400,11 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 		User user = _userLocalService.getUser(themeDisplay.getUserId());
 
-		Date displayDate = _getDisplayDate(
-			uploadPortletRequest, neverExpireDefaultValue, user.getTimeZone());
-
-		Date expirationDate = _getExpirationDate(
-			uploadPortletRequest, displayDate, neverExpireDefaultValue,
-			user.getTimeZone());
-
-		Date reviewDate = _getReviewDate(
-			uploadPortletRequest, neverExpireDefaultValue, user.getTimeZone());
-
 		for (String selectedFileName : selectedFileNames) {
 			_addMultipleFileEntries(
 				portletConfig, actionRequest, selectedFileName,
-				validFileNameKVPs, invalidFileNameKVPs, displayDate,
-				expirationDate, reviewDate, serviceContext);
+				validFileNameKVPs, invalidFileNameKVPs, neverExpireDefaultValue,
+				user, uploadPortletRequest, serviceContext);
 		}
 
 		JSONArray jsonArray = _jsonFactory.createJSONArray();
@@ -452,8 +443,10 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 	private void _addMultipleFileEntries(
 			PortletConfig portletConfig, ActionRequest actionRequest,
 			String selectedFileName, List<KeyValuePair> validFileNameKVPs,
-			List<KeyValuePair> invalidFileNameKVPs, Date displayDate,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			List<KeyValuePair> invalidFileNameKVPs,
+			Boolean neverExpireDefaultValue, User user,
+			UploadPortletRequest uploadPortletRequest,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -483,12 +476,22 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 				tempFileEntry.getGroupId(), folderId,
 				FileUtil.stripExtension(originalSelectedFileName));
 
+			Date displayDate = _getDisplayDate(
+				uploadPortletRequest, neverExpireDefaultValue,
+				user.getTimeZone());
+
 			_dlAppService.addFileEntry(
 				null, repositoryId, folderId, uniqueFileName,
 				tempFileEntry.getMimeType(), uniqueFileTitle, StringPool.BLANK,
 				description, changeLog, tempFileEntry.getContentStream(),
-				tempFileEntry.getSize(), displayDate, expirationDate,
-				reviewDate, serviceContext);
+				tempFileEntry.getSize(), displayDate,
+				_getExpirationDate(
+					uploadPortletRequest, displayDate, neverExpireDefaultValue,
+					user.getTimeZone()),
+				_getReviewDate(
+					uploadPortletRequest, neverExpireDefaultValue,
+					user.getTimeZone()),
+				serviceContext);
 
 			validFileNameKVPs.add(
 				new KeyValuePair(uniqueFileName, selectedFileName));
@@ -516,9 +519,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 		ActionRequest actionRequest, FileVersion fileVersion,
 		ThemeDisplay themeDisplay) {
 
-		if (!_featureFlagManager.isEnabled("LPD-10701") ||
-			!fileVersion.isScheduled()) {
-
+		if (!fileVersion.isScheduled()) {
 			String portletResource = ParamUtil.getString(
 				actionRequest, "portletResource");
 
@@ -537,7 +538,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			themeDisplay.getLocale(), themeDisplay.getTimeZone());
 
 		SessionMessages.add(
-			httpServletRequest, "scheduledDocumentRequestProcessedSuccess",
+			httpServletRequest, "scheduledDocument_requestProcessedSuccess",
 			_language.format(
 				_portal.getHttpServletRequest(actionRequest),
 				"x-will-be-published-on-x",
@@ -885,12 +886,40 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 				"the-folder-you-selected-already-has-an-entry-with-this-" +
 					"name.-please-select-a-different-folder");
 		}
+		else if (exception instanceof FileEntryDisplayDateException) {
+			errorMessage = _language.get(
+				_portal.getHttpServletRequest(actionRequest),
+				"please-enter-a-valid-publish-date");
+		}
+		else if (exception instanceof FileEntryExpirationDateException) {
+			errorMessage = _language.get(
+				_portal.getHttpServletRequest(actionRequest),
+				"please-enter-a-valid-expiration-date");
+		}
+		else if (exception instanceof FileEntryReviewDateException) {
+			errorMessage = _language.get(
+				_portal.getHttpServletRequest(actionRequest),
+				"please-enter-a-valid-review-date");
+		}
 		else if (exception instanceof FileExtensionException) {
 			errorMessage = _language.format(
 				themeDisplay.getLocale(),
 				"please-enter-a-file-with-a-valid-extension-x",
 				StringUtil.merge(
 					_getAllowedFileExtensions(portletConfig, actionRequest)));
+		}
+		else if (exception instanceof FileMimeTypeException) {
+			DLFileEntryMimeTypeConfiguration dlFileEntryMimeTypeConfiguration =
+				_configurationProvider.getCompanyConfiguration(
+					DLFileEntryMimeTypeConfiguration.class,
+					themeDisplay.getCompanyId());
+
+			errorMessage = _language.format(
+				themeDisplay.getLocale(),
+				"please-enter-a-file-with-a-valid-mime-type-x",
+				StringUtil.merge(
+					dlFileEntryMimeTypeConfiguration.fileMimeTypes(),
+					StringPool.COMMA_AND_SPACE));
 		}
 		else if (exception instanceof FileNameException) {
 			errorMessage = _language.get(
@@ -979,9 +1008,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			TimeZone timeZone)
 		throws PortalException {
 
-		if (addDynamic || !PropsValues.SCHEDULER_ENABLED ||
-			!_featureFlagManager.isEnabled("LPD-10701")) {
-
+		if (addDynamic || !PropsValues.SCHEDULER_ENABLED) {
 			return null;
 		}
 
@@ -1170,6 +1197,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 				exception instanceof DLStorageQuotaExceededException ||
 				exception instanceof DuplicateFileEntryException ||
 				exception instanceof FileExtensionException ||
+				exception instanceof FileMimeTypeException ||
 				exception instanceof FileNameException ||
 				exception instanceof FileSizeException ||
 				exception instanceof UploadRequestSizeException) {
@@ -1459,7 +1487,17 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			else {
 				fileEntry = _dlAppService.getFileEntry(fileEntryId);
 
-				_validateFileName(sourceFileName, fileEntry.getExtension());
+				if (Validator.isNotNull(
+						uploadPortletRequest.getFileName("file"))) {
+
+					_validateFileName(
+						sourceFileName,
+						FileUtil.getExtension(
+							uploadPortletRequest.getFileName("file")));
+				}
+				else {
+					_validateFileName(sourceFileName, fileEntry.getExtension());
+				}
 
 				if (cmd.equals(Constants.UPDATE_AND_CHECKIN)) {
 
@@ -1496,7 +1534,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	private void _validateFileName(String sourceFileName, String extension)
-		throws FileNameExtensionException {
+		throws PortalException {
 
 		if (Validator.isNotNull(extension) &&
 			(Validator.isNull(sourceFileName) ||
@@ -1504,6 +1542,12 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 			throw new FileNameExtensionException(
 				"The file name cannot be empty or without extension");
+		}
+
+		if (Validator.isNotNull(extension) &&
+			!extension.equals(FileUtil.getExtension(sourceFileName))) {
+
+			throw new FileExtensionException.MismatchExtension();
 		}
 	}
 
@@ -1514,6 +1558,9 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private DDMBeanTranslator _ddmBeanTranslator;
@@ -1531,9 +1578,6 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private DLTrashService _dlTrashService;
-
-	@Reference
-	private FeatureFlagManager _featureFlagManager;
 
 	@Reference
 	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;

@@ -57,17 +57,17 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.FastDateFormatFactoryImpl;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -1039,13 +1039,14 @@ public class DDMFormPagesTemplateContextFactoryTest {
 	}
 
 	private DDMFormEvaluator _getDDMFormEvaluator() {
+		DDMFormEvaluator ddmFormEvaluator = new DDMFormEvaluatorImpl();
+
 		DDMExpressionFactoryImpl ddmExpressionFactoryImpl =
 			new DDMExpressionFactoryImpl();
 
-		DDMFormEvaluator ddmFormEvaluator = new DDMFormEvaluatorImpl();
-
 		ReflectionTestUtil.setFieldValue(
 			ddmFormEvaluator, "ddmExpressionFactory", ddmExpressionFactoryImpl);
+
 		ReflectionTestUtil.setFieldValue(
 			ddmFormEvaluator, "ddmFormFieldTypeServicesRegistry",
 			_ddmFormFieldTypeServicesRegistry);

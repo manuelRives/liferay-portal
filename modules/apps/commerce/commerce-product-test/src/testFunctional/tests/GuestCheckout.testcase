@@ -4,11 +4,14 @@ definition {
 	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
@@ -93,7 +96,7 @@ definition {
 		CommerceNavigator.gotoSpeedwellAccountDropdownItem(dropdownItem = "Sign In");
 
 		CommerceLogin.loginPG(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			samlEnabled = "true",
 			userEmailAddress = "buyer@liferay.com");
@@ -169,7 +172,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.speedwellLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/speedwell",
 			userEmailAddress = "buyer@liferay.com");
@@ -217,7 +220,7 @@ definition {
 		Click(locator1 = "CommerceAccelerators#MINI_CART_CLOSE");
 
 		CommerceLogin.speedwellLogin(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			urlAppend = "web/speedwell",
 			userEmailAddress = "buyer@liferay.com");
 
@@ -293,7 +296,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.speedwellLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/speedwell",
 			userEmailAddress = "buyer@liferay.com");
@@ -341,7 +344,7 @@ definition {
 		Click(locator1 = "CommerceAccelerators#MINI_CART_CLOSE");
 
 		CommerceLogin.speedwellLogin(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			urlAppend = "web/speedwell",
 			userEmailAddress = "buyer@liferay.com");
 
@@ -357,244 +360,6 @@ definition {
 			cartSummaryQuantity = 6,
 			cartSummarySubtotal = 99,
 			cartSummaryTotal = ${cartSummarySubtotal});
-	}
-
-	@priority = 5
-	test AssertGuestCheckoutAuthenticationPage {
-		property portal.acceptance = "true";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-
-		Refresh();
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickSave();
-
-		AssertChecked.assertCheckedNotVisible(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Click(
-			key_fixIssueButtonName = "Guest Checkout Authentication",
-			locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
-
-		Alert.viewSuccessMessage();
-
-		User.logoutPG();
-
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		GuestCheckout.assertGuestCheckoutAuthenticationPage();
-	}
-
-	@priority = 5
-	test AssertGuestsWithSameEmailHaveDifferentAccounts {
-		property portal.acceptance = "true";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-
-		Refresh();
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickSave();
-
-		AssertChecked.assertCheckedNotVisible(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Click(
-			key_fixIssueButtonName = "Guest Checkout Authentication",
-			locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
-
-		Alert.viewSuccessMessage();
-
-		User.logoutPG();
-
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Button.click(button = "Continue as a Guest");
-
-		CommerceCheckout.initializersCheckout(
-			guestEmail = "buyer@liferay.com",
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Guest Account 1",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Button.click(button = "Continue as a Guest");
-
-		CommerceCheckout.initializersCheckout(
-			guestEmail = "buyer@liferay.com",
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Guest Account 2",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-
-		Navigator.openURL();
-
-		User.loginPG();
-
-		Account.openAccountsAdmin();
-
-		LexiconEntry.viewEntryStatus(
-			rowEntry = "Guest Account 1",
-			rowStatus = "Active");
-
-		CommerceNavigator.gotoEntry(entryName = "Guest Account 1");
-
-		CommerceEntry.viewAccountsEntry(
-			accountEmail = "buyer@liferay.com",
-			accountName = "Guest Account 1",
-			accountType = "Guest");
-
-		Click(locator1 = "Icon#BACK");
-
-		LexiconEntry.viewEntryStatus(
-			rowEntry = "Guest Account 2",
-			rowStatus = "Active");
-
-		CommerceNavigator.gotoEntry(entryName = "Guest Account 2");
-
-		CommerceEntry.viewAccountsEntry(
-			accountEmail = "buyer@liferay.com",
-			accountName = "Guest Account 2",
-			accountType = "Guest");
-	}
-
-	@priority = 5
-	test AssertNewAccountIsCreatedAfterGuestCheckout {
-		property portal.acceptance = "true";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-
-		Refresh();
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickSave();
-
-		Click(
-			key_fixIssueButtonName = "Guest Checkout Authentication",
-			locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
-
-		Button.clickSave();
-
-		User.logoutPG();
-
-		Navigator.openSiteURL(siteName = "Speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Button.click(button = "Continue as a Guest");
-
-		CommerceCheckout.initializersCheckout(
-			guestEmail = "buyer@liferay.com",
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Address Name",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-
-		Navigator.openURL();
-
-		User.logoutPG();
-
-		User.firstLoginPG();
-
-		Account.openAccountsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Address Name");
-
-		var guestAccountEmail = CommerceJSONAccountsAPI._getCommerceAccountEmail(
-			accountName = "Address Name",
-			accountType = "Guest");
-
-		TestUtils.assertEquals(
-			actual = ${guestAccountEmail},
-			expected = "buyer@liferay.com");
 	}
 
 	@description = "COMMERCE-12938. As a guest user, I want to be able to create a quote request order that must work with email populated and submit the quote request without notes on Minium site"
@@ -711,9 +476,7 @@ definition {
 		}
 
 		task ("Then admin can view the order with the status 'Quote Requested' in the Orders admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 
@@ -808,9 +571,7 @@ definition {
 		}
 
 		task ("Then the quote request is placed with the status 'Quote Requested' in the Orders Page") {
-			User.loginPG(
-				password = "test",
-				userEmailAddress = "test@liferay.com");
+			User.loginPG();
 
 			CommerceOrders.openOrdersAdmin();
 
@@ -912,7 +673,7 @@ definition {
 		}
 
 		task ("And adds an address in the checkout page and moves to next step") {
-			CommerceCheckout.gotoCheckoutViaMiniCart();
+			CommerceCheckout.gotoCheckoutViaMiniCart(asGuest = "true");
 
 			AssertElementNotPresent(
 				key_fieldLabel = "Choose Shipping Address",
@@ -938,7 +699,7 @@ definition {
 
 		task ("When the buyer navigates to the checkout page via mini-cart on Minium") {
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -976,168 +737,6 @@ definition {
 	}
 
 	@priority = 5
-	test GuestAccountIsNotCombinedWithExistingUserAccount {
-		property portal.acceptance = "true";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-
-		Refresh();
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickSave();
-
-		AssertChecked.assertCheckedNotVisible(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Click(
-			key_fixIssueButtonName = "Guest Checkout Authentication",
-			locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
-
-		Alert.viewSuccessMessage();
-
-		Site.openSiteSettingsAdmin(siteURLKey = "speedwell");
-
-		Site.manageMembershipOptions(allowManualMembershipManagement = "true");
-
-		User.openUsersAdmin();
-
-		User.addCP(
-			userEmailAddress = "buyer@liferay.com",
-			userFirstName = "Buyer",
-			userLastName = "User",
-			userScreenName = "buyer");
-
-		Click(locator1 = "Icon#BACK");
-
-		CommerceLogin.editPasswordCP(
-			newPassword = "ttest",
-			requirePasswordReset = "true",
-			userScreenName = "buyer");
-
-		Click(locator1 = "Icon#BACK");
-
-		User.editUserSiteCP(
-			siteName = "Speedwell",
-			userScreenName = "buyer");
-
-		User.logoutPG();
-
-		CommerceLogin.speedwellLogin(
-			newPassword = "test",
-			password = "ttest",
-			urlAppend = "web/speedwell",
-			userEmailAddress = "buyer@liferay.com");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		CommerceCheckout.initializersCheckout(
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Address Name",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-
-		User.logoutPG();
-
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Button.click(button = "Continue as a Guest");
-
-		CommerceCheckout.initializersCheckout(
-			guestEmail = "buyer@liferay.com",
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Guest Account",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-
-		CommerceLogin.speedwellLogin(
-			password = "test",
-			urlAppend = "web/speedwell",
-			userEmailAddress = "buyer@liferay.com");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "My Account");
-
-		CommerceNavigator.gotoSpeedwellDashboardItem(dashboardItem = "My Orders");
-
-		AssertElementPresent(
-			key_accountName = "Buyer User",
-			locator1 = "CommerceAccelerators#SPEEDWELL_MY_ORDERS_ORDER_ACCOUNT");
-
-		AssertElementNotPresent(
-			key_accountName = "Guest Account",
-			locator1 = "CommerceAccelerators#SPEEDWELL_MY_ORDERS_ORDER_ACCOUNT");
-
-		User.logoutPG();
-
-		User.loginPG();
-
-		Account.openAccountsAdmin();
-
-		LexiconEntry.viewEntryStatus(
-			rowEntry = "Buyer User",
-			rowStatus = "Active");
-
-		CommerceNavigator.gotoEntry(entryName = "Buyer User");
-
-		CommerceEntry.viewAccountsEntry(
-			accountEmail = "buyer@liferay.com",
-			accountName = "Buyer User",
-			accountType = "Person");
-
-		Click(locator1 = "Icon#BACK");
-
-		LexiconEntry.viewEntryStatus(
-			rowEntry = "Guest Account",
-			rowStatus = "Active");
-
-		CommerceNavigator.gotoEntry(entryName = "Guest Account");
-
-		CommerceEntry.viewAccountsEntry(
-			accountEmail = "buyer@liferay.com",
-			accountName = "Guest Account",
-			accountType = "Guest");
-	}
-
-	@priority = 5
 	test GuestCheckoutDisabled {
 		property portal.acceptance = "true";
 
@@ -1160,70 +759,6 @@ definition {
 		AssertElementPresent(locator1 = "CommerceAccelerators#GENERAL_QUANTITY_SELECTOR_INPUT_FIELD_ENABLED");
 
 		CommerceAcceleratorsInitializer.viewEnabledAddToCartButton(productName = "U-Joint");
-	}
-
-	@priority = 5
-	test GuestCheckoutEnabled {
-		property portal.acceptance = "true";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-
-		Refresh();
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickSave();
-
-		AssertChecked.assertCheckedNotVisible(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Click(
-			key_fixIssueButtonName = "Guest Checkout Authentication",
-			locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
-
-		Button.clickSave();
-
-		User.logoutPG();
-
-		Navigator.openSiteURL(siteName = "Speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Button.click(button = "Continue as a Guest");
-
-		CommerceCheckout.initializersCheckout(
-			guestEmail = "buyer@liferay.com",
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Address Name",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-
-		AssertTextEquals(
-			locator1 = "CommerceAccelerators#CHECKOUT_SUCCESS_MESSAGE",
-			value1 = "Your order has been processed but not completed yet.");
 	}
 
 	@priority = 5
@@ -1258,7 +793,7 @@ definition {
 
 		CommerceNavigator.gotoMiniCart();
 
-		Button.click(button = "Submit");
+		Button.click(button = "Proceed as Guest");
 
 		CommerceCheckout.initializersCheckout(
 			guestEmail = "buyer@liferay.com",
@@ -1271,300 +806,6 @@ definition {
 			productQuantity = 1,
 			productUnitPrice = 24,
 			shippingMethod = "Standard");
-	}
-
-	@priority = 5
-	test GuestCheckoutWithNoShippableProduct {
-		property portal.acceptance = "true";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-
-		Refresh();
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickSave();
-
-		Click(
-			key_fixIssueButtonName = "Guest Checkout Authentication",
-			locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
-
-		Button.clickSave();
-
-		CommerceProducts.openProductsAdmin();
-
-		CommerceProducts.searchProduct(search = "U-Joint");
-
-		CommerceNavigator.gotoEntry(entryName = "U-Joint");
-
-		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-		Uncheck.uncheckToggleSwitch(
-			key_toggleSwitchLabel = "Shippable",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickPublish();
-
-		User.logoutPG();
-
-		Navigator.openSiteURL(siteName = "Speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Button.click(button = "Continue as a Guest");
-
-		AssertElementNotPresent(
-			key_label = "Shipping Address",
-			locator1 = "CommerceAccelerators#CHECKOUT_MULTI_STEP_INDICATOR_LABEL");
-
-		CommerceCheckout.initializersCheckout(
-			guestEmail = "buyer@liferay.com",
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Address Name",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24);
-	}
-
-	@priority = 5
-	test GuestCheckoutWithShippableProduct {
-		property portal.acceptance = "true";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-
-		Refresh();
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickSave();
-
-		Click(
-			key_fixIssueButtonName = "Guest Checkout Authentication",
-			locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
-
-		Button.clickSave();
-
-		User.logoutPG();
-
-		Navigator.openSiteURL(siteName = "Speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Button.click(button = "Continue as a Guest");
-
-		AssertElementPresent(locator1 = "CommerceAccelerators#GUEST_CHECKOUT_CHECK_EMAIL_LABEL");
-
-		CommerceCheckout.initializersCheckout(
-			guestEmail = "buyer@liferay.com",
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Address Name",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-	}
-
-	@priority = 5
-	test UserAccountIsNotCombinedWithExistingGuestAccount {
-		property portal.acceptance = "true";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "System Settings");
-
-		SystemSettings.gotoConfiguration(
-			configurationCategory = "Security Tools",
-			configurationName = "CAPTCHA",
-			configurationScope = "System Scope");
-
-		SystemSettings.configureSystemSetting(
-			enableSetting = "false",
-			settingFieldName = "Create Account CAPTCHA Enabled");
-
-		Refresh();
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceChannels.openChannelsAdmin();
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
-
-		Refresh();
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.clickSave();
-
-		AssertChecked.assertCheckedNotVisible(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Click(
-			key_fixIssueButtonName = "Guest Checkout Authentication",
-			locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
-
-		Alert.viewSuccessMessage();
-
-		User.logoutPG();
-
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Button.click(button = "Continue as a Guest");
-
-		CommerceCheckout.initializersCheckout(
-			guestEmail = "buyer@liferay.com",
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Guest Account",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		Click(locator1 = "Link#CREATE_ACCOUNT");
-
-		CommerceLogin.createAccount(
-			newPassword = "ttest",
-			userEmailAddress = "buyer@liferay.com",
-			userFirstName = "Buyer",
-			userLastName = "User",
-			userScreenName = "buyeruser");
-
-		CommerceLogin.speedwellLogin(
-			newPassword = "test",
-			password = "ttest",
-			urlAppend = "web/speedwell",
-			userEmailAddress = "buyer@liferay.com");
-
-		CommerceNavigator.gotoMiniCart();
-
-		Button.click(button = "Submit");
-
-		CommerceCheckout.initializersCheckout(
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Address Name",
-			newAddressZipCode = "Test Zip Code",
-			paymentMethod = "Money Order",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "My Account");
-
-		CommerceNavigator.gotoSpeedwellDashboardItem(dashboardItem = "My Orders");
-
-		AssertElementPresent(
-			key_accountName = "Buyer User",
-			locator1 = "CommerceAccelerators#SPEEDWELL_MY_ORDERS_ORDER_ACCOUNT");
-
-		AssertElementNotPresent(
-			key_accountName = "Guest Account",
-			locator1 = "CommerceAccelerators#SPEEDWELL_MY_ORDERS_ORDER_ACCOUNT");
-
-		User.logoutPG();
-
-		User.loginPG();
-
-		Account.openAccountsAdmin();
-
-		LexiconEntry.viewEntryStatus(
-			rowEntry = "Guest Account",
-			rowStatus = "Active");
-
-		CommerceNavigator.gotoEntry(entryName = "Guest Account");
-
-		CommerceEntry.viewAccountsEntry(
-			accountEmail = "buyer@liferay.com",
-			accountName = "Guest Account",
-			accountType = "Guest");
-
-		Click(locator1 = "Icon#BACK");
-
-		LexiconEntry.viewEntryStatus(
-			rowEntry = "Buyer User",
-			rowStatus = "Active");
-
-		CommerceNavigator.gotoEntry(entryName = "Buyer User");
-
-		CommerceEntry.viewAccountsEntry(
-			accountEmail = "buyer@liferay.com",
-			accountName = "Buyer User",
-			accountType = "Person");
 	}
 
 }

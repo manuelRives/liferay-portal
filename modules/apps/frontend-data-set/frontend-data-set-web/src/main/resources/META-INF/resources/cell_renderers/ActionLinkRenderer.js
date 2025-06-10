@@ -5,7 +5,8 @@
 
 import ClayIcon from '@clayui/icon';
 import ClayLink from '@clayui/link';
-import {navigate, openConfirmModal} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {navigate} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useContext} from 'react';
 
@@ -15,12 +16,8 @@ import {openPermissionsModal} from '../utils/modals/openPermissionsModal';
 import DefaultContent from './DefaultRenderer';
 
 function ActionLinkRenderer({actions, itemData, itemId, options, value}) {
-	const {
-		executeAsyncItemAction,
-		highlightItems,
-		openModal,
-		openSidePanel,
-	} = useContext(FrontendDataSetContext);
+	const {executeAsyncItemAction, highlightItems, openModal, openSidePanel} =
+		useContext(FrontendDataSetContext);
 
 	if (!actions || !actions.length) {
 		return value ? <DefaultContent value={value} /> : null;
@@ -50,7 +47,8 @@ function ActionLinkRenderer({actions, itemData, itemId, options, value}) {
 	}
 
 	const formattedHref =
-		currentAction.href && formatActionURL(currentAction.href, itemData);
+		currentAction.href &&
+		formatActionURL(currentAction.href, itemData, currentAction.target);
 
 	function handleClickOnLink(event) {
 		const doAction = () => {
@@ -150,7 +148,7 @@ function ActionLinkRenderer({actions, itemData, itemId, options, value}) {
 										},
 									});
 								}
-						  }
+							}
 				}
 			>
 				{value || <ClayIcon symbol={currentAction.icon} />}
@@ -190,7 +188,7 @@ ActionLinkRenderer.propTypes = {
 	options: PropTypes.shape({
 		actionId: PropTypes.string,
 	}),
-	value: PropTypes.string,
+	value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 export default ActionLinkRenderer;

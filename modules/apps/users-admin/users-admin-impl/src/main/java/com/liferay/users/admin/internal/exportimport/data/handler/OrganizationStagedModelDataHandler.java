@@ -16,6 +16,7 @@ import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.EmailAddress;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.kernel.model.OrgLabor;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
@@ -27,6 +28,7 @@ import com.liferay.portal.kernel.service.AddressLocalService;
 import com.liferay.portal.kernel.service.CountryLocalService;
 import com.liferay.portal.kernel.service.EmailAddressLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ListTypeLocalService;
 import com.liferay.portal.kernel.service.OrgLaborLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.PasswordPolicyLocalService;
@@ -34,6 +36,7 @@ import com.liferay.portal.kernel.service.PasswordPolicyRelLocalService;
 import com.liferay.portal.kernel.service.PhoneLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.WebsiteLocalService;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.xml.Element;
@@ -100,6 +103,35 @@ public class OrganizationStagedModelDataHandler
 	}
 
 	@Override
+	public boolean validateReference(
+		PortletDataContext portletDataContext, Element referenceElement) {
+
+		Map<Long, Long> organizationIds =
+			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+				Organization.class);
+
+		long organizationId = GetterUtil.getLong(
+			referenceElement.attributeValue("class-pk"));
+
+		if (organizationIds.containsKey(organizationId)) {
+			return true;
+		}
+
+		Organization organization =
+			_organizationLocalService.fetchOrganizationByUuidAndCompanyId(
+				GetterUtil.getString(referenceElement.attributeValue("uuid")),
+				GetterUtil.getLong(portletDataContext.getCompanyId()));
+
+		if (organization == null) {
+			return false;
+		}
+
+		organizationIds.put(organizationId, organization.getOrganizationId());
+
+		return true;
+	}
+
+	@Override
 	protected void doExportStagedModel(
 			PortletDataContext portletDataContext, Organization organization)
 		throws Exception {
@@ -123,6 +155,7 @@ public class OrganizationStagedModelDataHandler
 			_exportAddresses(portletDataContext, exportedOrganization);
 			_exportCountry(portletDataContext, exportedOrganization);
 			_exportEmailAddresses(portletDataContext, exportedOrganization);
+			_exportListType(portletDataContext, exportedOrganization);
 			_exportOrgLabors(portletDataContext, exportedOrganization);
 			_exportPasswordPolicyRel(portletDataContext, exportedOrganization);
 			_exportPhones(portletDataContext, exportedOrganization);
@@ -146,6 +179,7 @@ public class OrganizationStagedModelDataHandler
 		throws Exception {
 
 		organization = _importCountry(portletDataContext, organization);
+		organization = _importListType(portletDataContext, organization);
 
 		long userId = portletDataContext.getUserId(organization.getUserUuid());
 
@@ -164,7 +198,7 @@ public class OrganizationStagedModelDataHandler
 
 		Organization existingOrganization =
 			_organizationLocalService.fetchOrganizationByUuidAndCompanyId(
-				organization.getUuid(), portletDataContext.getGroupId());
+				organization.getUuid(), portletDataContext.getCompanyId());
 
 		if (existingOrganization == null) {
 			existingOrganization = _organizationLocalService.fetchOrganization(
@@ -266,6 +300,20 @@ public class OrganizationStagedModelDataHandler
 		for (EmailAddress emailAddress : emailAddresses) {
 			StagedModelDataHandlerUtil.exportReferenceStagedModel(
 				portletDataContext, organization, emailAddress,
+				PortletDataContext.REFERENCE_TYPE_EMBEDDED);
+		}
+	}
+
+	private void _exportListType(
+			PortletDataContext portletDataContext, Organization organization)
+		throws Exception {
+
+		if (organization.getStatusListTypeId() > 0) {
+			ListType listType = _listTypeLocalService.getListType(
+				organization.getStatusListTypeId());
+
+			StagedModelDataHandlerUtil.exportReferenceStagedModel(
+				portletDataContext, organization, listType,
 				PortletDataContext.REFERENCE_TYPE_EMBEDDED);
 		}
 	}
@@ -439,6 +487,37 @@ public class OrganizationStagedModelDataHandler
 			importedOrganization.getOrganizationId(), emailAddresses);
 	}
 
+	private Organization _importListType(
+			PortletDataContext portletDataContext, Organization organization)
+		throws Exception {
+
+		List<Element> listTypeElements =
+			portletDataContext.getReferenceDataElements(
+				organization, ListType.class);
+
+		for (Element listTypeElement : listTypeElements) {
+			String listTypePath = listTypeElement.attributeValue("path");
+
+			ListType listType =
+				(ListType)portletDataContext.getZipEntryAsObject(listTypePath);
+
+			if (listType == null) {
+				continue;
+			}
+
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, listType);
+
+			listType = _listTypeLocalService.getListType(
+				portletDataContext.getCompanyId(), listType.getName(),
+				listType.getType());
+
+			organization.setStatusListTypeId(listType.getListTypeId());
+		}
+
+		return organization;
+	}
+
 	private void _importOrgLabors(
 			PortletDataContext portletDataContext, Organization organization,
 			Organization importedOrganization)
@@ -578,6 +657,9 @@ public class OrganizationStagedModelDataHandler
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private ListTypeLocalService _listTypeLocalService;
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;

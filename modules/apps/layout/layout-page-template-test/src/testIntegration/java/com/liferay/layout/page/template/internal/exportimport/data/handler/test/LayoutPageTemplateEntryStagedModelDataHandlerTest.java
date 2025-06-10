@@ -16,21 +16,24 @@ import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.DisplayPageTemplateTestUtil;
+import com.liferay.layout.page.template.test.util.LayoutPageTemplateTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutPrototype;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutPrototypeLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.DateTestUtil;
-import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -67,7 +70,10 @@ public class LayoutPageTemplateEntryStagedModelDataHandlerTest
 		initExport();
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry1 =
-			_addLayoutPageTemplateEntry(stagingGroup);
+			DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+				stagingGroup.getGroupId(),
+				_portal.getClassNameId(FileEntry.class.getName()), 0, false,
+				WorkflowConstants.STATUS_APPROVED);
 
 		layoutPageTemplateEntry1 =
 			_layoutPageTemplateEntryLocalService.updateLayoutPageTemplateEntry(
@@ -92,7 +98,10 @@ public class LayoutPageTemplateEntryStagedModelDataHandlerTest
 		initExport();
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry2 =
-			_addLayoutPageTemplateEntry(stagingGroup);
+			DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+				stagingGroup.getGroupId(),
+				_portal.getClassNameId(FileEntry.class.getName()), 0, false,
+				WorkflowConstants.STATUS_APPROVED);
 
 		layoutPageTemplateEntry2 =
 			_layoutPageTemplateEntryLocalService.updateLayoutPageTemplateEntry(
@@ -134,6 +143,40 @@ public class LayoutPageTemplateEntryStagedModelDataHandlerTest
 				layoutPageTemplateEntry2);
 
 		Assert.assertTrue(importedLayoutUtilityPageEntry2.isDefaultTemplate());
+	}
+
+	@Test
+	public void testImportLayoutPageTemplateEntry() throws Exception {
+		initExport();
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			LayoutPageTemplateTestUtil.addLayoutPageTemplateEntry(
+				stagingGroup.getGroupId(),
+				LayoutPageTemplateEntryTypeConstants.BASIC,
+				WorkflowConstants.STATUS_APPROVED);
+
+		StagedModelDataHandlerUtil.exportStagedModel(
+			portletDataContext, layoutPageTemplateEntry);
+
+		initImport();
+
+		LayoutPageTemplateEntry exportedLayoutPageTemplateEntry =
+			(LayoutPageTemplateEntry)readExportedStagedModel(
+				layoutPageTemplateEntry);
+
+		LayoutPageTemplateEntry importedLayoutPageTemplateEntry =
+			_getImportedLayoutPageTemplateEntry(
+				exportedLayoutPageTemplateEntry, liveGroup,
+				layoutPageTemplateEntry);
+
+		Layout importedLayout = _layoutLocalService.fetchLayout(
+			importedLayoutPageTemplateEntry.getPlid());
+
+		Assert.assertTrue(importedLayout.isPrivateLayout());
+
+		Layout draftImportedLayout = importedLayout.fetchDraftLayout();
+
+		Assert.assertTrue(draftImportedLayout.isPrivateLayout());
 	}
 
 	@Test
@@ -212,17 +255,17 @@ public class LayoutPageTemplateEntryStagedModelDataHandlerTest
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
 			_layoutPageTemplateCollectionLocalService.
 				addLayoutPageTemplateCollection(
-					userId, group.getGroupId(),
+					null, userId, group.getGroupId(),
 					LayoutPageTemplateConstants.
 						PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
-					"Test Collection", StringPool.BLANK,
+					null, "Test Collection", StringPool.BLANK,
 					LayoutPageTemplateCollectionTypeConstants.BASIC,
 					serviceContext);
 
 		return _layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-			userId, group.getGroupId(),
+			null, userId, group.getGroupId(),
 			layoutPageTemplateCollection.getLayoutPageTemplateCollectionId(),
-			"Test Entry", LayoutPageTemplateEntryTypeConstants.BASIC, 0,
+			null, "Test Entry", LayoutPageTemplateEntryTypeConstants.BASIC, 0,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
@@ -262,18 +305,6 @@ public class LayoutPageTemplateEntryStagedModelDataHandlerTest
 			importLayoutPageTemplateEntry.getType());
 	}
 
-	private LayoutPageTemplateEntry _addLayoutPageTemplateEntry(Group group)
-		throws Exception {
-
-		return _layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-			TestPropsValues.getUserId(), group.getGroupId(), 0,
-			_portal.getClassNameId(FileEntry.class.getName()), 0,
-			RandomTestUtil.randomString(),
-			LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, false, 0, 0,
-			0, WorkflowConstants.STATUS_APPROVED,
-			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
-	}
-
 	private LayoutPrototype _addLayoutPrototype(
 			long companyId, long groupId, String name, long userId)
 		throws Exception {
@@ -299,6 +330,9 @@ public class LayoutPageTemplateEntryStagedModelDataHandlerTest
 		return (LayoutPageTemplateEntry)getStagedModel(
 			layoutPageTemplateEntry.getUuid(), group);
 	}
+
+	@Inject
+	private LayoutLocalService _layoutLocalService;
 
 	@Inject
 	private LayoutPageTemplateCollectionLocalService

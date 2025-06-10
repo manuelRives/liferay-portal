@@ -8,13 +8,13 @@ package com.liferay.headless.admin.list.type.client.dto.v1_0;
 import com.liferay.headless.admin.list.type.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.list.type.client.serdes.v1_0.ListTypeDefinitionSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Gabriel Albuquerque
@@ -90,6 +90,27 @@ public class ListTypeDefinition implements Cloneable, Serializable {
 	}
 
 	protected Date dateModified;
+
+	public String getDefaultLanguageId() {
+		return defaultLanguageId;
+	}
+
+	public void setDefaultLanguageId(String defaultLanguageId) {
+		this.defaultLanguageId = defaultLanguageId;
+	}
+
+	public void setDefaultLanguageId(
+		UnsafeSupplier<String, Exception> defaultLanguageIdUnsafeSupplier) {
+
+		try {
+			defaultLanguageId = defaultLanguageIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String defaultLanguageId;
 
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;

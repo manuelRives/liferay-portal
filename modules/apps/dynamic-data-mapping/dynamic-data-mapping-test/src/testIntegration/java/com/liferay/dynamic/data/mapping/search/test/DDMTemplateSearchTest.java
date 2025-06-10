@@ -40,7 +40,7 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
@@ -158,7 +158,7 @@ public class DDMTemplateSearchTest {
 		serviceContext.setAddGuestPermissions(false);
 
 		_ddmTemplate = DDMTemplateLocalServiceUtil.addTemplate(
-			TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
 			PortalUtil.getClassNameId(DDMStructure.class),
 			_ddmStructure.getStructureId(),
 			PortalUtil.getClassNameId(JournalArticle.class), null, nameMap,
@@ -169,7 +169,7 @@ public class DDMTemplateSearchTest {
 	}
 
 	protected void assertSearch() throws Exception {
-		List<DDMTemplate> results = DDMTemplateServiceUtil.search(
+		List<DDMTemplate> ddmTemplates = DDMTemplateServiceUtil.search(
 			TestPropsValues.getCompanyId(),
 			new long[] {TestPropsValues.getGroupId()},
 			new long[] {PortalUtil.getClassNameId(DDMStructure.class)},
@@ -178,8 +178,8 @@ public class DDMTemplateSearchTest {
 			StringPool.BLANK, StringPool.BLANK, WorkflowConstants.STATUS_ANY,
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
-		Assert.assertEquals(results.toString(), 1, results.size());
-		Assert.assertEquals(results.get(0), _ddmTemplate);
+		Assert.assertEquals(ddmTemplates.toString(), 1, ddmTemplates.size());
+		Assert.assertEquals(ddmTemplates.get(0), _ddmTemplate);
 	}
 
 	@DeleteAfterTestRun

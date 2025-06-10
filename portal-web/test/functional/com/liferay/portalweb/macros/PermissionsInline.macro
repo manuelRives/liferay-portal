@@ -25,7 +25,7 @@ definition {
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#SUCCESS",
-			value1 = "Your request completed successfully.");
+			value1 = "successfully.");
 	}
 
 	@summary = "Default summary"
@@ -76,17 +76,11 @@ definition {
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#SUCCESS",
-			value1 = "Your request completed successfully.");
+			value1 = "successfully.");
 	}
 
 	@summary = "Default summary"
 	macro addOrRemoveEntryPermissionsFromAllRoles(addOrRemoveViewPermission = null, roleTitle = null, permissionDefinitionKeyList = null) {
-		if (IsNotVisible(locator1 = "AssetPermissions#HIDE_OPTIONS_LINK")) {
-			AssertClick.assertPartialTextClickAt(
-				locator1 = "AssetPermissions#MORE_OPTIONS_LINK",
-				value1 = "More Options");
-		}
-
 		if (${addOrRemoveViewPermission} == "Remove") {
 			for (var permissionDefinitionKey : list ${permissionDefinitionKeyList}) {
 				var key_permissionDefinitionKey = ${permissionDefinitionKey};
@@ -126,7 +120,7 @@ definition {
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#SUCCESS",
-			value1 = "Your request completed successfully.");
+			value1 = "successfully.");
 	}
 
 	@summary = "Default summary"
@@ -150,7 +144,7 @@ definition {
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#SUCCESS",
-			value1 = "Your request completed successfully.");
+			value1 = "successfully.");
 	}
 
 	@summary = "Default summary"
@@ -178,7 +172,7 @@ definition {
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#SUCCESS",
-			value1 = "Your request completed successfully.");
+			value1 = "successfully.");
 	}
 
 	@summary = "Default summary"

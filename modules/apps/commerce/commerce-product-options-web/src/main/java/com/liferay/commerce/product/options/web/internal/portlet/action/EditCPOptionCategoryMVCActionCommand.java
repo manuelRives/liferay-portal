@@ -20,11 +20,11 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_SPECIFICATION_OPTIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_SPECIFICATION_OPTIONS,
 		"mvc.command.name=/cp_specification_options/edit_cp_option_category"
 	},
 	service = MVCActionCommand.class
@@ -128,14 +128,15 @@ public class EditCPOptionCategoryMVCActionCommand extends BaseMVCActionCommand {
 				CPOptionCategory.class.getName(), actionRequest);
 
 			cpOptionCategory = _cpOptionCategoryService.addCPOptionCategory(
-				titleMap, descriptionMap, priority, key, serviceContext);
+				null, titleMap, descriptionMap, priority, key, serviceContext);
 		}
 		else {
 
 			// Update commerce product option category
 
 			cpOptionCategory = _cpOptionCategoryService.updateCPOptionCategory(
-				cpOptionCategoryId, titleMap, descriptionMap, priority, key);
+				null, cpOptionCategoryId, titleMap, descriptionMap, priority,
+				key);
 		}
 
 		return cpOptionCategory;

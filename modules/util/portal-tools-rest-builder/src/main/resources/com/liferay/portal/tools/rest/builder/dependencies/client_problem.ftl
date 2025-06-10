@@ -2,9 +2,9 @@ package ${configYAML.apiPackagePath}.client.problem;
 
 import ${configYAML.apiPackagePath}.client.json.BaseJSONParser;
 
-import java.util.Objects;
+import ${configYAML.javaEEPackage}.annotation.Generated;
 
-import javax.annotation.Generated;
+import java.util.Objects;
 
 /**
 * @author ${configYAML.author}
@@ -132,6 +132,25 @@ public class Problem {
 		@Override
 		protected Problem[] createDTOArray(int size) {
 			return new Problem[size];
+		}
+
+		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "detail")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "status")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "title")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+			else {
+				throw new IllegalArgumentException("Unsupported field name " + jsonParserFieldName);
+			}
 		}
 
 		@Override

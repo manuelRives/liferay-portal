@@ -30,12 +30,12 @@ public class MBObjectsTitleComparator<T> extends OrderByComparator<T> {
 		"modelCategory", "priority", "name", "modifiedDate", "modelId"
 	};
 
-	public MBObjectsTitleComparator() {
-		this(false);
-	}
+	public static MBObjectsTitleComparator getInstance(boolean ascending) {
+		if (ascending) {
+			return _INSTANCE_ASCENDING;
+		}
 
-	public MBObjectsTitleComparator(boolean ascending) {
-		_ascending = ascending;
+		return _INSTANCE_DESCENDING;
 	}
 
 	@Override
@@ -78,14 +78,24 @@ public class MBObjectsTitleComparator<T> extends OrderByComparator<T> {
 			return mbCategory.getName();
 		}
 
-		if (object instanceof MBThread) {
-			MBThread mbThread = (MBThread)object;
-
-			return mbThread.getTitle();
+		if (!(object instanceof MBThread)) {
+			return null;
 		}
 
-		return null;
+		MBThread mbThread = (MBThread)object;
+
+		return mbThread.getTitle();
 	}
+
+	private MBObjectsTitleComparator(boolean ascending) {
+		_ascending = ascending;
+	}
+
+	private static final MBObjectsTitleComparator _INSTANCE_ASCENDING =
+		new MBObjectsTitleComparator(true);
+
+	private static final MBObjectsTitleComparator _INSTANCE_DESCENDING =
+		new MBObjectsTitleComparator(false);
 
 	private final boolean _ascending;
 

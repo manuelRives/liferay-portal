@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {openToast} from 'frontend-js-components-web';
 import {
 	fetch,
 	getFormElement,
 	objectToFormData,
-	openToast,
 	openWindow,
 	runScriptsInElement,
 	setFormValues,
@@ -18,7 +18,7 @@ function hideEl(elementId) {
 	const element = document.getElementById(elementId);
 
 	if (element) {
-		element.style.display = 'none';
+		element.classList.add('hide');
 	}
 }
 
@@ -34,6 +34,7 @@ export default function Comments({
 	portletDisplayId,
 	randomNamespace,
 	ratingsEnabled,
+	refreshPageOnReply,
 	subscriptionClassName,
 	userId,
 }) {
@@ -79,9 +80,8 @@ export default function Comments({
 					);
 
 					if (moreCommentsContainer) {
-						const newCommentsContainer = document.createElement(
-							'div'
-						);
+						const newCommentsContainer =
+							document.createElement('div');
 
 						newCommentsContainer.innerHTML = response;
 
@@ -385,7 +385,7 @@ export default function Comments({
 			});
 		}
 		else {
-			sendMessage(form);
+			sendMessage(form, refreshPageOnReply);
 
 			editorInstance.dispose();
 		}
@@ -395,7 +395,7 @@ export default function Comments({
 		const element = document.getElementById(elementId);
 
 		if (element) {
-			element.style.display = '';
+			element.classList.remove('hide');
 		}
 	};
 

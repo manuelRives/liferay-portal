@@ -8,7 +8,7 @@ import {
 	ItemFinder,
 	commerceEvents,
 } from 'commerce-frontend-js';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 export default function ({
 	addressExternalReferenceCode,
@@ -16,9 +16,8 @@ export default function ({
 	dataSetId,
 	rootPortletId,
 }) {
-	const AccountAddressChannelResource = CommerceServiceProvider.AdminChannelAPI(
-		'v1'
-	);
+	const AccountAddressChannelResource =
+		CommerceServiceProvider.AdminChannelAPI('v1');
 
 	function selectItem(channel) {
 		const channelData = {

@@ -26,10 +26,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -43,7 +43,7 @@ public class RepositoryBrowserManagementToolbarDisplayContext
 		HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse, long repositoryId,
-		SearchContainer<Object> searchContainer) {
+		SearchContainer<Object> searchContainer, boolean viewableByGuest) {
 
 		super(
 			httpServletRequest, liferayPortletRequest, liferayPortletResponse,
@@ -53,6 +53,7 @@ public class RepositoryBrowserManagementToolbarDisplayContext
 		_folderId = folderId;
 		_folderModelResourcePermission = folderModelResourcePermission;
 		_repositoryId = repositoryId;
+		_viewableByGuest = viewableByGuest;
 
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -68,11 +69,7 @@ public class RepositoryBrowserManagementToolbarDisplayContext
 
 				User user = _themeDisplay.getUser();
 
-				if (user.isGuestUser()) {
-					return false;
-				}
-
-				return true;
+				return !user.isGuestUser();
 			},
 			dropdownItem -> {
 				dropdownItem.putData("action", "deleteEntries");
@@ -127,6 +124,8 @@ public class RepositoryBrowserManagementToolbarDisplayContext
 					"parentFolderId", String.valueOf(_folderId));
 				dropdownItem.putData(
 					"repositoryId", String.valueOf(_repositoryId));
+				dropdownItem.putData(
+					"viewableByGuest", String.valueOf(_viewableByGuest));
 				dropdownItem.setIcon("folder");
 				dropdownItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "folder"));
@@ -151,11 +150,7 @@ public class RepositoryBrowserManagementToolbarDisplayContext
 
 	@Override
 	public Boolean isSelectable() {
-		if (_actions.isEmpty()) {
-			return false;
-		}
-
-		return true;
+		return !_actions.isEmpty();
 	}
 
 	@Override
@@ -180,5 +175,6 @@ public class RepositoryBrowserManagementToolbarDisplayContext
 		_folderModelResourcePermission;
 	private final long _repositoryId;
 	private final ThemeDisplay _themeDisplay;
+	private final boolean _viewableByGuest;
 
 }

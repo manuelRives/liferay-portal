@@ -14,7 +14,6 @@ import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
@@ -35,11 +34,11 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -94,9 +93,8 @@ public class UtilityLayoutTypeController extends BaseLayoutTypeControllerImpl {
 				curLayout = layout;
 			}
 
-			if (FeatureFlagManagerUtil.isEnabled("LPD-11070") &&
-				(layoutMode.equals(Constants.PREVIEW) ||
-				 layoutMode.equals(Constants.VIEW))) {
+			if (layoutMode.equals(Constants.PREVIEW) ||
+				layoutMode.equals(Constants.VIEW)) {
 
 				if (!_hasUpdatePermissions(
 						themeDisplay.getPermissionChecker(), curLayout)) {
@@ -208,6 +206,11 @@ public class UtilityLayoutTypeController extends BaseLayoutTypeControllerImpl {
 	@Override
 	public boolean isFirstPageable() {
 		return true;
+	}
+
+	@Override
+	public boolean isInstanceable() {
+		return false;
 	}
 
 	@Override

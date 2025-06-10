@@ -30,6 +30,9 @@ public class RoleTable extends BaseTable<RoleTable> {
 		"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<RoleTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<RoleTable, String> externalReferenceCode = createColumn(
+		"externalReferenceCode", String.class, Types.VARCHAR,
+		Column.FLAG_DEFAULT);
 	public final Column<RoleTable, Long> roleId = createColumn(
 		"roleId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<RoleTable, Long> companyId = createColumn(
@@ -56,6 +59,8 @@ public class RoleTable extends BaseTable<RoleTable> {
 		"type_", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 	public final Column<RoleTable, String> subtype = createColumn(
 		"subtype", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<RoleTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private RoleTable() {
 		super("Role_", RoleTable::new);

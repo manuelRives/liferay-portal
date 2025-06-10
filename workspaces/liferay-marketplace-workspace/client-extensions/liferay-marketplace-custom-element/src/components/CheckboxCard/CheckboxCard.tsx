@@ -43,7 +43,7 @@ export function CheckboxCard({
 				onChange={() => onChange(label)}
 			/>
 			<div className="mx-2 w-100">
-				<h4>{label}</h4>
+				<span>{label}</span>
 				<p className="checkbox-container-description">{description}</p>
 			</div>
 

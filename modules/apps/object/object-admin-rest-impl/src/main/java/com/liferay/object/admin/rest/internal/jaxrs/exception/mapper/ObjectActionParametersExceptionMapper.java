@@ -14,11 +14,11 @@ import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
 
-import java.util.Map;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,10 +41,15 @@ public class ObjectActionParametersExceptionMapper
 	protected Problem getProblem(
 		ObjectActionParametersException objectActionParametersException) {
 
+		String detail = objectActionParametersException.getMessage();
+
+		if (detail == null) {
+			detail = String.valueOf(
+				_toJSONArray(objectActionParametersException.getMessageKeys()));
+		}
+
 		return new Problem(
-			String.valueOf(
-				_toJSONArray(objectActionParametersException.getMessageKeys())),
-			Response.Status.BAD_REQUEST, null,
+			detail, Response.Status.BAD_REQUEST, null,
 			ObjectActionParametersException.class.getName());
 	}
 

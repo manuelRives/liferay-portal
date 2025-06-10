@@ -38,18 +38,18 @@ import com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntryLis
 import com.liferay.site.navigation.type.SiteNavigationMenuItemType;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeRegistry;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Víctor Galán
@@ -497,38 +497,24 @@ public class SelectSiteNavigationMenuDisplayContext {
 	private List<SiteNavigationMenuEntry> _getSiteNavigationMenuItems()
 		throws PortalException, PortletException {
 
-		List<SiteNavigationMenuEntry> siteNavigationItems = new ArrayList<>();
-
 		if (getSiteNavigationMenuId() > 0) {
-			List<SiteNavigationMenuItem> siteNavigationMenuItems =
+			return TransformUtil.transform(
 				SiteNavigationMenuItemServiceUtil.getSiteNavigationMenuItems(
 					getSiteNavigationMenuId(),
-					getParentSiteNavigationMenuItemId());
-
-			for (SiteNavigationMenuItem siteNavigationMenuItem :
-					siteNavigationMenuItems) {
-
-				siteNavigationItems.add(
-					SiteNavigationMenuEntry.of(
-						_getSiteNavigationMenuItemName(siteNavigationMenuItem),
-						_getSelectSiteNavigationMenuLevelURL(
-							getSiteNavigationMenuId(),
-							siteNavigationMenuItem.
-								getSiteNavigationMenuItemId())));
-			}
-
-			return siteNavigationItems;
-		}
-
-		for (Layout layout : _getLayouts()) {
-			siteNavigationItems.add(
-				SiteNavigationMenuEntry.of(
-					layout.getName(_themeDisplay.getLocale()),
+					getParentSiteNavigationMenuItemId()),
+				siteNavigationMenuItem -> SiteNavigationMenuEntry.of(
+					_getSiteNavigationMenuItemName(siteNavigationMenuItem),
 					_getSelectSiteNavigationMenuLevelURL(
-						getSiteNavigationMenuId(), layout.getPlid())));
+						getSiteNavigationMenuId(),
+						siteNavigationMenuItem.getSiteNavigationMenuItemId())));
 		}
 
-		return siteNavigationItems;
+		return TransformUtil.transform(
+			_getLayouts(),
+			layout -> SiteNavigationMenuEntry.of(
+				layout.getName(_themeDisplay.getLocale()),
+				_getSelectSiteNavigationMenuLevelURL(
+					getSiteNavigationMenuId(), layout.getPlid())));
 	}
 
 	private List<SiteNavigationMenu> _getStaticSiteNavigationMenus() {

@@ -12,34 +12,6 @@
 	<property name="manifest.bundle.symbolic.name" value="com.liferay.portal.impl;singleton:=true" />
 	<property name="service.file" value="service.xml" />
 
-	<target name="build-alloy-taglib-jar">
-		<if>
-			<not>
-				<isset property="alloy.taglibs.dir" />
-			</not>
-			<then>
-				<fail>
-.
-
-Please set the property "alloy.taglibs.dir" to point to a checked out version of
-svn://svn.liferay.com/repos/public/alloy/trunk/sandbox/taglibs.
-				</fail>
-			</then>
-		</if>
-
-		<ant dir="${alloy.taglibs.dir}" inheritAll="false" target="clean" />
-		<ant dir="${alloy.taglibs.dir}" inheritAll="false" target="start" />
-
-		<copy
-			preservelastmodified="true"
-			todir="${project.dir}/lib/development"
-		>
-			<fileset
-				file="${alloy.taglibs.dir}/alloy-taglib/alloy-taglib.jar"
-			/>
-		</copy>
-	</target>
-
 	<target name="build-db">
 		<ant dir="../sql" target="build-db" />
 	</target>
@@ -161,6 +133,7 @@ svn://svn.liferay.com/repos/public/alloy/trunk/sandbox/taglibs.
 			<jvmarg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
 			<arg value="${project.dir}/lib/versions.xsl" />
 			<arg value="${project.dir}/lib/versions.html" />
+			<env key="JDK_JAVA_OPTIONS" value="--add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" />
 		</java>
 
 		<if>
@@ -218,7 +191,7 @@ svn://svn.liferay.com/repos/public/alloy/trunk/sandbox/taglibs.
 			<jvmarg value="-Xms512m" />
 			<jvmarg value="-Xmx1024m" />
 			<jvmarg value="-Xss2048k" />
-			<jvmarg value="-XX:MaxPermSize=512m" />
+			<jvmarg value="-XX:MaxMetaspaceSize=512m" />
 			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
 			<arg value="-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.Log4JLogger" />
 			<arg value="service.api.dir=${basedir}/../portal-kernel/src" />
@@ -706,9 +679,7 @@ svn://svn.liferay.com/repos/public/alloy/trunk/sandbox/taglibs.
 								<isfalse value="${source.auto.fix}" />
 							</and>
 							<then>
-								<gradle-execute dir="${project.dir}/modules" task=":portalYarnCheckFormat">
-									<env key="LIFERAY_NPM_SCRIPTS_WORKING_BRANCH_NAME" value="${git.working.branch.name}" />
-								</gradle-execute>
+								<gradle-execute dir="${project.dir}/modules" task=":portalYarnCheckFormat" />
 
 								<if>
 									<not>
@@ -720,9 +691,21 @@ svn://svn.liferay.com/repos/public/alloy/trunk/sandbox/taglibs.
 								</if>
 							</then>
 							<else>
-								<gradle-execute dir="${project.dir}/modules" task=":portalYarnFormat">
-									<env key="LIFERAY_NPM_SCRIPTS_WORKING_BRANCH_NAME" value="${git.working.branch.name}" />
-								</gradle-execute>
+								<if>
+									<isset property="format.current.branch" />
+									<then>
+										<gradle-execute dir="${project.dir}/modules" task=":portalYarnFormatCurrentBranch" />
+									</then>
+									<elseif>
+										<isset property="format.local.changes" />
+										<then>
+											<gradle-execute dir="${project.dir}/modules" task=":portalYarnFormatLocalChanges" />
+										</then>
+									</elseif>
+									<else>
+										<gradle-execute dir="${project.dir}/modules" task=":portalYarnFormat" />
+									</else>
+								</if>
 
 								<if>
 									<not>
@@ -790,6 +773,36 @@ svn://svn.liferay.com/repos/public/alloy/trunk/sandbox/taglibs.
 		</java>
 
 		<delete file="ServiceBuilder.temp" />
+	</target>
+
+	<target name="git-util">
+		<path id="source.formatter.classpath">
+			<fileset
+				dir="${sdk.dir}/dependencies/com.liferay.source.formatter/lib"
+				includes="*.jar"
+			/>
+			<path refid="project.classpath" />
+		</path>
+
+		<if>
+			<not>
+				<isset property="git.type" />
+			</not>
+			<then>
+				<property name="git.type" value="current-branch" />
+			</then>
+		</if>
+
+		<java
+			classname="com.liferay.portal.tools.GitUtil"
+			classpathref="source.formatter.classpath"
+			dir="${project.dir}"
+			fork="true"
+			newenvironment="true"
+		>
+			<arg value="git.type=${git.type}" />
+			<arg value="git.working.branch.name=${git.working.branch.name}" />
+		</java>
 	</target>
 
 	<target depends="build-common-java.init-compile" name="init-compile">

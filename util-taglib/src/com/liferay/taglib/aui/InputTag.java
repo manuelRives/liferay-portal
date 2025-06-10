@@ -10,6 +10,7 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.servlet.taglib.aui.ValidatorTag;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -19,13 +20,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.aui.base.BaseInputTag;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
 
 /**
  * @author Julio Camarero
@@ -63,11 +64,10 @@ public class InputTag extends BaseInputTag {
 	}
 
 	public String getBaseType() {
-		Class<?> model = getModel();
-
-		String type = getType();
-
 		String baseType = null;
+
+		Class<?> model = getModel();
+		String type = getType();
 
 		if ((model != null) && Validator.isNull(type)) {
 			baseType = ModelHintsUtil.getType(model.getName(), getField());
@@ -262,6 +262,10 @@ public class InputTag extends BaseInputTag {
 		}
 
 		String forLabel = id;
+
+		if (getLocalized()) {
+			forLabel = HtmlUtil.getAUICompatibleId(id);
+		}
 
 		String languageId = getLanguageId();
 

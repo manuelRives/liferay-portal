@@ -6,9 +6,13 @@
 package com.liferay.portal.web.internal;
 
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.petra.io.AnnotatedObjectInputStream;
+import com.liferay.petra.io.AnnotatedObjectOutputStream;
+import com.liferay.portal.kernel.dependency.manager.DependencyManagerSyncUtil;
 import com.liferay.portal.kernel.servlet.PortletSessionListenerManager;
 import com.liferay.portal.kernel.servlet.SerializableSessionAttributeListener;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.servlet.PortalSessionListener;
 import com.liferay.portal.servlet.filters.healthcheckdatasource.HealthCheckDataSourceFilter;
@@ -17,7 +21,20 @@ import com.liferay.portal.web.internal.session.replication.SessionReplicationFil
 import com.liferay.shielded.container.Ordered;
 import com.liferay.shielded.container.ShieldedContainerInitializer;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+
+import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,13 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
+import java.util.function.Function;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -54,7 +65,58 @@ public class PortalWebShieldedContainerInitializer
 	public void initialize(ServletContext servletContext)
 		throws ServletException {
 
-		if (PropsValues.PORTLET_SESSION_REPLICATE_ENABLED) {
+		if (PropsValues.PORTLET_SESSION_REPLICATE_ENABLED &&
+			ServerDetector.isTomcat()) {
+
+			DependencyManagerSyncUtil.registerSyncCallable(
+				() -> {
+					Class<?> clazz = Class.forName(
+						"com.liferay.support.tomcat.session." +
+							"LiferayDeltaManager",
+						true, ServletContext.class.getClassLoader());
+
+					Method initMethod = clazz.getMethod(
+						"init", Function.class, Function.class);
+
+					initMethod.invoke(
+						null,
+						new Function<InputStream, ObjectInputStream>() {
+
+							@Override
+							public ObjectInputStream apply(
+								InputStream inputStream) {
+
+								try {
+									return new AnnotatedObjectInputStream(
+										inputStream);
+								}
+								catch (IOException ioException) {
+									throw new RuntimeException(ioException);
+								}
+							}
+
+						},
+						new Function<OutputStream, ObjectOutputStream>() {
+
+							@Override
+							public ObjectOutputStream apply(
+								OutputStream outputStream) {
+
+								try {
+									return new AnnotatedObjectOutputStream(
+										outputStream);
+								}
+								catch (IOException ioException) {
+									throw new RuntimeException(ioException);
+								}
+							}
+
+						});
+
+					return null;
+				});
+		}
+		else if (PropsValues.PORTLET_SESSION_REPLICATE_ENABLED) {
 			FilterRegistration.Dynamic dynamic = servletContext.addFilter(
 				SessionReplicationFilter.class.getName(),
 				new SessionReplicationFilter());
@@ -74,6 +136,8 @@ public class PortalWebShieldedContainerInitializer
 				EnumSet.of(DispatcherType.REQUEST), false,
 				"/health_check/data_source");
 		}
+
+		JakartaEETransformerJSFilter.register(servletContext);
 
 		DocumentBuilderFactory documentBuilderFactory =
 			DocumentBuilderFactory.newInstance();

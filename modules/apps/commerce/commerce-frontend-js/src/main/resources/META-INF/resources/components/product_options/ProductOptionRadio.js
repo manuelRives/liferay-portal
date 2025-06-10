@@ -6,7 +6,7 @@
 import ClayForm, {ClayRadio, ClayRadioGroup} from '@clayui/form';
 import ClayLabel from '@clayui/label';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
-import {useLiferayState} from '@liferay/frontend-js-state-web';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import React, {useCallback, useEffect, useState} from 'react';
 
 import ServiceProvider from '../../ServiceProvider/index';
@@ -44,9 +44,8 @@ const ProductOptionRadio = ({
 	const [selectedSkuId, setSelectedSkuId] = useState(sku?.id);
 	const skuOptionsKey = isFromMiniCart ? 'miniCartSkuOptions' : 'skuOptions';
 
-	const [skuOptionsAtomState, setSkuOptionsAtomState] = useLiferayState(
-		skuOptionsAtom
-	);
+	const [skuOptionsAtomState, setSkuOptionsAtomState] =
+		useLiferayState(skuOptionsAtom);
 
 	const [productOptionValues, setProductOptionValues] = useState(
 		productOption.productOptionValues
@@ -55,7 +54,7 @@ const ProductOptionRadio = ({
 	const currentJSONObject = json
 		? JSON.parse(json).filter(
 				(jsonObject) => jsonObject.key === productOption.key
-		  )[0]
+			)[0]
 		: null;
 
 	const initialProductOptionValue =
@@ -65,7 +64,7 @@ const ProductOptionRadio = ({
 					currentJSONObject,
 					isFromMiniCart,
 					productOption,
-			  });
+				});
 
 	const defaultProductOptionValue = initialProductOptionValue
 		? initialProductOptionValue
@@ -99,7 +98,7 @@ const ProductOptionRadio = ({
 							],
 							value: [defaultProductOptionValue?.key],
 						},
-				  ],
+					],
 		});
 
 		return () =>
@@ -107,8 +106,9 @@ const ProductOptionRadio = ({
 				? setSkuOptionsAtomState({
 						...skuOptionsAtomState,
 						miniCartSkuOptions: [],
-				  })
+					})
 				: setSkuOptionsAtomState(initialSkuOptionsAtomState);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -123,22 +123,17 @@ const ProductOptionRadio = ({
 			currentProductOptionValue?.key
 	);
 
-	const [
-		selectedProductOptionValue,
-		setSelectedProductOptionValue,
-	] = useState({
-		productOptionValueId: currentProductOptionValue?.id,
-		skuId: selectedSkuId,
-	});
+	const [selectedProductOptionValue, setSelectedProductOptionValue] =
+		useState({
+			productOptionValueId: currentProductOptionValue?.id,
+			skuId: selectedSkuId,
+		});
 
-	const [
-		selectedProductOptionValueKey,
-		setSelectedProductOptionValueKey,
-	] = useState(currentProductOptionValue?.key);
+	const [selectedProductOptionValueKey, setSelectedProductOptionValueKey] =
+		useState(currentProductOptionValue?.key);
 
-	const DeliveryCatalogAPIServiceProvider = ServiceProvider.DeliveryCatalogAPI(
-		'v1'
-	);
+	const DeliveryCatalogAPIServiceProvider =
+		ServiceProvider.DeliveryCatalogAPI('v1');
 
 	const handleChange = (value) => {
 		if (skuOptionsAtomState.updating) {
@@ -208,25 +203,15 @@ const ProductOptionRadio = ({
 			];
 		}
 
-		if (!productOption.skuContributor) {
-			setSkuOptionsAtomState({
-				...skuOptionsAtomState,
-				[skuOptionsKey]: currentSkuOptions,
-				updating: false,
-			});
-
-			return Liferay.fire(`${namespace}${CP_OPTION_CHANGED}`, {
-				skuId: selectedSkuId,
-				skuOptions: currentSkuOptions,
-			});
-		}
-
 		let currentSkuId = selectedSkuId;
 
 		DeliveryCatalogAPIServiceProvider.postChannelProductSkuBySkuOption(
 			channelId,
 			productId,
 			accountId,
+			Liferay.CommerceContext
+				? Liferay.CommerceContext.currency.currencyCode
+				: '',
 			minQuantity,
 			null,
 			currentSkuOptions
@@ -301,6 +286,9 @@ const ProductOptionRadio = ({
 				productId,
 				productOption.id,
 				accountId,
+				Liferay.CommerceContext
+					? Liferay.CommerceContext.currency.currencyCode
+					: '',
 				selectedProductOptionValue?.productOptionValueId,
 				skuId,
 				1,
@@ -310,6 +298,7 @@ const ProductOptionRadio = ({
 				setProductOptionValues(responseProductOptionValues.items);
 			});
 		},
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[selectedProductOptionValue]
 	);
@@ -357,8 +346,7 @@ const ProductOptionRadio = ({
 						if (
 							!isAdmin &&
 							visible &&
-							Liferay.CommerceContext.showUnselectableOptions &&
-							Liferay.FeatureFlags['COMMERCE-11922']
+							Liferay.CommerceContext.showUnselectableOptions
 						) {
 							return (
 								<ClayRadio

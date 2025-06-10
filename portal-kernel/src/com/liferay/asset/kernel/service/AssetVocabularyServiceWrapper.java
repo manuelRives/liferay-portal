@@ -118,6 +118,15 @@ public class AssetVocabularyServiceWrapper
 	}
 
 	@Override
+	public AssetVocabulary fetchVocabularyByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetVocabularyService.fetchVocabularyByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
 	public AssetVocabulary getAssetVocabularyByExternalReferenceCode(
 			long groupId, String externalReferenceCode)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -258,6 +267,15 @@ public class AssetVocabularyServiceWrapper
 
 		return _assetVocabularyService.getGroupVocabulariesDisplay(
 			groupId, name, start, end, orderByComparator);
+	}
+
+	@Override
+	public AssetVocabulary getOrAddIncompleteVocabulary(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetVocabularyService.getOrAddIncompleteVocabulary(
+			externalReferenceCode, groupId);
 	}
 
 	/**

@@ -28,14 +28,12 @@ import com.liferay.info.field.type.URLInfoFieldType;
 import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.info.localized.bundle.FunctionInfoLocalizedValue;
 import com.liferay.petra.function.transform.TransformUtil;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.util.GetterUtil;
 
 import java.util.List;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alejandro Tardín
@@ -72,11 +70,9 @@ public class DDMFormFieldInfoFieldConverterImpl
 			ddmFormField.isLocalizable()
 		).required(
 			ddmFormField.isRequired()
+		).repeatable(
+			ddmFormField.isRepeatable()
 		);
-
-		if (_featureFlagManager.isEnabled("LPD-11377")) {
-			finalStep = finalStep.multivalued(ddmFormField.isRepeatable());
-		}
 
 		return finalStep.build();
 	}
@@ -229,8 +225,5 @@ public class DDMFormFieldInfoFieldConverterImpl
 
 		return false;
 	}
-
-	@Reference
-	private FeatureFlagManager _featureFlagManager;
 
 }

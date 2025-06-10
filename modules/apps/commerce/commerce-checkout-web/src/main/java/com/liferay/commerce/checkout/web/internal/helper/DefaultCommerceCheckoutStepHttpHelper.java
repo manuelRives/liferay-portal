@@ -13,6 +13,7 @@ import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceMoney;
+import com.liferay.commerce.helper.CommerceShippingHelper;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderType;
@@ -46,7 +47,6 @@ import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedO
 import com.liferay.commerce.term.model.CommerceTermEntry;
 import com.liferay.commerce.term.service.CommerceTermEntryLocalService;
 import com.liferay.commerce.util.CommerceShippingEngineRegistry;
-import com.liferay.commerce.util.CommerceShippingHelper;
 import com.liferay.commerce.util.comparator.CommerceShippingMethodPriorityComparator;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -63,19 +63,14 @@ import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.math.BigDecimal;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -93,15 +88,8 @@ public class DefaultCommerceCheckoutStepHttpHelper
 			HttpServletRequest httpServletRequest, CommerceOrder commerceOrder)
 		throws PortalException {
 
-		PortletURL portletURL =
-			_commerceOrderHttpHelper.getCommerceCartPortletURL(
-				httpServletRequest, commerceOrder);
-
-		if (portletURL == null) {
-			return StringPool.BLANK;
-		}
-
-		return portletURL.toString();
+		return _commerceOrderHttpHelper.getCommerceCartPortletURL(
+			httpServletRequest, commerceOrder);
 	}
 
 	@Override
@@ -165,18 +153,22 @@ public class DefaultCommerceCheckoutStepHttpHelper
 				defaultShippingCommerceAddress.getCommerceAddressId();
 		}
 
-		CommerceAddress shippingAddress = commerceOrder.getShippingAddress();
-		CommerceAddress billingAddress = commerceOrder.getBillingAddress();
+		CommerceAddress billingCommerceAddress =
+			commerceOrder.getBillingAddress();
+		CommerceAddress shippingCommerceAddress =
+			commerceOrder.getShippingAddress();
 
 		if (((accountEntry != null) && (defaultBillingCommerceAddressId != 0) &&
 			 (defaultShippingCommerceAddressId != 0) &&
 			 (defaultBillingCommerceAddressId ==
 				 defaultShippingCommerceAddressId) &&
-			 (billingAddress == null) && (shippingAddress == null) &&
+			 (billingCommerceAddress == null) &&
+			 (shippingCommerceAddress == null) &&
 			 commerceOrder.isShippable()) ||
-			((billingAddress != null) && (shippingAddress != null) &&
-			 (billingAddress.getCommerceAddressId() ==
-				 shippingAddress.getCommerceAddressId()))) {
+			((billingCommerceAddress != null) &&
+			 (shippingCommerceAddress != null) &&
+			 (billingCommerceAddress.getCommerceAddressId() ==
+				 shippingCommerceAddress.getCommerceAddressId()))) {
 
 			return false;
 		}
@@ -587,7 +579,7 @@ public class DefaultCommerceCheckoutStepHttpHelper
 			_commerceShippingMethodLocalService.getCommerceShippingMethods(
 				commerceOrder.getGroupId(), true, QueryUtil.ALL_POS,
 				QueryUtil.ALL_POS,
-				new CommerceShippingMethodPriorityComparator());
+				CommerceShippingMethodPriorityComparator.getInstance(false));
 
 		CommerceShippingOption singleCommerceShippingOption =
 			_getSingleCommerceShippingOption(
@@ -643,11 +635,7 @@ public class DefaultCommerceCheckoutStepHttpHelper
 			HttpServletRequest httpServletRequest, CommerceOrder commerceOrder)
 		throws PortalException {
 
-		if (BigDecimalUtil.isZero(commerceOrder.getTotal())) {
-			return true;
-		}
-
-		return false;
+		return BigDecimalUtil.isZero(commerceOrder.getTotal());
 	}
 
 	private List<CommercePaymentMethodGroupRel>
@@ -730,22 +718,24 @@ public class DefaultCommerceCheckoutStepHttpHelper
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
-		if (commerceShippingMethods.size() == 1) {
-			CommerceShippingMethod commerceShippingMethod =
-				commerceShippingMethods.get(0);
+		if (commerceShippingMethods.size() != 1) {
+			return null;
+		}
 
-			CommerceShippingEngine commerceShippingEngine =
-				_commerceShippingEngineRegistry.getCommerceShippingEngine(
-					commerceShippingMethod.getEngineKey());
+		CommerceShippingMethod commerceShippingMethod =
+			commerceShippingMethods.get(0);
 
-			List<CommerceShippingOption> commerceShippingOptions =
-				commerceShippingEngine.getEnabledCommerceShippingOptions(
-					commerceContext, commerceOrder,
-					_portal.getLocale(httpServletRequest));
+		CommerceShippingEngine commerceShippingEngine =
+			_commerceShippingEngineRegistry.getCommerceShippingEngine(
+				commerceShippingMethod.getEngineKey());
 
-			if (commerceShippingOptions.size() == 1) {
-				return commerceShippingOptions.get(0);
-			}
+		List<CommerceShippingOption> commerceShippingOptions =
+			commerceShippingEngine.getEnabledCommerceShippingOptions(
+				commerceContext, commerceOrder,
+				_portal.getLocale(httpServletRequest));
+
+		if (commerceShippingOptions.size() == 1) {
+			return commerceShippingOptions.get(0);
 		}
 
 		return null;
@@ -807,129 +797,13 @@ public class DefaultCommerceCheckoutStepHttpHelper
 								getCommerceShippingMethodId();
 					}
 
-					if ((commerceOrder.getCommerceShippingMethodId() ==
-							commerceShippingMethodId) ||
-						StringUtil.equals(
-							commerceOrder.getShippingOptionName(),
-							shippingOptionKey)) {
-
-						return commerceOrder;
-					}
-
-					BigDecimal shippingAmount =
-						commerceOrder.getShippingAmount();
-
-					if ((commerceOrder.getCommerceShippingMethodId() == 0) ||
-						Validator.isBlank(
-							commerceOrder.getShippingOptionName())) {
-
-						CommerceShippingEngine commerceShippingEngine =
-							_commerceShippingEngineRegistry.
-								getCommerceShippingEngine(
-									commerceShippingMethod.getEngineKey());
-
-						List<CommerceShippingOption> commerceShippingOptions =
-							commerceShippingEngine.
-								getEnabledCommerceShippingOptions(
-									commerceContext, commerceOrder,
-									_portal.getLocale(httpServletRequest));
-
-						for (CommerceShippingOption commerceShippingOption :
-								commerceShippingOptions) {
-
-							if (StringUtil.equals(
-									shippingOptionKey,
-									commerceShippingOption.getKey())) {
-
-								shippingAmount =
-									commerceShippingOption.getAmount();
-
-								break;
-							}
-						}
-					}
-
-					return _commerceOrderLocalService.updateCommerceOrder(
-						commerceOrder.getUserId(),
-						commerceOrder.getExternalReferenceCode(),
+					_commerceOrderLocalService.updateCommerceShippingMethod(
 						commerceOrder.getCommerceOrderId(),
-						commerceOrder.getBillingAddressId(),
-						commerceOrder.getCommerceAccountId(),
-						commerceOrder.getCommerceCurrencyId(),
-						commerceOrder.getCommerceOrderTypeId(),
-						commerceShippingMethodId,
-						commerceOrder.getDeliveryCommerceTermEntryId(),
-						commerceOrder.getPaymentCommerceTermEntryId(),
-						commerceOrder.getShippingAddressId(),
-						commerceOrder.getAdvanceStatus(),
-						commerceOrder.getCommercePaymentMethodKey(),
-						commerceOrder.getCouponCode(),
-						commerceOrder.getDeliveryCommerceTermEntryDescription(),
-						commerceOrder.getDeliveryCommerceTermEntryName(),
-						commerceOrder.getLastPriceUpdateDate(),
-						commerceOrder.isManuallyAdjusted(),
-						commerceOrder.getOrderDate(),
-						commerceOrder.getOrderStatus(),
-						commerceOrder.getPaymentCommerceTermEntryDescription(),
-						commerceOrder.getPaymentCommerceTermEntryName(),
-						commerceOrder.getPaymentStatus(),
-						commerceOrder.getPrintedNote(),
-						commerceOrder.getPurchaseOrderNumber(),
-						commerceOrder.getRequestedDeliveryDate(),
-						commerceOrder.isShippable(), shippingAmount,
-						commerceOrder.getShippingDiscountAmount(),
-						commerceOrder.getShippingDiscountPercentageLevel1(),
-						commerceOrder.getShippingDiscountPercentageLevel2(),
-						commerceOrder.getShippingDiscountPercentageLevel3(),
-						commerceOrder.getShippingDiscountPercentageLevel4(),
-						commerceOrder.
-							getShippingDiscountPercentageLevel1WithTaxAmount(),
-						commerceOrder.
-							getShippingDiscountPercentageLevel2WithTaxAmount(),
-						commerceOrder.
-							getShippingDiscountPercentageLevel3WithTaxAmount(),
-						commerceOrder.
-							getShippingDiscountPercentageLevel4WithTaxAmount(),
-						commerceOrder.getShippingDiscountWithTaxAmount(),
-						shippingOptionKey,
-						commerceOrder.getShippingWithTaxAmount(),
-						commerceOrder.getSubtotal(),
-						commerceOrder.getSubtotalDiscountAmount(),
-						commerceOrder.getSubtotalDiscountPercentageLevel1(),
-						commerceOrder.getSubtotalDiscountPercentageLevel2(),
-						commerceOrder.getSubtotalDiscountPercentageLevel3(),
-						commerceOrder.getSubtotalDiscountPercentageLevel4(),
-						commerceOrder.
-							getSubtotalDiscountPercentageLevel1WithTaxAmount(),
-						commerceOrder.
-							getSubtotalDiscountPercentageLevel2WithTaxAmount(),
-						commerceOrder.
-							getSubtotalDiscountPercentageLevel3WithTaxAmount(),
-						commerceOrder.
-							getSubtotalDiscountPercentageLevel4WithTaxAmount(),
-						commerceOrder.getSubtotalDiscountWithTaxAmount(),
-						commerceOrder.getSubtotalWithTaxAmount(),
-						commerceOrder.getTaxAmount(), commerceOrder.getTotal(),
-						commerceOrder.getTotalDiscountAmount(),
-						commerceOrder.getTotalDiscountPercentageLevel1(),
-						commerceOrder.getTotalDiscountPercentageLevel2(),
-						commerceOrder.getTotalDiscountPercentageLevel3(),
-						commerceOrder.getTotalDiscountPercentageLevel4(),
-						commerceOrder.
-							getTotalDiscountPercentageLevel1WithTaxAmount(),
-						commerceOrder.
-							getTotalDiscountPercentageLevel2WithTaxAmount(),
-						commerceOrder.
-							getTotalDiscountPercentageLevel3WithTaxAmount(),
-						commerceOrder.
-							getTotalDiscountPercentageLevel4WithTaxAmount(),
-						commerceOrder.getTotalDiscountWithTaxAmount(),
-						commerceOrder.getTotalWithTaxAmount(),
-						commerceOrder.getTransactionId(),
-						commerceOrder.getStatus(),
-						commerceOrder.getStatusByUserId(),
-						commerceOrder.getStatusByUserName(),
-						commerceOrder.getStatusDate(), true, commerceContext);
+						commerceShippingMethodId, shippingOptionKey,
+						commerceContext, _portal.getLocale(httpServletRequest));
+
+					return _commerceOrderLocalService.recalculatePrice(
+						commerceOrder.getCommerceOrderId(), commerceContext);
 				});
 
 			httpServletRequest.setAttribute(

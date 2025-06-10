@@ -44,13 +44,13 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -103,7 +103,7 @@ public class CommerceGuestCheckoutAuthenticationCommerceHealthStatus
 		serviceContext.setUserId(currentUser.getUserId());
 
 		Layout layout = _layoutService.addLayout(
-			commerceChannel.getSiteGroupId(), privateLayout,
+			null, commerceChannel.getSiteGroupId(), privateLayout,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name, name, null,
 			LayoutConstants.TYPE_PORTLET, true, friendlyURL, serviceContext);
 

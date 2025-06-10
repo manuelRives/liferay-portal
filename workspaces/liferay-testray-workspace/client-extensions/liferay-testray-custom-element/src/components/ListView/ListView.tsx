@@ -16,7 +16,7 @@ import {
 } from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {KeyedMutator} from 'swr';
-import useQueryParams from '~/hooks/useQueryParams';
+import useUpdateUrlParams from '~/hooks/useUpdateUrlParams';
 
 import ListViewContextProvider, {
 	AppActions,
@@ -37,7 +37,6 @@ import {APIResponse, Results} from '../../services/rest';
 import {SortDirection} from '../../types';
 import {PAGINATION} from '../../util/constants';
 import EmptyState from '../EmptyState';
-import {RendererFields} from '../Form/Renderer';
 import Loading from '../Loading';
 import ManagementToolbar, {ManagementToolbarProps} from '../ManagementToolbar';
 import Table, {TableProps} from '../Table';
@@ -111,8 +110,15 @@ const ListView: React.FC<ListViewProps> = ({
 	variables,
 }) => {
 	const [listViewContext, dispatch] = useContext(ListViewContext);
-	const {updateUrlParams} = useQueryParams();
+	const updateUrlParams = useUpdateUrlParams();
+
 	const [searchParams] = useSearchParams();
+
+	const currentPage = searchParams.get('page');
+
+	const currentPageSize = searchParams.get('pageSize');
+
+	let isRowSelectable = false;
 
 	const onSelectRowNormalizer = useMemo(
 		() => normalizers.onSelectRow ?? noop,
@@ -122,6 +128,7 @@ const ListView: React.FC<ListViewProps> = ({
 	const {
 		columns: columnsContext,
 		filters,
+		search,
 		selectedRows,
 		sort,
 	} = listViewContext;
@@ -147,7 +154,7 @@ const ListView: React.FC<ListViewProps> = ({
 			defaultFilter: variables?.filter,
 			filterSchema,
 		}),
-		[filters.filter, variables?.filter, filterSchema]
+		[filters, variables?.filter, filterSchema]
 	);
 
 	const buildSort = (sort: Sort | Sort[]) => {
@@ -166,21 +173,33 @@ const ListView: React.FC<ListViewProps> = ({
 	};
 
 	const filter = useMemo(() => {
-		const appliedFilters: {[key: string]: string} =
-			filterVariables.appliedFilter;
+		const appliedFilters: {[key: string]: string} = {
+			...filterVariables.appliedFilter,
+		};
 
-		const filters: {[key: string]: string | undefined} = {};
+		const filters: {[key: string]: string | undefined | boolean} = {};
 
 		Object.entries(appliedFilters).forEach(([key, value]) => {
 			const matchingField = filterSchema.fields.find(
 				(field) => field.name === key && field.isCustomFilter
-			) as RendererFields;
+			);
 
 			if (matchingField) {
-				filters[key] = SearchBuilder.createCustomFilter(
-					matchingField,
-					value
-				);
+				if (
+					value.includes(`No ${matchingField.label}`) &&
+					!matchingField.requestOperator
+				) {
+					const newKey = `no${key.charAt(0).toUpperCase() + key.slice(1)}`;
+
+					filters[newKey] = true;
+				}
+				else {
+					filters[key] = SearchBuilder.createCustomFilter(
+						matchingField,
+						value
+					);
+				}
+				delete appliedFilters[key];
 			}
 		});
 
@@ -202,26 +221,40 @@ const ListView: React.FC<ListViewProps> = ({
 		() => ({
 			...filter,
 			forceRefetch,
-			page: listViewContext.page,
-			pageSize: listViewContext.pageSize,
+			page:
+				managementToolbarProps.applyFilters && currentPage
+					? Number(currentPage)
+					: listViewContext.page,
+			pageSize:
+				managementToolbarProps.applyFilters && currentPageSize
+					? Number(currentPageSize)
+					: listViewContext.pageSize,
+			search,
 			sort: buildSort(sort),
 		}),
 		[
+			currentPage,
+			currentPageSize,
 			filter,
 			forceRefetch,
 			listViewContext.page,
 			listViewContext.pageSize,
+			managementToolbarProps.applyFilters,
+			search,
 			sort,
 		]
 	);
 
-	const {data: response, error, isValidating, loading, mutate} = useFetch(
-		resource,
-		{
-			params: getURLSearchParams(),
-			transformData,
-		}
-	);
+	const {
+		data: response,
+		error,
+		isValidating,
+		loading,
+		mutate,
+	} = useFetch(resource, {
+		params: getURLSearchParams(),
+		transformData,
+	});
 
 	const {
 		actions = {},
@@ -230,7 +263,6 @@ const ListView: React.FC<ListViewProps> = ({
 		page = 1,
 		pageSize,
 		results,
-		testrayCaseResults,
 		totalCount = 0,
 	} = response || {};
 
@@ -239,13 +271,10 @@ const ListView: React.FC<ListViewProps> = ({
 		[results, title]
 	);
 
-	const itemsMemoized = useMemo(() => {
-		if (results && !testrayCaseResults) {
-			return matrixData;
-		}
-
-		return testrayCaseResults || items;
-	}, [items, matrixData, results, testrayCaseResults]);
+	const itemsMemoized = useMemo(
+		() => (results ? matrixData : items),
+		[items, matrixData, results]
+	);
 
 	const isCompareRunsMatrix = title === 'Runs';
 
@@ -314,23 +343,29 @@ const ListView: React.FC<ListViewProps> = ({
 				type: ListViewTypes.SET_CUSTOM_FILTER_FIELDS,
 			});
 		}
+	}, [customFilterFields, dispatch]);
 
-		if (tableProps.rowSelectable) {
+	if (tableProps.rowSelectable) {
+		isRowSelectable = itemsMemoized.every((item) =>
+			selectedRows.includes(onSelectRowNormalizer(item))
+		);
+	}
+
+	useEffect(() => {
+		dispatch({
+			payload: isRowSelectable,
+			type: ListViewTypes.SET_CHECKED_ALL_ROWS,
+		});
+	}, [dispatch, isRowSelectable]);
+
+	useEffect(() => {
+		if (managementToolbarProps.applyFilters) {
 			dispatch({
-				payload: itemsMemoized.every((item) =>
-					selectedRows.includes(onSelectRowNormalizer(item))
-				),
-				type: ListViewTypes.SET_CHECKED_ALL_ROWS,
+				payload: true,
+				type: ListViewTypes.SET_APPLY_FILTERS,
 			});
 		}
-	}, [
-		customFilterFields,
-		dispatch,
-		itemsMemoized,
-		onSelectRowNormalizer,
-		selectedRows,
-		tableProps.rowSelectable,
-	]);
+	}, [dispatch, managementToolbarProps.applyFilters]);
 
 	if (loading || (isValidating && searchParams.get('filter'))) {
 		return <Loading />;
@@ -361,7 +396,7 @@ const ListView: React.FC<ListViewProps> = ({
 
 				dispatch({payload: page, type: ListViewTypes.SET_PAGE});
 			}}
-			totalItems={totalCount || testrayCaseResults?.length || 0}
+			totalItems={totalCount || 0}
 		/>
 	);
 
@@ -397,7 +432,7 @@ const ListView: React.FC<ListViewProps> = ({
 					mutate,
 				})}
 
-			{!!items.length || !!testrayCaseResults?.length ? (
+			{!!items.length && !isCompareRunsMatrix ? (
 				<>
 					{pagination?.displayTop && (
 						<div className="mt-4">{Pagination}</div>
@@ -425,24 +460,26 @@ const ListView: React.FC<ListViewProps> = ({
 				</>
 			) : null}
 
-			{results &&
-				!testrayCaseResults &&
-				(isCompareRunsMatrix ? (
+			{!items.length &&
+				(results && isCompareRunsMatrix ? (
 					<ClayLayout.Col lg={12} md={12}>
-						<TableChart matrixData={itemsMemoized} title={title} />
+						<TableChart matrixData={matrixData} title={title} />
 					</ClayLayout.Col>
 				) : (
 					<div className="d-flex flex-wrap">
-						{Object.entries(itemsMemoized).map(
-							([name, data], index) => (
+						{Object.entries(itemsMemoized)
+							.sort(([nameA], [nameB]) =>
+								nameA.localeCompare(nameB)
+							)
+							.map(([name, data], index) => (
 								<div className="my-4" key={index}>
 									<TableChart
+										fieldName={title}
 										matrixData={data}
 										title={name}
 									/>
 								</div>
-							)
-						)}
+							))}
 					</div>
 				))}
 		</>

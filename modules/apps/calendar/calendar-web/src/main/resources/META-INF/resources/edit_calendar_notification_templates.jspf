@@ -17,19 +17,20 @@ CalendarNotificationTemplate calendarNotificationTemplate = CalendarNotification
 
 long calendarNotificationTemplateId = BeanPropertiesUtil.getLong(calendarNotificationTemplate, "calendarNotificationTemplateId");
 
-String fromAddress = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_ADDRESS, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_ADDRESS));
 String fromName = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_NAME, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_NAME));
-String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificationTemplate, "body", NotificationUtil.getDefaultTemplate(notificationType, notificationTemplateType, NotificationField.BODY));
+String fromAddress = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_ADDRESS, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_ADDRESS));
+String body = BeanPropertiesUtil.getString(calendarNotificationTemplate, "body", NotificationUtil.getDefaultTemplate(notificationType, notificationTemplateType, NotificationField.BODY));
 %>
 
 <liferay-ui:header
 	backURL="<%= backURL %>"
-	cssClass="container-fluid container-fluid-max-xl"
+	cssClass="container-fluid container-fluid-max-xxxl"
 	localizeTitle="<%= false %>"
 	title="<%= calendarName %>"
 />
 
 <clay:navigation-bar
+	cssClass="container-fluid-max-xxxl"
 	navigationItems='<%=
 		new JSPNavigationItemList(pageContext) {
 			{
@@ -79,16 +80,16 @@ String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificat
 
 		<aui:field-wrapper label="body">
 			<liferay-editor:editor
-				contents="<%= notificationTemplateBody %>"
+				contents="<%= body %>"
 				editorName="ckeditor"
 			/>
 
-			<aui:input name="body" type="hidden" value="<%= notificationTemplateBody %>" />
+			<aui:input name="body" type="hidden" value="<%= body %>" />
 		</aui:field-wrapper>
 	</aui:fieldset>
 
 	<div class="definition-of-terms">
-		<h4><liferay-ui:message key="definition-of-terms" /></h4>
+		<div class="h4"><liferay-ui:message key="definition-of-terms" /></div>
 
 		<dl>
 			<dt>
@@ -107,19 +108,19 @@ String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificat
 				[$EVENT_LOCATION$]
 			</dt>
 			<dd>
-				<liferay-ui:message key="the-calendar-booking-location" />
+				<liferay-ui:message key="the-event-location" />
 			</dd>
 			<dt>
 				[$EVENT_START_DATE$]
 			</dt>
 			<dd>
-				<liferay-ui:message key="the-calendar-booking-start-date" />
+				<liferay-ui:message key="the-event-start-date" />
 			</dd>
 			<dt>
 				[$EVENT_TITLE$]
 			</dt>
 			<dd>
-				<liferay-ui:message key="the-calendar-booking-title" />
+				<liferay-ui:message key="the-event-title" />
 			</dd>
 
 			<c:if test="<%= notificationTemplateType == NotificationTemplateType.INVITE %>">
@@ -192,7 +193,8 @@ String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificat
 		);
 
 		if (notificationTemplateContentBody) {
-			notificationTemplateContentBody.value = window.<portlet:namespace />editor.getHTML();
+			notificationTemplateContentBody.value =
+				window.<portlet:namespace />editor.getHTML();
 		}
 
 		submitForm(document.<portlet:namespace />fm);

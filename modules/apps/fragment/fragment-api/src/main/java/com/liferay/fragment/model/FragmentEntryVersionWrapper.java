@@ -42,6 +42,7 @@ public class FragmentEntryVersionWrapper
 		attributes.put("fragmentEntryVersionId", getFragmentEntryVersionId());
 		attributes.put("version", getVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("fragmentEntryId", getFragmentEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -59,6 +60,7 @@ public class FragmentEntryVersionWrapper
 		attributes.put("configuration", getConfiguration());
 		attributes.put("icon", getIcon());
 		attributes.put("previewFileEntryId", getPreviewFileEntryId());
+		attributes.put("marketplace", isMarketplace());
 		attributes.put("readOnly", isReadOnly());
 		attributes.put("type", getType());
 		attributes.put("typeOptions", getTypeOptions());
@@ -102,6 +104,13 @@ public class FragmentEntryVersionWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long fragmentEntryId = (Long)attributes.get("fragmentEntryId");
@@ -205,6 +214,12 @@ public class FragmentEntryVersionWrapper
 
 		if (previewFileEntryId != null) {
 			setPreviewFileEntryId(previewFileEntryId);
+		}
+
+		Boolean marketplace = (Boolean)attributes.get("marketplace");
+
+		if (marketplace != null) {
+			setMarketplace(marketplace);
 		}
 
 		Boolean readOnly = (Boolean)attributes.get("readOnly");
@@ -322,6 +337,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this fragment entry version.
+	 *
+	 * @return the external reference code of this fragment entry version
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the fragment collection ID of this fragment entry version.
 	 *
 	 * @return the fragment collection ID of this fragment entry version
@@ -409,6 +434,16 @@ public class FragmentEntryVersionWrapper
 	@Override
 	public Date getLastPublishDate() {
 		return model.getLastPublishDate();
+	}
+
+	/**
+	 * Returns the marketplace of this fragment entry version.
+	 *
+	 * @return the marketplace of this fragment entry version
+	 */
+	@Override
+	public boolean getMarketplace() {
+		return model.getMarketplace();
 	}
 
 	/**
@@ -662,6 +697,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Returns <code>true</code> if this fragment entry version is marketplace.
+	 *
+	 * @return <code>true</code> if this fragment entry version is marketplace; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isMarketplace() {
+		return model.isMarketplace();
+	}
+
+	/**
 	 * Returns <code>true</code> if this fragment entry version is pending.
 	 *
 	 * @return <code>true</code> if this fragment entry version is pending; <code>false</code> otherwise
@@ -752,6 +797,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this fragment entry version.
+	 *
+	 * @param externalReferenceCode the external reference code of this fragment entry version
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the fragment collection ID of this fragment entry version.
 	 *
 	 * @param fragmentCollectionId the fragment collection ID of this fragment entry version
@@ -839,6 +894,16 @@ public class FragmentEntryVersionWrapper
 	@Override
 	public void setLastPublishDate(Date lastPublishDate) {
 		model.setLastPublishDate(lastPublishDate);
+	}
+
+	/**
+	 * Sets whether this fragment entry version is marketplace.
+	 *
+	 * @param marketplace the marketplace of this fragment entry version
+	 */
+	@Override
+	public void setMarketplace(boolean marketplace) {
+		model.setMarketplace(marketplace);
 	}
 
 	/**

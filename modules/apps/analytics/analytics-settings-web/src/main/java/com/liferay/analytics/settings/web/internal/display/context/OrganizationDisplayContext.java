@@ -21,12 +21,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.OrganizationNameComparator;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.LinkedHashMap;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author André Miranda
@@ -68,7 +68,7 @@ public class OrganizationDisplayContext {
 				OrganizationConstants.ANY_PARENT_ORGANIZATION_ID,
 				_getKeywords(), null, null, null, _getOrganizationParams(),
 				organizationSearch.getStart(), organizationSearch.getEnd(),
-				new OrganizationNameComparator(_isOrderByAscending())),
+				OrganizationNameComparator.getInstance(_isOrderByAscending())),
 			OrganizationLocalServiceUtil.searchCount(
 				_getCompanyId(),
 				OrganizationConstants.ANY_PARENT_ORGANIZATION_ID,
@@ -126,11 +126,7 @@ public class OrganizationDisplayContext {
 	}
 
 	private boolean _isOrderByAscending() {
-		if (Objects.equals(getOrderByType(), "asc")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getOrderByType(), "asc");
 	}
 
 	private final AnalyticsConfiguration _analyticsConfiguration;

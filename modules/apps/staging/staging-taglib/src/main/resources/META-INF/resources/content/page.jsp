@@ -7,7 +7,7 @@
 
 <%@ include file="/content/init.jsp" %>
 
-<c:if test="<%= !dataSiteLevelPortlets.isEmpty() %>">
+<c:if test="<%= !portlets.isEmpty() %>">
 	<aui:fieldset cssClass="options-group" markupView="lexicon">
 		<clay:sheet-section>
 			<h3 class="sheet-subtitle"><liferay-ui:message key="content" /></h3>
@@ -29,7 +29,7 @@
 												String selectedRange = MapUtil.getString(parameterMap, "range", defaultRange);
 												%>
 
-												<div class="range-options">
+												<div class="c-p-4 range-options">
 													<liferay-staging:radio
 														checked="<%= selectedRange.equals(ExportImportDateUtil.RANGE_ALL) %>"
 														disabled="<%= disableInputs %>"
@@ -41,7 +41,7 @@
 												</div>
 
 												<c:if test="<%= !type.equals(Constants.EXPORT) %>">
-													<div class="range-options">
+													<div class="c-p-4 range-options">
 														<liferay-staging:radio
 															checked="<%= selectedRange.equals(ExportImportDateUtil.RANGE_FROM_LAST_PUBLISH_DATE) %>"
 															disabled="<%= disableInputs %>"
@@ -53,7 +53,7 @@
 													</div>
 												</c:if>
 
-												<div class="range-options">
+												<div class="c-p-4 range-options">
 													<liferay-staging:radio
 														checked="<%= selectedRange.equals(ExportImportDateUtil.RANGE_DATE_RANGE) %>"
 														disabled="<%= disableInputs %>"
@@ -65,7 +65,7 @@
 													/>
 												</div>
 
-												<div class="range-options">
+												<div class="c-p-4 range-options">
 													<liferay-staging:radio
 														checked="<%= selectedRange.equals(ExportImportDateUtil.RANGE_LAST) %>"
 														disabled="<%= disableInputs %>"
@@ -77,15 +77,21 @@
 													/>
 												</div>
 
-												<div class="range-options <%= disableInputs ? "hide" : StringPool.BLANK %>">
-													<clay:icon
-														symbol="reload"
-													/>
+												<%
+												StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHelper();
+												%>
 
-													<aui:a cssClass="modify-link" href="javascript:void(0);" id="rangeLink" method="get">
-														<liferay-ui:message key="refresh-counts" />
-													</aui:a>
-												</div>
+												<c:if test="<%= !stagingGroupHelper.isCompanyGroup(group) %>">
+													<div class="range-options c-p-4 <%= disableInputs ? "hide" : StringPool.BLANK %>">
+														<clay:link
+															cssClass="modify-link"
+															href="javascript:void(0);"
+															icon="reload"
+															id='<%= liferayPortletResponse.getNamespace() + "rangeLink" %>'
+															label="refresh-counts"
+														/>
+													</div>
+												</c:if>
 											</div>
 
 											<%
@@ -213,7 +219,7 @@
 							<liferay-staging:portlet-list
 								disableInputs="<%= disableInputs %>"
 								exportImportConfigurationId="<%= exportImportConfigurationId %>"
-								portlets="<%= dataSiteLevelPortlets %>"
+								portlets="<%= portlets %>"
 								showAllPortlets="<%= showAllPortlets %>"
 								type="<%= type %>"
 							/>

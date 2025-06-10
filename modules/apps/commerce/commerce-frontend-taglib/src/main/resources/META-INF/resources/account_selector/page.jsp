@@ -14,7 +14,7 @@
 		</div>
 	</c:when>
 	<c:when test="<%= !user.isGuestUser() %>">
-		<div class="account-selector-root" id="<%= accountSelectorId %>"></div>
+		<div class="<%= (cssClasses != null) ? "account-selector-root " + cssClasses : "account-selector-root" %>" id="<%= accountSelectorId %>"></div>
 
 		<liferay-frontend:component
 			context='<%=
@@ -23,21 +23,27 @@
 				).put(
 					"accountSelectorId", accountSelectorId
 				).put(
+					"checkoutURL", checkoutURL
+				).put(
 					"commerceChannelId", commerceChannelId
 				).put(
 					"createNewOrderURL", createNewOrderURL
 				).put(
+					"currencyCode", currencyCode
+				).put(
 					"currentCommerceAccount", currentCommerceAccount
 				).put(
 					"currentCommerceOrder", currentCommerceOrder
+				).put(
+					"hasAddCommerceOrderPermission", hasAddCommerceOrderPermission
+				).put(
+					"hasManageAccountsPermission", hasManageAccountsPermission
 				).put(
 					"refreshPageOnAccountSelected", true
 				).put(
 					"selectOrderURL", selectOrderURL
 				).put(
 					"setCurrentAccountURL", setCurrentAccountURL
-				).put(
-					"showOrderTypeModal", showOrderTypeModal
 				).build()
 			%>'
 			module="{accountSelectorTag} from commerce-frontend-taglib"

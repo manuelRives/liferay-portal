@@ -88,6 +88,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
@@ -764,7 +765,25 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 
 			Manifest manifest = new Manifest(inputStream);
 
-			return manifest.getMainAttributes();
+			Attributes attributes = manifest.getMainAttributes();
+
+			if (_bundleHeaderReplacerBiFunction == null) {
+				return attributes;
+			}
+
+			Map<Object, Object> modifiedAttributes =
+				_bundleHeaderReplacerBiFunction.apply(
+					"SystemBundle#", attributes);
+
+			attributes.clear();
+
+			for (Map.Entry<Object, Object> entry :
+					modifiedAttributes.entrySet()) {
+
+				attributes.put(entry.getKey(), entry.getValue());
+			}
+
+			return attributes;
 		}
 		catch (IOException ioException) {
 			return ReflectionUtil.throwException(ioException);
@@ -935,7 +954,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 	}
 
 	private void _installBundlesFromDir(
-			String dirPath, Map<String, Long> checksums,
+			String dirPath, Map<Long, Long> checksums,
 			Set<String> fragmentHosts)
 		throws Exception {
 
@@ -962,9 +981,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 				Bundle bundle = bundleContext.installBundle(
 					location, inputStream);
 
-				checksums.put(
-					bundle.getBundleId() + _CHECKSUM_SUFFIX,
-					_calculateChecksum(file));
+				checksums.put(bundle.getBundleId(), _calculateChecksum(file));
 
 				if ((bundle.getState() != Bundle.INSTALLED) &&
 					(bundle.getState() != Bundle.RESOLVED)) {
@@ -1054,8 +1071,8 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 		}
 	}
 
-	private Map<String, Long> _installDynamicBundles() throws Exception {
-		Map<String, Long> checksums = new HashMap<>();
+	private Map<Long, Long> _installDynamicBundles() throws Exception {
+		Map<Long, Long> checksums = new HashMap<>();
 
 		Set<String> fragmentHosts = new HashSet<>();
 
@@ -1304,19 +1321,24 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 	}
 
 	private void _registerDynamicBundles(
-			Map<String, Long> checksums, BundleContext bundleContext)
+			Map<Long, Long> checksums, BundleContext bundleContext)
 		throws Exception {
 
-		byte[] data = new byte[8];
+		byte[] bytes = new byte[checksums.size() * 16];
 
-		for (Map.Entry<String, Long> entry : checksums.entrySet()) {
-			File file = bundleContext.getDataFile(entry.getKey());
+		int index = 0;
 
-			try (OutputStream outputStream = new FileOutputStream(file)) {
-				BigEndianCodec.putLong(data, 0, entry.getValue());
+		for (Map.Entry<Long, Long> entry : checksums.entrySet()) {
+			BigEndianCodec.putLong(bytes, index, entry.getKey());
+			BigEndianCodec.putLong(bytes, index + 8, entry.getValue());
 
-				outputStream.write(data);
-			}
+			index += 16;
+		}
+
+		try (OutputStream outputStream = new FileOutputStream(
+				bundleContext.getDataFile("bundles.checksum"), true)) {
+
+			outputStream.write(bytes);
 		}
 	}
 
@@ -1687,7 +1709,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			_log.info("Starting dynamic bundles");
 		}
 
-		Map<String, Long> dynamicBundleChecksums = _installDynamicBundles();
+		Map<Long, Long> dynamicBundleChecksums = _installDynamicBundles();
 
 		FrameworkStartLevel frameworkStartLevel = _framework.adapt(
 			FrameworkStartLevel.class);
@@ -1824,18 +1846,45 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 		}
 	}
 
-	private static final String _CHECKSUM_SUFFIX = ".checksum";
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		ModuleFrameworkImpl.class);
 
+	private static final BiFunction
+		<String, Map<Object, Object>, Map<Object, Object>>
+			_bundleHeaderReplacerBiFunction;
 	private static final List<String> _configurationBundleSymbolicNames =
 		Arrays.asList(
 			ModuleFrameworkPropsValues.
 				MODULE_FRAMEWORK_CONFIGURATION_BUNDLE_SYMBOLIC_NAMES);
 
+	static {
+		ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+
+		Object instance = null;
+
+		try {
+			Class<?> clazz = classLoader.loadClass(
+				"com.liferay.portal.tools.jakarta.ee.transformer.function." +
+					"BundleHeaderReplacerBiFunction");
+
+			instance = clazz.newInstance();
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			if (!(reflectiveOperationException instanceof
+					ClassNotFoundException)) {
+
+				throw new ExceptionInInitializerError(
+					reflectiveOperationException);
+			}
+		}
+
+		_bundleHeaderReplacerBiFunction =
+			(BiFunction<String, Map<Object, Object>, Map<Object, Object>>)
+				instance;
+	}
+
 	private BundleListener _bundleListener;
-	private Framework _framework;
+	private volatile Framework _framework;
 	private LogListener _logListener;
 	private final Map
 		<ConfigurableApplicationContext, Collection<ServiceRegistration<?>>>

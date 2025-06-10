@@ -56,12 +56,12 @@ import com.liferay.portal.util.PropsValues;
 import com.liferay.site.navigation.service.SiteNavigationMenuLocalService;
 import com.liferay.translation.security.permission.TranslationPermission;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -410,18 +410,17 @@ public class LayoutsTreeImpl implements LayoutsTree {
 		JSONObject jsonObject = JSONUtil.put(
 			"actions",
 			() -> {
-				if (includeActions) {
-					LayoutActionProvider layoutActionProvider =
-						new LayoutActionProvider(
-							_groupProvider, httpServletRequest, _language,
-							layoutActionsHelper,
-							_siteNavigationMenuLocalService);
-
-					return layoutActionProvider.getActionsJSONArray(
-						layout, afterDeleteSelectedLayout);
+				if (!includeActions) {
+					return null;
 				}
 
-				return null;
+				LayoutActionProvider layoutActionProvider =
+					new LayoutActionProvider(
+						_groupProvider, httpServletRequest, _language,
+						layoutActionsHelper, _siteNavigationMenuLocalService);
+
+				return layoutActionProvider.getActionsJSONArray(
+					layout, afterDeleteSelectedLayout);
 			}
 		).put(
 			"children",

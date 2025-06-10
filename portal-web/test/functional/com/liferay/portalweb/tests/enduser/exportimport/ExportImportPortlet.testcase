@@ -1,15 +1,17 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Export/Import Framework";
+	property testray.main.component.name = "Export/Import";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		Staging.enableDeleteApplicationDataBeforeImport();
 	}
 
 	tearDown {
@@ -74,7 +76,7 @@ definition {
 
 			CKEditor.addSourceContent(content = '''<p><a href="${portalURL}/web/site-name/test-page">test page</a></p>''');
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("When: Export and download the web content to a LAR file") {
@@ -138,7 +140,7 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://localhost:9080",
 				userEmailAddress = "test@liferay.com");
 
@@ -176,7 +178,7 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://localhost:9080",
 				userEmailAddress = "test@liferay.com");
 
@@ -199,7 +201,6 @@ definition {
 	test EditImportedContentPageViaImportedSiteTemplate {
 		property osgi.module.configuration.file.names = "com.liferay.layout.configuration.LayoutExportImportConfiguration.config";
 		property osgi.module.configurations = "exportDraftLayout=\"true\"";
-		property testray.component.names = "Training";
 
 		task ("Given: User add a new site template") {
 			SiteTemplates.addCP(
@@ -286,7 +287,7 @@ definition {
 				editableText = "Editing Finished",
 				fragmentName = "Content");
 
-			AssertConsoleTextNotPresent(value1 = "javax.portlet.PortletException:");
+			AssertConsoleTextNotPresent(value1 = "jakarta.portlet.PortletException:");
 
 			AssertConsoleTextNotPresent(value1 = "org.apache.jasper.JasperException:");
 
@@ -652,7 +653,7 @@ definition {
 				locator1 = "WCEditWebContent#ANY_TEXT_INPUT",
 				value1 = "Liferay 1");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 
 			WebContent.viewTitle(webContentTitle = "Exported Article");
 		}
@@ -783,7 +784,7 @@ definition {
 				webContentLinkToPage = "Test Page",
 				webContentTitle = "WC WebContent Title");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 
 			WebContent.viewTitle(webContentTitle = "WC WebContent Title");
 		}
@@ -932,9 +933,11 @@ definition {
 
 		task ("Login at able.com and add a new web content entry") {
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://www.able.com:8080",
 				userEmailAddress = "test@www.able.com");
+
+			Staging.enableDeleteApplicationDataBeforeImport(navigate = "false");
 
 			WebContentNavigator.openWebContentAdmin(
 				baseURL = "http://www.able.com:8080",

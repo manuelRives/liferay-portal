@@ -7,6 +7,7 @@ package com.liferay.message.boards.web.internal.change.tracking.spi.display;
 
 import com.liferay.change.tracking.spi.display.BaseCTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
+import com.liferay.message.boards.constants.MBCategoryConstants;
 import com.liferay.message.boards.constants.MBPortletKeys;
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.model.MBThread;
@@ -19,11 +20,11 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -70,6 +71,17 @@ public class MBThreadCTDisplayRenderer extends BaseCTDisplayRenderer<MBThread> {
 	@Override
 	public String getTitle(Locale locale, MBThread mbThread) {
 		return mbThread.getTitle();
+	}
+
+	@Override
+	public boolean isHideable(MBThread mbThread) {
+		if (mbThread.getCategoryId() ==
+				MBCategoryConstants.DISCUSSION_CATEGORY_ID) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override

@@ -25,7 +25,6 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortalPreferencesLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -75,13 +74,11 @@ public class JournalFeedStagedModelDataHandlerTest
 		serviceContext.setUuid(_layout.getUuid());
 
 		LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), liveGroup.getGroupId(),
+			null, TestPropsValues.getUserId(), liveGroup.getGroupId(),
 			_layout.isPrivateLayout(), _layout.getParentLayoutId(),
 			_layout.getName(), _layout.getTitle(), _layout.getDescription(),
 			_layout.getType(), _layout.isHidden(), _layout.getFriendlyURL(),
 			serviceContext);
-
-		CompanyThreadLocal.setCompanyId(TestPropsValues.getCompanyId());
 
 		serviceContext.setCompanyId(TestPropsValues.getCompanyId());
 

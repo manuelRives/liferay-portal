@@ -6,31 +6,34 @@
 import duplicateItemAction from '../actions/duplicateItem';
 import {ITEM_ACTIVATION_ORIGINS} from '../config/constants/itemActivationOrigins';
 import FragmentService from '../services/FragmentService';
+import filterSelectedItems from './filterSelectedItems';
 
-export default function duplicateItem({itemId, selectItem = () => {}}) {
+export default function duplicateItem({itemIds, selectItems = () => {}}) {
 	return (dispatch, getState) => {
+		const {layoutData, segmentsExperienceId} = getState();
+
 		FragmentService.duplicateItem({
-			itemId,
+			itemIds: filterSelectedItems(itemIds, layoutData.items),
 			onNetworkStatus: dispatch,
-			segmentsExperienceId: getState().segmentsExperienceId,
+			segmentsExperienceId,
 		}).then(
 			({
 				duplicatedFragmentEntryLinks,
-				duplicatedItemId,
-				layoutData,
+				duplicatedItemIds,
+				layoutData: nextLayoutData,
 				restrictedItemIds,
 			}) => {
 				dispatch(
 					duplicateItemAction({
 						addedFragmentEntryLinks: duplicatedFragmentEntryLinks,
-						itemId: duplicatedItemId,
-						layoutData,
+						itemIds: duplicatedItemIds,
+						layoutData: nextLayoutData,
 						restrictedItemIds,
 					})
 				);
 
-				if (duplicatedItemId) {
-					selectItem(duplicatedItemId, {
+				if (duplicatedItemIds) {
+					selectItems(duplicatedItemIds, {
 						origin: ITEM_ACTIVATION_ORIGINS.itemActions,
 					});
 				}

@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import {PageProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import Text from '../../../src/main/resources/META-INF/resources/Text/Text.es';
+import Text from '../../../src/main/resources/META-INF/resources/js/Text/Text.es';
 
 const globalLanguageDirection = Liferay.Language.direction;
 
@@ -27,10 +27,12 @@ const TextWithProvider = (props) => (
 );
 
 describe('Field Text', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
 	beforeAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = (...args) => {
 			if (/DataProvider: Trying/.test(args[0])) {
@@ -45,6 +47,7 @@ describe('Field Text', () => {
 	});
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 
@@ -173,6 +176,35 @@ describe('Field Text', () => {
 		});
 
 		expect(container).toMatchSnapshot();
+	});
+
+	it('does not render html autocomplete attribute', () => {
+		const {container} = render(<TextWithProvider {...defaultTextConfig} />);
+
+		act(() => {
+			jest.runAllTimers();
+		});
+
+		const textInputTag = container.querySelector('.ddm-field-text');
+
+		expect(textInputTag.hasAttribute('autocomplete')).toBe(false);
+	});
+
+	it('renders html autocomplete attribute', () => {
+		const {container} = render(
+			<TextWithProvider
+				{...defaultTextConfig}
+				htmlAutocompleteAttribute="name"
+			/>
+		);
+
+		act(() => {
+			jest.runAllTimers();
+		});
+
+		const textInputTag = container.querySelector('.ddm-field-text');
+
+		expect(textInputTag.getAttribute('autocomplete')).toBe('name');
 	});
 
 	it('renders autocomplete dropdown menu', () => {

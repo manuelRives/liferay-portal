@@ -8,6 +8,8 @@ package com.liferay.headless.commerce.admin.payment.client.serdes.v1_0;
 import com.liferay.headless.commerce.admin.payment.client.dto.v1_0.Payment;
 import com.liferay.headless.commerce.admin.payment.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.math.BigDecimal;
 
 import java.text.DateFormat;
@@ -18,8 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alessio Antonio Rendina
@@ -82,6 +82,20 @@ public class PaymentSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(payment.getAmountFormatted()));
+
+			sb.append("\"");
+		}
+
+		if (payment.getAuthor() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"author\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(payment.getAuthor()));
 
 			sb.append("\"");
 		}
@@ -166,6 +180,30 @@ public class PaymentSerDes {
 			sb.append("\"");
 		}
 
+		if (payment.getCurrencyExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(payment.getCurrencyExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (payment.getCurrencyId() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyId\": ");
+
+			sb.append(payment.getCurrencyId());
+		}
+
 		if (payment.getErrorMessages() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -214,6 +252,20 @@ public class PaymentSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(payment.getLanguageId()));
+
+			sb.append("\"");
+		}
+
+		if (payment.getPayload() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"payload\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(payment.getPayload()));
 
 			sb.append("\"");
 		}
@@ -420,6 +472,13 @@ public class PaymentSerDes {
 				String.valueOf(payment.getAmountFormatted()));
 		}
 
+		if (payment.getAuthor() == null) {
+			map.put("author", null);
+		}
+		else {
+			map.put("author", String.valueOf(payment.getAuthor()));
+		}
+
 		if (payment.getCallbackURL() == null) {
 			map.put("callbackURL", null);
 		}
@@ -464,6 +523,22 @@ public class PaymentSerDes {
 			map.put("currencyCode", String.valueOf(payment.getCurrencyCode()));
 		}
 
+		if (payment.getCurrencyExternalReferenceCode() == null) {
+			map.put("currencyExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"currencyExternalReferenceCode",
+				String.valueOf(payment.getCurrencyExternalReferenceCode()));
+		}
+
+		if (payment.getCurrencyId() == null) {
+			map.put("currencyId", null);
+		}
+		else {
+			map.put("currencyId", String.valueOf(payment.getCurrencyId()));
+		}
+
 		if (payment.getErrorMessages() == null) {
 			map.put("errorMessages", null);
 		}
@@ -493,6 +568,13 @@ public class PaymentSerDes {
 		}
 		else {
 			map.put("languageId", String.valueOf(payment.getLanguageId()));
+		}
+
+		if (payment.getPayload() == null) {
+			map.put("payload", null);
+		}
+		else {
+			map.put("payload", String.valueOf(payment.getPayload()));
 		}
 
 		if (payment.getPaymentIntegrationKey() == null) {
@@ -616,6 +698,114 @@ public class PaymentSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "amount")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "amountFormatted")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "author")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "callbackURL")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "cancelURL")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "channelId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "comment")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "createDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyCode")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "currencyExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "errorMessages")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "languageId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "payload")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "paymentIntegrationKey")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "paymentIntegrationType")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "paymentStatus")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "paymentStatusStatus")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "reasonKey")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "reasonName")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "redirectURL")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "relatedItemId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "relatedItemName")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "relatedItemNameLabel")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "transactionCode")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "typeLabel")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Payment payment, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -623,7 +813,7 @@ public class PaymentSerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					payment.setActions(
-						(Map)PaymentSerDes.toMap((String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "amount")) {
@@ -635,6 +825,11 @@ public class PaymentSerDes {
 			else if (Objects.equals(jsonParserFieldName, "amountFormatted")) {
 				if (jsonParserFieldValue != null) {
 					payment.setAmountFormatted((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "author")) {
+				if (jsonParserFieldValue != null) {
+					payment.setAuthor((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "callbackURL")) {
@@ -668,6 +863,20 @@ public class PaymentSerDes {
 					payment.setCurrencyCode((String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "currencyExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					payment.setCurrencyExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyId")) {
+				if (jsonParserFieldValue != null) {
+					payment.setCurrencyId(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "errorMessages")) {
 				if (jsonParserFieldValue != null) {
 					payment.setErrorMessages((String)jsonParserFieldValue);
@@ -689,6 +898,11 @@ public class PaymentSerDes {
 			else if (Objects.equals(jsonParserFieldName, "languageId")) {
 				if (jsonParserFieldValue != null) {
 					payment.setLanguageId((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "payload")) {
+				if (jsonParserFieldValue != null) {
+					payment.setPayload((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
@@ -729,7 +943,7 @@ public class PaymentSerDes {
 			else if (Objects.equals(jsonParserFieldName, "reasonName")) {
 				if (jsonParserFieldValue != null) {
 					payment.setReasonName(
-						(Map)PaymentSerDes.toMap((String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "redirectURL")) {
@@ -804,36 +1018,7 @@ public class PaymentSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -843,6 +1028,42 @@ public class PaymentSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

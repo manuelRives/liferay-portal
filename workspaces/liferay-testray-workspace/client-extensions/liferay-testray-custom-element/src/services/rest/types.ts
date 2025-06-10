@@ -49,7 +49,7 @@ export type APIResponse<Query = any> = {
 	page: number;
 	pageSize: number;
 	results?: Results[];
-	testrayCaseResults?: Results[];
+	testrayCaseResultComparisons?: Results[];
 	totalCount: number;
 };
 
@@ -86,7 +86,6 @@ export type UserAccount = {
 	givenName: string;
 	id: number;
 	image: string;
-	jiraAuthorization: boolean;
 	name: string;
 	roleBriefs: Role[];
 	userGroupBriefs: UserGroup[];
@@ -113,16 +112,20 @@ export type TestrayBuild = {
 	actions: ObjectActionsItems;
 	archived?: boolean;
 	buildToTasks: TestrayTask[];
+	cpuUseTime: string;
 	creator: {
 		name: string;
 	};
 	dateArchived: string;
 	dateCreated: string;
 	description: string;
+	dueDate: string;
 	dueStatus: PickList;
 	gitHash: string;
 	id: number;
+	importStatus: PickList;
 	name: string;
+	playwrightReports: string;
 	productVersion?: TestrayProductVersion;
 	project?: TestrayProject;
 	promoted: boolean;
@@ -135,7 +138,29 @@ export type TestrayBuild = {
 	tasks: TestrayTask[];
 	template: boolean;
 	templateTestrayBuildId: string;
-} & CaseResultAggregation;
+} & CaseResultAggregation &
+	Partial<TestrayBuildCustomAPI>;
+
+export type TestrayBuildCustomAPI = {
+	testrayBuildArchived: boolean;
+	testrayBuildId: number;
+	testrayBuildImportStatus: string;
+	testrayBuildName: string;
+	testrayBuildPromoted: boolean;
+	testrayBuildTaskStatus: string;
+	testrayStatusMetric: TestrayStatusMetric;
+};
+
+export type TestrayStatusMetric = {
+	blocked: number;
+	failed: number;
+	inProgress: number;
+	incomplete: number;
+	passed: number;
+	testfix: number;
+	total: number;
+	untested: number;
+};
 
 export type TestrayCase = {
 	actions: ObjectActionsItems;
@@ -149,6 +174,7 @@ export type TestrayCase = {
 	description: string;
 	descriptionType: string;
 	estimatedDuration: number;
+	flaky?: boolean;
 	id: number;
 	name: string;
 	number: number;
@@ -179,12 +205,15 @@ export type TestrayCaseResult = {
 	dateCreated: string;
 	dateModified: string;
 	dueStatus: PickList;
+	duration: number;
+	error?: string;
 	errors: string;
 	id: number;
 	issues: string;
 	key: string;
 	mbMessageId: number;
 	mbThreadId: number;
+	priority?: number;
 	r_buildToCaseResult_c_build?: TestrayBuild;
 	r_buildToCaseResult_c_buildId?: number;
 	r_caseToCaseResult_c_case?: TestrayCase;
@@ -196,7 +225,10 @@ export type TestrayCaseResult = {
 	run?: TestrayRun;
 	runId?: number;
 	startDate: string;
+	status?: string;
+	testrayCaseResultId?: number;
 	user?: UserAccount;
+	userName: string;
 	warnings: number;
 } & CaseResultAggregation;
 
@@ -230,11 +262,6 @@ export type TestrayFactorOption = {
 
 export type TestrayOptionsByCategory = {
 	[key: string]: any;
-};
-
-export type TestrayJiraImportRequirement = {
-	actions: ObjectActionsItems;
-	issues: string;
 };
 
 export type TestrayProductVersion = {
@@ -305,41 +332,57 @@ export type TestrayRun = {
 	testrayRunName: string;
 } & CaseResultAggregation;
 
-export type TestraySubTask = {
+export type TestraySubtask = {
 	actions: ObjectActionsItems;
 	caseResultIssues: string[];
 	dateCreated: string;
 	dateModified: string;
 	dueStatus: PickList;
+	error?: string;
 	errors: string;
 	id: number;
 	issues: string;
 	mbMessageId: number;
 	mbThreadId: number;
-	mergedToSubtaskId: TestraySubTask;
+	mergedToSubtask: TestraySubtask;
 	name: string;
 	number: number;
-	r_mergedToTestraySubtask_c_subtaskId: TestraySubTask;
-	r_splitFromTestraySubtask_c_subtask: TestraySubTask;
+	r_mergedToTestraySubtask_c_subtask: TestraySubtask;
+	r_splitFromTestraySubtask_c_subtask: TestraySubtask;
 	r_taskToSubtasks_c_task: TestrayTask;
 	r_userToSubtasks_user: UserAccount;
 	r_userToSubtasks_userId: number;
 	score: number;
-	splitFromSubtask: TestraySubTask;
+	splitFromSubtask: TestraySubtask;
+	status: string;
 	statusUpdateDate: string;
-	subtaskToSubtasksCasesResults: TestraySubTaskCaseResult[];
+	subtaskId: string;
+	subtaskToCaseResults?: TestrayCaseResult[];
+	subtaskToSubtasksCasesResults: TestraySubtaskCaseResult[];
 	task: TestrayTask;
+	testrayTaskId: number;
 	user: UserAccount;
+	userId: number;
 };
 
-export type TestraySubTaskCaseResult = {
-	caseResult?: TestrayCaseResult;
-	caseResultToSubtasksCasesResults?: TestrayCaseResult;
+export type TestraySubtaskCaseResult = {
+	build?: TestrayBuild;
+	case?: TestrayCase;
+	errors: string;
 	id: number;
-	name: string;
-	r_caseResultToSubtasksCasesResults_c_caseResult?: TestrayCaseResult;
-	r_subtaskToSubtasksCasesResults_c_subtask?: TestraySubTask;
-	subTask?: TestraySubTask;
+	issues: string;
+	r_buildToCaseResult_c_build?: TestrayBuild;
+	r_buildToCaseResult_c_buildId?: number;
+	r_caseToCaseResult_c_case?: TestrayCase;
+	r_caseToCaseResult_c_caseId?: number;
+	r_componentToCaseResult_c_component?: TestrayComponent;
+	r_runToCaseResult_c_run?: TestrayRun;
+	r_runToCaseResult_c_runId?: number;
+	r_subtaskToCaseResults_c_subtask?: TestraySubtask;
+	r_userToCaseResults_user?: UserAccount;
+	runId?: number;
+	subtask?: TestraySubtask;
+	user?: UserAccount;
 };
 
 export type TestraySuite = {
@@ -377,6 +420,7 @@ export type TestrayTask = {
 	r_buildToTasks_c_build?: TestrayBuild;
 	subtaskScore: string;
 	subtaskScoreCompleted: string;
+	subtaskScoreSelfCompleted: string;
 	subtaskScoreSelfIncomplete: string;
 	taskToTasksUsers: any;
 };
@@ -437,12 +481,13 @@ export type TestrayFactorCategory = {
 
 export type TestrayRoutine = {
 	actions: ObjectActionsItems;
-	builds: TestrayBuild[];
-	dateCreated: string;
 	id: number;
 	name: string;
 	routineToBuilds: TestrayBuild[];
 	routineToProjects?: TestrayProject;
+	testrayBuildCPUUseTime?: string;
+	testrayBuildDueDate: string;
+	testrayRoutineId?: number;
 };
 
 export type TestrayFactor = {

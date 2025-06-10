@@ -8,7 +8,7 @@ import {useCallback, useEffect} from 'react';
 import {Liferay} from '../liferay/liferay';
 import {useGetAppContext} from '../pages/GetApp/GetAppContextProvider';
 import fetcher from '../services/fetcher';
-import headlessCommerceDeliveryCart from '../services/rest/HeadlessCommerceDeliveryCart';
+import HeadlessCommerceDeliveryCart from '../services/rest/HeadlessCommerceDeliveryCart';
 import {createCart} from '../utils/api';
 
 const channelId = Liferay.CommerceContext.commerceChannelId;
@@ -47,7 +47,8 @@ const useCart = ({
 			const response = await createCart({
 				accountId,
 				channelId,
-				orderTypeExternalReferenceCode: orderType?.externalReferenceCode as string,
+				orderTypeExternalReferenceCode:
+					orderType?.externalReferenceCode as string,
 			});
 
 			setCart(response);
@@ -73,10 +74,9 @@ const useCart = ({
 
 	useEffect(() => {
 		if (cartId && cartItems.length) {
-			headlessCommerceDeliveryCart
-				.updateCart(cartId, {
-					cartItems,
-				})
+			HeadlessCommerceDeliveryCart.updateCart(cartId, {
+				cartItems,
+			})
 				.then(setCart)
 				.catch(console.error);
 		}
@@ -95,8 +95,7 @@ const useCart = ({
 
 	const removeCart = useCallback(
 		(id: number) =>
-			headlessCommerceDeliveryCart
-				.deleteCart(id)
+			HeadlessCommerceDeliveryCart.deleteCart(id)
 				.then(() => {
 					setCart(undefined);
 					setCartItems([]);
@@ -164,9 +163,7 @@ const useCart = ({
 		removeCart,
 		removeFromCart,
 		setCart,
-		updateCart: headlessCommerceDeliveryCart.updateCart.bind(
-			headlessCommerceDeliveryCart
-		),
+		updateCart: HeadlessCommerceDeliveryCart.updateCart,
 	};
 };
 

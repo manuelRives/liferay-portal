@@ -21,6 +21,7 @@ import com.liferay.jenkins.results.parser.failure.message.generator.JenkinsSourc
 import com.liferay.jenkins.results.parser.failure.message.generator.PoshiTestFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.PoshiValidationFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.RebaseFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.RelevantRuleValidationFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.testray.TestrayBuild;
 
 import java.io.File;
@@ -757,6 +758,21 @@ public abstract class BaseTopLevelBuild
 		}
 
 		@Override
+		public String getSenderBranchSHAShort() {
+			String senderBranchSHA = getSenderBranchSHA();
+
+			if (senderBranchSHA == null) {
+				return null;
+			}
+
+			if (senderBranchSHA.length() >= 7) {
+				senderBranchSHA = senderBranchSHA.substring(0, 7);
+			}
+
+			return senderBranchSHA;
+		}
+
+		@Override
 		public RemoteGitRef getSenderRemoteGitRef() {
 			String remoteURL = null;
 
@@ -855,6 +871,38 @@ public abstract class BaseTopLevelBuild
 		if (getParentBuild() != null) {
 			return;
 		}
+
+		BuildDatabase buildDatabase = getBuildDatabase();
+
+		Properties properties = buildDatabase.getProperties(
+			BUILD_URLS_PROPERTIES_KEY);
+
+		Map<String, String> urlAxisNames = new HashMap<>();
+
+		List<String> badBuildURLs = getBadBuildURLs();
+
+		for (String propertyName : properties.stringPropertyNames()) {
+			if (Objects.equals(propertyName, getJobVariant())) {
+				continue;
+			}
+
+			String buildURL = properties.getProperty(propertyName);
+
+			if (badBuildURLs.contains(buildURL)) {
+				continue;
+			}
+
+			urlAxisNames.put(buildURL, propertyName);
+		}
+
+		if (!urlAxisNames.isEmpty()) {
+			addDownstreamBuilds(urlAxisNames);
+
+			return;
+		}
+
+		System.out.println(
+			"Unable to find downstream builds in build-database.json");
 
 		_findDownstreamBuildsInConsoleText();
 	}
@@ -1246,7 +1294,8 @@ public abstract class BaseTopLevelBuild
 			topLevelBuild.getJenkinsMaster();
 
 		return JenkinsResultsParserUtil.combine(
-			URL_BASE_TEMP_MAP, topLevelBuildJenkinsMaster.getName(), "/",
+			JenkinsResultsParserUtil.getJenkinsTempMapURL(), "/",
+			topLevelBuildJenkinsMaster.getName(), "/",
 			topLevelBuild.getJobName(), "/",
 			String.valueOf(topLevelBuild.getBuildNumber()), "/",
 			topLevelBuild.getJobName(), "/git.", gitRepositoryType,
@@ -1822,7 +1871,8 @@ public abstract class BaseTopLevelBuild
 		JenkinsMaster jenkinsMaster = getJenkinsMaster();
 
 		return JenkinsResultsParserUtil.combine(
-			URL_BASE_TEMP_MAP, jenkinsMaster.getName(), "/", getJobName(), "/",
+			JenkinsResultsParserUtil.getJenkinsTempMapURL(), "/",
+			jenkinsMaster.getName(), "/", getJobName(), "/",
 			String.valueOf(getBuildNumber()), "/", getJobName(), "/",
 			"start.properties");
 	}
@@ -1836,7 +1886,8 @@ public abstract class BaseTopLevelBuild
 		JenkinsMaster jenkinsMaster = getJenkinsMaster();
 
 		return JenkinsResultsParserUtil.combine(
-			URL_BASE_TEMP_MAP, jenkinsMaster.getName(), "/", getJobName(), "/",
+			JenkinsResultsParserUtil.getJenkinsTempMapURL(), "/",
+			jenkinsMaster.getName(), "/", getJobName(), "/",
 			String.valueOf(getBuildNumber()), "/", getJobName(), "/",
 			"stop.properties");
 	}
@@ -1994,6 +2045,10 @@ public abstract class BaseTopLevelBuild
 	protected boolean isEligibleForReevaluation(
 		String result, String upstreamBranchSHA) {
 
+		if (JenkinsResultsParserUtil.isNullOrEmpty(upstreamBranchSHA)) {
+			return false;
+		}
+
 		if ((result != null) && !result.matches("(APPROVED|SUCCESS)") &&
 			hasDownstreamBuilds() &&
 			!upstreamBranchSHA.equals(
@@ -2086,15 +2141,11 @@ public abstract class BaseTopLevelBuild
 
 		long start = JenkinsResultsParserUtil.getCurrentTimeMillis();
 
-		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase(this);
+		BuildDatabase buildDatabase = getBuildDatabase();
 
 		try {
-			JSONObject buildDatabaseJSONObject = new JSONObject(
-				JenkinsResultsParserUtil.read(
-					buildDatabase.getBuildDatabaseFile()));
-
 			writeArchiveFile(
-				buildDatabaseJSONObject.toString(4),
+				String.valueOf(buildDatabase.getJSONObject()),
 				getArchivePath() + "/" + urlSuffix);
 		}
 		catch (IOException ioException) {
@@ -2358,6 +2409,7 @@ public abstract class BaseTopLevelBuild
 			new InvalidGitCommitSHAFailureMessageGenerator(),
 			new InvalidSenderSHAFailureMessageGenerator(),
 			new RebaseFailureMessageGenerator(),
+			new RelevantRuleValidationFailureMessageGenerator(),
 			//
 			new PoshiValidationFailureMessageGenerator(),
 			new PoshiTestFailureMessageGenerator(),

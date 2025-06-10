@@ -128,8 +128,15 @@ public class AssetTagStagedModelDataHandler
 		ServiceContext serviceContext = _createServiceContext(
 			portletDataContext, assetTag);
 
-		AssetTag existingAssetTag = fetchStagedModelByUuidAndGroupId(
-			assetTag.getUuid(), portletDataContext.getScopeGroupId());
+		AssetTag existingAssetTag =
+			_assetTagLocalService.fetchAssetTagByExternalReferenceCode(
+				assetTag.getExternalReferenceCode(),
+				portletDataContext.getScopeGroupId());
+
+		if (existingAssetTag == null) {
+			existingAssetTag = fetchStagedModelByUuidAndGroupId(
+				assetTag.getUuid(), portletDataContext.getScopeGroupId());
+		}
 
 		Map<String, String[]> parameterMap =
 			portletDataContext.getParameterMap();
@@ -159,8 +166,9 @@ public class AssetTagStagedModelDataHandler
 
 			try {
 				importedAssetTag = _assetTagLocalService.addTag(
-					userId, portletDataContext.getScopeGroupId(),
-					assetTag.getName(), serviceContext);
+					assetTag.getExternalReferenceCode(), userId,
+					portletDataContext.getScopeGroupId(), assetTag.getName(),
+					serviceContext);
 			}
 			catch (DuplicateTagException duplicateTagException) {
 				if (_log.isDebugEnabled()) {
@@ -168,14 +176,16 @@ public class AssetTagStagedModelDataHandler
 				}
 
 				importedAssetTag = _assetTagLocalService.addTag(
-					userId, portletDataContext.getScopeGroupId(),
+					assetTag.getExternalReferenceCode(), userId,
+					portletDataContext.getScopeGroupId(),
 					assetTag.getName() + " (Duplicate)", serviceContext);
 			}
 		}
 		else {
 			try {
 				importedAssetTag = _assetTagLocalService.updateTag(
-					userId, existingAssetTag.getTagId(), assetTag.getName(),
+					existingAssetTag.getExternalReferenceCode(), userId,
+					existingAssetTag.getTagId(), assetTag.getName(),
 					serviceContext);
 			}
 			catch (DuplicateTagException duplicateTagException) {
@@ -184,7 +194,8 @@ public class AssetTagStagedModelDataHandler
 				}
 
 				importedAssetTag = _assetTagLocalService.updateTag(
-					userId, existingAssetTag.getTagId(),
+					existingAssetTag.getExternalReferenceCode(), userId,
+					existingAssetTag.getTagId(),
 					assetTag.getName() + " (Duplicate)", serviceContext);
 			}
 		}

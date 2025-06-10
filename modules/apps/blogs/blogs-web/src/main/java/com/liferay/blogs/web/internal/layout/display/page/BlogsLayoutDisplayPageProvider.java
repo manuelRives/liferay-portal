@@ -107,6 +107,12 @@ public class BlogsLayoutDisplayPageProvider
 		BlogsEntry blogsEntry = _blogsEntryLocalService.fetchEntry(
 			groupId, urlTitle);
 
+		if (blogsEntry == null) {
+			blogsEntry = _blogsEntryLocalService.fetchEntry(
+				groupId,
+				urlTitle.substring(urlTitle.lastIndexOf(StringPool.SLASH) + 1));
+		}
+
 		if ((blogsEntry == null) || blogsEntry.isInTrash()) {
 			return null;
 		}

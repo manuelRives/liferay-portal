@@ -5,6 +5,7 @@
 
 package com.liferay.portal.background.task.internal;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.background.task.service.BackgroundTaskLocalService;
 import com.liferay.portal.background.task.util.comparator.BackgroundTaskCompletionDateComparator;
 import com.liferay.portal.background.task.util.comparator.BackgroundTaskCreateDateComparator;
@@ -20,8 +21,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -541,22 +540,11 @@ public class BackgroundTaskManagerImpl implements BackgroundTaskManager {
 
 	private List<BackgroundTask> _translate(
 		List<com.liferay.portal.background.task.model.BackgroundTask>
-			backgroundTaskModels) {
+			backgroundTasks) {
 
-		if (backgroundTaskModels.isEmpty()) {
-			return Collections.emptyList();
-		}
-
-		List<BackgroundTask> backgroundTasks = new ArrayList<>(
-			backgroundTaskModels.size());
-
-		for (com.liferay.portal.background.task.model.BackgroundTask
-				backgroundTaskModel : backgroundTaskModels) {
-
-			backgroundTasks.add(new BackgroundTaskImpl(backgroundTaskModel));
-		}
-
-		return backgroundTasks;
+		return TransformUtil.transform(
+			backgroundTasks,
+			backgroundTask -> new BackgroundTaskImpl(backgroundTask));
 	}
 
 	private OrderByComparator
@@ -566,20 +554,21 @@ public class BackgroundTaskManagerImpl implements BackgroundTaskManager {
 		if (orderByComparator instanceof
 				BackgroundTaskCompletionDateComparator) {
 
-			return new com.liferay.portal.background.task.internal.comparator.
-				BackgroundTaskCompletionDateComparator(
+			return com.liferay.portal.background.task.internal.comparator.
+				BackgroundTaskCompletionDateComparator.getInstance(
 					orderByComparator.isAscending());
 		}
 		else if (orderByComparator instanceof
 					BackgroundTaskCreateDateComparator) {
 
-			return new com.liferay.portal.background.task.internal.comparator.
-				BackgroundTaskCreateDateComparator(
+			return com.liferay.portal.background.task.internal.comparator.
+				BackgroundTaskCreateDateComparator.getInstance(
 					orderByComparator.isAscending());
 		}
 		else if (orderByComparator instanceof BackgroundTaskNameComparator) {
-			return new com.liferay.portal.background.task.internal.comparator.
-				BackgroundTaskNameComparator(orderByComparator.isAscending());
+			return com.liferay.portal.background.task.internal.comparator.
+				BackgroundTaskNameComparator.getInstance(
+					orderByComparator.isAscending());
 		}
 
 		throw new IllegalArgumentException(

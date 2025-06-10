@@ -89,7 +89,7 @@ public class OpenSearchSearchEngineAdapterClusterRequestTest
 		_assertClusterName(jsonObject);
 
 		Assert.assertEquals(
-			_ELASTICSEARCH_DEFAULT_NUMBER_OF_SHARDS,
+			_OPENSEARCH_DEFAULT_NUMBER_OF_SHARDS,
 			jsonObject.getString("active_shards"));
 	}
 
@@ -197,9 +197,9 @@ public class OpenSearchSearchEngineAdapterClusterRequestTest
 		_assertHealthy(statsClusterResponse.getClusterHealthStatus());
 	}
 
-	private static final String _CLUSTER_NAME = "opensearch";
+	private static final String _CLUSTER_NAME = "LiferayOpenSearchCluster";
 
-	private static final String _ELASTICSEARCH_DEFAULT_NUMBER_OF_SHARDS = "1";
+	private static final String _OPENSEARCH_DEFAULT_NUMBER_OF_SHARDS = "1";
 
 	private static OpenSearchIndicesClient _openSearchIndicesClient;
 	private static SearchEngineAdapter _searchEngineAdapter;

@@ -7,6 +7,7 @@ package com.liferay.taglib.ui;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.defaultpermissions.configuration.manager.PortalDefaultPermissionsConfigurationManagerUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Role;
@@ -21,12 +22,14 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 import com.liferay.taglib.util.PortalIncludeUtil;
 
-import java.util.List;
-import java.util.Objects;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -72,6 +75,23 @@ public class InputPermissionsTag extends IncludeTag {
 			ResourceActionsUtil.getModelResourceActions(modelName));
 
 		if (showAllRoles) {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			Map<String, String[]> defaultPermissions =
+				PortalDefaultPermissionsConfigurationManagerUtil.
+					getDefaultPermissions(
+						themeDisplay.getCompanyId(),
+						themeDisplay.getSiteGroupId(), modelName);
+
+			if (defaultPermissions == null) {
+				defaultPermissions = Collections.emptyMap();
+			}
+
+			httpServletRequest.setAttribute(
+				"liferay-ui:input-permissions:defaultPermissions",
+				defaultPermissions);
 			httpServletRequest.setAttribute(
 				"liferay-ui:input-permissions:supportedRoles",
 				_getSupportedRoles(httpServletRequest, modelName));

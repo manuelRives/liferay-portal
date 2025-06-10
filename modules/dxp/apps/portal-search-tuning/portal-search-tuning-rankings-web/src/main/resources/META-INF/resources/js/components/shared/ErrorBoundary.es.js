@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import {PropTypes} from 'prop-types';
 import React, {Component} from 'react';
 
@@ -23,10 +23,10 @@ class ErrorBoundary extends Component {
 						'an-error-has-occurred-and-we-were-unable-to-load-x'
 					),
 					[this.props.component]
-			  )
+				)
 			: Liferay.Language.get(
 					'an-error-has-occurred-and-we-were-unable-to-load-the-results'
-			  ),
+				),
 	};
 
 	static getDerivedStateFromError() {
@@ -53,7 +53,7 @@ class ErrorBoundary extends Component {
 						displayState={DISPLAY_STATES.EMPTY}
 						title={Liferay.Language.get('unable-to-load-content')}
 					/>
-			  )
+				)
 			: this.props.children;
 	}
 }

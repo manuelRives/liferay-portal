@@ -67,7 +67,7 @@ export function ModalImportContent({
 
 	const getImportButtonDisableState = () => {
 		if (
-			Liferay.FeatureFlags['LPS-187142'] &&
+			Liferay.FeatureFlags['LPD-34594'] &&
 			inputFile &&
 			importedObjectDefinitions
 		) {
@@ -225,9 +225,7 @@ export function ModalImportContent({
 											| ObjectDefinition[];
 
 										if (
-											Liferay.FeatureFlags[
-												'LPS-187142'
-											] &&
+											Liferay.FeatureFlags['LPD-34594'] &&
 											Array.isArray(JSONFile) &&
 											JSONFile[0].scope
 										) {
@@ -241,9 +239,11 @@ export function ModalImportContent({
 										else {
 											setError(undefined);
 											setExternalReferenceCode(
-												(JSONFile as {
-													externalReferenceCode: string;
-												}).externalReferenceCode
+												(
+													JSONFile as {
+														externalReferenceCode: string;
+													}
+												).externalReferenceCode
 											);
 											setImportedObjectDefinitions(
 												undefined
@@ -285,7 +285,8 @@ export function ModalImportContent({
 
 						<ClayButton
 							className={classNames({
-								'lfr-object__modal-import-content-loading-button': importLoading,
+								'lfr-object__modal-import-content-loading-button':
+									importLoading,
 							})}
 							disabled={
 								getImportButtonDisableState() || importLoading

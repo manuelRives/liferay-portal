@@ -10,9 +10,9 @@ import com.liferay.portal.kernel.service.UserGroupServiceUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -24,13 +24,11 @@ public class ActionUtil {
 
 		long userGroupId = ParamUtil.getLong(httpServletRequest, "userGroupId");
 
-		UserGroup userGroup = null;
-
 		if (userGroupId > 0) {
-			userGroup = UserGroupServiceUtil.fetchUserGroup(userGroupId);
+			return UserGroupServiceUtil.fetchUserGroup(userGroupId);
 		}
 
-		return userGroup;
+		return null;
 	}
 
 	public static UserGroup getUserGroup(PortletRequest portletRequest)

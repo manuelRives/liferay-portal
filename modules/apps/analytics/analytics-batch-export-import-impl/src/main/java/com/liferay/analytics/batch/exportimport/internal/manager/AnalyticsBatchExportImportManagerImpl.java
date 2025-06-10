@@ -77,9 +77,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.zip.ZipEntry;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -114,12 +113,11 @@ public class AnalyticsBatchExportImportManagerImpl
 
 		File tempFile = FileUtil.createTempFile();
 
-		ZipOutputStream zipOutputStream = new ZipOutputStream(
+		GZIPOutputStream gzipOutputStream = new GZIPOutputStream(
 			new FileOutputStream(tempFile));
 
-		zipOutputStream.putNextEntry(new ZipEntry("export.jsonl"));
-
 		List<BatchEngineExportTask> batchEngineExportTasks = new ArrayList<>();
+		boolean skipUpload = true;
 
 		for (String batchEngineExportTaskItemDelegateName :
 				batchEngineExportTaskItemDelegateNames) {
@@ -161,6 +159,8 @@ public class AnalyticsBatchExportImportManagerImpl
 					continue;
 				}
 
+				skipUpload = false;
+
 				try (ZipInputStream zipInputStream = new ZipInputStream(
 						_batchEngineExportTaskLocalService.
 							openContentInputStream(
@@ -169,7 +169,8 @@ public class AnalyticsBatchExportImportManagerImpl
 
 					zipInputStream.getNextEntry();
 
-					StreamUtil.transfer(zipInputStream, zipOutputStream, false);
+					StreamUtil.transfer(
+						zipInputStream, gzipOutputStream, false);
 				}
 			}
 			else {
@@ -179,20 +180,30 @@ public class AnalyticsBatchExportImportManagerImpl
 			}
 		}
 
-		StreamUtil.cleanUp(zipOutputStream);
+		StreamUtil.cleanUp(gzipOutputStream);
 
-		_notify(
-			"Uploading resources " + resourceName, notificationUnsafeConsumer);
+		if (!skipUpload) {
+			_notify(
+				"Uploading resources " + resourceName,
+				notificationUnsafeConsumer);
 
-		try (FileInputStream fileInputStream = new FileInputStream(tempFile)) {
-			_upload(
-				companyId, fileInputStream, resourceLastModifiedDate,
-				resourceName);
+			try (FileInputStream fileInputStream = new FileInputStream(
+					tempFile)) {
+
+				_upload(
+					companyId, "gzip", fileInputStream,
+					resourceLastModifiedDate, resourceName);
+			}
+
+			_notify(
+				"Completed uploading resources " + resourceName,
+				notificationUnsafeConsumer);
 		}
-
-		_notify(
-			"Completed uploading resources " + resourceName,
-			notificationUnsafeConsumer);
+		else {
+			_notify(
+				"Skip uploading resource " + resourceName,
+				notificationUnsafeConsumer);
+		}
 
 		for (BatchEngineExportTask batchEngineExportTask :
 				batchEngineExportTasks) {
@@ -216,7 +227,7 @@ public class AnalyticsBatchExportImportManagerImpl
 	@Override
 	public void exportToAnalyticsCloud(
 			String batchEngineExportTaskItemDelegateName, long companyId,
-			List<String> fieldNamesList, String filterString,
+			List<String> fieldNames, String filterString,
 			UnsafeConsumer<String, Exception> notificationUnsafeConsumer,
 			Date resourceLastModifiedDate, String resourceName, long userId)
 		throws Exception {
@@ -255,7 +266,7 @@ public class AnalyticsBatchExportImportManagerImpl
 			_batchEngineExportTaskLocalService.addBatchEngineExportTask(
 				null, companyId, userId, null, resourceName,
 				BatchEngineTaskContentType.JSONL.name(),
-				BatchEngineTaskExecuteStatus.INITIAL.name(), fieldNamesList,
+				BatchEngineTaskExecuteStatus.INITIAL.name(), fieldNames,
 				parameters, batchEngineExportTaskItemDelegateName);
 
 		_batchEngineExportTaskExecutor.execute(batchEngineExportTask);
@@ -284,18 +295,41 @@ public class AnalyticsBatchExportImportManagerImpl
 				"Uploading resource " + resourceName,
 				notificationUnsafeConsumer);
 
-			InputStream contentInputStream =
-				_batchEngineExportTaskLocalService.openContentInputStream(
-					batchEngineExportTask.getBatchEngineExportTaskId());
+			File tempFile = FileUtil.createTempFile();
 
-			_upload(
-				companyId, contentInputStream, resourceLastModifiedDate,
-				resourceName);
+			try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(
+					new FileOutputStream(tempFile));
+				ZipInputStream zipInputStream = new ZipInputStream(
+					_batchEngineExportTaskLocalService.openContentInputStream(
+						batchEngineExportTask.getBatchEngineExportTaskId()))) {
 
-			contentInputStream.close();
+				zipInputStream.getNextEntry();
+
+				StreamUtil.transfer(zipInputStream, gzipOutputStream, false);
+			}
+
+			try (FileInputStream fileInputStream = new FileInputStream(
+					tempFile)) {
+
+				_upload(
+					companyId, "gzip", fileInputStream,
+					resourceLastModifiedDate, resourceName);
+			}
 
 			_batchEngineExportTaskLocalService.deleteBatchEngineExportTask(
 				batchEngineExportTask);
+
+			boolean deleted = tempFile.delete();
+
+			if (_log.isDebugEnabled()) {
+				if (deleted) {
+					_log.debug("Deleted temp file " + tempFile.getName());
+				}
+				else {
+					_log.debug(
+						"Unable to delete temp file " + tempFile.getName());
+				}
+			}
 
 			_notify(
 				"Completed uploading resource " + resourceName,
@@ -670,11 +704,11 @@ public class AnalyticsBatchExportImportManagerImpl
 	}
 
 	private Http.Options _getOptions(long companyId) {
+		Http.Options options = new Http.Options();
+
 		AnalyticsConfiguration analyticsConfiguration =
 			_analyticsConfigurationRegistry.getAnalyticsConfiguration(
 				companyId);
-
-		Http.Options options = new Http.Options();
 
 		options.addHeader(
 			"OSB-Asah-Data-Source-ID",
@@ -798,13 +832,14 @@ public class AnalyticsBatchExportImportManagerImpl
 	}
 
 	private void _upload(
-		long companyId, InputStream resourceInputStream,
+		long companyId, String contentEncoding, InputStream resourceInputStream,
 		Date resourceLastModifiedDate, String resourceName) {
 
 		_checkCompany(companyId);
 
 		Http.Options options = _getOptions(companyId);
 
+		options.addHeader(HttpHeaders.CONTENT_ENCODING, contentEncoding);
 		options.addHeader(
 			HttpHeaders.CONTENT_TYPE,
 			ContentTypes.MULTIPART_FORM_DATA +

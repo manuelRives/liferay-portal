@@ -6,19 +6,29 @@
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
 import {addDays, format} from 'date-fns';
+import {useNavigate} from 'react-router-dom';
 
 import {DashboardEmptyTable} from '../../../components/DashboardTable/DashboardEmptyTable';
 import OrderStatus from '../../../components/OrderStatus';
 import Table from '../../../components/Table/Table';
+import {OrderCustomFields, OrderTypes} from '../../../enums/Order';
 import i18n from '../../../i18n';
 
 type PurchasedSolutionsTableProps = {
 	items: PlacedOrder[];
 };
 
+const orderTypeLabel = {
+	[OrderTypes.ADDONS]: {duration: null, label: 'Add-ons'},
+	[OrderTypes.SOLUTIONS30]: {duration: 30, label: '30-day Trial'},
+	[OrderTypes.SOLUTIONS7]: {duration: 7, label: '7-day Trial'},
+} as const;
+
 const PurchasedSolutionsTable: React.FC<PurchasedSolutionsTableProps> = ({
 	items,
 }) => {
+	const navigate = useNavigate();
+
 	if (!items.length) {
 		return (
 			<DashboardEmptyTable
@@ -80,28 +90,32 @@ const PurchasedSolutionsTable: React.FC<PurchasedSolutionsTableProps> = ({
 				},
 				{
 					key: 'orderTypeExternalReferenceCode',
-					render: (orderTypeExternalReferenceCode) => (
+					render: (orderTypeExternalReferenceCode: OrderTypes) => (
 						<span className="label label-info">
-							{orderTypeExternalReferenceCode.includes('7')
-								? '7-day Trial'
-								: '30-day Trial'}
+							{(orderTypeLabel as any)[
+								orderTypeExternalReferenceCode
+							]?.label || 'None'}
 						</span>
 					),
-					title: 'App Type',
+					title: i18n.translate('type'),
 					width: '2%',
 				},
 				{
 					key: 'createDate',
-					render: (createDate, {orderTypeExternalReferenceCode}) =>
-						format(
-							addDays(
-								new Date(createDate),
-								orderTypeExternalReferenceCode.includes('7')
-									? 7
-									: 30
-							),
-							'dd MMM, yyyy'
-						).toString(),
+					render: (createDate, {orderTypeExternalReferenceCode}) => {
+						const duration = (orderTypeLabel as any)[
+							orderTypeExternalReferenceCode
+						]?.duration;
+
+						if (typeof duration === 'number') {
+							return format(
+								addDays(new Date(createDate), duration),
+								'dd MMM, yyyy'
+							).toString();
+						}
+
+						return 'DNE';
+					},
 					title: 'End Date',
 					width: '2%',
 				},
@@ -112,33 +126,57 @@ const PurchasedSolutionsTable: React.FC<PurchasedSolutionsTableProps> = ({
 							{orderStatusInfo?.label}
 						</OrderStatus>
 					),
-					title: 'Provisioning',
+					title: 'Status',
 				},
 				{
 					align: 'center',
 					key: 'status',
-					render: () => (
-						<div onClick={(event) => event.stopPropagation()}>
-							<ClayDropDown
-								trigger={
-									<ClayButtonWithIcon
-										aria-label="Kebab Button"
-										displayType={null}
-										symbol="ellipsis-v"
-										title="Kebab Button"
-									/>
-								}
-							>
-								<ClayDropDown.ItemList>
-									<ClayDropDown.Item>
-										{i18n.translate('view-details')}
-									</ClayDropDown.Item>
-								</ClayDropDown.ItemList>
-							</ClayDropDown>
-						</div>
-					),
+					render: (_, {customFields, id}) => {
+						const virtualHost =
+							customFields[OrderCustomFields.VIRTUAL_HOST];
+
+						return (
+							<div onClick={(event) => event.stopPropagation()}>
+								<ClayDropDown
+									trigger={
+										<ClayButtonWithIcon
+											aria-label="Kebab Button"
+											displayType={null}
+											symbol="ellipsis-v"
+											title="Kebab Button"
+										/>
+									}
+								>
+									<ClayDropDown.ItemList>
+										{virtualHost && (
+											<ClayDropDown.Item
+												onClick={() => {
+													window.open(
+														virtualHost.startsWith(
+															'https'
+														)
+															? virtualHost
+															: `https://${virtualHost}`
+													);
+												}}
+											>
+												{i18n.translate('go-to-trial')}
+											</ClayDropDown.Item>
+										)}
+
+										<ClayDropDown.Item
+											onClick={() => navigate(`${id}`)}
+										>
+											{i18n.translate('view-details')}
+										</ClayDropDown.Item>
+									</ClayDropDown.ItemList>
+								</ClayDropDown>
+							</div>
+						);
+					},
 				},
 			]}
+			onClickRow={({id}) => navigate(`${id}`)}
 			rows={items}
 		/>
 	);

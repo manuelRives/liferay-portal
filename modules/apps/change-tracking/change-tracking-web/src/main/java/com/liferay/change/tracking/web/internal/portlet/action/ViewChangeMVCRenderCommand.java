@@ -34,15 +34,17 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService;
 import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowTaskManager;
 import com.liferay.portlet.LiferayPortletUtil;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +54,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+		"jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 		"mvc.command.name=/change_tracking/view_change"
 	},
 	service = MVCRenderCommand.class
@@ -145,7 +147,8 @@ public class ViewChangeMVCRenderCommand implements MVCRenderCommand {
 					_portal.getHttpServletRequest(renderRequest), _language,
 					_publicationHelper, renderRequest, renderResponse),
 				_publishSchedulerSnapshot.get(), renderRequest, renderResponse,
-				_userLocalService);
+				_userLocalService, _workflowInstanceLinkLocalService,
+				_workflowTaskManager);
 
 		renderRequest.setAttribute(
 			CTWebKeys.VIEW_CHANGES_DISPLAY_CONTEXT, viewChangesDisplayContext);
@@ -158,7 +161,7 @@ public class ViewChangeMVCRenderCommand implements MVCRenderCommand {
 
 	private static final Snapshot<PublishScheduler> _publishSchedulerSnapshot =
 		new Snapshot<>(
-			ViewChangesMVCRenderCommand.class, PublishScheduler.class, null,
+			ViewChangeMVCRenderCommand.class, PublishScheduler.class, null,
 			true);
 
 	@Reference
@@ -205,5 +208,11 @@ public class ViewChangeMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	@Reference
+	private WorkflowInstanceLinkLocalService _workflowInstanceLinkLocalService;
+
+	@Reference
+	private WorkflowTaskManager _workflowTaskManager;
 
 }

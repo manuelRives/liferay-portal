@@ -113,6 +113,7 @@ function getOdataString({
 function ClientExtensionFilter({
 	clientExtensionFilterImplementation,
 	clientExtensionFilterURL,
+	id,
 	selectedData,
 	setFilter,
 }: ClientExtensionFilterImplementationArgs) {
@@ -150,6 +151,7 @@ function ClientExtensionFilter({
 	return (
 		<ClientExtension
 			args={{
+				fieldName: id,
 				filter: {
 					selectedData,
 				},
@@ -179,10 +181,11 @@ ClientExtensionFilter.propTypes = {
 	setFilter: PropTypes.func.isRequired,
 };
 
-const filterImplementation: FilterImplementation<ClientExtensionFilterImplementationArgs> = {
-	Component: ClientExtensionFilter,
-	getOdataString,
-	getSelectedItemsLabel,
-};
+const filterImplementation: FilterImplementation<ClientExtensionFilterImplementationArgs> =
+	{
+		Component: ClientExtensionFilter,
+		getOdataString,
+		getSelectedItemsLabel,
+	};
 
 export default filterImplementation;

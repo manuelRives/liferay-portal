@@ -25,6 +25,8 @@ import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.util.PropsUtil;
@@ -118,7 +120,21 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 
 	@Override
 	public void invalidate() {
-		_counterRegisterMap.clear();
+		if (!DBPartition.isPartitionEnabled() ||
+			(CompanyThreadLocal.getCompanyId() == CompanyConstants.SYSTEM)) {
+
+			_counterRegisterMap.clear();
+
+			return;
+		}
+
+		for (String key : _counterRegisterMap.keySet()) {
+			if (key.endsWith(
+					StringPool.AT + CompanyThreadLocal.getCompanyId())) {
+
+				_counterRegisterMap.remove(key);
+			}
+		}
 	}
 
 	@Override
@@ -126,7 +142,9 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 		CounterRegister counterRegister = getCounterRegister(oldName);
 
 		synchronized (counterRegister) {
-			if (_counterRegisterMap.containsKey(_encodeKey(newName))) {
+			if (_counterRegisterMap.containsKey(
+					DBPartitionUtil.getPartitionKey(newName))) {
+
 				throw new SystemException(
 					StringBundler.concat(
 						"Cannot rename ", oldName, " to ", newName));
@@ -152,8 +170,10 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 
 			counterRegister.setName(newName);
 
-			_counterRegisterMap.put(_encodeKey(newName), counterRegister);
-			_counterRegisterMap.remove(_encodeKey(oldName));
+			_counterRegisterMap.put(
+				DBPartitionUtil.getPartitionKey(newName), counterRegister);
+			_counterRegisterMap.remove(
+				DBPartitionUtil.getPartitionKey(oldName));
 		}
 	}
 
@@ -164,14 +184,18 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 		synchronized (counterRegister) {
 			Session session = null;
 
-			try {
-				session = openSession();
+			try (Connection connection = getConnection()) {
+				connection.setAutoCommit(false);
+
+				session = _sessionFactory.openNewSession(connection);
 
 				Counter counter = (Counter)session.get(CounterImpl.class, name);
 
 				session.delete(counter);
 
 				session.flush();
+
+				connection.commit();
 			}
 			catch (ObjectNotFoundException objectNotFoundException) {
 				if (_log.isDebugEnabled()) {
@@ -185,7 +209,7 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 				closeSession(session);
 			}
 
-			_counterRegisterMap.remove(_encodeKey(name));
+			_counterRegisterMap.remove(DBPartitionUtil.getPartitionKey(name));
 		}
 	}
 
@@ -193,7 +217,8 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 	public void reset(String name, long size) {
 		CounterRegister counterRegister = createCounterRegister(name, size);
 
-		_counterRegisterMap.put(_encodeKey(name), counterRegister);
+		_counterRegisterMap.put(
+			DBPartitionUtil.getPartitionKey(name), counterRegister);
 	}
 
 	protected void closeSession(Session session) throws ORMException {
@@ -249,7 +274,7 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 
 	protected CounterRegister getCounterRegister(String name) {
 		CounterRegister counterRegister = _counterRegisterMap.get(
-			_encodeKey(name));
+			DBPartitionUtil.getPartitionKey(name));
 
 		if (counterRegister != null) {
 			return counterRegister;
@@ -259,12 +284,14 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 
 			// Double check
 
-			counterRegister = _counterRegisterMap.get(_encodeKey(name));
+			counterRegister = _counterRegisterMap.get(
+				DBPartitionUtil.getPartitionKey(name));
 
 			if (counterRegister == null) {
 				counterRegister = createCounterRegister(name);
 
-				_counterRegisterMap.put(_encodeKey(name), counterRegister);
+				_counterRegisterMap.put(
+					DBPartitionUtil.getPartitionKey(name), counterRegister);
 			}
 
 			return counterRegister;
@@ -287,7 +314,8 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 			incrementType = name;
 		}
 
-		Integer rangeSize = _rangeSizeMap.get(_encodeKey(incrementType));
+		Integer rangeSize = _rangeSizeMap.get(
+			DBPartitionUtil.getPartitionKey(incrementType));
 
 		if (rangeSize == null) {
 			rangeSize = GetterUtil.getInteger(
@@ -295,14 +323,11 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 					PropsKeys.COUNTER_INCREMENT_PREFIX + incrementType),
 				PropsValues.COUNTER_INCREMENT);
 
-			_rangeSizeMap.put(_encodeKey(incrementType), rangeSize);
+			_rangeSizeMap.put(
+				DBPartitionUtil.getPartitionKey(incrementType), rangeSize);
 		}
 
 		return rangeSize.intValue();
-	}
-
-	protected Session openSession() throws ORMException {
-		return _sessionFactory.openSession();
 	}
 
 	protected SystemException processException(Exception exception) {
@@ -393,22 +418,15 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 		return newValue;
 	}
 
-	private String _encodeKey(String name) {
-		if (DBPartition.isPartitionEnabled()) {
-			return StringBundler.concat(
-				name, StringPool.AT, DBPartitionUtil.getCurrentCompanyId());
-		}
-
-		return name;
-	}
-
 	private CounterHolder _obtainIncrement(
 		String counterName, long range, long size) {
 
 		Session session = null;
 
-		try {
-			session = openSession();
+		try (Connection connection = getConnection()) {
+			connection.setAutoCommit(false);
+
+			session = _sessionFactory.openNewSession(connection);
 
 			Counter counter = (Counter)session.get(
 				CounterImpl.class, counterName, LockMode.UPGRADE);
@@ -428,6 +446,8 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 			session.saveOrUpdate(counter);
 
 			session.flush();
+
+			connection.commit();
 
 			return counterHolder;
 		}

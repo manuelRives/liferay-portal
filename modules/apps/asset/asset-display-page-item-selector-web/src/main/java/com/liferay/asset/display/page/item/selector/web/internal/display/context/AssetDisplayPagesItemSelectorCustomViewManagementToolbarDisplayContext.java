@@ -12,7 +12,7 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Yurena Cabrera
@@ -32,6 +32,9 @@ public class
 			httpServletRequest, liferayPortletRequest, liferayPortletResponse,
 			assetDisplayPagesItemSelectorCustomViewDisplayContext.
 				getAssetDisplayPageSearchContainer());
+
+		_assetDisplayPagesItemSelectorCustomViewDisplayContext =
+			assetDisplayPagesItemSelectorCustomViewDisplayContext;
 	}
 
 	@Override
@@ -58,7 +61,11 @@ public class
 
 	@Override
 	public String getSearchContainerId() {
-		return "displayPages";
+		long layoutPageTemplateCollectionId =
+			_assetDisplayPagesItemSelectorCustomViewDisplayContext.
+				getLayoutPageTemplateCollectionId();
+
+		return "displayPages" + layoutPageTemplateCollectionId;
 	}
 
 	@Override
@@ -70,5 +77,8 @@ public class
 	protected String[] getOrderByKeys() {
 		return new String[] {"create-date", "modified-date", "name"};
 	}
+
+	private final AssetDisplayPagesItemSelectorCustomViewDisplayContext
+		_assetDisplayPagesItemSelectorCustomViewDisplayContext;
 
 }

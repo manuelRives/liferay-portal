@@ -30,6 +30,7 @@ import com.liferay.journal.web.internal.item.selector.JournalArticleTranslations
 import com.liferay.journal.web.internal.portlet.JournalPortlet;
 import com.liferay.journal.web.internal.security.permission.resource.JournalArticlePermission;
 import com.liferay.journal.web.internal.security.permission.resource.JournalFolderPermission;
+import com.liferay.journal.web.internal.util.JournalPortletUtil;
 import com.liferay.journal.web.internal.util.JournalUtil;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringPool;
@@ -68,14 +69,14 @@ import com.liferay.translation.security.permission.TranslationPermission;
 import com.liferay.translation.url.provider.TranslationURLProvider;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -138,7 +139,7 @@ public class JournalArticleActionDropdownItemsProvider {
 						_getEditArticleActionUnsafeConsumer()
 					).add(
 						() ->
-							FeatureFlagManagerUtil.isEnabled("LPS-141392") &&
+							FeatureFlagManagerUtil.isEnabled("LPD-11228") &&
 							hasUpdatePermission && _article.isDraft() &&
 							_article.hasApprovedVersion(),
 						_getDiscardDraftActionUnsafeConsumer()
@@ -308,6 +309,9 @@ public class JournalArticleActionDropdownItemsProvider {
 				dropdownGroupItem.setSeparator(true);
 			}
 		).addGroup(
+			() -> !JournalArticleLocalServiceUtil.isLatestVersion(
+				_article.getGroupId(), _article.getArticleId(),
+				_article.getVersion()),
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
 					DropdownItemListBuilder.add(
@@ -577,25 +581,9 @@ public class JournalArticleActionDropdownItemsProvider {
 
 		return dropdownItem -> {
 			dropdownItem.setHref(
-				PortletURLBuilder.createRenderURL(
-					_liferayPortletResponse
-				).setMVCRenderCommandName(
-					"/journal/edit_article"
-				).setRedirect(
-					_getRedirect()
-				).setParameter(
-					"articleId", _article.getArticleId()
-				).setParameter(
-					"backURLTitle", portletDisplay.getPortletDisplayName()
-				).setParameter(
-					"folderId", _article.getFolderId()
-				).setParameter(
-					"groupId", _article.getGroupId()
-				).setParameter(
-					"referringPortletResource", _getReferringPortletResource()
-				).setParameter(
-					"version", _article.getVersion()
-				).buildString());
+				JournalPortletUtil.getEditArticlePortletURL(
+					_article, _httpServletRequest, portletDisplay,
+					_getRedirect(), _getReferringPortletResource()));
 			dropdownItem.setIcon("pencil");
 
 			String label = "edit";
@@ -811,11 +799,16 @@ public class JournalArticleActionDropdownItemsProvider {
 		if (AssetDisplayPageUtil.hasAssetDisplayPage(
 				_themeDisplay.getScopeGroupId(), assetEntry)) {
 
+			ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+				new ClassPKInfoItemIdentifier(assetEntry.getClassPK());
+
+			classPKInfoItemIdentifier.setVersion(
+				String.valueOf(_article.getVersion()));
+
 			String previewURL =
 				_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
 					new InfoItemReference(
-						assetEntry.getClassName(),
-						new ClassPKInfoItemIdentifier(assetEntry.getClassPK())),
+						assetEntry.getClassName(), classPKInfoItemIdentifier),
 					_themeDisplay);
 
 			previewURL = HttpComponentsUtil.addParameter(

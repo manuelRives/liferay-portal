@@ -116,11 +116,10 @@ describe('The SLAFormPage component should', () => {
 
 			fetchMock = new FetchMock({
 				GET: {
-					'/o/portal-workflow-metrics/v1.0/calendars': fetchMockResponse(
-						{
+					'/o/portal-workflow-metrics/v1.0/calendars':
+						fetchMockResponse({
 							items: calendars,
-						}
-					),
+						}),
 					'default': fetchMockResponse({items: nodes}),
 				},
 				POST: {
@@ -186,14 +185,15 @@ describe('The SLAFormPage component should', () => {
 			const descriptionField = getByText('description').parentNode;
 			const descriptionInput = container.querySelector('#slaDescription');
 			const daysFieldDescription = getByText('enter-a-whole-number');
-			const durationDaysInput = container.querySelector(
-				'#slaDurationDays'
-			);
+			const durationDaysInput =
+				container.querySelector('#slaDurationDays');
 			const durationDescription = getByText(
 				'define-the-sla-duration-and-calendar-format'
 			);
 			const durationLabel = getByText('DURATION');
-			const pauseDescription = getByText('time-wont-be-considered-when');
+			const pauseDescription = getByText(
+				'time-will-not-be-considered-when'
+			);
 			const pauseField = getByText('pause');
 			const startDescription = getByText('time-will-begin-counting-when');
 			const stopDescription = getByText('time-will-stop-counting-when');
@@ -266,9 +266,8 @@ describe('The SLAFormPage component should', () => {
 		});
 
 		it('Dismiss errors when the inputs receive valid values and submit', async () => {
-			const dropDownListItems = document.querySelectorAll(
-				'.dropdown-item'
-			);
+			const dropDownListItems =
+				document.querySelectorAll('.dropdown-item');
 
 			fireEvent.change(nameInput, {target: {value: 'SLA'}});
 
@@ -296,9 +295,8 @@ describe('The SLAFormPage component should', () => {
 		});
 
 		it('Display an error when a SLA submission failure happens and resubmit', async () => {
-			const alertToast = await document.querySelector(
-				'.alert-dismissible'
-			);
+			const alertToast =
+				await document.querySelector('.alert-dismissible');
 
 			const alertClose = alertToast.children[1];
 
@@ -380,16 +378,14 @@ describe('The SLAFormPage component should', () => {
 
 			fetchMock = new FetchMock({
 				GET: {
-					'/o/portal-workflow-metrics/v1.0/calendars': fetchMockResponse(
-						{
+					'/o/portal-workflow-metrics/v1.0/calendars':
+						fetchMockResponse({
 							items: calendars,
-						}
-					),
-					'/o/portal-workflow-metrics/v1.0/processes/5678/nodes': fetchMockResponse(
-						{
+						}),
+					'/o/portal-workflow-metrics/v1.0/processes/5678/nodes':
+						fetchMockResponse({
 							items: nodes,
-						}
-					),
+						}),
 					'default': fetchMockResponse(data),
 				},
 				PUT: {
@@ -431,12 +427,10 @@ describe('The SLAFormPage component should', () => {
 			const calendar = container.querySelector('#slaCalendarKey');
 			const durationDaysField = getByText('days').parentNode;
 			const durationHoursField = getByText('hours').parentNode;
-			const durationHoursInput = container.querySelector(
-				'#slaDurationHours'
-			);
-			const multiSelectItems = container.querySelectorAll(
-				'.label-dismissible'
-			);
+			const durationHoursInput =
+				container.querySelector('#slaDurationHours');
+			const multiSelectItems =
+				container.querySelectorAll('.label-dismissible');
 			const nameField = getByText('name').parentNode;
 			const nameInput = container.querySelector('#slaName');
 			const startField = getByText('start').parentNode;
@@ -524,16 +518,14 @@ describe('The SLAFormPage component should', () => {
 
 			fetchMock = new FetchMock({
 				GET: {
-					'/o/portal-workflow-metrics/v1.0/calendars': fetchMockResponse(
-						{
+					'/o/portal-workflow-metrics/v1.0/calendars':
+						fetchMockResponse({
 							items: calendars,
-						}
-					),
-					'/o/portal-workflow-metrics/v1.0/processes/35901/nodes': fetchMockResponse(
-						{
+						}),
+					'/o/portal-workflow-metrics/v1.0/processes/35901/nodes':
+						fetchMockResponse({
 							items: nodes,
-						}
-					),
+						}),
 					'default': fetchMockResponse(data),
 				},
 			});

@@ -20,6 +20,8 @@ export function getMDFRequestFromDTO(mdfRequest: MDFRequestDTO): MDFRequest {
 					assetsLiferayRequired,
 					audienceTarget,
 					broadcastChannel,
+					convertedMDFRequestAmount,
+					convertedTotalCostOfExpense,
 					creator,
 					cta,
 					dateCreated,
@@ -96,9 +98,8 @@ export function getMDFRequestFromDTO(mdfRequest: MDFRequestDTO): MDFRequest {
 						howLiferayBrandUsed,
 						keywordsForPPCCampaigns,
 						landingPageCopy,
-						leadFollowUpStrategies: leadFollowUpStrategies?.split(
-							', '
-						),
+						leadFollowUpStrategies:
+							leadFollowUpStrategies?.split(', '),
 						leadGenerated: String(leadGenerated),
 						liferayBranding,
 						liferayParticipationRequirements,
@@ -127,12 +128,8 @@ export function getMDFRequestFromDTO(mdfRequest: MDFRequestDTO): MDFRequest {
 					activityStatus,
 					budgets:
 						actToBgts?.map((budgetIem) => {
-							const {
-								cost,
-								expense,
-								externalReferenceCode,
-								id,
-							} = budgetIem;
+							const {cost, expense, externalReferenceCode, id} =
+								budgetIem;
 
 							return {
 								cost: cost ? cost : 0,
@@ -142,12 +139,15 @@ export function getMDFRequestFromDTO(mdfRequest: MDFRequestDTO): MDFRequest {
 							};
 						}) || [],
 					claimPercent: mdfRequest.claimPercent,
+					convertedMDFRequestAmount,
+					convertedTotalCostOfExpense,
 					dateCreated: dateCreated?.split('T')[0],
 					endDate: endDate?.split('T')[0],
 					externalReferenceCode,
 					id,
 					mdfRequestAmount,
-					mdfRequestExternalReferenceCode: r_mdfReqToActs_c_mdfRequestERC,
+					mdfRequestExternalReferenceCode:
+						r_mdfReqToActs_c_mdfRequestERC,
 					name,
 					r_accToActs_accountEntryERC,
 					r_accToActs_accountEntryId,
@@ -167,7 +167,7 @@ export function getMDFRequestFromDTO(mdfRequest: MDFRequestDTO): MDFRequest {
 				? (
 						'Other - Please describe; ' +
 						mdfRequest.liferayBusinessSalesGoals
-				  )
+					)
 						?.split('; ')
 						.filter((request) => request !== '')
 				: mdfRequest.liferayBusinessSalesGoals

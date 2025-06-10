@@ -12,6 +12,7 @@ import com.liferay.commerce.exception.NoSuchOrderItemException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.product.service.CPInstanceService;
+import com.liferay.commerce.service.CommerceAddressService;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
@@ -19,12 +20,11 @@ import com.liferay.expando.kernel.service.ExpandoTableLocalService;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderItem;
 import com.liferay.headless.commerce.admin.order.internal.dto.v1_0.converter.constants.DTOConverterConstants;
-import com.liferay.headless.commerce.admin.order.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.admin.order.internal.odata.entity.v1_0.OrderItemEntityModel;
 import com.liferay.headless.commerce.admin.order.internal.util.v1_0.OrderItemUtil;
 import com.liferay.headless.commerce.admin.order.resource.v1_0.OrderItemResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.ExpandoUtil;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
 import com.liferay.headless.common.spi.odata.entity.EntityFieldsUtil;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
@@ -32,10 +32,12 @@ import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.search.expando.ExpandoBridgeIndexer;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
@@ -43,18 +45,17 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+
 import java.io.Serializable;
 
 import java.math.BigDecimal;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -81,11 +82,12 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 		_commerceOrderItemService.deleteCommerceOrderItem(
 			commerceOrderItem.getCommerceOrderItemId(),
 			_commerceContextFactory.create(
-				contextCompany.getCompanyId(), commerceOrder.getGroupId(),
-				contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
-				commerceOrder.getCommerceAccountId()));
+				commerceOrder.getCommerceAccountId(),
+				commerceOrder.getGroupId(), null,
+				commerceOrder.getCommerceOrderId(),
+				contextCompany.getCompanyId()));
 
-		Response.ResponseBuilder responseBuilder = Response.ok();
+		Response.ResponseBuilder responseBuilder = Response.noContent();
 
 		return responseBuilder.build();
 	}
@@ -96,8 +98,9 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 		throws Exception {
 
 		CommerceOrderItem commerceOrderItem =
-			_commerceOrderItemService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceOrderItemService.
+				fetchCommerceOrderItemByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceOrderItem == null) {
 			throw new NoSuchOrderItemException(
@@ -111,9 +114,10 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 		_commerceOrderItemService.deleteCommerceOrderItem(
 			commerceOrderItem.getCommerceOrderItemId(),
 			_commerceContextFactory.create(
-				contextCompany.getCompanyId(), commerceOrder.getGroupId(),
-				contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
-				commerceOrder.getCommerceAccountId()));
+				commerceOrder.getCommerceAccountId(),
+				commerceOrder.getGroupId(), null,
+				commerceOrder.getCommerceOrderId(),
+				contextCompany.getCompanyId()));
 
 		Response.ResponseBuilder responseBuilder = Response.ok();
 
@@ -137,7 +141,7 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 		throws Exception {
 
 		CommerceOrder commerceOrder =
-			_commerceOrderService.fetchByExternalReferenceCode(
+			_commerceOrderService.fetchCommerceOrderByExternalReferenceCode(
 				externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceOrder == null) {
@@ -151,13 +155,13 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 				commerceOrder.getCommerceOrderId(),
 				pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems = _commerceOrderItemService.getCommerceOrderItemsCount(
+		int totalCount = _commerceOrderItemService.getCommerceOrderItemsCount(
 			commerceOrder.getCommerceOrderId());
 
 		return Page.of(
 			_toOrderItems(
 				commerceOrderItems, contextAcceptLanguage.getPreferredLocale()),
-			pagination, totalItems);
+			pagination, totalCount);
 	}
 
 	@NestedField(parentClass = Order.class, value = "orderItems")
@@ -177,13 +181,13 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 			_commerceOrderItemService.getCommerceOrderItems(
 				id, pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems = _commerceOrderItemService.getCommerceOrderItemsCount(
+		int totalCount = _commerceOrderItemService.getCommerceOrderItemsCount(
 			id);
 
 		return Page.of(
 			_toOrderItems(
 				commerceOrderItems, contextAcceptLanguage.getPreferredLocale()),
-			pagination, totalItems);
+			pagination, totalCount);
 	}
 
 	@Override
@@ -197,8 +201,9 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 		throws Exception {
 
 		CommerceOrderItem commerceOrderItem =
-			_commerceOrderItemService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceOrderItemService.
+				fetchCommerceOrderItemByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceOrderItem == null) {
 			throw new NoSuchOrderItemException(
@@ -227,25 +232,22 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 	}
 
 	@Override
-	public Response patchOrderItem(Long id, OrderItem orderItem)
+	public OrderItem patchOrderItem(Long id, OrderItem orderItem)
 		throws Exception {
 
-		_updateOrderItem(
+		return _updateOrderItem(
 			_commerceOrderItemService.getCommerceOrderItem(id), orderItem);
-
-		Response.ResponseBuilder responseBuilder = Response.ok();
-
-		return responseBuilder.build();
 	}
 
 	@Override
-	public Response patchOrderItemByExternalReferenceCode(
+	public OrderItem patchOrderItemByExternalReferenceCode(
 			String externalReferenceCode, OrderItem orderItem)
 		throws Exception {
 
 		CommerceOrderItem commerceOrderItem =
-			_commerceOrderItemService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceOrderItemService.
+				fetchCommerceOrderItemByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceOrderItem == null) {
 			throw new NoSuchOrderItemException(
@@ -253,11 +255,7 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 					externalReferenceCode);
 		}
 
-		_updateOrderItem(commerceOrderItem, orderItem);
-
-		Response.ResponseBuilder responseBuilder = Response.ok();
-
-		return responseBuilder.build();
+		return _updateOrderItem(commerceOrderItem, orderItem);
 	}
 
 	@Override
@@ -266,7 +264,7 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 		throws Exception {
 
 		CommerceOrder commerceOrder =
-			_commerceOrderService.fetchByExternalReferenceCode(
+			_commerceOrderService.fetchCommerceOrderByExternalReferenceCode(
 				externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceOrder == null) {
@@ -295,13 +293,14 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 
 		CommerceOrderItem commerceOrderItem =
 			_commerceOrderItemService.updateCommerceOrderItem(
-				id, GetterUtil.getString(orderItem.getOptions(), "[]"),
+				null, id, GetterUtil.getString(orderItem.getOptions(), "[]"),
 				BigDecimal.valueOf(
 					GetterUtil.getInteger(orderItem.getQuantity())),
 				_commerceContextFactory.create(
-					contextCompany.getCompanyId(), commerceOrder.getGroupId(),
-					contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
-					commerceOrder.getCommerceAccountId()),
+					commerceOrder.getCommerceAccountId(),
+					commerceOrder.getGroupId(), null,
+					commerceOrder.getCommerceOrderId(),
+					contextCompany.getCompanyId()),
 				_serviceContextHelper.getServiceContext(
 					commerceOrder.getScopeGroupId()));
 
@@ -386,17 +385,20 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 			GetterUtil.getLong(orderItem.getOrderId()));
 
 		CommerceOrderItem commerceOrderItem =
-			_commerceOrderItemService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceOrderItemService.
+				fetchCommerceOrderItemByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceOrderItem == null) {
 			commerceOrderItem = OrderItemUtil.addCommerceOrderItem(
-				_cpInstanceService, _commerceOrderItemService,
+				_cpInstanceService, _commerceAddressService,
+				_commerceOrderItemService,
 				_commerceOrderModelResourcePermission, orderItem, commerceOrder,
 				_commerceContextFactory.create(
-					contextCompany.getCompanyId(), commerceOrder.getGroupId(),
-					contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
-					commerceOrder.getCommerceAccountId()),
+					commerceOrder.getCommerceAccountId(),
+					commerceOrder.getGroupId(), null,
+					commerceOrder.getCommerceOrderId(),
+					contextCompany.getCompanyId()),
 				_serviceContextHelper.getServiceContext(
 					commerceOrder.getGroupId()));
 
@@ -408,15 +410,15 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 		else {
 			commerceOrderItem =
 				_commerceOrderItemService.updateCommerceOrderItem(
-					commerceOrderItem.getCommerceOrderItemId(),
+					null, commerceOrderItem.getCommerceOrderItemId(),
 					GetterUtil.getString(orderItem.getOptions(), "[]"),
 					BigDecimal.valueOf(
 						GetterUtil.getInteger(orderItem.getQuantity())),
 					_commerceContextFactory.create(
-						contextCompany.getCompanyId(),
-						commerceOrder.getGroupId(), contextUser.getUserId(),
+						commerceOrder.getCommerceAccountId(),
+						commerceOrder.getGroupId(), null,
 						commerceOrder.getCommerceOrderId(),
-						commerceOrder.getCommerceAccountId()),
+						contextCompany.getCompanyId()),
 					_serviceContextHelper.getServiceContext(
 						commerceOrder.getGroupId()));
 
@@ -504,12 +506,14 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 
 		CommerceOrderItem commerceOrderItem =
 			OrderItemUtil.addCommerceOrderItem(
-				_cpInstanceService, _commerceOrderItemService,
+				_cpInstanceService, _commerceAddressService,
+				_commerceOrderItemService,
 				_commerceOrderModelResourcePermission, orderItem, commerceOrder,
 				_commerceContextFactory.create(
-					contextCompany.getCompanyId(), commerceOrder.getGroupId(),
-					contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
-					commerceOrder.getCommerceAccountId()),
+					commerceOrder.getCommerceAccountId(),
+					commerceOrder.getGroupId(), null,
+					commerceOrder.getCommerceOrderId(),
+					contextCompany.getCompanyId()),
 				_serviceContextHelper.getServiceContext(
 					commerceOrder.getGroupId()));
 
@@ -614,16 +618,11 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 			List<CommerceOrderItem> commerceOrderItems, Locale locale)
 		throws Exception {
 
-		List<OrderItem> orderItems = new ArrayList<>();
-
-		for (CommerceOrderItem commerceOrderItem : commerceOrderItems) {
-			orderItems.add(
-				_orderItemDTOConverter.toDTO(
-					new DefaultDTOConverterContext(
-						commerceOrderItem.getCommerceOrderItemId(), locale)));
-		}
-
-		return orderItems;
+		return transform(
+			commerceOrderItems,
+			commerceOrderItem -> _orderItemDTOConverter.toDTO(
+				new DefaultDTOConverterContext(
+					commerceOrderItem.getCommerceOrderItemId(), locale)));
 	}
 
 	private OrderItem _updateOrderItem(
@@ -635,18 +634,24 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 
 		BigDecimal quantity = commerceOrderItem.getQuantity();
 
+		ServiceContext serviceContext = _serviceContextHelper.getServiceContext(
+			commerceOrderItem.getGroupId());
+
+		serviceContext.setAttribute("validateOrder", Boolean.FALSE);
+
 		commerceOrderItem = _commerceOrderItemService.updateCommerceOrderItem(
+			orderItem.getExternalReferenceCode(),
 			commerceOrderItem.getCommerceOrderItemId(),
 			GetterUtil.getString(
 				orderItem.getOptions(), commerceOrderItem.getJson()),
 			BigDecimal.valueOf(
 				GetterUtil.get(orderItem.getQuantity(), quantity.intValue())),
 			_commerceContextFactory.create(
-				contextCompany.getCompanyId(), commerceOrder.getGroupId(),
-				contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
-				commerceOrder.getCommerceAccountId()),
-			_serviceContextHelper.getServiceContext(
-				commerceOrderItem.getGroupId()));
+				commerceOrder.getCommerceAccountId(),
+				commerceOrder.getGroupId(), null,
+				commerceOrder.getCommerceOrderId(),
+				contextCompany.getCompanyId()),
+			serviceContext);
 
 		// Pricing
 
@@ -728,6 +733,9 @@ public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 
 		return _toOrderItem(commerceOrderItem.getCommerceOrderItemId());
 	}
+
+	@Reference
+	private CommerceAddressService _commerceAddressService;
 
 	@Reference
 	private CommerceContextFactory _commerceContextFactory;

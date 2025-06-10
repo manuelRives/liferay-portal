@@ -16,7 +16,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Samuel Trong Tran
  */
 @Component(
-	property = "javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+	property = "jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 	service = UserNotificationDefinition.class
 )
 public class PublicationInviteUserNotificationDefinition
@@ -28,6 +28,10 @@ public class PublicationInviteUserNotificationDefinition
 			UserNotificationDefinition.NOTIFICATION_TYPE_ADD_ENTRY,
 			"invites-you-to-work-on-a-publication");
 
+		addUserNotificationDeliveryType(
+			new UserNotificationDeliveryType(
+				"email", UserNotificationDeliveryConstants.TYPE_EMAIL, true,
+				true));
 		addUserNotificationDeliveryType(
 			new UserNotificationDeliveryType(
 				"website", UserNotificationDeliveryConstants.TYPE_WEBSITE, true,

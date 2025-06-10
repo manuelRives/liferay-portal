@@ -32,7 +32,7 @@ import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.trash.exception.RestoreEntryException;
 import com.liferay.trash.exception.TrashEntryException;
 import com.liferay.trash.model.TrashEntry;
@@ -3402,11 +3402,7 @@ public abstract class BaseTrashHandlerTestCase {
 	protected abstract boolean isInTrashContainer(TrashedModel trashedModel);
 
 	protected boolean isValidTrashTitle(String title) {
-		if (title.startsWith(_TRASH_PREFIX)) {
-			return true;
-		}
-
-		return false;
+		return title.startsWith(_TRASH_PREFIX);
 	}
 
 	protected abstract void moveBaseModelToTrash(long primaryKey)

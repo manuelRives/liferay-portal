@@ -174,7 +174,7 @@ public class JournalArticleLocalizedValuesUpgradeProcess
 						}
 					}
 				},
-				"Unable to update journal article default language IDs");
+				null);
 		}
 	}
 
@@ -256,7 +256,7 @@ public class JournalArticleLocalizedValuesUpgradeProcess
 						preparedStatement.addBatch();
 					}
 				},
-				"Unable to update journal article localized fields");
+				null);
 		}
 	}
 
@@ -267,7 +267,7 @@ public class JournalArticleLocalizedValuesUpgradeProcess
 			JournalArticleLocalizedValuesUpgradeProcess.class.
 				getResourceAsStream("dependencies/update.sql"));
 
-		runSQLTemplateString(template, false);
+		runSQLTemplate(template, false);
 	}
 
 	private static final int _MAX_LENGTH_DESCRIPTION = 4000;

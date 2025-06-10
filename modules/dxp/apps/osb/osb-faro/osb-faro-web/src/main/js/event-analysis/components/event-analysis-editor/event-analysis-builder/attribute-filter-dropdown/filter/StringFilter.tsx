@@ -93,10 +93,12 @@ const StringFilter: React.FC<IFilterProps> = ({
 										) => {
 											if (data) {
 												return {
-													data:
-														data
-															.eventAttributeValues
-															.eventAttributeValues,
+													data: data.eventAttributeValues.eventAttributeValues.map(
+														value =>
+															decodeURIComponent(
+																value
+															)
+													),
 													total:
 														data
 															.eventAttributeValues
@@ -138,7 +140,7 @@ const StringFilter: React.FC<IFilterProps> = ({
 							displayType='primary'
 							type='submit'
 						>
-							{Liferay.Language.get('done')}
+							{Liferay.Language.get('apply')}
 						</ClayButton>
 					</div>
 				</Form.Form>

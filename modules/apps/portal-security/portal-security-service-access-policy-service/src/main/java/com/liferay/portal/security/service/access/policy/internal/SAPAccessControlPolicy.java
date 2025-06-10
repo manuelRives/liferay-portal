@@ -5,6 +5,7 @@
 
 package com.liferay.portal.security.service.access.policy.internal;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -22,11 +23,14 @@ import com.liferay.portal.kernel.security.auth.verifier.AuthVerifierResult;
 import com.liferay.portal.kernel.security.service.access.policy.ServiceAccessPolicy;
 import com.liferay.portal.kernel.security.service.access.policy.ServiceAccessPolicyThreadLocal;
 import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.service.access.policy.configuration.SAPConfiguration;
 import com.liferay.portal.security.service.access.policy.constants.SAPConstants;
 import com.liferay.portal.security.service.access.policy.model.SAPEntry;
 import com.liferay.portal.security.service.access.policy.service.SAPEntryLocalService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.reflect.Method;
 
@@ -233,17 +237,9 @@ public class SAPAccessControlPolicy extends BaseAccessControlPolicy {
 	}
 
 	private List<String> _getDefaultServiceAccessPolicyNames(long companyId) {
-		List<SAPEntry> defaultSAPEntries =
-			_sapEntryLocalService.getDefaultSAPEntries(companyId, true);
-
-		List<String> defaultServiceAccessPolicyNames = new ArrayList<>(
-			defaultSAPEntries.size());
-
-		for (SAPEntry sapEntry : defaultSAPEntries) {
-			defaultServiceAccessPolicyNames.add(sapEntry.getName());
-		}
-
-		return defaultServiceAccessPolicyNames;
+		return TransformUtil.transform(
+			_sapEntryLocalService.getDefaultSAPEntries(companyId, true),
+			sapEntry -> sapEntry.getName());
 	}
 
 	private List<String> _getSystemServiceAccessPolicyNames(long companyId) {
@@ -282,6 +278,19 @@ public class SAPAccessControlPolicy extends BaseAccessControlPolicy {
 			if (authVerifierResult != null) {
 				passwordBasedAuthentication =
 					authVerifierResult.isPasswordBasedAuthentication();
+			}
+
+			HttpServletRequest httpServletRequest =
+				accessControlContext.getRequest();
+
+			if (GetterUtil.getBoolean(
+					httpServletRequest.getAttribute(
+						"com.liferay.portal.vulcan.internal.template.servlet." +
+							"RESTClientHttpRequestDelegate"))) {
+
+				systemServiceAccessPolicyNames.add(
+					sapConfiguration.
+						systemRESTClientTemplateObjectSAPEntryName());
 			}
 		}
 

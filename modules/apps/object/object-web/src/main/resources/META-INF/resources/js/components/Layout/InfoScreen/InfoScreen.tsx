@@ -17,19 +17,18 @@ import {defaultLanguageId} from '../../../utils/constants';
 import {TYPES, useLayoutContext} from '../objectLayoutContext';
 
 const InfoScreen: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
-	const [
-		{creationLanguageId, isViewOnly, objectLayout},
-		dispatch,
-	] = useLayoutContext();
+	const [{creationLanguageId, isViewOnly, objectLayout}, dispatch] =
+		useLayoutContext();
 
 	let error: string | undefined;
 
 	if (
 		invalidateRequired(
-			stringUtils.getLocalizableLabel(
-				creationLanguageId as Liferay.Language.Locale,
-				objectLayout.name
-			)
+			stringUtils.getLocalizableLabel({
+				fallbackLanguageId:
+					creationLanguageId as Liferay.Language.Locale,
+				labels: objectLayout.name,
+			})
 		)
 	) {
 		error = constantsUtils.REQUIRED_MSG;
@@ -49,10 +48,11 @@ const InfoScreen: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 					});
 				}}
 				required
-				value={stringUtils.getLocalizableLabel(
-					creationLanguageId as Liferay.Language.Locale,
-					objectLayout.name
-				)}
+				value={stringUtils.getLocalizableLabel({
+					fallbackLanguageId:
+						creationLanguageId as Liferay.Language.Locale,
+					labels: objectLayout.name,
+				})}
 			/>
 
 			<ClayForm.Group className="mb-0">

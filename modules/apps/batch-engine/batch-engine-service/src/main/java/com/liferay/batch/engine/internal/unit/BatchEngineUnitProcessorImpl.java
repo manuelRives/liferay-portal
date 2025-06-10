@@ -24,12 +24,16 @@ import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.NoSuchUserException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.File;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -39,9 +43,11 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.zip.ZipEntry;
@@ -74,12 +80,14 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 				BatchEngineUnitMetaInfo batchEngineUnitMetaInfo =
 					batchEngineUnit.getBatchEngineUnitMetaInfo();
 
-				String featureFlag = batchEngineUnitMetaInfo.getFeatureFlag();
+				String featureFlagKey =
+					batchEngineUnitMetaInfo.getFeatureFlagKey();
 
-				if (_isFeatureFlagDisabled(featureFlag)) {
+				if (_isFeatureFlagDisabled(featureFlagKey)) {
 					_featureFlagBatchEngineUnitProcessor.
 						registerBatchEngineUnit(
-							batchEngineUnitMetaInfo.getCompanyId(), featureFlag,
+							batchEngineUnitMetaInfo.getCompanyId(),
+							featureFlagKey,
 							() -> {
 								CompletableFuture<Void> localCompletableFuture =
 									new CompletableFuture<>();
@@ -147,8 +155,11 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 						"(!(batch.engine.task.item.delegate.name=*)))",
 						"(&(batch.engine.entity.class.name=",
 						_getObjectEntryClassName(batchEngineUnitConfiguration),
-						")(batch.engine.task.item.delegate.name=",
+						")(batch.engine.task.item.delegate=true)",
+						"(batch.engine.task.item.delegate.name=",
 						batchEngineUnitConfiguration.getTaskItemDelegateName(),
+						")(companyId=",
+						batchEngineUnitConfiguration.getCompanyId(),
 						"))(&(batch.engine.entity.class.name=",
 						batchEngineUnitConfiguration.getClassName(),
 						")(batch.engine.task.item.delegate.name=",
@@ -194,6 +205,17 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 			ServiceTracker<Object, Object> serviceTracker)
 		throws Exception {
 
+		int importStrategy =
+			BatchEngineImportTaskConstants.IMPORT_STRATEGY_ON_ERROR_FAIL;
+
+		Map<String, Serializable> parameters =
+			batchEngineUnitConfiguration.getParameters();
+
+		if (Validator.isNotNull(parameters.get("importStrategy"))) {
+			importStrategy = BatchEngineImportTaskConstants.getImportStrategy(
+				(String)parameters.get("importStrategy"));
+		}
+
 		BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate =
 			_batchEngineTaskItemDelegateProvider.toBatchEngineTaskItemDelegate(
 				service);
@@ -207,9 +229,8 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 				StringUtil.toUpperCase(contentType),
 				BatchEngineTaskExecuteStatus.INITIAL.name(),
 				batchEngineUnitConfiguration.getFieldNameMappingMap(),
-				BatchEngineImportTaskConstants.IMPORT_STRATEGY_ON_ERROR_FAIL,
-				BatchEngineTaskOperation.CREATE.name(),
-				batchEngineUnitConfiguration.getParameters(),
+				importStrategy, BatchEngineTaskOperation.CREATE.name(),
+				parameters,
 				batchEngineUnitConfiguration.getTaskItemDelegateName(),
 				batchEngineTaskItemDelegate);
 
@@ -234,6 +255,22 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 		}
 
 		serviceTracker.close();
+	}
+
+	private long _getAdminUserId(long companyId) throws PortalException {
+		Role role = _roleLocalService.getRole(
+			companyId, RoleConstants.ADMINISTRATOR);
+
+		long[] userIds = _userLocalService.getRoleUserIds(role.getRoleId());
+
+		if (userIds.length == 0) {
+			throw new NoSuchUserException(
+				StringBundler.concat(
+					"No user exists in company ", companyId, " with role ",
+					role.getName()));
+		}
+
+		return userIds[0];
 	}
 
 	private Bundle _getBundle(BatchEngineUnit batchEngineUnit) {
@@ -332,8 +369,8 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 		String contentType = null;
 
 		if (batchEngineUnit.isValid()) {
-			batchEngineUnitConfiguration = _updateBatchEngineUnitConfiguration(
-				batchEngineUnit.getBatchEngineUnitConfiguration());
+			batchEngineUnitConfiguration =
+				batchEngineUnit.getBatchEngineUnitConfiguration();
 
 			UnsyncByteArrayOutputStream compressedUnsyncByteArrayOutputStream =
 				new UnsyncByteArrayOutputStream();
@@ -367,8 +404,9 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 		}
 
 		return _execute(
-			batchEngineUnit, batchEngineUnitConfiguration, content, contentType,
-			completableFuture);
+			batchEngineUnit,
+			_updateBatchEngineUnitConfiguration(batchEngineUnitConfiguration),
+			content, contentType, completableFuture);
 	}
 
 	private BatchEngineUnitConfiguration _updateBatchEngineUnitConfiguration(
@@ -405,9 +443,8 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 
 			try {
 				batchEngineUnitConfiguration.setUserId(
-					_userLocalService.getUserIdByScreenName(
-						batchEngineUnitConfiguration.getCompanyId(),
-						PropsUtil.get(PropsKeys.DEFAULT_ADMIN_SCREEN_NAME)));
+					_getAdminUserId(
+						batchEngineUnitConfiguration.getCompanyId()));
 			}
 			catch (PortalException portalException) {
 				_log.error("Unable to get default user ID", portalException);
@@ -442,6 +479,9 @@ public class BatchEngineUnitProcessorImpl implements BatchEngineUnitProcessor {
 
 	@Reference
 	private File _file;
+
+	@Reference
+	private RoleLocalService _roleLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

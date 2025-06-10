@@ -26,16 +26,16 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -98,7 +98,7 @@ public class JournalViewMoreMenuItemsDisplayContext {
 		long[] currentAndAncestorSiteAndDepotGroupIds =
 			SiteConnectedGroupGroupProviderUtil.
 				getCurrentAndAncestorSiteAndDepotGroupIds(
-					_themeDisplay.getScopeGroupId(), true);
+					_themeDisplay.getScopeGroupId(), false, true);
 
 		searchContainer.setResultsAndTotal(
 			() -> {
@@ -214,17 +214,15 @@ public class JournalViewMoreMenuItemsDisplayContext {
 			orderByAsc = true;
 		}
 
-		OrderByComparator<DDMStructure> orderByComparator = null;
-
 		if (_orderByCol.equals("modified-date")) {
-			orderByComparator = new StructureModifiedDateComparator(orderByAsc);
+			return new StructureModifiedDateComparator(orderByAsc);
 		}
 		else if (_orderByCol.equals("name")) {
-			orderByComparator = new StructureNameComparator(
+			return new StructureNameComparator(
 				orderByAsc, _themeDisplay.getLocale());
 		}
 
-		return orderByComparator;
+		return null;
 	}
 
 	private SearchContainer<DDMStructure> _ddmStructuresSearchContainer;

@@ -13,7 +13,9 @@ import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.friendly.url.exception.DuplicateFriendlyURLEntryException;
+import com.liferay.friendly.url.exception.FriendlyURLCategoryException;
 import com.liferay.friendly.url.exception.FriendlyURLLengthException;
+import com.liferay.friendly.url.exception.FriendlyURLLocalizationUrlTitleException;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.model.FriendlyURLEntryLocalization;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
@@ -32,7 +34,6 @@ import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -129,7 +130,6 @@ public class FriendlyURLEntryLocalServiceTest {
 		Assert.assertEquals(urlTitle, finalFriendlyURL.getUrlTitle());
 	}
 
-	@FeatureFlags("LPD-11147")
 	@Test
 	public void testAddFriendlyURLEntryWithAssetCategories() throws Exception {
 		ServiceContext serviceContext = _getServiceContext();
@@ -167,42 +167,13 @@ public class FriendlyURLEntryLocalServiceTest {
 				_language.getLanguageId(LocaleUtil.US)));
 	}
 
-	@FeatureFlags("LPD-11147")
 	@Test
 	public void testAddFriendlyURLEntryWithLocalizedAssetCategories()
 		throws Exception {
 
 		ServiceContext serviceContext = _getServiceContext();
 
-		AssetVocabulary assetVocabulary =
-			_assetVocabularyLocalService.addVocabulary(
-				TestPropsValues.getUserId(), _group.getGroupId(),
-				RandomTestUtil.randomString(), serviceContext);
-
-		AssetCategory assetCategory1 = _assetCategoryLocalService.addCategory(
-			null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
-			HashMapBuilder.put(
-				LocaleUtil.US, "cat1-en"
-			).put(
-				new Locale("es", "ES"), "cat1-es"
-			).build(),
-			new HashMap<>(), assetVocabulary.getVocabularyId(), null,
-			serviceContext);
-		AssetCategory assetCategory2 = _assetCategoryLocalService.addCategory(
-			null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
-			HashMapBuilder.put(
-				LocaleUtil.US, "cat2-en"
-			).put(
-				new Locale("es", "ES"), "cat2-es"
-			).build(),
-			new HashMap<>(), assetVocabulary.getVocabularyId(), null,
-			serviceContext);
-
-		serviceContext.setAttribute(
-			"friendlyURLAssetCategoryIds",
-			new long[] {
-				assetCategory1.getCategoryId(), assetCategory2.getCategoryId()
-			});
+		_addLocalizedAssetCategories(serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.addFriendlyURLEntry(
@@ -223,6 +194,67 @@ public class FriendlyURLEntryLocalServiceTest {
 				_language.getLanguageId(LocaleUtil.US)));
 		Assert.assertEquals(
 			"cat1-es/cat2-es/url-title-es",
+			friendlyURLEntry.getCategorizedUrlTitle(
+				_language.getLanguageId(new Locale("es", "ES"))));
+	}
+
+	@Test(expected = FriendlyURLCategoryException.class)
+	public void testAddFriendlyURLEntryWithSlashAndAssetCategories()
+		throws Exception {
+
+		ServiceContext serviceContext = _getServiceContext();
+
+		AssetVocabulary assetVocabulary =
+			_assetVocabularyLocalService.addVocabulary(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				RandomTestUtil.randomString(), serviceContext);
+
+		AssetCategory assetCategory1 = _assetCategoryLocalService.addCategory(
+			TestPropsValues.getUserId(), _group.getGroupId(), "cat1",
+			assetVocabulary.getVocabularyId(), serviceContext);
+		AssetCategory assetCategory2 = _assetCategoryLocalService.addCategory(
+			TestPropsValues.getUserId(), _group.getGroupId(), "cat2",
+			assetVocabulary.getVocabularyId(), serviceContext);
+
+		serviceContext.setAttribute(
+			"friendlyURLAssetCategoryIds",
+			new long[] {
+				assetCategory1.getCategoryId(), assetCategory2.getCategoryId()
+			});
+
+		_friendlyURLEntryLocalService.addFriendlyURLEntry(
+			_group.getGroupId(),
+			_classNameLocalService.getClassNameId(User.class),
+			TestPropsValues.getUserId(),
+			Collections.singletonMap(
+				_language.getLanguageId(LocaleUtil.US), "url/title/en"),
+			serviceContext);
+	}
+
+	@Test
+	public void testAddUnlocalizedFriendlyURLEntryWithLocalizedAssetCategories()
+		throws Exception {
+
+		ServiceContext serviceContext = _getServiceContext();
+
+		_addLocalizedAssetCategories(serviceContext);
+
+		FriendlyURLEntry friendlyURLEntry =
+			_friendlyURLEntryLocalService.addFriendlyURLEntry(
+				_group.getGroupId(),
+				_classNameLocalService.getClassNameId(User.class),
+				TestPropsValues.getUserId(),
+				HashMapBuilder.put(
+					_language.getLanguageId(LocaleUtil.US), "url-title-en"
+				).build(),
+				serviceContext);
+
+		Assert.assertEquals(
+			"cat1-en/cat2-en/url-title-en",
+			friendlyURLEntry.getCategorizedUrlTitle(
+				_language.getLanguageId(LocaleUtil.US)));
+		Assert.assertEquals(
+			"cat1-es/cat2-es/url-title-en",
 			friendlyURLEntry.getCategorizedUrlTitle(
 				_language.getLanguageId(new Locale("es", "ES"))));
 	}
@@ -454,12 +486,56 @@ public class FriendlyURLEntryLocalServiceTest {
 			_group.getGroupId(), classNameId, urlTitle);
 	}
 
+	@Test(
+		expected = FriendlyURLLocalizationUrlTitleException.MustNotHaveTrailingSlash.class
+	)
+	public void testValidateUrlTitleWithInvalidSlash() throws Exception {
+		_friendlyURLEntryLocalService.validate(
+			_group.getGroupId(),
+			_classNameLocalService.getClassNameId(User.class),
+			TestPropsValues.getUserId(), "test/");
+	}
+
 	@Test
 	public void testValidateUrlTitleWithMaxLength() throws Exception {
 		_friendlyURLEntryLocalService.validate(
 			_group.getGroupId(),
 			_classNameLocalService.getClassNameId(User.class),
 			_getRandomURLTitle());
+	}
+
+	private void _addLocalizedAssetCategories(ServiceContext serviceContext)
+		throws Exception {
+
+		AssetVocabulary assetVocabulary =
+			_assetVocabularyLocalService.addVocabulary(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				RandomTestUtil.randomString(), serviceContext);
+
+		AssetCategory assetCategory1 = _assetCategoryLocalService.addCategory(
+			null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
+			HashMapBuilder.put(
+				LocaleUtil.US, "cat1-en"
+			).put(
+				new Locale("es", "ES"), "cat1-es"
+			).build(),
+			new HashMap<>(), assetVocabulary.getVocabularyId(), null,
+			serviceContext);
+		AssetCategory assetCategory2 = _assetCategoryLocalService.addCategory(
+			null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
+			HashMapBuilder.put(
+				LocaleUtil.US, "cat2-en"
+			).put(
+				new Locale("es", "ES"), "cat2-es"
+			).build(),
+			new HashMap<>(), assetVocabulary.getVocabularyId(), null,
+			serviceContext);
+
+		serviceContext.setAttribute(
+			"friendlyURLAssetCategoryIds",
+			new long[] {
+				assetCategory1.getCategoryId(), assetCategory2.getCategoryId()
+			});
 	}
 
 	private String _getRandomURLTitle() {

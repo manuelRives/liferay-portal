@@ -5,17 +5,15 @@
 
 package com.liferay.testray.rest.internal.resource.v1_0;
 
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
-import com.liferay.object.model.ObjectEntry;
-import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.testray.rest.dto.v1_0.TestrayBuildAutofill;
 import com.liferay.testray.rest.internal.util.TestrayUtil;
+import com.liferay.testray.rest.manager.TestrayManager;
 import com.liferay.testray.rest.resource.v1_0.TestrayBuildAutofillResource;
-
-import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,101 +38,78 @@ public class TestrayBuildAutofillResourceImpl
 			Long testrayBuildId1, Long testrayBuildId2)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(24);
+		TestrayBuildAutofill testrayBuildAutofill = new TestrayBuildAutofill();
 
-		sb.append("select cr1.c_caseResultId_ as c_caseResultId_1,");
-		sb.append("cr1.dueStatus_ as dueStatus_1, cr1.errors_ as errors_1,");
-		sb.append("cr1.issues_ as issues_1, cr1.r_userToCaseResults_userId ");
-		sb.append("as r_userToCaseResults_userId_1,");
-		sb.append("cr2.c_caseResultId_ as c_caseResultId_2,");
-		sb.append("cr2.dueStatus_ as dueStatus_2, cr2.errors_ as errors_2,");
-		sb.append("cr2.issues_ as issues_2, cr2.r_userToCaseResults_userId ");
-		sb.append("as r_userToCaseResults_userId_2 from ");
-		sb.append("O_[%COMPANY_ID%]_Build b1, O_[%COMPANY_ID%]_Build b2, ");
-		sb.append("O_[%COMPANY_ID%]_CaseResult cr1, ");
-		sb.append("O_[%COMPANY_ID%]_CaseResult cr2, O_[%COMPANY_ID%]_Case ");
-		sb.append("c1, O_[%COMPANY_ID%]_Case c2 where b1.c_buildId_ = ");
-		sb.append("cr1.r_buildToCaseResult_c_buildId and c1.c_caseId_ = ");
-		sb.append("cr1.r_caseToCaseResult_c_caseId and b1.c_buildId_ = ? and ");
-		sb.append("b2.c_buildId_ = ? and b2.c_buildId_ = ");
-		sb.append("cr2.r_buildToCaseResult_c_buildId and c2.c_caseId_ = ");
-		sb.append("cr2.r_caseToCaseResult_c_caseId and c1.c_caseId_ = ");
-		sb.append("c2.c_caseId_ and cr1.errors_ = cr2.errors_ and ( ");
-		sb.append("((cr1.issues_ != '') and (cr2.issues_ = '')) or ");
-		sb.append("((cr1.r_userToCaseResults_userId != 0) and ");
-		sb.append("(cr2.r_userToCaseResults_userId = 0)) or ((cr1.issues_ = ");
-		sb.append("'') and (cr2.issues_ != '')) or ");
-		sb.append("((cr1.r_userToCaseResults_userId = 0) and ");
-		sb.append("(cr2.r_userToCaseResults_userId != 0)))");
+		testrayBuildAutofill.setCaseAmount(
+			_testrayManager.autofillTestrayBuilds(
+				contextCompany.getCompanyId(), testrayBuildId1, testrayBuildId2,
+				contextUser.getUserId()));
 
-		String sql = sb.toString();
+		JSONObject jsonObject = _getTestrayRunIdsJSONObject(
+			testrayBuildId1, testrayBuildId2);
+
+		testrayBuildAutofill.setTestrayRunId1(
+			jsonObject.getLong("testrayRunId1"));
+		testrayBuildAutofill.setTestrayRunId2(
+			jsonObject.getLong("testrayRunId2"));
+
+		return testrayBuildAutofill;
+	}
+
+	private JSONObject _getTestrayRunIdsJSONObject(
+			Long testrayBuildId1, Long testrayBuildId2)
+		throws Exception {
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append("select (select cr.r_runToCaseResult_c_runId from ");
+		sb.append("O_[%COMPANY_ID%]_CaseResult cr where ");
+		sb.append("cr.r_buildToCaseResult_c_buildId = b.c_buildId_ group by ");
+		sb.append("cr.r_runToCaseResult_c_runId order by ");
+		sb.append("count(cr.c_caseResultId_) desc limit 1) as runId from ");
+		sb.append("O_[%COMPANY_ID%]_Build b where b.c_buildId_ in (?, ?)");
 
 		List<Object> params = new ArrayList<>();
 
 		params.add(testrayBuildId1);
 		params.add(testrayBuildId2);
 
-		List<Map<String, Object>> values = TestrayUtil.runSQL(
-			StringUtil.replace(
-				sql, "[%COMPANY_ID%]",
-				String.valueOf(contextCompany.getCompanyId())),
-			params);
+		String sql = StringUtil.replace(
+			sb.toString(), "[%COMPANY_ID%]",
+			String.valueOf(contextCompany.getCompanyId()));
 
-		for (Map<String, Object> map : values) {
-			_autofillTestrayCaseResult(map);
+		List<Map<String, Object>> values = TestrayUtil.executeQuery(
+			sql, params);
+
+		if (ListUtil.isEmpty(values) || (values.size() < 2)) {
+			throw new Exception("Unable to find more than one run");
 		}
 
-		TestrayBuildAutofill testrayBuildAutofill = new TestrayBuildAutofill();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
-		testrayBuildAutofill.setCaseAmount(values.size());
+		jsonObject.put(
+			"testrayRunId1",
+			values.get(
+				0
+			).get(
+				"runid"
+			)
+		).put(
+			"testrayRunId2",
+			values.get(
+				1
+			).get(
+				"runid"
+			)
+		);
 
-		return testrayBuildAutofill;
-	}
-
-	private void _autofillTestrayCaseResult(Map<String, Object> map)
-		throws Exception {
-
-		int sourceCaseResultIndex = 1;
-		int targetCaseResultIndex = 2;
-
-		if ((GetterUtil.getString(map.get("issues_1")) == null) ||
-			(GetterUtil.getLong(map.get("r_userToCaseResults_userId_1")) ==
-				0)) {
-
-			sourceCaseResultIndex = 2;
-			targetCaseResultIndex = 1;
-		}
-
-		ObjectEntry targetObjectEntry = _objectEntryLocalService.getObjectEntry(
-			GetterUtil.getLong(
-				map.get("c_caseResultId_" + targetCaseResultIndex)));
-
-		Map<String, Serializable> values = targetObjectEntry.getValues();
-
-		values.put(
-			"dueStatus",
-			GetterUtil.getString(
-				map.get("dueStatus_" + sourceCaseResultIndex)));
-		values.put(
-			"issues",
-			GetterUtil.getString(map.get("issues_" + sourceCaseResultIndex)));
-		values.put(
-			"r_userToCaseResults_userId",
-			GetterUtil.getLong(
-				map.get(
-					"r_userToCaseResults_userId_" + sourceCaseResultIndex)));
-
-		_objectEntryLocalService.updateObjectEntry(
-			contextUser.getUserId(),
-			GetterUtil.getLong(
-				map.get("c_caseResultId_" + targetCaseResultIndex)),
-			values, _serviceContextHelper.getServiceContext());
+		return jsonObject;
 	}
 
 	@Reference
-	private ObjectEntryLocalService _objectEntryLocalService;
+	private JSONFactory _jsonFactory;
 
 	@Reference
-	private ServiceContextHelper _serviceContextHelper;
+	private TestrayManager _testrayManager;
 
 }

@@ -5,10 +5,15 @@
 
 package com.liferay.portal.upgrade.v7_4_x;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.upgrade.BaseExternalReferenceCodeUpgradeProcess;
+import com.liferay.portal.kernel.upgrade.BaseUuidUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
+import com.liferay.portal.kernel.upgrade.DBColumnSizeUpgradeProcess;
+import com.liferay.portal.kernel.upgrade.DeleteDuplicateUniqueFinderRowsUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.GuestUnsupportedResourcePermissionsUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
@@ -17,6 +22,9 @@ import com.liferay.portal.kernel.upgrade.util.UpgradeVersionTreeMap;
 import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.upgrade.util.PortalUpgradeProcessRegistry;
 import com.liferay.portal.upgrade.util.UpgradePartitionedControlTable;
+import com.liferay.portal.upgrade.v7_4_x.util.AssetTagGroupRelTable;
+import com.liferay.portal.upgrade.v7_4_x.util.AssetVocabularyGroupRelTable;
+import com.liferay.portal.upgrade.v7_4_x.util.RememberMeTokenTable;
 
 /**
  * @author Pei-Jung Lan
@@ -67,7 +75,10 @@ public class PortalUpgradeProcessRegistryImpl
 		upgradeVersionTreeMap.put(new Version(9, 2, 0), new UpgradeCountry());
 
 		upgradeVersionTreeMap.put(
-			new Version(9, 2, 1), new UpgradeListType(),
+			new Version(9, 2, 1, "step-1"), new UpgradeListType());
+
+		upgradeVersionTreeMap.put(
+			new Version(9, 2, 1),
 			UpgradeModulesFactory.create(
 				new String[] {"com.liferay.address.impl"}, null));
 
@@ -81,7 +92,11 @@ public class PortalUpgradeProcessRegistryImpl
 			new Version(12, 0, 0), new UpgradePortalPreferences());
 
 		upgradeVersionTreeMap.put(
-			new Version(12, 0, 1), new UpgradeResourceAction());
+			new Version(12, 0, 1),
+			UpgradeProcessFactory.runSQL(
+				"update ResourceAction set actionId = 'MANAGE_COUNTRIES' " +
+					"where name='90' and actionId = " +
+						"'MANAGE_COMMERCE_COUNTRIES'"));
 
 		upgradeVersionTreeMap.put(
 			new Version(12, 0, 2), new UpgradeDLFileEntryType());
@@ -104,7 +119,13 @@ public class PortalUpgradeProcessRegistryImpl
 				"AssetEntry", "title", "TEXT null"));
 
 		upgradeVersionTreeMap.put(
-			new Version(12, 2, 2), new UpgradePortalPreferenceValue());
+			new Version(12, 2, 2),
+			UpgradeProcessFactory.runSQL(
+				StringBundler.concat(
+					"update PortalPreferenceValue set namespace = ",
+					"'com.liferay.portal.kernel.util.SessionTreeJSClicks' ",
+					"where namespace = ",
+					"'com.liferay.taglib.ui.util.SessionTreeJSClicks'")));
 
 		upgradeVersionTreeMap.put(new Version(13, 0, 0), new UpgradeAccount());
 
@@ -121,7 +142,11 @@ public class PortalUpgradeProcessRegistryImpl
 			new CTModelUpgradeProcess("Repository", "RepositoryEntry"));
 
 		upgradeVersionTreeMap.put(
-			new Version(13, 3, 1), new UpgradeRepository());
+			new Version(13, 3, 1),
+			UpgradeProcessFactory.runSQL(
+				"update Repository set portletId = name where (portletId is " +
+					"null or portletId = '') and name = " +
+						"'com.liferay.portal.kernel.util.TempFileEntryUtil'"));
 
 		upgradeVersionTreeMap.put(
 			new Version(13, 3, 2), new UpgradeMappingTables());
@@ -169,7 +194,9 @@ public class PortalUpgradeProcessRegistryImpl
 			});
 
 		upgradeVersionTreeMap.put(
-			new Version(16, 1, 1), new UpgradeGroupType());
+			new Version(16, 1, 1),
+			UpgradeProcessFactory.runSQL(
+				"update Group_ set type_ = 3 where type_ = 4"));
 
 		upgradeVersionTreeMap.put(
 			new Version(16, 1, 2),
@@ -198,7 +225,7 @@ public class PortalUpgradeProcessRegistryImpl
 
 		upgradeVersionTreeMap.put(
 			new Version(17, 0, 0),
-			UpgradeProcessFactory.dropColumns("Company", "system"));
+			UpgradeProcessFactory.dropColumns("Company", "system_"));
 
 		upgradeVersionTreeMap.put(
 			new Version(18, 0, 0),
@@ -269,7 +296,7 @@ public class PortalUpgradeProcessRegistryImpl
 				"DLFileVersion", "storeUUID VARCHAR(255) null"));
 
 		upgradeVersionTreeMap.put(
-			new Version(25, 3, 1),
+			new Version(25, 3, 1, "step-1"),
 			UpgradeProcessFactory.alterColumnType(
 				"UserGroupGroupRole", "userGroupGroupRoleId", "LONG not null"),
 			UpgradeProcessFactory.alterColumnType(
@@ -286,9 +313,10 @@ public class PortalUpgradeProcessRegistryImpl
 			UpgradeProcessFactory.alterColumnType(
 				"UserGroupRole", "groupId", "LONG null"),
 			UpgradeProcessFactory.alterColumnType(
-				"UserGroupRole", "roleId", "LONG null"),
-			//
-			new UpgradeUsersUserGroups());
+				"UserGroupRole", "roleId", "LONG null"));
+
+		upgradeVersionTreeMap.put(
+			new Version(25, 3, 1), new UpgradeUsersUserGroups());
 
 		upgradeVersionTreeMap.put(new Version(26, 0, 0), new UpgradeUserType());
 
@@ -324,8 +352,11 @@ public class PortalUpgradeProcessRegistryImpl
 				new String[] {"com.liferay.asset.link.service"}, null));
 
 		upgradeVersionTreeMap.put(
+			new Version(27, 0, 0, "step-1"),
+			new UpgradePartitionedControlTable("ClassName_"));
+
+		upgradeVersionTreeMap.put(
 			new Version(27, 0, 0),
-			new UpgradePartitionedControlTable("ClassName_"),
 			UpgradeModulesFactory.create(
 				new String[] {"com.liferay.comment.web"}, null));
 
@@ -384,6 +415,234 @@ public class PortalUpgradeProcessRegistryImpl
 		upgradeVersionTreeMap.put(
 			new Version(30, 0, 0),
 			new UpgradePartitionedControlTable("Counter"));
+
+		upgradeVersionTreeMap.put(
+			new Version(30, 0, 1),
+			UpgradeProcessFactory.alterColumnType(
+				"PortalPreferenceValue", "key_", "VARCHAR(1024) null"));
+
+		upgradeVersionTreeMap.put(new Version(30, 1, 1), new UpgradeRelease());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 0, 0), new UpgradeListTypeAuditFields());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 1, 0),
+			UpgradeProcessFactory.alterColumnType(
+				"PasswordTracker", "password_", "VARCHAR(255) null"),
+			//
+			UpgradeProcessFactory.alterColumnType(
+				"Ticket", "key_", "VARCHAR(255) null"),
+			//
+			UpgradeProcessFactory.alterColumnType(
+				"User_", "password_", "VARCHAR(255) null"));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 1, 1), new UpgradePortletPreferencesCompanyId());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 2, 0),
+			new LayoutExternalReferenceCodeUpgradeProcess());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 3, 0), RememberMeTokenTable.create());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 4, 0),
+			new RoleExternalReferenceCodeUpgradeProcess());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 5, 0),
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {
+						{"DLFileEntryType", "fileEntryTypeId"}
+					};
+				}
+
+			});
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 6, 0),
+			new DLFileShortcutExternalReferenceCodeUpgradeProcess());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 7, 0),
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {
+						{"DLFileEntryMetadata", "fileEntryMetadataId"}
+					};
+				}
+
+			});
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 8, 0),
+			new EmailAddressExternalReferenceCodeUpgradeProcess());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 9, 0),
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {{"Website", "websiteId"}};
+				}
+
+			});
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 10, 0),
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {{"Repository", "repositoryId"}};
+				}
+
+			});
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 11, 0),
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {{"Phone", "phoneId"}};
+				}
+
+			});
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 12, 0),
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {{"AssetTag", "tagId"}};
+				}
+
+			});
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 12, 1),
+			UpgradeModulesFactory.create(
+				new String[] {"com.liferay.feature.flag.web"}, null));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 13, 0),
+			new BaseUuidUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {
+						{"WorkflowDefinitionLink", "workflowDefinitionLinkId"}
+					};
+				}
+
+			});
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 14, 0),
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {
+						{"WorkflowDefinitionLink", "workflowDefinitionLinkId"}
+					};
+				}
+
+			});
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 14, 1),
+			UpgradeProcessFactory.dropColumns("Company", "system_"));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 14, 2),
+			UpgradeProcessFactory.alterColumnType(
+				"AssetVocabulary", "visibilityType", "INTEGER"));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 15, 0),
+			UpgradeProcessFactory.addColumns(
+				"SystemEvent", "classExternalReferenceCode VARCHAR(75) null"));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 15, 1),
+			new DBColumnSizeUpgradeProcess(
+				DBType.ORACLE, "number", 30, 20, "DOUBLE"));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 15, 2),
+			UpgradeProcessFactory.alterColumnType(
+				"SystemEvent", "classExternalReferenceCode",
+				"VARCHAR(1000) null"));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 15, 3),
+			UpgradeProcessFactory.dropColumns("Contact_", "accountId"));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 16, 0), AssetVocabularyGroupRelTable.create());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 17, 0),
+			UpgradeProcessFactory.addColumns("Role_", "status INTEGER"),
+			UpgradeProcessFactory.runSQL("update Role_ set status = 0"));
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 18, 0), AssetTagGroupRelTable.create());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 19, 0),
+			UpgradeProcessFactory.addColumns(
+				"Address", "subtype VARCHAR(75) null"));
+
+		upgradeVersionTreeMap.put(
+			new Version(32, 0, 0),
+			new DeleteDuplicateUniqueFinderRowsUpgradeProcess(
+				"PortalPreferences", new String[] {"ownerType", "ownerId"},
+				"portalPreferencesId asc"),
+			new DeleteDuplicateUniqueFinderRowsUpgradeProcess(
+				"PortletItem",
+				new String[] {"groupId", "classNameId", "portletId", "name"},
+				"portletItemId asc"),
+			new DeleteDuplicateUniqueFinderRowsUpgradeProcess(
+				"SocialActivitySetting",
+				new String[] {"groupId", "classNameId", "activityType", "name"},
+				"activitySettingId asc"),
+			new DeleteDuplicateUniqueFinderRowsUpgradeProcess(
+				"Ticket", new String[] {"key_"}, "ticketId asc"));
+
+		upgradeVersionTreeMap.put(
+			new Version(32, 2, 0),
+			UpgradeProcessFactory.addColumns("AssetCategory", "status INTEGER"),
+			UpgradeProcessFactory.runSQL("update AssetCategory set status = 0"),
+			UpgradeProcessFactory.addColumns(
+				"AssetVocabulary", "status INTEGER"),
+			UpgradeProcessFactory.runSQL(
+				"update AssetVocabulary set status = 0"));
+
+		upgradeVersionTreeMap.put(
+			new Version(32, 3, 0),
+			UpgradeProcessFactory.addColumns("Organization_", "status INTEGER"),
+			UpgradeProcessFactory.runSQL(
+				"update Organization_ set status = 0"));
+
+		upgradeVersionTreeMap.put(
+			new Version(32, 4, 0),
+			UpgradeProcessFactory.addColumns("Address", "status INTEGER"),
+			UpgradeProcessFactory.runSQL("update Address set status = 0"));
+
+		upgradeVersionTreeMap.put(
+			new Version(32, 4, 1), new UpgradePortletPreferenceValueCounter());
 	}
 
 }

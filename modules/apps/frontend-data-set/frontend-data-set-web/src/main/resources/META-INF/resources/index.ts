@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {ModalStatus} from 'frontend-js-components-web';
+
 import {TRenderer} from './FrontendDataSetContext';
 
 export declare function FrontendDataSet({
@@ -22,7 +24,6 @@ export declare function FrontendDataSet({
 	formName,
 	header,
 	id,
-	initialSelectedItemsValues,
 	inlineAddingSettings,
 	inlineEditingSettings,
 	items,
@@ -36,6 +37,7 @@ export declare function FrontendDataSet({
 	overrideEmptyResultView,
 	pagination,
 	portletId,
+	selectedItems,
 	selectedItemsKey,
 	selectionType,
 	showManagementBar,
@@ -72,6 +74,15 @@ type TDelta = {
 	label: number;
 };
 
+export enum DisplayType {
+	DANGER = 'danger',
+	INFO = 'info',
+	SECONDARY = 'secondary',
+	SUCCESS = 'success',
+	UNSTYLED = 'unstyled',
+	WARNING = 'warning',
+}
+
 export interface IInlineEditingSettings {
 	alwaysOn: boolean;
 	defaultBodyContent: object;
@@ -79,9 +90,9 @@ export interface IInlineEditingSettings {
 
 export interface IActionsDropdown extends IBaseActions {
 	loading: boolean;
-	menuActive: boolean;
+	menuActive?: boolean;
 	onClick: Function;
-	onMenuActiveChange: Function;
+	onMenuActiveChange?: Function;
 	setLoading: Function;
 }
 
@@ -91,11 +102,35 @@ export interface IBaseActions {
 	itemId: number | string;
 }
 
+export interface ICreationActionItem {
+	data?: {
+		disableHeader?: boolean;
+		permissionKey?: string;
+		size?: string;
+		title?: string;
+	};
+	href?: string;
+	icon?: string;
+	id?: string;
+	label: string;
+	onClick?: Function;
+	target?:
+		| 'event'
+		| 'link'
+		| 'modal'
+		| 'modal-full-screen'
+		| 'modal-lg'
+		| 'modal-sm'
+		| 'sidePanel'
+		| string;
+}
+
 export interface IItemsActions {
 	data?: IItemActionsData;
 	href?: string;
 	icon?: string;
 	id?: string | number;
+	isVisible?: (item: any) => boolean;
 	items?: IItemsActions[];
 	label?: string;
 	method?: string;
@@ -116,49 +151,112 @@ export interface IItemsActions {
 
 export interface IItemActionsData {
 	confirmationMessage?: string;
+	disableHeader?: boolean;
 	errorMessage?: string;
 	id?: string | number;
 	method?: 'delete' | 'get' | 'patch' | 'post';
 	permissionKey?: string;
+	requestBody?: string;
 	size?: 'sm' | 'lg' | 'full-screen';
-	status?: string;
+	status?: ModalStatus;
 	successMessage?: string;
 	title?: string;
+	visibilityFilters?: IItemActionsDataFilter;
+}
+
+export interface IItemActionsDataFilter {
+	[key: string]: boolean | number | string;
 }
 
 export interface IQuickActions extends IBaseActions {
 	onClick: Function;
 }
 
-type TSorting = {
+export type TSort = {
+	active?: boolean;
+	default?: boolean;
 	direction?: 'asc' | 'desc';
 	key?: string;
+	label?: string;
 };
 
-type TViews = {
+export interface IField {
+	actionId?: string;
+	contentRenderer?: string;
+	contentRendererClientExtension?: boolean;
+	contentRendererModuleURL?: string;
+	expand?: boolean;
+	fieldName: string | [];
+	label: string;
+	localizeLabel?: boolean;
+	sortable?: boolean;
+	truncate?: boolean;
+}
+export interface ITableSchema {
+	fields: Array<IField>;
+}
+
+export interface IBaseCardLabelSchema {
+	value: string;
+}
+
+export interface IStaticCardLabelSchema extends IBaseCardLabelSchema {
+	displayType: DisplayType;
+	displayTypeKey?: never;
+	displayTypeValues?: never;
+}
+
+export interface IDynamicCardLabelSchema extends IBaseCardLabelSchema {
+	displayType?: never;
+	displayTypeKey: string;
+	displayTypeValues: Record<string, DisplayType>;
+}
+
+export type ICardLabelSchema = IStaticCardLabelSchema | IDynamicCardLabelSchema;
+
+export interface ICardSchema {
+	description: string;
+	image?: string;
+	labels?: ICardLabelSchema[];
+	link?: string;
+	sticker?: string;
+	symbol: string;
+	title: string;
+}
+
+export type ISchema = ITableSchema | ICardSchema;
+
+export type TViews = {
 	component?: any;
 	contentRenderer?: string;
 	contentRendererClientExtension?: boolean;
 	contentRendererModuleURL?: string;
+	default?: boolean;
 	label?: string;
 	name?: string;
-	schema?: object;
+	schema?: ISchema;
 	thumbnail?: string;
+	views?: Array<any>;
 };
 
 export interface IFrontendDataSetProps {
 	actionParameterName?: string;
 	activeViewSettings?: string;
+	additionalAPIURLParameters?: string;
 	apiURL?: string;
 	appURL?: string;
 	bulkActions?: any[];
 	creationMenu?: {
-		primaryItems?: any[];
+		loadData?: Function;
+		primaryItems: Array<ICreationActionItem>;
 		secondaryItems?: any[];
 	};
 	currentURL?: string;
 	customDataRenderers?: any;
-	customRenderers?: {tableCell: Array<TRenderer>};
+	customRenderers?: {
+		tableCell?: Array<TRenderer>;
+		views?: Array<TRenderer>;
+	};
 	customViews?: string;
 	customViewsEnabled?: boolean;
 	emptyState?: {
@@ -169,17 +267,17 @@ export interface IFrontendDataSetProps {
 	enableInlineAddModeSetting?: {
 		defaultBodyContent?: object;
 	};
-	filters?: any;
+	filters?: Array<any>;
 	formId?: string;
 	formName?: string;
 	header?: {
 		title?: string;
 	};
 	id: string;
-	initialSelectedItemsValues?: any[];
 	inlineAddingSettings?: {
 		apiURL: string;
 		defaultBodyContent: object;
+		method?: string;
 	};
 	inlineEditingSettings?: IInlineEditingSettings;
 	items?: any[];
@@ -189,7 +287,8 @@ export interface IFrontendDataSetProps {
 	nestedItemsReferenceKey?: string;
 	onActionDropdownItemClick?: any;
 	onBulkActionItemClick?: any;
-	onSelect?: Function;
+	onSelect?: ({selectedItems}: {selectedItems: Array<any>}) => void;
+	onSelectedItemsChange?: (selectedItems: Array<any>) => void;
 	overrideEmptyResultView?: boolean;
 	pagination?: {
 		deltas?: TDelta[];
@@ -197,16 +296,39 @@ export interface IFrontendDataSetProps {
 		initialPageNumber?: number;
 	};
 	portletId?: string;
+	selectedItems?: any[];
 	selectedItemsKey?: string;
 	selectionType?: 'single' | 'multiple';
+	showBulkActionsManagementBar?: boolean;
+	showBulkActionsManagementBarActions?: boolean;
 	showManagementBar?: boolean;
 	showPagination?: boolean;
 	showSearch?: boolean;
+	showSelectAll?: boolean;
 	sidePanelId?: string;
-	sorts?: TSorting[];
+	sorts?: TSort[];
 	style?: 'default' | 'fluid' | 'stacked';
+	uniformActionsDisplay?: boolean;
 	views: TViews[];
 	viewsTitle?: string;
+}
+
+export interface IModalConfig {
+	disableHeader: boolean;
+	size: string;
+	title: string;
+	url: string;
+}
+
+export interface IRequestOptions {
+	body?: string;
+	headers: {[key: string]: string};
+	method?: string;
+}
+
+export interface ISuccessNotification {
+	message: string;
+	showSuccessNotification?: boolean;
 }
 
 export {
@@ -215,8 +337,11 @@ export {
 } from './FrontendDataSetContext';
 export {INTERNAL_CELL_RENDERERS as FDS_INTERNAL_CELL_RENDERERS} from './cell_renderers/InternalCellRenderer';
 export {
+	DEFAULT_FETCH_HEADERS,
 	FDS_ARRAY_FIELD_NAME_DELIMITER,
 	FDS_ARRAY_FIELD_NAME_PARENT_SUFFIX,
 	FDS_NESTED_FIELD_NAME_DELIMITER,
 	FDS_NESTED_FIELD_NAME_PARENT_SUFFIX,
 } from './constants';
+
+export {Card} from './views/cards/Cards';

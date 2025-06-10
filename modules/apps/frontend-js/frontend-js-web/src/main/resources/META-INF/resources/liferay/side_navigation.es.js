@@ -610,8 +610,8 @@ SideNavigation.prototype = {
 						return;
 					}
 
-					const otherMenuWidth = otherMenu.getBoundingClientRect()
-						.width;
+					const otherMenuWidth =
+						otherMenu.getBoundingClientRect().width;
 
 					const contentMargin =
 						document.body.scrollWidth -
@@ -811,7 +811,10 @@ SideNavigation.prototype = {
 	_subscribeReducedMotion() {
 		const instance = this;
 
-		Liferay.Loader.require('frontend-js-web/index', ({isReducedMotion}) => {
+		import(
+			themeDisplay.getPathContext() +
+				'/o/frontend-js-web/__liferay__/index.js'
+		).then(({isReducedMotion}) => {
 			instance.isReducedMotion = isReducedMotion;
 		});
 	},

@@ -30,7 +30,6 @@ import com.liferay.portal.search.ccr.CrossClusterReplicationHelper;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationObserver;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionManager;
-import com.liferay.portal.search.elasticsearch7.internal.index.IndexConfigurationDynamicUpdatesExecutor;
 import com.liferay.portal.search.elasticsearch7.internal.index.IndexFactory;
 import com.liferay.portal.search.engine.ConnectionInformation;
 import com.liferay.portal.search.engine.NodeInformation;
@@ -63,7 +62,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterGetSettingsRequest;
 import org.elasticsearch.action.admin.cluster.settings.ClusterGetSettingsResponse;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
@@ -75,6 +77,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.xcontent.XContentType;
 
 import org.osgi.service.component.annotations.Activate;
@@ -168,16 +171,14 @@ public class ElasticsearchSearchEngine
 		RestHighLevelClient restHighLevelClient =
 			_elasticsearchConnectionManager.getRestHighLevelClient();
 
-		boolean created = _indexFactory.createIndices(
-			restHighLevelClient.indices(), companyId);
+		boolean created = _indexFactory.initializeIndex(
+			companyId, restHighLevelClient.indices());
 
 		_indexFactory.registerCompanyId(companyId);
 
 		if (created) {
 			_waitForYellowStatus();
 		}
-
-		_indexConfigurationDynamicUpdatesExecutor.execute(companyId);
 
 		CrossClusterReplicationHelper crossClusterReplicationHelper =
 			_crossClusterReplicationHelperSnapshot.get();
@@ -233,8 +234,7 @@ public class ElasticsearchSearchEngine
 			RestHighLevelClient restHighLevelClient =
 				_elasticsearchConnectionManager.getRestHighLevelClient();
 
-			_indexFactory.deleteIndices(
-				restHighLevelClient.indices(), companyId);
+			_indexFactory.deleteIndex(companyId, restHighLevelClient.indices());
 
 			_indexFactory.unregisterCompanyId(companyId);
 		}
@@ -289,19 +289,44 @@ public class ElasticsearchSearchEngine
 		ClusterUpdateSettingsRequest clusterUpdateSettingsRequest =
 			new ClusterUpdateSettingsRequest();
 
-		clusterUpdateSettingsRequest.persistentSettings(
-			Settings.builder(
-			).put(
-				"action.auto_create_index",
-				_createAutoCreateIndexSetting(enable)
-			));
-
 		try {
+			clusterUpdateSettingsRequest.persistentSettings(
+				Settings.builder(
+				).put(
+					"action.auto_create_index",
+					_createAutoCreateIndexSetting(enable)
+				));
+
 			clusterClient.putSettings(
 				clusterUpdateSettingsRequest, RequestOptions.DEFAULT);
 		}
+		catch (ElasticsearchStatusException elasticsearchStatusException) {
+			if (Objects.equals(
+					elasticsearchStatusException.status(),
+					RestStatus.FORBIDDEN) ||
+				Objects.equals(
+					elasticsearchStatusException.status(),
+					RestStatus.UNAUTHORIZED)) {
+
+				StringBundler sb = new StringBundler(4);
+
+				sb.append("Unable to update cluster auto create index ");
+				sb.append("setting due to lack of permissions. This can lead ");
+				sb.append("to incorrectly created index mappings: ");
+				sb.append(elasticsearchStatusException.getMessage());
+
+				_log.error(sb.toString());
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(elasticsearchStatusException);
+				}
+			}
+			else {
+				_log.error(elasticsearchStatusException);
+			}
+		}
 		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
+			_log.error(ioException);
 		}
 	}
 
@@ -333,6 +358,36 @@ public class ElasticsearchSearchEngine
 			return;
 		}
 
+		List<ConnectionInformation> connectionInformationList =
+			_searchEngineInformation.getConnectionInformationList();
+
+		if (_log.isWarnEnabled()) {
+			StringBundler sb = new StringBundler(
+				connectionInformationList.size());
+
+			for (ConnectionInformation connectionInformation :
+					connectionInformationList) {
+
+				Set<String> labels = connectionInformation.getLabels();
+
+				if (labels.contains("deprecated")) {
+					sb.append(connectionInformation.getConnectionId());
+					sb.append(StringPool.COMMA_AND_SPACE);
+				}
+			}
+
+			if (sb.length() > 0) {
+				sb.setIndex(sb.index() - 1);
+
+				_log.warn(
+					StringBundler.concat(
+						"Connecting to Elasticsearch 7 nodes is now ",
+						"deprecated. Upgrade the Elasticsearch nodes ",
+						"corresponding to the following connection IDs: ", sb,
+						"."));
+			}
+		}
+
 		String minimumVersionString =
 			_elasticsearchConfigurationWrapper.minimumRequiredNodeVersion();
 
@@ -345,9 +400,6 @@ public class ElasticsearchSearchEngine
 		}
 
 		Version minimumVersion = Version.parseVersion(minimumVersionString);
-
-		List<ConnectionInformation> connectionInformationList =
-			_searchEngineInformation.getConnectionInformationList();
 
 		for (ConnectionInformation connectionInformation :
 				connectionInformationList) {
@@ -371,7 +423,9 @@ public class ElasticsearchSearchEngine
 		}
 	}
 
-	private String _createAutoCreateIndexSetting(boolean enable) {
+	private String _createAutoCreateIndexSetting(boolean enable)
+		throws IOException {
+
 		String currentValue = _getAutoCreateIndexSetting();
 		String disableAutoCreateLiferayIndexPattern = StringBundler.concat(
 			StringPool.MINUS, _indexNameBuilder.getIndexNamePrefix(),
@@ -428,31 +482,26 @@ public class ElasticsearchSearchEngine
 			currentValue);
 	}
 
-	private String _getAutoCreateIndexSetting() {
+	private String _getAutoCreateIndexSetting() throws IOException {
 		RestHighLevelClient restHighLevelClient =
 			_elasticsearchConnectionManager.getRestHighLevelClient();
 
 		ClusterClient clusterClient = restHighLevelClient.cluster();
 
-		try {
-			ClusterGetSettingsResponse clusterGetSettingsResponse =
-				clusterClient.getSettings(
-					new ClusterGetSettingsRequest(), RequestOptions.DEFAULT);
+		ClusterGetSettingsResponse clusterGetSettingsResponse =
+			clusterClient.getSettings(
+				new ClusterGetSettingsRequest(), RequestOptions.DEFAULT);
 
-			Settings settings =
-				clusterGetSettingsResponse.getPersistentSettings();
+		Settings settings = clusterGetSettingsResponse.getPersistentSettings();
 
-			return settings.get("action.auto_create_index");
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
+		return settings.get("action.auto_create_index");
 	}
 
 	private Collection<Long> _getIndexedCompanyIds() {
 		Collection<Long> companyIds = new ArrayList<>();
 
-		String firstIndexName = _indexNameBuilder.getIndexName(0);
+		String firstIndexName = _indexNameBuilder.getIndexName(
+			CompanyConstants.SYSTEM);
 
 		String prefix = firstIndexName.substring(
 			0, firstIndexName.length() - 1);
@@ -485,15 +534,11 @@ public class ElasticsearchSearchEngine
 		List<SnapshotRepositoryDetails> snapshotRepositoryDetailsList =
 			getSnapshotRepositoriesResponse.getSnapshotRepositoryDetails();
 
-		if (snapshotRepositoryDetailsList.isEmpty()) {
-			return false;
-		}
-
-		return true;
+		return !snapshotRepositoryDetailsList.isEmpty();
 	}
 
 	private void _putTimestampPipeline() {
-		String source = JSONUtil.put(
+		String json = JSONUtil.put(
 			"description", "Adds timestamp to documents"
 		).put(
 			"processors",
@@ -508,8 +553,7 @@ public class ElasticsearchSearchEngine
 		).toString();
 
 		PutPipelineRequest putPipelineRequest = new PutPipelineRequest(
-			"timestamp",
-			new BytesArray(source.getBytes(StandardCharsets.UTF_8)),
+			"timestamp", new BytesArray(json.getBytes(StandardCharsets.UTF_8)),
 			XContentType.JSON);
 
 		RestHighLevelClient restHighLevelClient =
@@ -602,10 +646,6 @@ public class ElasticsearchSearchEngine
 
 	@Reference
 	private ElasticsearchConnectionManager _elasticsearchConnectionManager;
-
-	@Reference
-	private IndexConfigurationDynamicUpdatesExecutor
-		_indexConfigurationDynamicUpdatesExecutor;
 
 	@Reference
 	private IndexFactory _indexFactory;

@@ -22,14 +22,14 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.search.GroupSearch;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -58,7 +58,11 @@ public class SitesThatIAdministerItemSelectorViewDisplayContext
 
 		groupSearch.setResultsAndTotal(
 			GroupLocalServiceUtil.search(
-				themeDisplay.getCompanyId(), _CLASS_NAME_IDS,
+				themeDisplay.getCompanyId(),
+				new long[] {
+					PortalUtil.getClassNameId(Group.class),
+					PortalUtil.getClassNameId(Organization.class)
+				},
 				ParamUtil.getString(httpServletRequest, "keywords"),
 				_getGroupParams(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 				groupSearch.getOrderByComparator()));
@@ -123,23 +127,18 @@ public class SitesThatIAdministerItemSelectorViewDisplayContext
 		).put(
 			"usersGroups",
 			() -> {
-				if (filterManageableGroups) {
-					User user = themeDisplay.getUser();
-
-					return user.getUserId();
+				if (!filterManageableGroups) {
+					return null;
 				}
 
-				return null;
+				User user = themeDisplay.getUser();
+
+				return user.getUserId();
 			}
 		).build();
 
 		return _groupParams;
 	}
-
-	private static final long[] _CLASS_NAME_IDS = {
-		PortalUtil.getClassNameId(Group.class),
-		PortalUtil.getClassNameId(Organization.class)
-	};
 
 	private final GroupItemSelectorCriterion _groupItemSelectorCriterion;
 	private LinkedHashMap<String, Object> _groupParams;

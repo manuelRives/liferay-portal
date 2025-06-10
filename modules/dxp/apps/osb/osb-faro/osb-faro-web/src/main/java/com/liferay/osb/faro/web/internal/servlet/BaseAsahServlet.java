@@ -10,13 +10,13 @@ import com.liferay.osb.faro.engine.client.util.TokenUtil;
 import com.liferay.osb.faro.model.FaroProject;
 import com.liferay.osb.faro.web.internal.util.FaroProjectThreadLocal;
 
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import java.util.Map;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -59,12 +59,6 @@ public abstract class BaseAsahServlet extends HttpServlet {
 			TokenUtil.getOSBAsahSecurityToken() +
 				url.substring(0, url.lastIndexOf(uri.getPath())));
 	}
-
-	protected static final String ASAH_PROJECT_ID_HEADER =
-		"OSB-Asah-Project-ID";
-
-	protected static final String ASAH_SECURITY_SIGNATURE_HEADER =
-		"OSB-Asah-Faro-Backend-Security-Signature";
 
 	private static final long serialVersionUID = 1L;
 

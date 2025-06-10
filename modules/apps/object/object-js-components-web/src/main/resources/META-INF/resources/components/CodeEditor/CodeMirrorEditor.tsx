@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import CodeMirror from '@liferay/frontend-js-codemirror-web';
+import {CodeMirror} from '@liferay/frontend-js-codemirror-web';
 import classNames from 'classnames';
 import React, {useEffect, useRef} from 'react';
 
@@ -38,9 +38,8 @@ const CodeMirrorEditor = React.forwardRef<CodeMirror.Editor, ICodeMirrorEditor>(
 				ref(editor);
 			}
 			else if (ref) {
-				(ref as React.MutableRefObject<
-					CodeMirror.Editor
-				>).current = editor;
+				(ref as React.MutableRefObject<CodeMirror.Editor>).current =
+					editor;
 			}
 
 			const handleChange = (editor: CodeMirror.Editor) => {
@@ -50,6 +49,7 @@ const CodeMirrorEditor = React.forwardRef<CodeMirror.Editor, ICodeMirrorEditor>(
 			editor.on('change', handleChange);
 
 			return () => editor.off('change', handleChange);
+
 			// eslint-disable-next-line react-hooks/exhaustive-deps
 		}, []);
 

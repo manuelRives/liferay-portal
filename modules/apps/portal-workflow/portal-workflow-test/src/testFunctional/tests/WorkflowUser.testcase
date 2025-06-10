@@ -1,9 +1,8 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Users and Organizations";
 	property testray.main.component.name = "Workflow";
 
 	setUp {
@@ -46,18 +45,18 @@ definition {
 			userScreenName = "usersn");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		UserBar.gotoDropdownItem(dropdownItem = "Notifications");
 
 		Notifications.clickOnTheNotificationTitle(key_notificationsTitle = "sent you a User for review in the workflow.");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 		Workflow.confirmWorkflowAction();
 
@@ -93,7 +92,7 @@ definition {
 			userScreenName = "usersn");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
@@ -146,7 +145,7 @@ definition {
 			userScreenName = "usersn");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
@@ -189,7 +188,7 @@ definition {
 			userScreenName = "usersn");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
@@ -234,7 +233,7 @@ definition {
 			userScreenName = "usersn");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
@@ -262,7 +261,7 @@ definition {
 		User.logoutPG();
 
 		WorkflowAsset.createNewUserAccount(
-			newPassword = "test",
+			newPassword = "password",
 			userEmailAddress = "user@liferay.com",
 			userFirstName = "userfn",
 			userLastName = "userln",
@@ -270,7 +269,7 @@ definition {
 			workflow = "true");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		User.openUsersAdmin();
@@ -329,7 +328,7 @@ definition {
 			userScreenName = "usersn");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		WorkflowAsset.gotoViaNotification(assetType = "User");

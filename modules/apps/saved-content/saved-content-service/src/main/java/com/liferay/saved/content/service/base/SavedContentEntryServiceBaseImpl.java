@@ -8,18 +8,17 @@ package com.liferay.saved.content.service.base;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.saved.content.model.SavedContentEntry;
 import com.liferay.saved.content.service.SavedContentEntryService;
-import com.liferay.saved.content.service.SavedContentEntryServiceUtil;
 import com.liferay.saved.content.service.persistence.SavedContentEntryPersistence;
+
+import java.sql.Connection;
 
 import javax.sql.DataSource;
 
@@ -44,11 +43,10 @@ public abstract class SavedContentEntryServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>SavedContentEntryService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>SavedContentEntryServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>SavedContentEntryService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.saved.content.service.SavedContentEntryServiceUtil</code>.
 	 */
 	@Deactivate
 	protected void deactivate() {
-		SavedContentEntryServiceUtil.setService(null);
 	}
 
 	@Override
@@ -61,8 +59,6 @@ public abstract class SavedContentEntryServiceBaseImpl
 	@Override
 	public void setAopProxy(Object aopProxy) {
 		savedContentEntryService = (SavedContentEntryService)aopProxy;
-
-		SavedContentEntryServiceUtil.setService(savedContentEntryService);
 	}
 
 	/**
@@ -89,19 +85,23 @@ public abstract class SavedContentEntryServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = savedContentEntryPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource =
-				savedContentEntryPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);

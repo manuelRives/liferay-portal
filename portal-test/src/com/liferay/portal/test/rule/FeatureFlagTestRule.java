@@ -5,12 +5,12 @@
 
 package com.liferay.portal.test.rule;
 
+import com.liferay.portal.kernel.feature.flag.constants.FeatureFlagConstants;
 import com.liferay.portal.kernel.test.rule.AbstractTestRule;
+import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsUtil;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,7 +46,7 @@ public class FeatureFlagTestRule
 	protected Map<String, String> beforeClass(Description description)
 		throws Throwable {
 
-		return _enableFeatureFlags(description);
+		return _updateFeatureFlags(description);
 	}
 
 	@Override
@@ -54,42 +54,76 @@ public class FeatureFlagTestRule
 			Description description, Object target)
 		throws Throwable {
 
-		return _enableFeatureFlags(description);
-	}
-
-	private Map<String, String> _enableFeatureFlags(Description description) {
-		FeatureFlags featureFlags = description.getAnnotation(
-			FeatureFlags.class);
-
-		if (featureFlags == null) {
-			return Collections.emptyMap();
-		}
-
-		Map<String, String> previousValues = new HashMap<>();
-
-		for (String key : featureFlags.value()) {
-			String featureFlagKey = "feature.flag." + key;
-
-			String previousValue = PropsUtil.get(featureFlagKey);
-
-			if (Validator.isNotNull(previousValue)) {
-				previousValues.put(featureFlagKey, previousValue);
-			}
-
-			PropsUtil.addProperties(
-				UnicodePropertiesBuilder.setProperty(
-					featureFlagKey, "true"
-				).build());
-		}
-
-		return previousValues;
+		return _updateFeatureFlags(description);
 	}
 
 	private void _restoreFeatureFlags(Map<String, String> previousValues) {
+		Map<String, String> values = new HashMap<>();
+
+		for (Map.Entry<String, String> entry : previousValues.entrySet()) {
+			String value = entry.getValue();
+
+			if (value == null) {
+				PropsUtil.set(entry.getKey(), value);
+
+				continue;
+			}
+
+			values.put(entry.getKey(), entry.getValue());
+		}
+
 		PropsUtil.addProperties(
 			UnicodePropertiesBuilder.create(
-				previousValues, true
+				values, true
 			).build());
+	}
+
+	private KeyValuePair _updateFeatureFlag(FeatureFlag featureFlag) {
+		String featureFlagKey = FeatureFlagConstants.getKey(
+			featureFlag.value());
+
+		KeyValuePair previousKeyValuePair = new KeyValuePair(
+			featureFlagKey, PropsUtil.get(featureFlagKey));
+
+		PropsUtil.addProperties(
+			UnicodePropertiesBuilder.setProperty(
+				featureFlagKey, String.valueOf(featureFlag.enable())
+			).build());
+
+		return previousKeyValuePair;
+	}
+
+	private Map<String, String> _updateFeatureFlags(Description description) {
+		Map<String, String> previousValues = new HashMap<>();
+
+		FeatureFlags featureFlags = description.getAnnotation(
+			FeatureFlags.class);
+
+		if (featureFlags != null) {
+			for (FeatureFlag featureFlag : featureFlags.featureFlags()) {
+				if (featureFlag == null) {
+					continue;
+				}
+
+				KeyValuePair previousKeyValuePair = _updateFeatureFlag(
+					featureFlag);
+
+				previousValues.put(
+					previousKeyValuePair.getKey(),
+					previousKeyValuePair.getValue());
+			}
+		}
+
+		FeatureFlag featureFlag = description.getAnnotation(FeatureFlag.class);
+
+		if (featureFlag != null) {
+			KeyValuePair previousKeyValuePair = _updateFeatureFlag(featureFlag);
+
+			previousValues.put(
+				previousKeyValuePair.getKey(), previousKeyValuePair.getValue());
+		}
+
+		return previousValues;
 	}
 
 }

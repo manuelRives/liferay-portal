@@ -131,7 +131,7 @@ if (privateVirtualHostnames.isEmpty()) {
 	</p>
 
 	<div class="mb-5" id="<portlet:namespace />publicVirtualHostFields">
-		<h4 class="sheet-subtitle"><liferay-ui:message key="public-pages" /></h4>
+		<div class="sheet-subtitle"><liferay-ui:message key="public-pages" /></div>
 
 		<%
 		for (Map.Entry<String, String> entry : publicVirtualHostnames.entrySet()) {
@@ -142,6 +142,7 @@ if (privateVirtualHostnames.isEmpty()) {
 
 			<clay:container-fluid
 				cssClass="lfr-form-row"
+				fullWidth="<%= true %>"
 			>
 				<clay:row>
 					<aui:input inlineField="<%= true %>" label="public-pages-virtual-host" maxlength="200" name="publicVirtualHostname[]" placeholder="virtual-host" type="text" value="<%= virtualHostname %>" wrapperCssClass="col-sm-6" />
@@ -171,7 +172,7 @@ if (privateVirtualHostnames.isEmpty()) {
 	</div>
 
 	<div id="<portlet:namespace />privateVirtualHostFields">
-		<h4 class="sheet-subtitle"><liferay-ui:message key="private-pages" /></h4>
+		<div class="sheet-subtitle"><liferay-ui:message key="private-pages" /></div>
 
 		<%
 		for (Map.Entry<String, String> entry : privateVirtualHostnames.entrySet()) {
@@ -182,6 +183,7 @@ if (privateVirtualHostnames.isEmpty()) {
 
 			<clay:container-fluid
 				cssClass="lfr-form-row"
+				fullWidth="<%= true %>"
 			>
 				<clay:row>
 					<aui:input inlineField="<%= true %>" label="private-pages-virtual-host" maxlength="200" name="privateVirtualHostname[]" placeholder="virtual-host" type="text" value="<%= virtualHostname %>" wrapperCssClass="col-sm-6" />
@@ -235,6 +237,7 @@ if (privateVirtualHostnames.isEmpty()) {
 
 				<clay:container-fluid
 					cssClass="lfr-form-row"
+					fullWidth="<%= true %>"
 				>
 					<clay:row>
 						<aui:input inlineField="<%= true %>" label="staging-public-pages" maxlength="200" name="stagingPublicVirtualHostname[]" placeholder="virtual-host" type="text" value="<%= virtualHostname %>" wrapperCssClass="col-sm-6" />
@@ -286,6 +289,7 @@ if (privateVirtualHostnames.isEmpty()) {
 
 				<clay:container-fluid
 					cssClass="lfr-form-row"
+					fullWidth="<%= true %>"
 				>
 					<clay:row>
 						<aui:input inlineField="<%= true %>" label="staging-private-pages" maxlength="200" name="stagingPrivateVirtualHostname[]" placeholder="virtual-host" type="text" value="<%= virtualHostname %>" wrapperCssClass="col-sm-6" />

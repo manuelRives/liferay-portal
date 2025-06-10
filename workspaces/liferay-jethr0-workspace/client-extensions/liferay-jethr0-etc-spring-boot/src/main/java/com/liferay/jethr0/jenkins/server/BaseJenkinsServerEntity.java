@@ -6,8 +6,10 @@
 package com.liferay.jethr0.jenkins.server;
 
 import com.liferay.jethr0.entity.BaseEntity;
+import com.liferay.jethr0.event.jenkins.client.JenkinsClient;
 import com.liferay.jethr0.jenkins.cohort.JenkinsCohortEntity;
 import com.liferay.jethr0.jenkins.node.JenkinsNodeEntity;
+import com.liferay.jethr0.util.Jethr0ContextUtil;
 import com.liferay.jethr0.util.StringUtil;
 
 import java.net.URL;
@@ -16,13 +18,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.tomcat.util.codec.binary.Base64;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author Michael Hashimoto
@@ -44,23 +44,27 @@ public abstract class BaseJenkinsServerEntity
 
 	@Override
 	public JSONObject getComputerJSONObject() {
-		String basicAuthorization = StringUtil.combine(
-			getJenkinsUserName(), ":", getJenkinsUserPassword());
+		try {
+			return new JSONObject(
+				_jenkinsClient.requestGet(
+					StringUtil.toURL(
+						StringUtil.combine(getURL(), "/computer/api/json"))));
+		}
+		catch (Exception exception) {
+			if (_log.isInfoEnabled()) {
+				_log.info(exception);
+			}
 
-		String response = WebClient.create(
-			StringUtil.combine(getURL(), "/computer/api/json")
-		).get(
-		).accept(
-			MediaType.APPLICATION_JSON
-		).header(
-			"Authorization",
-			"Basic " + Base64.encodeBase64String(basicAuthorization.getBytes())
-		).retrieve(
-		).bodyToMono(
-			String.class
-		).block();
+			return null;
+		}
+	}
 
-		return new JSONObject(response);
+	@Override
+	public URL getEntityURL() {
+		return StringUtil.toURL(
+			StringUtil.combine(
+				Jethr0ContextUtil.getLiferayPortalURL(), "/#/jenkins-servers/",
+				getId()));
 	}
 
 	@Override
@@ -74,18 +78,13 @@ public abstract class BaseJenkinsServerEntity
 	}
 
 	@Override
+	public int getJenkinsNodeCount() {
+		return _jenkinsNodeCount;
+	}
+
+	@Override
 	public Set<JenkinsNodeEntity> getJenkinsNodeEntities() {
 		return getRelatedEntities(JenkinsNodeEntity.class);
-	}
-
-	@Override
-	public String getJenkinsUserName() {
-		return _jenkinsUserName;
-	}
-
-	@Override
-	public String getJenkinsUserPassword() {
-		return _jenkinsUserPassword;
 	}
 
 	@Override
@@ -93,9 +92,7 @@ public abstract class BaseJenkinsServerEntity
 		JSONObject jsonObject = super.getJSONObject();
 
 		jsonObject.put(
-			"jenkinsUserName", getJenkinsUserName()
-		).put(
-			"jenkinsUserPassword", getJenkinsUserPassword()
+			"jenkinsNodeCount", getJenkinsNodeCount()
 		).put(
 			"name", getName()
 		).put(
@@ -143,13 +140,8 @@ public abstract class BaseJenkinsServerEntity
 	}
 
 	@Override
-	public void setJenkinsUserName(String jenkinsUserName) {
-		_jenkinsUserName = jenkinsUserName;
-	}
-
-	@Override
-	public void setJenkinsUserPassword(String jenkinsUserPassword) {
-		_jenkinsUserPassword = jenkinsUserPassword;
+	public void setJenkinsNodeCount(int jenkinsNodeCount) {
+		_jenkinsNodeCount = jenkinsNodeCount;
 	}
 
 	@Override
@@ -158,8 +150,7 @@ public abstract class BaseJenkinsServerEntity
 
 		_jenkinsCohortEntityId = jsonObject.optLong(
 			"r_jenkinsCohortToJenkinsServers_c_jenkinsCohortId");
-		_jenkinsUserName = jsonObject.getString("jenkinsUserName");
-		_jenkinsUserPassword = jsonObject.getString("jenkinsUserPassword");
+		_jenkinsNodeCount = jsonObject.optInt("jenkinsNodeCount");
 		_name = jsonObject.optString("name");
 		_url = StringUtil.toURL(jsonObject.getString("url"));
 	}
@@ -178,7 +169,15 @@ public abstract class BaseJenkinsServerEntity
 	public void update() {
 		JSONObject jsonObject = getComputerJSONObject();
 
-		JSONArray computerJSONArray = jsonObject.getJSONArray("computer");
+		if (jsonObject == null) {
+			return;
+		}
+
+		JSONArray computerJSONArray = jsonObject.optJSONArray("computer");
+
+		if (computerJSONArray == null) {
+			return;
+		}
 
 		Map<String, JenkinsNodeEntity> jenkinsNodeMap = new HashMap<>();
 
@@ -198,16 +197,27 @@ public abstract class BaseJenkinsServerEntity
 
 			jenkinsNodeEntity.update(computerJSONObject);
 		}
+
+		Set<JenkinsNodeEntity> jenkinsNodeEntities = getJenkinsNodeEntities();
+
+		setJenkinsNodeCount(jenkinsNodeEntities.size());
 	}
 
-	protected BaseJenkinsServerEntity(JSONObject jsonObject) {
+	protected BaseJenkinsServerEntity(
+		JenkinsClient jenkinsClient, JSONObject jsonObject) {
+
 		super(jsonObject);
+
+		_jenkinsClient = jenkinsClient;
 	}
 
+	private static final Log _log = LogFactory.getLog(
+		BaseJenkinsServerEntity.class);
+
+	private final JenkinsClient _jenkinsClient;
 	private JenkinsCohortEntity _jenkinsCohortEntity;
 	private long _jenkinsCohortEntityId;
-	private String _jenkinsUserName;
-	private String _jenkinsUserPassword;
+	private int _jenkinsNodeCount;
 	private String _name;
 	private URL _url;
 

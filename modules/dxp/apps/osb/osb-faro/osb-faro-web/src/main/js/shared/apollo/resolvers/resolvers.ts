@@ -1,3 +1,4 @@
+import AssetAppearsOnResolver from './AssetAppearsOnResolver';
 import CommerceAverageOrderValueResolver from './CommerceAverageOrderValueResolver';
 import CommerceAverageRevenuePerAccountResolver from './CommerceAverageRevenuePerAccountResolver';
 import CommerceIncompleteOrdersResolver from './CommerceIncompleteOrdersResolver';
@@ -7,6 +8,8 @@ import DocumentsAndMediaListResolver from './DocumentsAndMediaListResolver';
 import DocumentsAndMediaMetricsResolver from './DocumentsAndMediaMetricsResolver';
 import EventAnalysisListResolver from './EventAnalysisListResolver';
 import ExperimentResolver from './ExperimentResolver';
+import IndividualSiteMetricsResolver from './individualSiteMetricsResolver';
+import InterestsResolver from './InterestsResolver';
 import PagePathResolver from './PagePathResolver';
 
 /**
@@ -23,14 +26,18 @@ import PagePathResolver from './PagePathResolver';
  */
 
 export const resolvers = {
+	assetPages: AssetAppearsOnResolver,
 	dashboards: CustomAssetsListResolver,
 	document: DocumentsAndMediaMetricsResolver,
 	documents: DocumentsAndMediaListResolver,
 	eventAnalysisList: EventAnalysisListResolver,
 	experiment: ExperimentResolver,
+	individualInterests: InterestsResolver,
 	orderAccountAverageCurrencyValues: CommerceAverageRevenuePerAccountResolver,
 	orderAverageCurrencyValues: CommerceAverageOrderValueResolver,
 	orderIncompleteCurrencyValues: CommerceIncompleteOrdersResolver,
 	orderTotalCurrencyValues: CommerceTotalOrderValueResolver,
-	pagePath: PagePathResolver
+	pagePath: PagePathResolver,
+	site: IndividualSiteMetricsResolver,
+	siteInterests: InterestsResolver
 };

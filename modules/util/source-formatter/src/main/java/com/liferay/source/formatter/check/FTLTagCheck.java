@@ -84,23 +84,37 @@ public class FTLTagCheck extends BaseFileCheck {
 
 			String tabs = matcher.group(2);
 
-			String delimeter = StringPool.SPACE;
+			String delimiter = StringPool.SPACE;
 
 			if (attributesMap.size() > 1) {
-				delimeter = "\n" + tabs + "\t";
+				delimiter = "\n" + tabs + "\t";
 			}
 
 			StringBundler sb = new StringBundler(
 				(attributesMap.size() * 4) + 4);
 
-			sb.append(_getTagName(match));
-			sb.append(delimeter);
+			String tagName = _getTagName(match);
+
+			sb.append(tagName);
+
+			sb.append(delimiter);
 
 			for (Map.Entry<String, String> entry : attributesMap.entrySet()) {
 				sb.append(entry.getKey());
-				sb.append(StringPool.EQUAL);
+
+				if (tagName.contains(".") ||
+					(tagName.contains("[") && tagName.contains("]"))) {
+
+					sb.append(StringPool.EQUAL);
+				}
+				else {
+					sb.append(StringPool.SPACE);
+					sb.append(StringPool.EQUAL);
+					sb.append(StringPool.SPACE);
+				}
+
 				sb.append(entry.getValue());
-				sb.append(delimeter);
+				sb.append(delimiter);
 			}
 
 			sb.setIndex(sb.index() - 1);
@@ -188,7 +202,7 @@ public class FTLTagCheck extends BaseFileCheck {
 	private static final Pattern _incorrectAssignTagPattern = Pattern.compile(
 		"(<#assign .*=.*[^/])>(\n|$)");
 	private static final Pattern _tagAttributePattern = Pattern.compile(
-		"\\s([^\\s=]+)\\s*?=");
+		"\\s([^\\s=]+)\\s*?=(?!=)");
 	private static final Pattern _tagPattern = Pattern.compile(
 		"(\\A|\n)(\t*)<@(\\S[^>]*?)(/?>)(\n|\\Z)", Pattern.DOTALL);
 

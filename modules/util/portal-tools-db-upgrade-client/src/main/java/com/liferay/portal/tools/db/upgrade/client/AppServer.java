@@ -40,14 +40,6 @@ public class AppServer {
 				"/domains/liferay/autodeploy/ROOT", appServerName);
 		}
 
-		if (appServerName.equals("websphere")) {
-			return new AppServer(
-				_getAppServerDirName(liferayHomeDir, "websphere"), "", "/lib",
-				"/profiles/liferay/installedApps/liferay-cell" +
-					"/liferay-portal.ear/liferay-portal.war",
-				appServerName);
-		}
-
 		if (appServerName.equals("wildfly")) {
 			return new AppServer(
 				_getAppServerDirName(liferayHomeDir, "wildfly"),
@@ -177,13 +169,13 @@ public class AppServer {
 
 		sb.append(extraLibDirPrefix);
 
-		sb.append("javax/mail,");
+		sb.append("jakarta/mail,");
 		sb.append(extraLibDirPrefix);
-		sb.append("javax/persistence,");
+		sb.append("jakarta/persistence,");
 		sb.append(extraLibDirPrefix);
-		sb.append("javax/servlet,");
+		sb.append("jakarta/servlet,");
 		sb.append(extraLibDirPrefix);
-		sb.append("javax/transaction");
+		sb.append("jakarta/transaction");
 
 		return sb.toString();
 	}

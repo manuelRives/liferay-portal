@@ -66,8 +66,9 @@ public interface StyleBookEntryLocalService
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the style book entry local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link StyleBookEntryLocalServiceUtil} if injection and service tracking are not available.
 	 */
 	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, boolean defaultStyleBookEntry,
-			String frontendTokensValues, String name, String styleBookEntryKey,
+			String externalReferenceCode, long userId, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokensValues,
+			String name, String styleBookEntryKey, String themeId,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -127,6 +128,8 @@ public interface StyleBookEntryLocalService
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException;
 
+	public void deleteStyleBookEntries(long groupId) throws PortalException;
+
 	/**
 	 * Deletes the style book entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -140,6 +143,10 @@ public interface StyleBookEntryLocalService
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	public StyleBookEntry deleteStyleBookEntry(long styleBookEntryId)
+		throws PortalException;
+
+	public StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -235,7 +242,8 @@ public interface StyleBookEntryLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public StyleBookEntry fetchDefaultStyleBookEntry(long groupId);
+	public StyleBookEntry fetchDefaultStyleBookEntry(
+		long groupId, String themeId);
 
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -323,6 +331,10 @@ public interface StyleBookEntryLocalService
 	public List<StyleBookEntry> getStyleBookEntries(
 		long groupId, int start, int end,
 		OrderByComparator<StyleBookEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
+		long groupId, String themeId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<StyleBookEntry> getStyleBookEntries(

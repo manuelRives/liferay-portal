@@ -1,16 +1,20 @@
-import com.liferay.gradle.plugins.node.task.ExecutePackageManagerTask
-import com.liferay.gradle.plugins.node.task.PackageRunTask
 import com.liferay.gradle.util.FileUtil
 import com.liferay.gradle.util.GradleUtil
+import com.liferay.gradle.util.Validator
 import com.liferay.gradle.util.copy.StripPathSegmentsAction
+
+import groovy.json.JsonSlurper
+
+import java.lang.reflect.Constructor
+import java.lang.reflect.Method
+
+import java.nio.file.Path
 
 import java.util.concurrent.ConcurrentSkipListSet
 
 import org.apache.tools.ant.DirectoryScanner
 import org.apache.tools.ant.filters.ReplaceTokens
 
-import org.gradle.api.execution.TaskExecutionGraph
-import org.gradle.plugins.ide.api.XmlFileContentMerger
 import org.gradle.plugins.ide.eclipse.model.Classpath
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry
 import org.gradle.plugins.ide.eclipse.model.EclipseClasspath
@@ -24,15 +28,19 @@ buildscript {
 apply plugin: "com.liferay.yarn.defaults.plugin"
 
 ext {
+	buildJakartaTransformerEnabled = GradleUtil.getProperty(rootProject, "build.jakarta.transformer.enabled", false)
+	buildJakartaTransformerExcludedDependencies = _toList(rootProject.findProperty("build.jakarta.transformer.excluded.dependencies"))
+	buildJakartaTransformerIncludeDirs = _toList(rootProject.findProperty("build.jakarta.transformer.include.dirs"))
+
 	projectTemplateTokens = [
-		"biz.aQute.bnd.version": "5.3.0",
-		"com.liferay.ant.bnd.version": "3.2.10",
+		"biz.aQute.bnd.version": "6.4.0",
+		"com.liferay.ant.bnd.version": "3.2.12",
 		"com.liferay.css.builder.version": "3.1.4",
 		"com.liferay.gradle.plugins.css.builder.version": "5.0.9",
 		"com.liferay.gradle.plugins.theme.builder.version": "2.0.17",
 		"com.liferay.portal.tools.bundle.support.version": "3.7.5",
-		"com.liferay.portal.tools.service.builder.version": "1.0.475",
-		"com.liferay.portal.tools.rest.builder.version": "1.0.222",
+		"com.liferay.portal.tools.service.builder.version": "1.0.501",
+		"com.liferay.portal.tools.rest.builder.version": "1.0.417",
 		"com.liferay.portal.tools.soy.builder.version": "3.0.4",
 		"com.liferay.portal.tools.theme.builder.version": "1.1.9",
 		"com.liferay.portal.vulcan.api.version": "9.3.1"
@@ -41,9 +49,12 @@ ext {
 
 task portalYarnCheckFormat
 task portalYarnFormat
+task portalYarnFormatCurrentBranch
+task portalYarnFormatLocalChanges
 task portalYarnInstall
 
 Set<File> bndPrintJarFiles = null
+JavaVersion javaVersion = JavaVersion.current()
 
 Set<Project> implicitDependencyProjects = allprojects.findAll {
 	it.file(".lfrbuild-app-server-lib").exists() || it.file(".lfrbuild-portal-pre").exists()
@@ -67,6 +78,49 @@ if (Boolean.getBoolean("build.bnd.print.enabled")) {
 	bndPrintJarFiles = new ConcurrentSkipListSet<File>()
 }
 
+if (buildJakartaTransformerEnabled) {
+	configurations {
+		jakartaTransformer
+		jakartaTransformerExcludes
+	}
+
+	dependencies {
+		jakartaTransformer group: "org.eclipse.transformer", name: "org.eclipse.transformer.cli", version: "1.0.0"
+	}
+
+	buildJakartaTransformerExcludedDependencies.each {
+		Object dependencyNotation ->
+
+		dependencies {
+			if (dependencyNotation.startsWith(":")) {
+				dependencyNotation = project(dependencyNotation)
+			}
+
+			jakartaTransformerExcludes(dependencyNotation) {
+				transitive = false
+			}
+		}
+	}
+
+	repositories {
+		maven {
+			url System.properties["repository.url"] ?: "https://repository-cdn.liferay.com/nexus/content/groups/public"
+		}
+	}
+
+	BaseJakartaTransformerTransformAction.classLoader = new URLClassLoader(
+		configurations.jakartaTransformer.collect {
+			File file ->
+
+			URI uri = file.toURI()
+
+			return uri.toURL()
+		} as URL[],
+		null as java.lang.ClassLoader)
+	BaseJakartaTransformerTransformAction.logger = project.logger
+	BaseJakartaTransformerTransformAction.propertiesFile = project.file("liferay-jakarta-versions.properties")
+}
+
 if (FileUtil.exists(rootProject, "private/yarn.lock")) {
 	gradle.beforeProject {
 		if (it.path.equals(":private")) {
@@ -84,39 +138,17 @@ if (FileUtil.exists(rootProject, "private/yarn.lock")) {
 		dependsOn ":private:packageRunFormat"
 	}
 
+	portalYarnFormatCurrentBranch {
+		dependsOn ":private:packageRunFormatCurrentBranch"
+	}
+
+	portalYarnFormatLocalChanges {
+		dependsOn ":private:packageRunFormatLocalChanges"
+	}
+
 	portalYarnInstall {
 		dependsOn ":private:yarnInstall"
 	}
-}
-
-File workspacesYarnLockFile = new File(rootDir.parentFile, "workspaces/yarn.lock")
-
-if (workspacesYarnLockFile.exists()) {
-	task portalWorkspacesYarnCheckFormat(type: PackageRunTask)
-	task portalWorkspacesYarnFormat(type: PackageRunTask)
-	task portalWorkspacesYarnInstall(type: ExecutePackageManagerTask)
-
-	portalWorkspacesYarnCheckFormat {
-		dependsOn portalWorkspacesYarnInstall
-
-		scriptName = "checkFormat"
-		workingDir = new File(rootDir.parentFile, "workspaces")
-	}
-
-	portalWorkspacesYarnFormat {
-		dependsOn portalWorkspacesYarnInstall
-
-		scriptName = "format"
-		workingDir = new File(rootDir.parentFile, "workspaces")
-	}
-
-	portalWorkspacesYarnInstall {
-		args "install", "--frozen-lockfile", "--ignore-engines"
-		workingDir = new File(rootDir.parentFile, "workspaces")
-	}
-
-	portalYarnCheckFormat.finalizedBy portalWorkspacesYarnCheckFormat
-	portalYarnFormat.finalizedBy portalWorkspacesYarnFormat
 }
 
 buildDir = new File(rootDir.parentFile, "build")
@@ -164,6 +196,14 @@ portalYarnFormat {
 	dependsOn ":packageRunFormat"
 }
 
+portalYarnFormatCurrentBranch {
+	dependsOn ":packageRunFormatCurrentBranch"
+}
+
+portalYarnFormatLocalChanges {
+	dependsOn ":packageRunFormatLocalChanges"
+}
+
 portalYarnInstall {
 	dependsOn ":yarnInstall"
 }
@@ -194,6 +234,41 @@ gradle.beforeProject {
 			if (forcedUpdateVersion && tasks.findByName("updateVersion")) {
 				updateVersion {
 					replacement = forcedUpdateVersion
+				}
+			}
+
+			pluginManager.withPlugin("com.liferay.base.plugin") {
+				configurations {
+					portal.defaultDependencies {
+						add project.dependencies.create(project.files("${liferay.appServerLibGlobalDir}/mail.jar"))
+						add project.dependencies.create(project.files("${liferay.appServerPortalDir}/WEB-INF/classes"))
+						add project.dependencies.create(project.fileTree(dir: "${liferay.appServerPortalDir}/WEB-INF/lib", include: "*.jar"))
+						add project.dependencies.create(project.fileTree(dir: "${liferay.appServerPortalDir}/WEB-INF/shielded-container-lib", include: "*.jar"))
+
+						add project.dependencies.create(group: "com.liferay", name: "net.sf.jargs", version: "1.0")
+						add project.dependencies.create(group: "com.liferay.jakarta.portlet", name: "com.liferay.jakarta.portlet-api", version: "4.0.0")
+						add project.dependencies.create(group: "com.thoughtworks.qdox", name: "qdox", version: "1.12.1")
+						add project.dependencies.create(group: "jakarta.activation", name: "jakarta.activation-api", version: "2.1.3")
+						add project.dependencies.create(group: "jakarta.servlet", name: "jakarta.servlet-api", version: "6.0.0")
+						add project.dependencies.create(group: "jakarta.servlet.jsp", name: "jakarta.servlet.jsp-api", version: "3.1.1")
+
+						liferay.appServer.addAdditionalDependencies("portal")
+					}
+				}
+			}
+
+			pluginManager.withPlugin("com.liferay.osgi.defaults.plugin") {
+				if ((project.path.endsWith("-test") &&
+					!project.path.contains("third-party")) ||
+					!project.sourceSets.test.allSource.isEmpty() ||
+					!project.sourceSets.testIntegration.allSource.isEmpty()) {
+
+					dependencies {
+						testImplementation group: "com.liferay", name: "org.springframework.test", version: "5.3.39.JAKARTA-LIFERAY-PATCHED-1"
+						testImplementation group: "junit", name: "junit", version: "4.13.1"
+						testImplementation group: "org.mockito", name: "mockito-core", version: "4.5.1"
+						testImplementation group: "org.mockito", name: "mockito-inline", version: "4.5.1"
+					}
 				}
 			}
 
@@ -384,14 +459,16 @@ gradle.beforeProject {
 						!it.endsWith(".gitignore")
 					}
 
-					ant.jar(basedir: project.file("classes"), defaultexcludes: false, destfile: jar.archivePath, excludes: filteredDefaultExcludes.join(","), includes: "**/.gitignore", update: true)
+					if (sourceSets.main.output.resourcesDir.exists()) {
+						ant.jar(basedir: sourceSets.main.output.resourcesDir, defaultexcludes: false, destfile: jar.archivePath, excludes: filteredDefaultExcludes.join(","), includes: "**/.gitignore", update: true)
+					}
 				}
 			}
 
 			processResources {
 				exclude "**/.sass-cache/"
 
-				filesMatching(["**/*.gradle", "**/pom.xml"]) {
+				filesMatching(["**/*.gradle", "**/*.properties", "**/pom.xml"]) {
 					filter(ReplaceTokens, tokens: projectTemplateTokens)
 				}
 
@@ -437,17 +514,44 @@ gradle.beforeProject {
 				rtlExcludedPathRegexps = [".+"]
 			}
 
-			if (FileUtil.exists(project, "package.json")) {
-				File packageJSONFile = project.file("package.json")
+			if (project.name.equals("portal-osgi-web-wab-reference-support-test") || project.path.contains("-theme")) {
+				if (FileUtil.exists(project, "package.json")) {
+					JsonSlurper jsonSlurper = new JsonSlurper()
 
-				if (packageJSONFile.text.contains("liferay-npm-scripts build")) {
-					buildCSS {
-						enabled = false
+					File packageJSONFile = project.file("package.json")
+
+					Map<String, Object> packageJSONMap = jsonSlurper.parse(packageJSONFile, "UTF-8")
+
+					Map<String, String> scriptsJSONMap = packageJSONMap.get("scripts")
+
+					boolean liferayESModule = false
+
+					if (scriptsJSONMap != null) {
+						for (Map.Entry<String, String> entry : scriptsJSONMap.entrySet()) {
+							if (Objects.equals(entry.key, "build") && (Objects.equals(entry.value, "node-scripts") || entry.value.startsWith("node-scripts "))) {
+								liferayESModule = true
+							}
+						}
 					}
 
-					copyCSS {
-						enabled = false
+					if (packageJSONFile.text.contains("liferay-npm-scripts build") || liferayESModule) {
+						buildCSS {
+							enabled = false
+						}
+
+						copyCSS {
+							enabled = false
+						}
 					}
+				}
+			}
+			else if (!project.path.startsWith(":dxp:apps:osb:osb-faro:") && !project.path.startsWith(":sdk:") && !project.path.startsWith(":test:") && !project.path.startsWith(":util:") && !project.path.contains("site-initializer-")) {
+				buildCSS {
+					enabled = false
+				}
+
+				copyCSS {
+					enabled = false
 				}
 			}
 		}
@@ -525,14 +629,6 @@ gradle.beforeProject {
 				xmltask
 			}
 
-			compileTestJava {
-				configurations.compileOnly.allDependencies.withType(ProjectDependency) {
-					if (!it.dependencyProject.name.endsWith("-theme")) {
-						mustRunAfter "${it.dependencyProject.path}:processResources"
-					}
-				}
-			}
-
 			compileTestIntegrationJava {
 				configurations.testIntegrationImplementation.allDependencies.withType(ProjectDependency) {
 					if (!it.dependencyProject.name.endsWith("-theme")) {
@@ -548,6 +644,14 @@ gradle.beforeProject {
 						if (it.name.equals("portal-osgi-web-jasper-plugins-taglib")) {
 							mustRunAfter "${it.path}:deployAppServerPortalFile"
 						}
+					}
+				}
+			}
+
+			compileTestJava {
+				configurations.compileOnly.allDependencies.withType(ProjectDependency) {
+					if (!it.dependencyProject.name.endsWith("-theme")) {
+						mustRunAfter "${it.dependencyProject.path}:processResources"
 					}
 				}
 			}
@@ -573,7 +677,7 @@ gradle.beforeProject {
 					jvmArgs project.properties["junit.java.add.opens"].split("\\s+")
 				}
 
-				jvmArgs "-Djava.locale.providers=JRE,COMPAT,CLDR"
+				jvmArgs "-Djava.locale.providers=CLDR"
 
 				if (project.properties["junit.java.security.manager"]) {
 					systemProperty "java.security.manager", project.properties["junit.java.security.manager"]
@@ -699,10 +803,6 @@ gradle.beforeProject {
 						mustRunAfter "${it.dependencyProject.path}:processResources"
 					}
 				}
-
-				outputs.cacheIf {
-					false
-				}
 			}
 
 			processResources {
@@ -751,6 +851,63 @@ gradle.beforeProject {
 					File tmpFile = new File(dir, "tmp")
 
 					tmpFile.createNewFile()
+				}
+			}
+		}
+
+		if (buildJakartaTransformerEnabled && (javaVersion.compareTo(JavaVersion.VERSION_17) >= 0) && _containsProject(project, buildJakartaTransformerIncludeDirs, rootDir.parentFile)) {
+			pluginManager.withPlugin("com.liferay.jasper.jspc") {
+				configurations {
+					compileJspClasspath
+					compileJspClasspathTransform {
+						attributes {
+							attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, BaseJakartaTransformerTransformAction.ARTIFACT_TYPE)
+						}
+					}
+					jspCClasspath
+				}
+
+				dependencies {
+					compileJspClasspath files(Project.class.classLoader.getURLs())
+					compileJspClasspath group: "org.apache.tomcat", name: "tomcat-jasper", version: "10.1.40"
+					compileJspClasspathTransform group: "com.liferay", name: "com.liferay.gradle.plugins.jasper.jspc", transitive: false, version: "2.0.20"
+					jspCClasspath files(tasks.named(sourceSets.main.compileJavaTaskName))
+					jspCClasspath files(tasks.named(sourceSets.main.processResourcesTaskName))
+					jspCClasspath group: "jakarta.servlet.jsp.jstl", name: "jakarta.servlet.jsp.jstl-api", version: "3.0.2"
+					jspCClasspath group: "org.apache.tomcat", name: "tomcat-jasper", version: "10.1.40"
+					jspCClasspath group: "org.glassfish.web", name: "jakarta.servlet.jsp.jstl", version: "3.0.1"
+				}
+
+				FileCollection jspCClasspathFileCollection = configurations[sourceSets.main.compileClasspathConfigurationName] + configurations.jspCClasspath
+
+				tasks.named("compileJSP") {
+					classpath = jspCClasspathFileCollection
+				}
+
+				tasks.named("generateJSPJava") {
+					compileJspClasspath = configurations.compileJspClasspath + configurations.compileJspClasspathTransform
+					jspCClasspath = jspCClasspathFileCollection
+				}
+			}
+
+			pluginManager.withPlugin("java") {
+				dependencies {
+					registerTransform(BaseJakartaTransformerTransformAction) {
+						from.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.JAR_TYPE)
+						to.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, BaseJakartaTransformerTransformAction.ARTIFACT_TYPE)
+
+						parameters {
+							excludesFileCollection = rootProject.configurations.jakartaTransformerExcludes
+						}
+					}
+				}
+
+				sourceSets.configureEach {
+					SourceSet sourceSet ->
+
+					configurations[sourceSet.compileClasspathConfigurationName].attributes {
+						attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, BaseJakartaTransformerTransformAction.ARTIFACT_TYPE)
+					}
 				}
 			}
 		}
@@ -804,6 +961,90 @@ gradle.taskGraph.whenReady {
 	}
 }
 
+@CacheableTransform
+protected abstract class BaseJakartaTransformerTransformAction implements TransformAction<Parameters> {
+
+	public static final String ARTIFACT_TYPE = "jakarta-transformed-jar"
+
+	public interface Parameters extends TransformParameters {
+
+		@CompileClasspath
+		@InputFiles
+		public ConfigurableFileCollection getExcludesFileCollection()
+
+	}
+
+	@org.gradle.api.tasks.Classpath
+	@InputArtifact
+	public abstract Provider<FileSystemLocation> getInputArtifact()
+
+	@Override
+	public void transform(TransformOutputs outputs) {
+		File inputJarFile = inputArtifact.get().asFile
+
+		if (parameters.excludesFileCollection.contains(inputJarFile)) {
+			outputs.file(inputJarFile)
+
+			logger.lifecycle("Jakarta: SKIPPING excluded artifact: ${inputJarFile}")
+
+			return
+		}
+
+		String fileName = inputJarFile.name
+
+		if (fileName.contains('.')) {
+			fileName = fileName.replaceFirst(/(\.[^.]+)$/, '-JAKARTA-SNAPSHOT$1')
+		}
+
+		File outputJarFile = outputs.file(fileName)
+
+		Class<?> jakartaTransformerCLIClass = Class.forName("org.eclipse.transformer.cli.JakartaTransformerCLI", true, classLoader)
+
+		Constructor<?> jakartaTransformerCLIClassConstructor = jakartaTransformerCLIClass.getConstructor(PrintStream.class, PrintStream.class, String[].class)
+		Method runMethod = jakartaTransformerCLIClass.getMethod("run")
+
+		PrintStream errorPrintStream = new PrintStream(new ByteArrayOutputStream())
+		PrintStream standardPrintStream = new PrintStream(new ByteArrayOutputStream())
+
+		Object resultCode = runMethod.invoke(jakartaTransformerCLIClassConstructor.newInstance(standardPrintStream, errorPrintStream, ["--quiet", "--versions", propertiesFile.absolutePath, inputJarFile.absolutePath, outputJarFile.absolutePath ] as String[]))
+
+		if (!Objects.equals(resultCode.toString(), "Success")) {
+			throw new GradleException("Jakarta: ERROR ${resultCode}\n${errorPrintStream}")
+		}
+
+		logger.lifecycle("Jakarta: TRANSFORMING artifact: {} -> {}", inputJarFile, outputJarFile)
+	}
+
+	protected static Logger logger
+	protected static ClassLoader classLoader
+	protected static File propertiesFile
+
+}
+
+private boolean _containsProject(
+	Project project, List<String> dirNames, File portalRootDir) {
+
+	if (dirNames.isEmpty() || (portalRootDir == null)) {
+		return false
+	}
+
+	File portalModulesDir = new File(portalRootDir, "modules")
+
+	Path portalModulesPath = portalModulesDir.toPath()
+
+	File projectDir = project.getProjectDir()
+
+	Path projectPath = projectDir.toPath()
+
+	for (String dirName : dirNames) {
+		if (projectPath.startsWith(portalModulesPath.resolve(dirName))) {
+			return true
+		}
+	}
+
+	return false
+}
+
 private List<String> _getTestClasses(Task task) {
 	return task.project.gradle.testClasses.collect {
 		String testClass ->
@@ -846,6 +1087,14 @@ private boolean _hasTestClasses(Task task, String testClassesDirName) {
 	}
 
 	return true
+}
+
+private List<String> _toList(String s) {
+	if (Validator.isNull(s)) {
+		return [] as List<String>
+	}
+
+	return s.split(",") as List<String>
 }
 
 private void _updateGradleSourcePaths(String gradleVersion, EclipseModel eclipseModel) {

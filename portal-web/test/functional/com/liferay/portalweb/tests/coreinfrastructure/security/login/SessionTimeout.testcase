@@ -1,4 +1,4 @@
-@component-name = "portal-security"
+@component-name = "portal-application-security"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -101,7 +101,7 @@ definition {
 			User.viewSignIn();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				rememberMeChecked = "true",
 				userEmailAddress = "test@liferay.com");
 		}

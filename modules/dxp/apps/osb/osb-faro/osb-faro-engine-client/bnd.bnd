@@ -80,6 +80,8 @@ Import-Package:\
 	\
 	!io.undertow.*,\
 	\
+	!jakarta.faces.*,\
+	\
 	!javax.annotation.*,\
 	\
 	!javax.ejb.*,\
@@ -98,7 +100,15 @@ Import-Package:\
 	\
 	!javax.money.*,\
 	\
+	!javax.persistence.*,\
+	\
+	!javax.servlet.*,\
+	\
+	!javax.transaction.*,\
+	\
 	!javax.validation.*,\
+	\
+	!javax.xml.ws.*,\
 	\
 	!jdk.jfr.*,\
 	\
@@ -206,13 +216,16 @@ Import-Package:\
 	\
 	!sun.security.*,\
 	\
+	com.liferay.petra.function;version="[1.5.0,9999.0.0)",\
 	com.liferay.petra.function.transform;version="[1.2.0,9999.0.0)",\
 	com.liferay.portal.kernel.dao.search;version="[9.0.0,9999.0.0)",\
 	com.liferay.portal.kernel.json;version="[12.0.0,9999.0.0)",\
 	com.liferay.portal.kernel.log;version="[1.0.0,9999.0.0)",\
 	com.liferay.portal.kernel.model;version="[29.0.0,9999.0.0)",\
+	com.liferay.portal.kernel.security.permission;version="[6.0.0,9999.0.0)",\
 	com.liferay.portal.kernel.service;version="[22.0.0,9999.0.0)",\
 	com.liferay.portal.kernel.util;version="[59.0.0,9999.0.0)",\
 	\
 	*
 -dsannotations-options: inherit
+-fixupmessages "Classes found in the wrong directory"; restrict:=error; is:=ignore

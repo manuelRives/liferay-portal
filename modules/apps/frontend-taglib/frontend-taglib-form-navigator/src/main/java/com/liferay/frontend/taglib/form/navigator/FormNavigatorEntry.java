@@ -7,12 +7,12 @@ package com.liferay.frontend.taglib.form.navigator;
 
 import com.liferay.portal.kernel.model.User;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * Provides an interface defining entries that will be used by a specific
@@ -79,6 +79,10 @@ public interface FormNavigatorEntry<T> {
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse)
 		throws IOException;
+
+	public default boolean isDeprecated() {
+		return false;
+	}
 
 	/**
 	 * Returns <code>true</code> if the form navigator entry should be

@@ -30,3 +30,201 @@ app.artifacts-1.0.2=\
 app.change.log-1.0.2=LPD-15901
 
 app.git.id-1.0.2=9544f17461ea9070ff9de68db02b7b79c529a4f0
+
+#
+# Liferay App Version 1.0.3
+#
+
+app.artifacts-1.0.3=\
+	
+
+app.change.log-1.0.3=LPD-15901
+
+app.git.id-1.0.3=bdcab537dd2181fa69e5c804d0456ac39be27118
+
+#
+# Liferay App Version 1.0.4
+#
+
+app.artifacts-1.0.4=\
+	
+
+app.change.log-1.0.4=LPD-15901
+
+app.git.id-1.0.4=74d0841493562d0ff58a32990e18116a1565606c
+
+#
+# Liferay App Version 1.0.5
+#
+
+app.artifacts-1.0.5=\
+	
+
+app.change.log-1.0.5=LPD-15901 LPD-23882
+
+app.git.id-1.0.5=6e4d815ed4a896612c6ef5ed105ea9b99384616e
+
+#
+# Liferay App Version 1.0.6
+#
+
+app.artifacts-1.0.6=\
+	
+
+app.change.log-1.0.6=LPD-15901 LPD-23882 LPD-26455 LPD-27157
+
+app.git.id-1.0.6=bd91ff1e5b42c68ff42318f730a3a7eb2d8c0a34
+
+#
+# Liferay App Version 1.0.7
+#
+
+app.artifacts-1.0.7=\
+	
+
+app.change.log-1.0.7=LPD-15901 LPD-23882 LPD-26455 LPD-27157
+
+app.git.id-1.0.7=a2da79d818b3fb09fa461a9d9977ab8297f30f07
+
+#
+# Liferay App Version 1.0.8
+#
+
+app.artifacts-1.0.8=\
+	
+
+app.change.log-1.0.8=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-5443
+
+app.git.id-1.0.8=0cb9c9373df85a30a53b137665144cda0d2c3939
+
+#
+# Liferay App Version 1.0.9
+#
+
+app.artifacts-1.0.9=\
+	
+
+app.change.log-1.0.9=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-5443
+
+app.git.id-1.0.9=d9bbd9e40380e74f81986e6b9dbd32300d908592
+
+#
+# Liferay App Version 1.0.10
+#
+
+app.artifacts-1.0.10=\
+	
+
+app.change.log-1.0.10=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-5443 LRCI-4395
+
+app.git.id-1.0.10=b0e6c41a679af6cde8b4da50a370d4a45c02a695
+
+#
+# Liferay App Version 1.0.11
+#
+
+app.artifacts-1.0.11=\
+	
+
+app.change.log-1.0.11=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-5443 LRCI-4395
+
+app.git.id-1.0.11=6795876e4076dde4c90db13afa4b27476863633a
+
+#
+# Liferay App Version 1.0.12
+#
+
+app.artifacts-1.0.12=\
+	
+
+app.change.log-1.0.12=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-5443 LRCI-4395
+
+app.git.id-1.0.12=6627f8d08ace94969b378e52299ba2ba92baebea
+
+#
+# Liferay App Version 1.0.13
+#
+
+app.artifacts-1.0.13=\
+	
+
+app.change.log-1.0.13=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-5443 LRCI-4395
+
+app.git.id-1.0.13=d7b5119efa34014cfc766884cf5d44177750ee65
+
+#
+# Liferay App Version 1.0.14
+#
+
+app.artifacts-1.0.14=\
+	
+
+app.change.log-1.0.14=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-37253 LPD-5443 LRCI-4395
+
+app.git.id-1.0.14=f373c289565669cf6e4d36a7807466257fac92fe
+
+#
+# Liferay App Version 1.0.15
+#
+
+app.artifacts-1.0.15=\
+	
+
+app.change.log-1.0.15=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-37253 LPD-40027 LPD-42616 LPD-5443 LRCI-4023 LRCI-4395 LRCI-4949
+
+app.git.id-1.0.15=a362060c60612bbe221f6c278707f7df46c3777b
+
+#
+# Liferay App Version 1.0.16
+#
+
+app.artifacts-1.0.16=\
+	
+
+app.change.log-1.0.16=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-37253 LPD-40027 LPD-42616 LPD-44303 LPD-5443 LRCI-4023 LRCI-4395 LRCI-4949
+
+app.git.id-1.0.16=0ca92d83e1d28d2234d4cb83aac9a2cce9abc254
+
+#
+# Liferay App Version 1.0.17
+#
+
+app.artifacts-1.0.17=\
+	
+
+app.change.log-1.0.17=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-37253 LPD-40027 LPD-42616 LPD-44303 LPD-5443 LRCI-4023 LRCI-4395 LRCI-4949
+
+app.git.id-1.0.17=be9176133dcf16016fd0bf6f1650eeba651c56bb
+
+#
+# Liferay App Version 1.0.18
+#
+
+app.artifacts-1.0.18=\
+	
+
+app.change.log-1.0.18=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-37253 LPD-40027 LPD-42616 LPD-44303 LPD-51373 LPD-5443 LRCI-4023 LRCI-4395 LRCI-4949
+
+app.git.id-1.0.18=229101db8bcdd98c1fc177e928aa0f8ac479f2c6
+
+#
+# Liferay App Version 1.0.19
+#
+
+app.artifacts-1.0.19=\
+	
+
+app.change.log-1.0.19=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-37253 LPD-40027 LPD-42616 LPD-44303 LPD-50555 LPD-51373 LPD-51570 LPD-51750 LPD-54411 LPD-5443 LRCI-4023 LRCI-4395 LRCI-4949
+
+app.git.id-1.0.19=9929886a933fc31f315366886b7f27de22b76719
+
+#
+# Liferay App Version 1.0.20
+#
+
+app.artifacts-1.0.20=\
+	
+
+app.change.log-1.0.20=LPD-15901 LPD-23882 LPD-26455 LPD-27157 LPD-31151 LPD-32125 LPD-33244 LPD-37253 LPD-40027 LPD-42616 LPD-44303 LPD-50555 LPD-51373 LPD-51570 LPD-51750 LPD-54411 LPD-5443 LPD-54862 LPD-56062 LPD-56284 LRCI-4023 LRCI-4395 LRCI-4949
+
+app.git.id-1.0.20=0b960c273fc5cda38afaf5c30222a692f6956081

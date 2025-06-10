@@ -18,14 +18,14 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -67,11 +67,11 @@ public class FlagsTagUtil {
 			long companyId, HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		Map<String, String> reasons = new HashMap<>();
+
 		FlagsGroupServiceConfiguration flagsGroupServiceConfiguration =
 			ConfigurationProviderUtil.getCompanyConfiguration(
 				FlagsGroupServiceConfiguration.class, companyId);
-
-		Map<String, String> reasons = new HashMap<>();
 
 		for (String reason : flagsGroupServiceConfiguration.reasons()) {
 			reasons.put(reason, LanguageUtil.get(httpServletRequest, reason));

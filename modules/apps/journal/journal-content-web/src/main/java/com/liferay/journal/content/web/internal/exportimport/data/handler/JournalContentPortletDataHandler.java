@@ -17,7 +17,7 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -51,7 +51,7 @@ import org.osgi.service.component.annotations.Reference;
  * @see    PortletDataHandler
  */
 @Component(
-	property = "javax.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
+	property = "jakarta.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
 	service = PortletDataHandler.class
 )
 public class JournalContentPortletDataHandler extends BasePortletDataHandler {
@@ -71,7 +71,12 @@ public class JournalContentPortletDataHandler extends BasePortletDataHandler {
 	@Activate
 	protected void activate() {
 		setDataLevel(DataLevel.PORTLET_INSTANCE);
-		setDataPortletPreferences("articleId", "ddmTemplateKey", "groupId");
+
+		setDataPortletPreferences(
+			"articleExternalReferenceCode", "articleId",
+			"ddmTemplateExternalReferenceCode", "ddmTemplateKey",
+			"groupExternalReferenceCode", "groupId");
+
 		setExportControls(
 			new PortletDataHandlerBoolean(
 				null, "selected-web-content", true, true, null,
@@ -91,15 +96,18 @@ public class JournalContentPortletDataHandler extends BasePortletDataHandler {
 			return portletPreferences;
 		}
 
-		portletPreferences.setValue("articleId", StringPool.BLANK);
-		portletPreferences.setValue("ddmTemplateKey", StringPool.BLANK);
-		portletPreferences.setValue("groupId", StringPool.BLANK);
+		portletPreferences.setValue(
+			"articleExternalReferenceCode", StringPool.BLANK);
+		portletPreferences.setValue(
+			"ddmTemplateExternalReferenceCode", StringPool.BLANK);
+		portletPreferences.setValue(
+			"groupExternalReferenceCode", StringPool.BLANK);
 
 		return portletPreferences;
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + JournalPortletKeys.JOURNAL + ")"
+		target = "(jakarta.portlet.name=" + JournalPortletKeys.JOURNAL + ")"
 	)
 	private PortletDataHandler _journalPortletDataHandler;
 

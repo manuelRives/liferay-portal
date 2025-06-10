@@ -12,11 +12,11 @@ import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 /**
  * @author Jorge Ferrer
@@ -63,16 +63,17 @@ public class PortletSearch extends SearchContainer<Portlet> {
 	private OrderByComparator<Portlet> _getOrderByComparator(
 		String orderByCol, String orderByType) {
 
+		OrderByComparator<Portlet> orderByComparator = null;
+
 		boolean orderByAsc = false;
 
 		if (orderByType.equals("asc")) {
 			orderByAsc = true;
 		}
 
-		OrderByComparator<Portlet> orderByComparator = null;
-
 		if (orderByCol.equals("name")) {
-			orderByComparator = new PortletDisplayNameComparator(orderByAsc);
+			orderByComparator = PortletDisplayNameComparator.getInstance(
+				orderByAsc);
 		}
 
 		return orderByComparator;

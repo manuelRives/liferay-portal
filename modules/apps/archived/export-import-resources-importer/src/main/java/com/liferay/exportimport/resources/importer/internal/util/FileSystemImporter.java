@@ -93,6 +93,8 @@ import com.liferay.portal.kernel.xml.SAXReader;
 import com.liferay.portal.search.index.IndexStatusManager;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -110,8 +112,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Ryan Park
@@ -215,7 +215,7 @@ public class FileSystemImporter extends BaseImporter {
 		try {
 			if (!updateModeEnabled || (ddmTemplate == null)) {
 				ddmTemplateLocalService.addTemplate(
-					userId, groupId, classNameId, 0,
+					null, userId, groupId, classNameId, 0,
 					portal.getClassNameId(PortletDisplayTemplate.class),
 					_getKey(fileName), getMap(name), null,
 					DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY,
@@ -385,7 +385,7 @@ public class FileSystemImporter extends BaseImporter {
 
 			if (!updateModeEnabled || (ddmStructure == null)) {
 				ddmStructure = ddmStructureLocalService.addStructure(
-					userId, groupId,
+					null, userId, groupId,
 					DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
 					portal.getClassNameId(DDLRecordSet.class),
 					_getKey(fileName), getMap(name), null, ddmForm,
@@ -573,7 +573,7 @@ public class FileSystemImporter extends BaseImporter {
 		try {
 			if (!updateModeEnabled || (ddmTemplate == null)) {
 				ddmTemplateLocalService.addTemplate(
-					userId, templateGroupId,
+					null, userId, templateGroupId,
 					portal.getClassNameId(DDMStructure.class), ddmStructureId,
 					portal.getClassNameId(JournalArticle.class),
 					_getKey(fileName), getMap(name), null, type, mode, language,
@@ -662,7 +662,8 @@ public class FileSystemImporter extends BaseImporter {
 		try {
 			if (!updateModeEnabled || (ddmTemplate == null)) {
 				ddmTemplate = ddmTemplateLocalService.addTemplate(
-					userId, groupId, portal.getClassNameId(DDMStructure.class),
+					null, userId, groupId,
+					portal.getClassNameId(DDMStructure.class),
 					ddmStructure.getStructureId(),
 					portal.getClassNameId(JournalArticle.class),
 					_getKey(fileName), getMap(name), null,
@@ -1385,9 +1386,9 @@ public class FileSystemImporter extends BaseImporter {
 
 			if (!updateModeEnabled || (layout == null)) {
 				layout = layoutLocalService.addLayout(
-					userId, groupId, privateLayout, parentLayoutId, nameMap,
-					titleMap, null, null, null, type, typeSettings, hidden,
-					friendlyURLMap, serviceContext);
+					null, userId, groupId, privateLayout, parentLayoutId,
+					nameMap, titleMap, null, null, null, type, typeSettings,
+					hidden, friendlyURLMap, serviceContext);
 			}
 			else {
 				_resetLayoutColumns(layout);
@@ -1690,21 +1691,21 @@ public class FileSystemImporter extends BaseImporter {
 	}
 
 	private File[] _listFiles(File dir) {
-		File[] files = dir.listFiles();
+		File[] files1 = dir.listFiles();
 
-		if (files == null) {
+		if (files1 == null) {
 			return new File[0];
 		}
 
-		List<File> filesList = new ArrayList<>();
+		List<File> files2 = new ArrayList<>();
 
-		for (File file : files) {
+		for (File file : files1) {
 			if (file.isFile()) {
-				filesList.add(file);
+				files2.add(file);
 			}
 		}
 
-		return filesList.toArray(new File[0]);
+		return files2.toArray(new File[0]);
 	}
 
 	private String _replaceFileEntryURL(String content) throws Exception {
@@ -1747,9 +1748,9 @@ public class FileSystemImporter extends BaseImporter {
 		UnicodeProperties unicodeProperties =
 			layout.getTypeSettingsProperties();
 
-		Set<Map.Entry<String, String>> set = unicodeProperties.entrySet();
+		Set<Map.Entry<String, String>> entries = unicodeProperties.entrySet();
 
-		Iterator<Map.Entry<String, String>> iterator = set.iterator();
+		Iterator<Map.Entry<String, String>> iterator = entries.iterator();
 
 		while (iterator.hasNext()) {
 			Map.Entry<String, String> entry = iterator.next();

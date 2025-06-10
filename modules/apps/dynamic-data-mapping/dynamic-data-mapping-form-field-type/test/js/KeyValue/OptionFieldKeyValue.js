@@ -7,7 +7,7 @@ import {act, cleanup, render} from '@testing-library/react';
 import {PageProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import OptionFieldKeyValue from '../../../src/main/resources/META-INF/resources/OptionFieldKeyValue/OptionFieldKeyValue';
+import OptionFieldKeyValue from '../../../src/main/resources/META-INF/resources/js/OptionFieldKeyValue/OptionFieldKeyValue';
 
 const globalLanguageDirection = Liferay.Language.direction;
 
@@ -20,10 +20,12 @@ const OptionFieldKeyValueWithProvider = (props) => (
 );
 
 describe('OptionFieldKeyValue', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
 	beforeAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = (...args) => {
 			if (/DataProvider: Trying/.test(args[0])) {
@@ -38,6 +40,7 @@ describe('OptionFieldKeyValue', () => {
 	});
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 
@@ -140,9 +143,8 @@ describe('OptionFieldKeyValue', () => {
 			/>
 		);
 
-		const OptionFieldKeyValueInput = container.querySelectorAll(
-			'.key-value-input'
-		);
+		const OptionFieldKeyValueInput =
+			container.querySelectorAll('.key-value-input');
 
 		expect(OptionFieldKeyValueInput.length).toBe(0);
 	});
@@ -223,7 +225,7 @@ describe('OptionFieldKeyValue', () => {
 		);
 
 		const OptionFieldKeyValueInput = container.querySelectorAll(
-			'[id*="keyValueName"]:not([id*="_fieldError"])'
+			'[id*="keyValueName"]:not([id*="_fieldFeedback"])'
 		);
 
 		expect(OptionFieldKeyValueInput.length).toBe(1);

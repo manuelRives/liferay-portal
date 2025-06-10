@@ -29,6 +29,7 @@ interface ModalEditObjectFolderProps {
 	id: number;
 	initialLabel?: LocalizedValue<string>;
 	name?: string;
+	onAfterSubmit: (value: ObjectFolder) => void;
 }
 
 type TInitialValues = {
@@ -43,12 +44,12 @@ export function ModalEditObjectFolder({
 	id,
 	initialLabel,
 	name,
+	onAfterSubmit,
 }: ModalEditObjectFolderProps) {
 	const [error, setError] = useState<string>('');
 
-	const [selectedLocale, setSelectedLocale] = useState<
-		Liferay.Language.Locale
-	>(defaultLanguageId);
+	const [selectedLocale, setSelectedLocale] =
+		useState<Liferay.Language.Locale>(defaultLanguageId);
 
 	const {observer, onClose} = useModal({
 		onClose: () => handleOnClose(),
@@ -64,29 +65,29 @@ export function ModalEditObjectFolder({
 		const objectFolder: Partial<ObjectFolder> = values;
 
 		try {
-			await API.save({
+			const editedObjectFolder = await API.save<ObjectFolder>({
 				item: objectFolder,
 				method: 'PATCH',
+				returnValue: true,
 				url: `/o/object-admin/v1.0/object-folders/${id}`,
 			});
-
-			onClose();
 
 			openToast({
 				message: sub(
 					Liferay.Language.get('x-was-saved-successfully'),
 					`<strong>${Liferay.Util.escapeHTML(
-						stringUtils.getLocalizableLabel(
-							defaultLanguageId,
-							objectFolder.label,
-							objectFolder.name
-						)
+						stringUtils.getLocalizableLabel({
+							fallbackLabel: objectFolder.name,
+							labels: objectFolder.label,
+						})
 					)}</strong>`
 				),
 				type: 'success',
 			});
 
-			setTimeout(() => window.location.reload(), 1000);
+			onClose();
+
+			onAfterSubmit(editedObjectFolder as ObjectFolder);
 		}
 		catch (error) {
 			setError((error as Error).message);
@@ -115,7 +116,7 @@ export function ModalEditObjectFolder({
 
 	return (
 		<ClayModalProvider>
-			<ClayModal observer={observer}>
+			<ClayModal center observer={observer}>
 				<ClayForm onSubmit={handleSubmit}>
 					<ClayModal.Header>
 						{Liferay.Language.get('edit-label-and-erc')}
@@ -129,6 +130,7 @@ export function ModalEditObjectFolder({
 						<InputLocalized
 							error={errors.label}
 							label={Liferay.Language.get('label')}
+							name="objectFolderLabel"
 							onChange={(label) => setValues({label})}
 							onSelectedLocaleChange={setSelectedLocale}
 							required

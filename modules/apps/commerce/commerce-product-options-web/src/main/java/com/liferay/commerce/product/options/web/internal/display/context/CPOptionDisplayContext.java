@@ -24,15 +24,15 @@ import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marco Leo
@@ -197,14 +197,9 @@ public class CPOptionDisplayContext {
 	}
 
 	public boolean isCPOptionSelectDate() {
-		if (Objects.equals(
-				CPConstants.PRODUCT_OPTION_SELECT_DATE_KEY,
-				_cpOption.getCommerceOptionTypeKey())) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			CPConstants.PRODUCT_OPTION_SELECT_DATE_KEY,
+			_cpOption.getCommerceOptionTypeKey());
 	}
 
 	protected final CPRequestHelper cpRequestHelper;
@@ -228,8 +223,8 @@ public class CPOptionDisplayContext {
 		fdsActionDropdownItems.add(
 			new FDSActionDropdownItem(
 				null, "trash", "delete",
-				LanguageUtil.get(cpRequestHelper.getRequest(), "delete"),
-				"delete", "delete", "headless"));
+				LanguageUtil.get(cpRequestHelper.getRequest(), "delete"), null,
+				"delete", null));
 
 		return fdsActionDropdownItems;
 	}

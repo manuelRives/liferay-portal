@@ -29,12 +29,6 @@ public class ProductEntityModel implements EntityModel {
 	public ProductEntityModel(List<EntityField> entityFields) {
 		_entityFieldsMap = EntityModel.toEntityFieldsMap(
 			new CollectionEntityField(
-				new StringEntityField(
-					"categoryIds", locale -> "assetCategoryIds")),
-			new CollectionEntityField(
-				new StringEntityField(
-					"categoryNames", locale -> "assetCategoryNames")),
-			new CollectionEntityField(
 				new EntityField(
 					"channelId", EntityField.Type.INTEGER,
 					locale -> Field.getSortableFieldName(
@@ -43,6 +37,22 @@ public class ProductEntityModel implements EntityModel {
 					object -> _getCommerceChannelGroupId(object))),
 			new CollectionEntityField(
 				new IntegerEntityField("statusCode", locale -> Field.STATUS)),
+			new CollectionEntityField(
+				new StringEntityField(
+					"categoryIds", locale -> "assetCategoryIds")),
+			new CollectionEntityField(
+				new StringEntityField(
+					"categoryNames", locale -> "assetCategoryNames")),
+			new CollectionEntityField(
+				new StringEntityField("gtins", locale -> CPField.GTINS)),
+			new CollectionEntityField(
+				new StringEntityField(
+					"specificationNames",
+					locale -> CPField.SPECIFICATION_NAMES)),
+			new CollectionEntityField(
+				new StringEntityField(
+					"specificationValues",
+					locale -> CPField.SPECIFICATION_VALUES_NAMES)),
 			new CollectionEntityField(
 				new StringEntityField("tags", locale -> "assetTagNames")),
 			new ComplexEntityField("customFields", entityFields),
@@ -55,6 +65,10 @@ public class ProductEntityModel implements EntityModel {
 				locale -> Field.getSortableFieldName(Field.MODIFIED_DATE),
 				locale -> Field.MODIFIED_DATE),
 			new IntegerEntityField("catalogId", locale -> "commerceCatalogId"),
+			new StringEntityField(
+				"externalReferenceCode",
+				locale -> Field.getSortableFieldName("externalReferenceCode"),
+				locale -> "externalReferenceCode"),
 			new StringEntityField(
 				"name", locale -> Field.getSortableFieldName("name")),
 			new StringEntityField("productType", locale -> "productTypeName"));

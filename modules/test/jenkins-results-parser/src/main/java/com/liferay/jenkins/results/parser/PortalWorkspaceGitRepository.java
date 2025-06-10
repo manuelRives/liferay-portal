@@ -5,6 +5,9 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.test.batch.TestBatch;
+import com.liferay.jenkins.results.parser.test.suite.RelevantTestSuite;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -26,10 +29,27 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 	public boolean bypassCITestRelevant() {
 		setUp();
 
-		String ciTestRelevantBypassFilePathPatterns =
-			JenkinsResultsParserUtil.getCIProperty(
-				getUpstreamBranchName(),
-				"ci.test.relevant.bypass.file.path.patterns", getName());
+		Properties testProperties = JenkinsResultsParserUtil.getProperties(
+			new File(getDirectory(), "test.properties"));
+
+		boolean relevantEngineEnabled = Boolean.parseBoolean(
+			testProperties.getProperty("relevant.engine.enabled"));
+
+		if (relevantEngineEnabled) {
+			RelevantTestSuite relevantTestSuite = new RelevantTestSuite(
+				_getRelevantPortalAcceptancePullRequestJob());
+
+			List<TestBatch> testBatches = relevantTestSuite.getTestBatches(
+				true);
+
+			return testBatches.isEmpty();
+		}
+
+		Properties ciProperties = JenkinsResultsParserUtil.getProperties(
+			new File(getDirectory(), "ci.properties"));
+
+		String ciTestRelevantBypassFilePathPatterns = ciProperties.getProperty(
+			"ci.test.relevant.bypass.file.path.patterns", getName());
 
 		if (JenkinsResultsParserUtil.isNullOrEmpty(
 				ciTestRelevantBypassFilePathPatterns)) {
@@ -54,11 +74,18 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 				JenkinsResultsParserUtil.getCanonicalPath(deletedFile));
 		}
 
-		if (!multiPattern.matchesAll(filePaths.toArray(new String[0]))) {
-			return false;
+		return multiPattern.matchesAll(filePaths.toArray(new String[0]));
+	}
+
+	public Properties getAppServerProperties() {
+		if (_appServerProperties != null) {
+			return _appServerProperties;
 		}
 
-		return true;
+		_appServerProperties = JenkinsResultsParserUtil.getProperties(
+			new File(getDirectory(), "app.server.properties"));
+
+		return _appServerProperties;
 	}
 
 	public String getLiferayFacesAlloyURL() {
@@ -107,9 +134,7 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 	public void setUpPortalProfile() {
 		String upstreamBranchName = getUpstreamBranchName();
 
-		if (!upstreamBranchName.equals("master") &&
-			!upstreamBranchName.matches("7\\.\\d+\\.x|release-.*")) {
-
+		if (upstreamBranchName.startsWith("ee-")) {
 			return;
 		}
 
@@ -222,7 +247,48 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 				"test.company.default.locale", companyDefaultLocale);
 		}
 
+		Properties buildProperties = null;
+
+		try {
+			buildProperties = JenkinsResultsParserUtil.getBuildProperties();
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+
+		String latestBundleVersion = JenkinsResultsParserUtil.getProperty(
+			buildProperties, "portal.latest.bundle.version",
+			getUpstreamBranchName());
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(latestBundleVersion)) {
+			testProperties.put(
+				"test.released.release.bundle.version", latestBundleVersion);
+
+			testProperties.put(
+				"test.released.test.portal.bundle.zip.url",
+				JenkinsResultsParserUtil.getProperty(
+					buildProperties, "portal.bundle.tomcat",
+					latestBundleVersion));
+		}
+
 		return testProperties;
+	}
+
+	private PortalAcceptancePullRequestJob
+		_getRelevantPortalAcceptancePullRequestJob() {
+
+		String upstreamBranchName = getUpstreamBranchName();
+
+		PortalGitWorkingDirectory portalGitWorkingDirectory =
+			(PortalGitWorkingDirectory)getGitWorkingDirectory();
+
+		portalGitWorkingDirectory.getGitRepositoryName();
+
+		return (PortalAcceptancePullRequestJob)JobFactory.newJob(
+			Job.BuildProfile.DXP, "test-portal-acceptance-pullrequest(master)",
+			null, portalGitWorkingDirectory, upstreamBranchName, null,
+			portalGitWorkingDirectory.getGitRepositoryName(), "relevant",
+			upstreamBranchName);
 	}
 
 	private void _writeAppServerPropertiesFile() {
@@ -273,5 +339,7 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 	private static final int _SETUP_PROFILE_DXP_RETRY_COUNT = 2;
 
 	private static final int _SETUP_PROFILE_DXP_RETRY_DELAY = 5;
+
+	private Properties _appServerProperties;
 
 }

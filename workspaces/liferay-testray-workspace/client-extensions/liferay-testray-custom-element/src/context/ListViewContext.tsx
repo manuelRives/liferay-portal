@@ -1,4 +1,5 @@
 /* eslint-disable no-case-declarations */
+
 /**
  * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
@@ -7,7 +8,7 @@
 import {ReactNode, createContext, useEffect, useReducer} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import TestrayStorage, {STORAGE_KEYS} from '~/core/Storage';
-import useQueryParams from '~/hooks/useQueryParams';
+import useFilterUrlParams from '~/hooks/useFilterUrlParams';
 import useStorage from '~/hooks/useStorage';
 import {ActionMap, SortDirection, SortOption} from '~/types';
 import {getUniqueList, safeJSONParse} from '~/util';
@@ -40,21 +41,23 @@ type ListViewColumns = {
 };
 
 export type InitialState = {
+	appliedFilter: boolean;
 	checkAll: boolean;
 	columns: ListViewColumns;
 	columnsFixed: string[];
 	customFilterFields: {[key: string]: string};
 	filters: ListViewFilter;
 	id: string;
-	keywords: string;
 	page: number;
 	pageSize: number;
 	pin: boolean;
+	search: string;
 	selectedRows: number[];
 	sort: Sort | Sort[];
 };
 
 const initialState: InitialState = {
+	appliedFilter: false,
 	checkAll: false,
 	columns: {},
 	columnsFixed: [],
@@ -64,15 +67,16 @@ const initialState: InitialState = {
 		filter: {},
 	},
 	id: '',
-	keywords: '',
 	page: 1,
-	pageSize: PAGINATION_DELTA[0],
+	pageSize: PAGINATION_DELTA[1],
 	pin: false,
+	search: '',
 	selectedRows: [],
 	sort: {direction: SortOption.ASC, key: ''},
 };
 
 export enum ListViewTypes {
+	SET_APPLY_FILTERS = 'SET_APPLY_FILTERS',
 	SET_CHECKED_ALL_ROWS = 'SET_CHECKED_ALL_ROWS',
 	SET_CHECKED_ROW = 'SET_CHECKED_ROW',
 	SET_CLEAR = 'SET_CLEAR',
@@ -89,6 +93,7 @@ export enum ListViewTypes {
 }
 
 type ListViewPayload = {
+	[ListViewTypes.SET_APPLY_FILTERS]: boolean;
 	[ListViewTypes.SET_CHECKED_ALL_ROWS]: boolean;
 	[ListViewTypes.SET_CHECKED_ROW]: number | number[];
 	[ListViewTypes.SET_CLEAR]: null;
@@ -104,9 +109,8 @@ type ListViewPayload = {
 	[ListViewTypes.SET_SORT]: Sort;
 };
 
-export type AppActions = ActionMap<ListViewPayload>[keyof ActionMap<
-	ListViewPayload
->];
+export type AppActions =
+	ActionMap<ListViewPayload>[keyof ActionMap<ListViewPayload>];
 
 export const ListViewContext = createContext<
 	[InitialState, (param: AppActions) => void]
@@ -125,6 +129,12 @@ const getPinState = (state: InitialState, newFilter: ListViewFilter) => {
 
 const reducer = (state: InitialState, action: AppActions) => {
 	switch (action.type) {
+		case ListViewTypes.SET_APPLY_FILTERS:
+			return {
+				...state,
+				appliedFilter: action.payload,
+			};
+
 		case ListViewTypes.SET_CHECKED_ROW:
 			const rowIds = action.payload;
 
@@ -143,7 +153,7 @@ const reducer = (state: InitialState, action: AppActions) => {
 				rowAlreadyInserted
 					? (selectedRows = selectedRows.filter(
 							(row) => row !== rowIds
-					  ))
+						))
 					: (selectedRows = [...selectedRows, rowIds as number]);
 			}
 
@@ -162,7 +172,7 @@ const reducer = (state: InitialState, action: AppActions) => {
 			return {
 				...state,
 				filters: initialState.filters,
-				keywords: '',
+				search: '',
 			};
 
 		case ListViewTypes.SET_CLEAR_CHECKED_ROW:
@@ -261,13 +271,13 @@ const reducer = (state: InitialState, action: AppActions) => {
 			};
 		}
 
-		case ListViewTypes.SET_SEARCH:
+		case ListViewTypes.SET_SEARCH: {
 			return {
 				...state,
-				keywords: action.payload,
 				page: 1,
+				search: action.payload,
 			};
-
+		}
 		case ListViewTypes.SET_SORT:
 			return {
 				...state,
@@ -350,7 +360,7 @@ const ListViewContextProvider: React.FC<
 					filter: JSON.stringify(formattedFilter),
 					filterSchema: filterSchemaStorage as string,
 					page: '1',
-					pageSize: '20',
+					pageSize: '50',
 				})
 			);
 		}
@@ -368,13 +378,12 @@ const ListViewContextProvider: React.FC<
 			filters: filterPinnedStorage,
 			pin: !!filterPinnedStorage.entries.length,
 		}),
+
 		...(columnsStorage && {columns: columnsStorage}),
 		id,
 	});
 
-	const {filterInitialContext, page, pageSize} = useQueryParams(
-		state.customFilterFields
-	);
+	const {filterInitialContext} = useFilterUrlParams(state.customFilterFields);
 
 	return (
 		<ListViewContext.Provider
@@ -384,8 +393,6 @@ const ListViewContextProvider: React.FC<
 					...(filter && {
 						filters: filterInitialContext as ListViewFilter,
 					}),
-					...(page && {page: Number(page)}),
-					...(pageSize && {pageSize: Number(pageSize)}),
 				},
 				dispatch,
 			]}

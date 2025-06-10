@@ -93,14 +93,10 @@ export default function EditObjectValidation({
 	const [customObjectFields, setCustomObjectFields] = useState<ObjectField[]>(
 		[]
 	);
-	const [
-		selectedPartialValidationField,
-		setSelectedPartialValidationField,
-	] = useState<string>();
-	const [
-		showUniqueCompositeKeyAlert,
-		setShowUniqueCompositeKeyAlert,
-	] = useState(true);
+	const [selectedPartialValidationField, setSelectedPartialValidationField] =
+		useState<string>();
+	const [showUniqueCompositeKeyAlert, setShowUniqueCompositeKeyAlert] =
+		useState(true);
 
 	const onSubmit = async (objectValidation: ObjectValidation) => {
 		delete objectValidation.lineCount;
@@ -135,13 +131,8 @@ export default function EditObjectValidation({
 		}
 	};
 
-	const {
-		errors,
-		handleChange,
-		handleSubmit,
-		setValues,
-		values,
-	} = useObjectValidationForm({initialValues, onSubmit});
+	const {errors, handleChange, handleSubmit, setValues, values} =
+		useObjectValidationForm({initialValues, onSubmit});
 
 	if (TABS.length < 2) {
 		if (values.engine === 'compositeKey') {
@@ -160,9 +151,7 @@ export default function EditObjectValidation({
 
 	const disabled = readOnly || !!values?.system;
 	const disabledGroovyValidation =
-		Liferay.FeatureFlags['LPD-11179'] &&
-		!allowScriptContentToBeExecutedOrIncluded &&
-		values.engine === 'groovy';
+		!allowScriptContentToBeExecutedOrIncluded && values.engine === 'groovy';
 
 	useEffect(() => {
 		if (Object.keys(errors).length) {
@@ -177,9 +166,10 @@ export default function EditObjectValidation({
 
 	useEffect(() => {
 		const makeFetch = async () => {
-			const validationResponseJSON = await API.getObjectValidationRuleById<
-				ObjectValidation
-			>(objectValidationRuleId);
+			const validationResponseJSON =
+				await API.getObjectValidationRuleById<ObjectValidation>(
+					objectValidationRuleId
+				);
 
 			const newObjectValidation: ObjectValidation = {
 				...validationResponseJSON,
@@ -189,9 +179,8 @@ export default function EditObjectValidation({
 						: validationResponseJSON.script,
 			};
 
-			const objectFieldsResponseJSON = await API.getObjectDefinitionObjectFields(
-				objectDefinitionId
-			);
+			const objectFieldsResponseJSON =
+				await API.getObjectDefinitionObjectFields(objectDefinitionId);
 
 			setCustomObjectFields(
 				objectFieldsResponseJSON.filter(
@@ -202,14 +191,14 @@ export default function EditObjectValidation({
 		};
 
 		makeFetch();
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [objectDefinitionId, objectValidationRuleId]);
 
 	useEffect(() => {
 		if (values.objectValidationRuleSettings?.length) {
-			const [
-				partialValidationField,
-			] = values.objectValidationRuleSettings;
+			const [partialValidationField] =
+				values.objectValidationRuleSettings;
 
 			const customObjectField = customObjectFields.find(
 				(currentCustomObjectField) =>
@@ -225,20 +214,23 @@ export default function EditObjectValidation({
 		}
 
 		setSelectedPartialValidationField(undefined);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [values.objectValidationRuleSettings]);
 
 	return (
 		<SidePanelForm
 			onSubmit={handleSubmit}
-			title={stringUtils.getLocalizableLabel(
-				creationLanguageId,
-				values.name
-			)}
+			title={stringUtils.getLocalizableLabel({
+				fallbackLanguageId: creationLanguageId,
+				labels: values.name,
+			})}
 		>
 			<ClayTabs className="side-panel-iframe__tabs">
 				{TABS.map(({label}, index) =>
-					values.engine?.startsWith('function#') && index === 1 ? (
+					(values.engine?.startsWith('function#') ||
+						values.engine?.startsWith('javaDelegate#')) &&
+					index === 1 ? (
 						<React.Fragment key={index} />
 					) : (
 						<ClayTabs.Item

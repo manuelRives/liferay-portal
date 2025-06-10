@@ -21,10 +21,12 @@
 
 </aui:select>
 
-<aui:script require="users-admin-web/js/UserNameFields.es as UserNameFields">
-	var component = Liferay.component(
+<aui:script type="module">
+	import {UserNameFields} from '<%= FrontendESMUtil.buildURL(themeDisplay, "users-admin-web") %>';
+
+	Liferay.component(
 		'<portlet:namespace />UserNameFields',
-		new UserNameFields.default(
+		new UserNameFields(
 			{
 				baseURL: '<%= HtmlUtil.escapeJS(themeDisplay.getURLCurrent()) %>',
 				formNode: <portlet:namespace />fm,

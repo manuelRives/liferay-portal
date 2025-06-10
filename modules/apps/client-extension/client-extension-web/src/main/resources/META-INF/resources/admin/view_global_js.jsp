@@ -10,6 +10,8 @@
 <%
 ViewClientExtensionEntryDisplayContext viewClientExtensionEntryDisplayContext = (ViewClientExtensionEntryDisplayContext)renderRequest.getAttribute(ClientExtensionAdminWebKeys.VIEW_CLIENT_EXTENSION_ENTRY_DISPLAY_CONTEXT);
 
+CET cet = viewClientExtensionEntryDisplayContext.getCET();
+
 Collection<Method> methods = viewClientExtensionEntryDisplayContext.getMethods();
 
 for (Method method : methods) {
@@ -17,24 +19,26 @@ for (Method method : methods) {
 	String label = viewClientExtensionEntryDisplayContext.getLabel(method);
 	String name = cetProperty.name();
 	Object value = viewClientExtensionEntryDisplayContext.getValue(method);
+
+	if (!FeatureFlagManagerUtil.isEnabled(cet.getCompanyId(), "LPD-30371") && (name.equals("scope") || name.equals("scriptLocation"))) {
+		continue;
+	}
 %>
 
 	<c:choose>
 		<c:when test='<%= name.equals("scriptElementAttributesJSON") %>'>
-			<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-10981") %>'>
-				<aui:field-wrapper cssClass="form-group">
-					<react:component
-						module="{ScriptElementAttributesFormField} from client-extension-web"
-						props='<%=
-							HashMapBuilder.<String, Object>put(
-								"disabled", true
-							).put(
-								"scriptElementAttributesJSON", value
-							).build()
-						%>'
-					/>
-				</aui:field-wrapper>
-			</c:if>
+			<aui:field-wrapper cssClass="form-group">
+				<react:component
+					module="{ScriptElementAttributesFormField} from client-extension-web"
+					props='<%=
+						HashMapBuilder.<String, Object>put(
+							"disabled", true
+						).put(
+							"scriptElementAttributesJSON", value
+						).build()
+					%>'
+				/>
+			</aui:field-wrapper>
 		</c:when>
 		<c:when test="<%= cetProperty.type() == CETProperty.Type.Boolean %>">
 			<aui:input disabled="<%= true %>" label="<%= label %>" name="<%= label %>" type="checkbox" value="<%= value %>" />

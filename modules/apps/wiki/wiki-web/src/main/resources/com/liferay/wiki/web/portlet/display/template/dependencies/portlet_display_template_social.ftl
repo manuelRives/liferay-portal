@@ -8,7 +8,7 @@
 	<h1 class="header-title">${entry.getTitle()}</h1>
 </div>
 
-<div style="float: right;">
+<div class="float-right">
 	<@getEditIcon />
 
 	<@getPageDetailsIcon />
@@ -49,8 +49,8 @@
 	<br />
 
 	<@getRatings
-		cssClass="page-ratings"
-		entry=entry
+		cssClass = "page-ratings"
+		entry = entry
 	/>
 
 	<@getRelatedAssets />
@@ -122,8 +122,8 @@
 					</td>
 					<td>
 						<@getRatings
-							cssClass="child-ratings"
-							entry=childPage
+							cssClass = "child-ratings"
+							entry = childPage
 						/>
 					</td>
 				</tr>
@@ -251,7 +251,7 @@
 			displayType="secondary"
 			icon="print"
 			monospaced=true
-			onClick="javascript:Liferay.Util.openWindow({dialog: {width: 960}, id:'" + renderResponse.getNamespace() + "printAsset', title: '" + title + "', uri: '" + printURL.toString() + "'});"
+			onClick="javascript:Liferay.Util.openModal({id:'" + renderResponse.getNamespace() + "printAsset', title: '" + title + "', url: '" + printURL.toString() + "'});"
 			small=true
 			title="${title}"
 		/>

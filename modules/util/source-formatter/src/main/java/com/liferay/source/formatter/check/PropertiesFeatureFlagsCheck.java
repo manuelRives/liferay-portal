@@ -80,8 +80,8 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 			if (StringUtil.equals(value, "dev")) {
 				addMessage(
 					fileName,
-					"Remove unnecessary property '" + key +
-						"', since 'dev' is the default value");
+					"Remove unnecessary property \"" + key +
+						"\", since \"dev\" is the default value");
 			}
 		}
 	}
@@ -121,6 +121,8 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 					_getFeatureFlagKeys(fileContent, _featureFlagPattern1));
 				featureFlagKeys.addAll(
 					_getFeatureFlagKeys(fileContent, _featureFlagPattern5));
+				featureFlagKeys.addAll(
+					_getFeatureFlagKeys(fileContent, _featureFlagPattern6));
 				featureFlagKeys.addAll(_getFeatureFlagKeys(fileContent, true));
 			}
 			else if (fileName.endsWith(".json")) {
@@ -165,7 +167,7 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 					deprecationFeatureFlagKeyMatcher.group(1));
 			}
 
-			StringBundler sb = new StringBundler(featureFlagKeys.size() * 15);
+			StringBundler sb = new StringBundler(featureFlagKeys.size() * 6);
 
 			for (String featureFlagKey : featureFlagKeys) {
 				String featureFlagPropertyKey =
@@ -174,27 +176,12 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 				String environmentVariable =
 					ToolsUtil.encodeEnvironmentProperty(featureFlagPropertyKey);
 
-				sb.append(StringPool.NEW_LINE);
-				sb.append(StringPool.NEW_LINE);
-				sb.append(StringPool.FOUR_SPACES);
-				sb.append(StringPool.POUND);
-				sb.append(StringPool.NEW_LINE);
-				sb.append("    # Env: ");
+				sb.append("\n\n    #\n    # Env: ");
 				sb.append(environmentVariable);
-				sb.append(StringPool.NEW_LINE);
-				sb.append(StringPool.FOUR_SPACES);
-				sb.append(StringPool.POUND);
-				sb.append(StringPool.NEW_LINE);
-				sb.append(StringPool.FOUR_SPACES);
+				sb.append("\n    #\n    ");
 				sb.append(featureFlagPropertyKey);
 				sb.append(StringPool.EQUAL);
-
-				if (deprecationFeatureFlagKeys.contains(featureFlagKey)) {
-					sb.append(true);
-				}
-				else {
-					sb.append(false);
-				}
+				sb.append(deprecationFeatureFlagKeys.contains(featureFlagKey));
 			}
 
 			if (matchedFeatureFlags.contains("feature.flag.")) {
@@ -214,7 +201,7 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 	private String _generateFeatureFlagUIProperties(
 		Map<String, String> properties) {
 
-		StringBundler sb = new StringBundler(properties.size() * 15);
+		StringBundler sb = new StringBundler(properties.size() * 6);
 
 		for (Map.Entry<String, String> entry : properties.entrySet()) {
 			String key = entry.getKey();
@@ -222,18 +209,9 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 			String environmentVariable = ToolsUtil.encodeEnvironmentProperty(
 				key);
 
-			sb.append(StringPool.NEW_LINE);
-			sb.append(StringPool.NEW_LINE);
-			sb.append(StringPool.FOUR_SPACES);
-			sb.append(StringPool.POUND);
-			sb.append(StringPool.NEW_LINE);
-			sb.append("    # Env: ");
+			sb.append("\n\n    #\n    # Env: ");
 			sb.append(environmentVariable);
-			sb.append(StringPool.NEW_LINE);
-			sb.append(StringPool.FOUR_SPACES);
-			sb.append(StringPool.POUND);
-			sb.append(StringPool.NEW_LINE);
-			sb.append(StringPool.FOUR_SPACES);
+			sb.append("\n    #\n    ");
 			sb.append(key);
 			sb.append(StringPool.EQUAL);
 			sb.append(entry.getValue());
@@ -296,8 +274,8 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 					if (properties.containsKey(featureFlagUIPropertyName)) {
 						addMessage(
 							fileName,
-							"Property '" + featureFlagUIPropertyName +
-								"' must be in Language.properties");
+							"Property \"" + featureFlagUIPropertyName +
+								"\" must be in Language.properties");
 					}
 
 					if (!portalLanguageProperties.containsKey(
@@ -305,8 +283,8 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 
 						addMessage(
 							fileName,
-							"Missing property '" + featureFlagUIPropertyName +
-								"' in Language.properties");
+							"Missing property \"" + featureFlagUIPropertyName +
+								"\" in Language.properties");
 					}
 				}
 			}
@@ -419,6 +397,8 @@ public class PropertiesFeatureFlagsCheck extends BaseFileCheck {
 		"\"featureFlag\": \"(.+?)\"");
 	private static final Pattern _featureFlagPattern5 = Pattern.compile(
 		"\"featureFlagKey=([A-Z]+-\\d+)\"");
+	private static final Pattern _featureFlagPattern6 = Pattern.compile(
+		"featureFlagKey = \"([A-Z]+-\\d+)\"");
 	private static final Pattern _featureFlagsPattern = Pattern.compile(
 		"(\n|\\A)##\n## Feature Flag\n##(\n\n[\\s\\S]*?)(?=(\n\n##|\\Z))");
 	private static final Pattern _featureFlagUIPattern = Pattern.compile(

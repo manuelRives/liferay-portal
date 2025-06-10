@@ -5,7 +5,7 @@
 
 package com.liferay.friendly.url.internal.servlet;
 
-import javax.servlet.Servlet;
+import jakarta.servlet.Servlet;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -14,8 +14,6 @@ import org.osgi.service.component.annotations.Component;
  */
 @Component(
 	property = {
-		"osgi.http.whiteboard.servlet.name=com.liferay.portal.servlet.friendly.url.PrivateUserFriendlyURLServlet",
-		"osgi.http.whiteboard.servlet.pattern=/user/*",
 		"servlet.init.private=true", "servlet.init.user=true",
 		"servlet.type=friendly-url"
 	},

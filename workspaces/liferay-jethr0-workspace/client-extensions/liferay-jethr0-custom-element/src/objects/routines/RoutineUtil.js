@@ -4,6 +4,7 @@
  */
 
 import liferayRequest from '../../services/liferayRequest';
+import GitBranch from '../gitbranches/GitBranch';
 import Job from '../jobs/Job';
 import Routine from './Routine';
 
@@ -21,12 +22,6 @@ export async function createRoutine({data, redirect}) {
 	});
 
 	const routinesResult = JSON.parse(await routinesResponse.text());
-
-	await liferayRequest({
-		headers,
-		method: 'PUT',
-		urlPath: `/o/c/routines/${routinesResult.id}/object-actions/Jethr0EtcSpringBootAddRoutine`,
-	});
 
 	if (routinesResult && redirect) {
 		redirect(routinesResult);
@@ -71,8 +66,10 @@ export async function getRoutineById({id, setRoutine}) {
 				}
 				routines(filter: \\"id eq '${id}'\\") {
 					items {
+						cron
 						dateCreated
 						dateModified
+						gitBranchToRoutines
 						id
 						name
 						jobName
@@ -110,6 +107,12 @@ export async function getRoutineById({id, setRoutine}) {
 
 		routine.jobs = jobs;
 
+		if (routineJSON.gitBranchToRoutines) {
+			routine.upstreamGitBranch = new GitBranch(
+				routineJSON.gitBranchToRoutines
+			);
+		}
+
 		if (routine) {
 			if (setRoutine) {
 				setRoutine(routine);
@@ -120,14 +123,23 @@ export async function getRoutineById({id, setRoutine}) {
 	}
 }
 
-export async function getRoutines({setRoutines}) {
+export async function getRoutinesPage({page, pageSize, setRoutinesPage}) {
+	if (!page) {
+		page = 1;
+	}
+
+	if (!pageSize) {
+		pageSize = 25;
+	}
+
 	const response = await liferayRequest({
 		graphqlQuery: `{
 			c {
-				routines {
+				routines (page: ${page}, pageSize: ${pageSize}) {
 					items {
 						dateCreated
 						dateModified
+						gitBranchToRoutines
 						id
 						name
 						jobName
@@ -141,6 +153,9 @@ export async function getRoutines({setRoutines}) {
 							name
 						}
 					}
+					page
+					pageSize
+					totalCount
 				}
 			}
 		}`,
@@ -156,11 +171,24 @@ export async function getRoutines({setRoutines}) {
 	const routines = [];
 
 	for (const item of result.data.c.routines.items) {
-		routines.push(new Routine(item));
+		const routine = new Routine(item);
+
+		if (item.gitBranchToRoutines) {
+			routine.upstreamGitBranch = new GitBranch(item.gitBranchToRoutines);
+		}
+
+		routines.push(routine);
 	}
 
-	if (setRoutines) {
-		setRoutines(routines);
+	const routinesPage = {
+		page: result.data.c.routines.page,
+		pageSize: result.data.c.routines.pageSize,
+		routines,
+		totalCount: result.data.c.routines.totalCount,
+	};
+
+	if (setRoutinesPage) {
+		setRoutinesPage(routinesPage);
 	}
 }
 

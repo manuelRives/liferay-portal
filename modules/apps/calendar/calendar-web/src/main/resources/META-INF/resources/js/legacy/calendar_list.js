@@ -59,9 +59,8 @@ AUI.add(
 			'label'
 		);
 
-		const CSS_ICON_CARET_DOWN = Liferay.Util.getLexiconIconTpl(
-			'caret-bottom'
-		);
+		const CSS_ICON_CARET_DOWN =
+			Liferay.Util.getLexiconIconTpl('caret-bottom');
 
 		const TPL_CALENDAR_LIST_ITEM = new A.Template(
 			'<tpl for="calendars">',
@@ -85,7 +84,7 @@ AUI.add(
 			"' ]}></div>",
 			'<span class="',
 			CSS_CALENDAR_LIST_ITEM_LABEL,
-			'">{[Liferay.Util.escapeHTML(parent.calendars[$i].getDisplayName())]}</span>',
+			'">{[parent.calendars[$i].getDisplayName()]}</span>',
 			'<tpl if="parent.calendars[$i].get(\'hasMenuItems\')">',
 			'<div aria-label="' +
 				Liferay.Language.get('show-actions-for-calendar-x'),
@@ -185,9 +184,8 @@ AUI.add(
 
 							activeNode = event.currentTarget;
 
-							instance.activeItem = instance.getCalendarByNode(
-								activeNode
-							);
+							instance.activeItem =
+								instance.getCalendarByNode(activeNode);
 
 							activeNode.addClass(CSS_CALENDAR_LIST_ITEM_ACTIVE);
 

@@ -2,6 +2,7 @@
  * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
+
 const cookieName = 'OSB_WWW_NOTIFICATION_' + fragmentNamespace;
 const body = document.body;
 
@@ -17,13 +18,15 @@ window.addEventListener('DOMContentLoaded', () => {
 			body.classList.add('has-alert-container');
 		}
 
+		const path = themeDisplay.getPathContext() || '/';
+
 		closeButton.addEventListener('click', () => {
 			if (document.cookie.length) {
 				body.classList.remove('has-alert-container');
-				document.cookie = cookieName + '=true;path=/;max-age=604800;';
+				document.cookie = `${cookieName}=true;path=${path};max-age=604800;`;
 			}
 			else {
-				document.cookie = cookieName + '=true;path=/;';
+				document.cookie = `${cookieName}=true;path=${path};`;
 			}
 		});
 	}

@@ -5,6 +5,7 @@
 
 package com.liferay.frontend.js.web.internal.servlet.taglib.aui;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.frontend.esm.FrontendESMUtil;
@@ -134,12 +135,12 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 
 		// Write AUI prologue
 
-		Set<String> auiUseSet = _computeAUIUseSet(portletDatas);
+		Set<String> auiUses = _computeAUIUseSet(portletDatas);
 
-		if (!auiUseSet.isEmpty()) {
+		if (!auiUses.isEmpty()) {
 			writer.write("AUI().use(\n");
 
-			for (String auiUse : auiUseSet) {
+			for (String auiUse : auiUses) {
 				writer.write("  '");
 				writer.write(auiUse);
 				writer.write("',\n");
@@ -155,7 +156,7 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 
 		// Write AUI epilogue
 
-		if (!auiUseSet.isEmpty()) {
+		if (!auiUses.isEmpty()) {
 			writer.write("});\n");
 		}
 
@@ -218,15 +219,15 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 	private Set<String> _computeAUIUseSet(
 		Collection<PortletData> portletDatas) {
 
-		Set<String> auiUseSet = new HashSet<>();
+		Set<String> auiUses = new HashSet<>();
 
 		for (PortletData portletData : portletDatas) {
 			for (JSFragment jsFragment : portletData.getJSFragments()) {
-				auiUseSet.addAll(jsFragment.getAUIUses());
+				auiUses.addAll(jsFragment.getAUIUses());
 			}
 		}
 
-		return auiUseSet;
+		return auiUses;
 	}
 
 	private Map<ESImport, ESImport> _computeESImportsMap(
@@ -280,7 +281,7 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 		Map<ESImport, ESImport> esImportsMap,
 		Collection<PortletData> portletDatas) {
 
-		StringBuilder sb = new StringBuilder();
+		StringBundler sb = new StringBundler();
 
 		for (PortletData portletData : portletDatas) {
 			for (JSFragment jsFragment : portletData.getJSFragments()) {
@@ -364,7 +365,7 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 	}
 
 	private String _computeRawCode(Collection<PortletData> portletDatas) {
-		StringBuilder sb = new StringBuilder();
+		StringBundler sb = new StringBundler();
 
 		for (PortletData portletData : portletDatas) {
 			for (JSFragment jsFragment : portletData.getJSFragments()) {

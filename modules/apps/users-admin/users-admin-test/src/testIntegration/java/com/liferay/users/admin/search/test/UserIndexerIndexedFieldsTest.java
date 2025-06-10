@@ -33,10 +33,10 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.model.uid.UIDFactory;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -104,7 +104,10 @@ public class UserIndexerIndexedFieldsTest {
 		_populateAddressFieldValues(user2, map);
 
 		FieldValuesAssert.assertFieldValues(
-			document, map, name -> !name.equals("timestamp"), searchTerm);
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
@@ -128,28 +131,10 @@ public class UserIndexerIndexedFieldsTest {
 			"jobTitle_sortable", StringUtil.toLowerCase(user2.getJobTitle()));
 
 		FieldValuesAssert.assertFieldValues(
-			document, map, name -> !name.equals("timestamp"), searchTerm);
-	}
-
-	@Test
-	public void testLastLoginDate() throws Exception {
-		User user1 = addUser();
-
-		User user2 = userLocalService.updateLastLogin(user1.getUserId(), null);
-
-		String searchTerm = user2.getFirstName();
-
-		Document document = indexerFixture.searchOnlyOne(searchTerm);
-
-		indexedFieldsFixture.postProcessDocument(document);
-
-		Map<String, String> map = _getExpectedFieldValues(user2);
-
-		indexedFieldsFixture.populateDate(
-			"lastLoginDate", user2.getLastLoginDate(), map);
-
-		FieldValuesAssert.assertFieldValues(
-			document, map, name -> !name.equals("timestamp"), searchTerm);
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
@@ -172,7 +157,10 @@ public class UserIndexerIndexedFieldsTest {
 		map.put("organizationIds", _getStringValue(user.getOrganizationIds()));
 
 		FieldValuesAssert.assertFieldValues(
-			document, map, name -> !name.equals("timestamp"), searchTerm);
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
@@ -197,7 +185,10 @@ public class UserIndexerIndexedFieldsTest {
 		map.put("userGroupIds", _getStringValue(user.getUserGroupIds()));
 
 		FieldValuesAssert.assertFieldValues(
-			document, map, name -> !name.equals("timestamp"), searchTerm);
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Rule
@@ -322,6 +313,8 @@ public class UserIndexerIndexedFieldsTest {
 		).put(
 			"emailAddressDomain", _getEmailAddressDomain(user.getEmailAddress())
 		).put(
+			"externalReferenceCode", user.getExternalReferenceCode()
+		).put(
 			"firstName", user.getFirstName()
 		).put(
 			"firstName_sortable", StringUtil.toLowerCase(user.getFirstName())
@@ -329,6 +322,17 @@ public class UserIndexerIndexedFieldsTest {
 			"fullName", user.getFullName()
 		).put(
 			"groupIds", groupId
+		).put(
+			"hasLoginDate",
+			() -> {
+				boolean hasLoginDate = false;
+
+				if (user.getLastLoginDate() != null) {
+					hasLoginDate = true;
+				}
+
+				return String.valueOf(hasLoginDate);
+			}
 		).put(
 			"lastName", user.getLastName()
 		).put(

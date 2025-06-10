@@ -8,22 +8,35 @@ import {ApiHelpers} from '../../helpers/ApiHelpers';
 export default async function getBasicWebContentStructureId(
 	apiHelpers: ApiHelpers
 ): Promise<number> {
-	const company = await apiHelpers.jsonWebServicesCompany.getCompanyByWebId(
-		'liferay.com'
-	);
+	const company =
+		await apiHelpers.jsonWebServicesCompany.getCompanyByWebId(
+			'liferay.com'
+		);
 
 	const globalGroup = await apiHelpers.jsonWebServicesGroup.getCompanyGroup(
 		company.companyId
 	);
 
+	return getWebContentStructureId(
+		apiHelpers,
+		globalGroup.groupId,
+		'BASIC-WEB-CONTENT'
+	);
+}
+
+export async function getWebContentStructureId(
+	apiHelpers: ApiHelpers,
+	groupId: string,
+	structureKey: string
+): Promise<number> {
 	const className = await apiHelpers.jsonWebServicesClassName.fetchClassName(
 		'com.liferay.journal.model.JournalArticle'
 	);
 
 	const ddmStructure = await apiHelpers.jsonWebServicesDDM.fetchStructure(
-		globalGroup.groupId,
+		groupId,
 		className.classNameId,
-		'BASIC-WEB-CONTENT'
+		structureKey
 	);
 
 	return Number(ddmStructure.structureId);

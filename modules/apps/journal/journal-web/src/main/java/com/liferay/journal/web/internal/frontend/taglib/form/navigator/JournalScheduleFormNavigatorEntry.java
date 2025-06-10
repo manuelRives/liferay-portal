@@ -10,7 +10,7 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.util.PropsValues;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,11 +37,7 @@ public class JournalScheduleFormNavigatorEntry
 
 	@Override
 	public boolean isVisible(User user, JournalArticle article) {
-		if (!PropsValues.SCHEDULER_ENABLED) {
-			return false;
-		}
-
-		return true;
+		return PropsValues.SCHEDULER_ENABLED;
 	}
 
 	@Override

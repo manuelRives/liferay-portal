@@ -45,10 +45,10 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TextExtractor;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
+import com.liferay.portal.search.ml.embedding.text.TextEmbeddingDocumentContributor;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.util.PropsUtil;
 import com.liferay.trash.TrashHelper;
 
 import java.io.IOException;
@@ -193,6 +193,12 @@ public class DLFileEntryModelDocumentContributor
 
 			if (text != null) {
 				document.addText(fieldName, text);
+
+				_textEmbeddingDocumentContributor.contribute(
+					document, dlFileEntry,
+					StringBundler.concat(
+						dlFileEntry.getTitle(), StringPool.PERIOD,
+						StringPool.SPACE, text));
 			}
 		}
 		catch (IOException | PortalException exception) {
@@ -276,16 +282,28 @@ public class DLFileEntryModelDocumentContributor
 	private String _extractText(DLFileEntry dlFileEntry)
 		throws IOException, PortalException {
 
+		int dlFileIndexingMaxSize = GetterUtil.getInteger(
+			PropsUtil.get(PropsKeys.DL_FILE_INDEXING_MAX_SIZE));
+		String indexVersionLabel = _getIndexVersionLabel(dlFileEntry);
+
 		if (_dlIndexerConfiguration.cacheTextExtraction() &&
 			_dlStore.hasFile(
 				dlFileEntry.getCompanyId(), dlFileEntry.getDataRepositoryId(),
-				dlFileEntry.getName(), _getIndexVersionLabel(dlFileEntry))) {
+				dlFileEntry.getName(), indexVersionLabel)) {
 
-			return StreamUtil.toString(
+			String string = StreamUtil.toString(
 				_dlStore.getFileAsStream(
 					dlFileEntry.getCompanyId(),
 					dlFileEntry.getDataRepositoryId(), dlFileEntry.getName(),
-					_getIndexVersionLabel(dlFileEntry)));
+					indexVersionLabel));
+
+			if (string.length() <= dlFileIndexingMaxSize) {
+				return string;
+			}
+
+			_dlStore.deleteFile(
+				dlFileEntry.getCompanyId(), dlFileEntry.getDataRepositoryId(),
+				dlFileEntry.getName(), indexVersionLabel);
 		}
 
 		InputStream inputStream = _getInputStream(dlFileEntry);
@@ -295,7 +313,7 @@ public class DLFileEntryModelDocumentContributor
 		}
 
 		String text = _textExtractor.extractText(
-			inputStream, PropsValues.DL_FILE_INDEXING_MAX_SIZE);
+			inputStream, dlFileIndexingMaxSize);
 
 		if (_dlIndexerConfiguration.cacheTextExtraction() &&
 			Validator.isNotNull(text) && !_isReadOnlyCtCollection()) {
@@ -305,7 +323,7 @@ public class DLFileEntryModelDocumentContributor
 					dlFileEntry.getCompanyId(),
 					dlFileEntry.getDataRepositoryId(), dlFileEntry.getName()
 				).versionLabel(
-					_getIndexVersionLabel(dlFileEntry)
+					indexVersionLabel
 				).build(),
 				text.getBytes(StandardCharsets.UTF_8));
 		}
@@ -345,14 +363,8 @@ public class DLFileEntryModelDocumentContributor
 		String[] ignoreExtensions = _prefsProps.getStringArray(
 			PropsKeys.DL_FILE_INDEXING_IGNORE_EXTENSIONS, StringPool.COMMA);
 
-		if (ArrayUtil.contains(
-				ignoreExtensions,
-				StringPool.PERIOD + dlFileEntry.getExtension())) {
-
-			return false;
-		}
-
-		return true;
+		return !ArrayUtil.contains(
+			ignoreExtensions, StringPool.PERIOD + dlFileEntry.getExtension());
 	}
 
 	private boolean _isReadOnlyCtCollection() throws PortalException {
@@ -363,13 +375,7 @@ public class DLFileEntryModelDocumentContributor
 		CTCollection ctCollection = _ctCollectionLocalService.getCTCollection(
 			CTCollectionThreadLocal.getCTCollectionId());
 
-		if ((ctCollection.getStatus() != WorkflowConstants.STATUS_DRAFT) &&
-			(ctCollection.getStatus() != WorkflowConstants.STATUS_PENDING)) {
-
-			return true;
-		}
-
-		return false;
+		return ctCollection.isReadOnly();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -406,6 +412,9 @@ public class DLFileEntryModelDocumentContributor
 
 	@Reference
 	private RelatedEntryIndexerRegistry _relatedEntryIndexerRegistry;
+
+	@Reference
+	private TextEmbeddingDocumentContributor _textEmbeddingDocumentContributor;
 
 	@Reference
 	private TextExtractor _textExtractor;

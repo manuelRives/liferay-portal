@@ -23,9 +23,9 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.HashMap;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -207,11 +207,7 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 	}
 
 	private boolean _isMappedLayout(JSONObject jsonObject) {
-		if (jsonObject.has("layout")) {
-			return true;
-		}
-
-		return false;
+		return jsonObject.has("layout");
 	}
 
 	private void _replaceLinkContent(

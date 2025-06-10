@@ -8,6 +8,7 @@ package com.liferay.object.rest.internal.graphql.dto.v1_0;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
 import com.liferay.object.entry.util.ObjectEntryDTOConverterUtil;
+import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectRelationship;
@@ -37,6 +38,7 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -81,7 +83,9 @@ public class ObjectDefinitionGraphQLDTOContributor
 		ObjectDefinitionLocalService objectDefinitionLocalService,
 		ObjectEntryManager objectEntryManager,
 		ObjectFieldLocalService objectFieldLocalService,
+		List<ObjectField> objectFields,
 		ObjectRelationshipLocalService objectRelationshipLocalService,
+		List<ObjectRelationship> objectRelationships,
 		ObjectScopeProvider objectScopeProvider,
 		SystemObjectDefinitionManagerRegistry
 			systemObjectDefinitionManagerRegistry) {
@@ -99,17 +103,25 @@ public class ObjectDefinitionGraphQLDTOContributor
 			GraphQLDTOProperty.of("dateModified", true, Date.class));
 		graphQLDTOProperties.add(
 			GraphQLDTOProperty.of("externalReferenceCode", String.class));
+		graphQLDTOProperties.add(GraphQLDTOProperty.of("id", true, Long.class));
 		graphQLDTOProperties.add(
 			GraphQLDTOProperty.of("status", true, String.class));
+		graphQLDTOProperties.add(
+			GraphQLDTOProperty.of("statusCode", Integer.class));
 
 		List<GraphQLDTOProperty> relationshipGraphQLDTOProperties =
 			new ArrayList<>();
 
-		List<ObjectField> objectFields =
-			objectFieldLocalService.getObjectFields(
+		if (objectFields == null) {
+			objectFields = objectFieldLocalService.getObjectFields(
 				objectDefinition.getObjectDefinitionId());
+		}
 
 		for (ObjectField objectField : objectFields) {
+			if (ObjectFieldUtil.isMetadata(objectField.getName())) {
+				continue;
+			}
+
 			if (Objects.equals(
 					objectField.getBusinessType(),
 					ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT)) {
@@ -117,6 +129,15 @@ public class ObjectDefinitionGraphQLDTOContributor
 				graphQLDTOProperties.add(
 					GraphQLDTOProperty.of(
 						objectField.getName(), FileEntry.class));
+			}
+			else if (Objects.equals(
+						objectField.getBusinessType(),
+						ObjectFieldConstants.
+							BUSINESS_TYPE_MULTISELECT_PICKLIST)) {
+
+				graphQLDTOProperties.add(
+					GraphQLDTOProperty.of(
+						objectField.getName(), ListEntry[].class));
 			}
 			else if (objectField.getListTypeDefinitionId() != 0) {
 				graphQLDTOProperties.add(
@@ -141,6 +162,13 @@ public class ObjectDefinitionGraphQLDTOContributor
 					GraphQLDTOProperty.of(relationshipName, Map.class));
 			}
 			else {
+				if (objectField.isLocalized()) {
+					graphQLDTOProperties.add(
+						GraphQLDTOProperty.of(
+							objectField.getI18nObjectFieldName(), true,
+							Map.class));
+				}
+
 				graphQLDTOProperties.add(
 					GraphQLDTOProperty.of(
 						objectField.getName(),
@@ -149,9 +177,11 @@ public class ObjectDefinitionGraphQLDTOContributor
 			}
 		}
 
-		List<ObjectRelationship> objectRelationships =
-			objectRelationshipLocalService.getObjectRelationships(
-				objectDefinition.getObjectDefinitionId());
+		if (objectRelationships == null) {
+			objectRelationships =
+				objectRelationshipLocalService.getObjectRelationships(
+					objectDefinition.getObjectDefinitionId());
+		}
 
 		for (ObjectRelationship objectRelationship : objectRelationships) {
 			if (!Objects.equals(
@@ -170,7 +200,7 @@ public class ObjectDefinitionGraphQLDTOContributor
 
 		return new ObjectDefinitionGraphQLDTOContributor(
 			objectDefinition.getCompanyId(),
-			entityModelProvider.getEntityModel(objectDefinition),
+			entityModelProvider.getEntityModel(objectDefinition, objectFields),
 			extensionProviderRegistry, graphQLDTOProperties,
 			StringUtil.removeSubstring(
 				objectDefinition.getPKObjectFieldName(), "c_"),
@@ -501,6 +531,7 @@ public class ObjectDefinitionGraphQLDTOContributor
 		Status status = objectEntry.getStatus();
 
 		properties.put("status", status.getLabel());
+		properties.put("statusCode", status.getCode());
 
 		return properties;
 	}
@@ -513,10 +544,30 @@ public class ObjectDefinitionGraphQLDTOContributor
 		}
 
 		objectEntry.setId(() -> (Long)map.get(getIdName()));
+		objectEntry.setStatus(
+			() -> {
+				if (map.get("statusCode") == null) {
+					return null;
+				}
+
+				int statusCode = (int)map.get("statusCode");
+
+				return new Status() {
+					{
+						setCode(() -> statusCode);
+						setLabel(
+							() -> WorkflowConstants.getStatusLabel(statusCode));
+					}
+				};
+			});
 
 		Map<String, Object> properties = objectEntry.getProperties();
 
 		for (Map.Entry<String, Object> entry : map.entrySet()) {
+			if (Objects.equals(entry.getKey(), "statusCode")) {
+				continue;
+			}
+
 			properties.put(entry.getKey(), entry.getValue());
 		}
 

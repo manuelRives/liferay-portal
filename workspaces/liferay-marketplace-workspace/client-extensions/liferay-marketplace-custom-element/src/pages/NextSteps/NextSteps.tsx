@@ -4,70 +4,37 @@
  */
 
 import ClayIcon from '@clayui/icon';
-import classNames from 'classnames';
-import {ReactNode} from 'react';
+import ClayLoadingIndicator from '@clayui/loading-indicator';
 
-import catalogIcon from '../../assets/icons/catalog_icon.svg';
 import {AccountAndAppCard} from '../../components/Card/AccountAndAppCard';
 import {Header} from '../../components/Header/Header';
 import {NewAppPageFooterButtons} from '../../components/NewAppPageFooterButtons/NewAppPageFooterButtons';
+import {OrderTypes, PaymentStatus} from '../../enums/Order';
+import withProviders from '../../hoc/withProviders';
+import i18n from '../../i18n';
 import {Liferay} from '../../liferay/liferay';
 import {baseURL} from '../../utils/api';
+import {getProductPriceModel} from '../../utils/productUtils';
 import {
 	getAccountImage,
 	getThumbnailByProductAttachment,
 	showAppImage,
 } from '../../utils/util';
+import useNextSteps from './useNextSteps';
 
 import './NextSteps.scss';
 
-import ClayLoadingIndicator from '@clayui/loading-indicator';
-
-import CommerceSelectAccountImpl from '../../services/rest/CommerceSelectAccount';
-import {PaymentStatus} from '../GetApp/enums/PaymentStatus';
-import getProductPriceModel from '../GetApp/utils/getProductPriceModel';
-import useNextSteps from './useNextSteps';
-
-type NextStepsProps = {
-	children?: ReactNode;
-	continueButtonText?: string;
-	header?: {
-		description?: string;
-		title?: string;
-	};
-	linkText?: string;
-	onClickContinue?: () => void;
-	showBackButton?: boolean;
-	showOrderId?: boolean;
-	size?: 'lg';
-};
-
-type TypeNextStepBody = {
-	[key in string]?: ReactNode;
-};
-
-export default function NextSteps({
-	children,
-	onClickContinue,
-	showBackButton,
-	size,
-}: NextStepsProps) {
+export function NextSteps() {
 	const queryString = window.location.search;
 	const urlParams = new URLSearchParams(queryString);
 	const orderId = urlParams.get('orderId');
 
-	const {
-		accountCommerce,
-		cart,
-		cartItems,
-		firstCartItem,
-		isLoading,
-		product,
-	} = useNextSteps(orderId as string);
+	const {accountCommerce, firstPlacedOrder, isLoading, placedOrder, product} =
+		useNextSteps(orderId as string);
 
-	const {name: appName = ''} = firstCartItem ?? {};
+	const {name: appName = ''} = firstPlacedOrder ?? {};
 
-	const isTrial = cartItems?.items?.some(
+	const isTrial = placedOrder?.placedOrderItems?.some(
 		(item: any) =>
 			item.sku.endsWith('ts') || item.sku.toLowerCase().includes('trial')
 	);
@@ -79,25 +46,44 @@ export default function NextSteps({
 		baseURL
 	);
 
-	const paymentStatus = cart?.paymentStatusLabel;
+	const paymentStatus = placedOrder?.paymentStatus;
+	const orderTypeExternalReferenceCode =
+		placedOrder?.orderTypeExternalReferenceCode;
 
-	const {isPaidApp} = getProductPriceModel(product);
+	const isCloudApp = orderTypeExternalReferenceCode === OrderTypes.CLOUDAPP;
 
-	const nextStepBody: TypeNextStepBody = {
+	const {isPaidApp} = getProductPriceModel(product as DeliveryProduct);
+
+	const nextStepBody = {
 		[PaymentStatus.PAID]: (
 			<Header
 				description={
-					isPaidApp ? (
-						<p>
+					isCloudApp ? (
+						<span>
+							<p>
+								Congratulations on the purchase of{' '}
+								<strong>{appName}</strong>. You will now need to
+								install the app by clicking on the
+								&quot;Continue to Install&quot; button below.
+							</p>
+
+							<p>
+								Your Order ID is: <strong>{orderId}</strong>
+							</p>
+						</span>
+					) : isPaidApp ? (
+						<span>
 							<p>
 								Congratulations on the purchase of{' '}
 								<strong>{appName}</strong>. You will need to
 								create a license your app before deploying to
 								your DXP instance.
 							</p>
+
 							<p>
 								Your Order ID is: <strong>{orderId}</strong>
 							</p>
+
 							<p>
 								To license your app, you can click Go to
 								Dashboard below. Find your Order ID and choose
@@ -105,9 +91,9 @@ export default function NextSteps({
 								must have at least one of your instance details
 								available - IP address, MAC address or hostname.
 							</p>
-						</p>
+						</span>
 					) : (
-						<p>
+						<span>
 							<strong>{appName}</strong> app is ready for
 							download.
 							<p>
@@ -120,7 +106,7 @@ export default function NextSteps({
 								<ClayIcon className="m-1" symbol="ellipsis-v" />
 								→ Download App.
 							</p>
-						</p>
+						</span>
 					)
 				}
 				title="Next steps"
@@ -135,9 +121,11 @@ export default function NextSteps({
 								You will need to create a license for your app
 								before deploying it to your DXP instance
 							</p>
+
 							<p>
 								Your Order ID is: <strong>{orderId}</strong>
 							</p>
+
 							<p>
 								To license your app, you can click Go to
 								Dashboard below. Find your Order ID and choose
@@ -154,9 +142,9 @@ export default function NextSteps({
 							the email address listed in the order. Once payment
 							is processed, you will be notified as to the next
 							steps to license your app.
-							<p className="mt-4">
+							<span className="mt-4">
 								Your Order ID is: <strong>{orderId}</strong>
-							</p>
+							</span>
 						</p>
 					)
 				}
@@ -170,69 +158,70 @@ export default function NextSteps({
 	}
 
 	return (
-		<div
-			className={classNames('next-step-page-container', {
-				'next-step-page-container-larger': size === 'lg',
-			})}
-		>
+		<div className="next-step-page-container">
 			<div className="next-step-page-content">
-				{!children && (
-					<div className="next-step-page-cards">
-						<AccountAndAppCard
-							category="Application"
-							logo={appLogo || catalogIcon}
-							title={appName}
-						/>
+				<div className="next-step-page-cards">
+					<AccountAndAppCard
+						category="Application"
+						logo={appLogo || 'catalog'}
+						title={appName}
+					/>
 
-						<div className="icon-container">
-							<ClayIcon
-								className="m-0 next-step-page-icon"
-								symbol="arrow-right-full"
-							/>
-						</div>
+					<ClayIcon
+						className="m-0 next-step-page-icon"
+						symbol="arrow-right-full"
+					/>
 
-						<AccountAndAppCard
-							category="Account"
-							logo={getAccountImage(
-								accountCommerce?.logoURL as string
-							)}
-							title={accountCommerce?.name ?? ''}
-						/>
-					</div>
-				)}
+					<AccountAndAppCard
+						category="Account"
+						logo={getAccountImage(
+							accountCommerce?.logoURL as string
+						)}
+						title={accountCommerce?.name ?? ''}
+					/>
+				</div>
 
 				<div className="next-step-page-text">
 					<div className="next-step-page-text">
-						{nextStepBody[String(paymentStatus) || '']}
+						{(nextStepBody as any)[String(paymentStatus) || '']}
 					</div>
 				</div>
 
 				<NewAppPageFooterButtons
-					backButtonText="Go to Dashboard"
+					backButtonText={i18n.translate(
+						isCloudApp ? 'go-to-my-apps' : 'go-to-dashboard'
+					)}
+					continueButtonText={i18n.translate(
+						isCloudApp ? 'continue-to-install' : 'download-app'
+					)}
 					onClickBack={() => {
-						return CommerceSelectAccountImpl.selectAccount(
-							cart?.accountId
-						).then(() => {
-							Liferay.CommerceContext.account = {
-								accountId: cart?.accountId,
-							};
-
-							Liferay.Util.navigate(
-								Liferay.ThemeDisplay.getCanonicalURL().replace(
-									'/next-steps',
-									`/customer-dashboard`
-								)
-							);
-						});
+						Liferay.Util.navigate(
+							Liferay.ThemeDisplay.getLayoutURL().replace(
+								'/next-steps',
+								`/customer-dashboard`
+							)
+						);
 					}}
 					onClickContinue={() => {
-						if (onClickContinue) {
-							window.location.href =
-								'https://console.liferay.cloud/projects';
+						if (isCloudApp) {
+							Liferay.Util.navigate(
+								Liferay.ThemeDisplay.getLayoutURL().replace(
+									'/next-steps',
+									`/customer-dashboard#/order/${orderId}/cloud-provisioning`
+								)
+							);
+						}
+
+						if (!isCloudApp) {
+							Liferay.Util.navigate(
+								Liferay.ThemeDisplay.getLayoutURL().replace(
+									'/next-steps',
+									`/customer-dashboard#/order/${orderId}/download`
+								)
+							);
 						}
 					}}
-					showBackButton={showBackButton}
-					showContinueButton={false}
+					showContinueButton={true}
 				/>
 
 				{(paymentStatus === PaymentStatus.PAID || isTrial) && (
@@ -246,3 +235,5 @@ export default function NextSteps({
 		</div>
 	);
 }
+
+export default withProviders(NextSteps);

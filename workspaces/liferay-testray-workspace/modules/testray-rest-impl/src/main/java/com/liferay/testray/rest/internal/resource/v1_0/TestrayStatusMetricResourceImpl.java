@@ -6,13 +6,16 @@
 package com.liferay.testray.rest.internal.resource.v1_0;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
+import com.liferay.testray.rest.dto.v1_0.TestrayBuildMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayCaseTypeMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayComponentMetric;
+import com.liferay.testray.rest.dto.v1_0.TestrayRoutineMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayRunMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayStatusMetric;
 import com.liferay.testray.rest.dto.v1_0.TestrayTeamMetric;
@@ -40,25 +43,26 @@ public class TestrayStatusMetricResourceImpl
 	public Page<TestrayCaseTypeMetric>
 			getTestrayStatusMetricByTestrayBuildIdTestrayBuildTestrayCaseTypesMetricsPage(
 				Long testrayBuildId, String testrayCasePriorities,
-				Long testrayTeamId, Pagination pagination)
+				String testrayTeamIds, Pagination pagination)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(22);
+		StringBundler sb = new StringBundler(25);
 
 		sb.append("select ct.c_caseTypeId_, ct.name_, count(cr.dueStatus_) ");
-		sb.append("as total, sum(case when cr.dueStatus_ = 'blocked' then 1 ");
+		sb.append("as total, sum(case when cr.dueStatus_ = 'BLOCKED' then 1 ");
 		sb.append("else 0 end) as blocked, sum(case when cr.dueStatus_ =  ");
-		sb.append("'failed' then 1 else 0 end) as failed, sum(case when ");
-		sb.append("cr.dueStatus_ = 'inprogress' then 1 else 0 end) as ");
-		sb.append("inprogress, sum(case when cr.dueStatus_ = 'passed' then 1 ");
-		sb.append("else 0 end) as passed, sum(case when cr.dueStatus_ = ");
-		sb.append("'testfix' then 1 else 0 end) as testfix, sum(case when ");
-		sb.append("cr.dueStatus_ = 'untested' then 1 else 0 end) as untested ");
-		sb.append("from O_[%COMPANY_ID%]_Build b, ");
-		sb.append("O_[%COMPANY_ID%]_CaseResult cr, O_[%COMPANY_ID%]_Case c, ");
-		sb.append("O_[%COMPANY_ID%]_CaseType ct, O_[%COMPANY_ID%]_Component ");
-		sb.append("co where b.c_buildId_ = ? and b.c_buildId_ = ");
-		sb.append("cr.r_buildToCaseResult_c_buildId and ");
+		sb.append("'FAILED' then 1 else 0 end) as failed, sum(case when ");
+		sb.append("cr.dueStatus_ = 'INCOMPLETE' then 1 else 0 end) as ");
+		sb.append("incomplete, sum(case when cr.dueStatus_ = 'INPROGRESS' ");
+		sb.append("then 1 else 0 end) as inprogress, sum(case when ");
+		sb.append("cr.dueStatus_ = 'PASSED' then 1 else 0 end) as passed, ");
+		sb.append("sum(case when cr.dueStatus_ = 'TESTFIX' then 1 else 0 ");
+		sb.append("end) as testfix, sum(case when cr.dueStatus_ = 'UNTESTED' ");
+		sb.append("then 1 else 0 end) as untested from ");
+		sb.append("O_[%COMPANY_ID%]_Build b, O_[%COMPANY_ID%]_CaseResult cr, ");
+		sb.append("O_[%COMPANY_ID%]_Case c, O_[%COMPANY_ID%]_CaseType ct, ");
+		sb.append("O_[%COMPANY_ID%]_Component co where b.c_buildId_ = ? and ");
+		sb.append("b.c_buildId_ = cr.r_buildToCaseResult_c_buildId and ");
 		sb.append("cr.r_caseToCaseResult_c_caseId = c.c_caseId_ and ");
 		sb.append("c.r_caseTypeToCases_c_caseTypeId = ct.c_caseTypeId_ and ");
 		sb.append("c.r_componentToCases_c_componentId = co.c_componentId_ ");
@@ -69,13 +73,15 @@ public class TestrayStatusMetricResourceImpl
 
 		if (Validator.isNotNull(testrayCasePriorities)) {
 			sb.append("and c.priority_ in (");
-			sb.append(_interpolateParams(params, testrayCasePriorities));
+			sb.append(
+				TestrayUtil.interpolateParams(params, testrayCasePriorities));
 			sb.append(") ");
 		}
 
-		if (Validator.isNotNull(testrayTeamId)) {
-			sb.append("and t.c_teamId_ = ? ");
-			params.add(testrayTeamId);
+		if (Validator.isNotNull(testrayTeamIds)) {
+			sb.append("and co.r_teamToComponents_c_teamId in (");
+			sb.append(TestrayUtil.interpolateParams(params, testrayTeamIds));
+			sb.append(") ");
 		}
 
 		sb.append("group by ct.c_caseTypeId_, ct.name_ order by ct.name_ asc ");
@@ -86,28 +92,27 @@ public class TestrayStatusMetricResourceImpl
 
 		long totalCount = TestrayUtil.getTotalCount(sql, params);
 
-		sql += " limit ? offset ?";
+		if (pagination != null) {
+			sql += " limit ? offset ?";
 
-		params.add(pagination.getPageSize());
-		params.add(pagination.getStartPosition());
+			params.add(pagination.getPageSize());
+			params.add(pagination.getStartPosition());
+		}
 
-		List<Map<String, Object>> values = TestrayUtil.runSQL(sql, params);
+		List<Map<String, Object>> values = TestrayUtil.executeQuery(
+			sql, params);
 
 		return Page.of(
 			transform(
 				values,
-				value -> {
-					TestrayCaseTypeMetric testrayCaseTypeMetric =
-						new TestrayCaseTypeMetric();
-
-					testrayCaseTypeMetric.setTestrayCaseTypeId(
-						GetterUtil.getLong(value.get("c_caseTypeId_")));
-					testrayCaseTypeMetric.setTestrayCaseTypeName(
-						GetterUtil.getString(value.get("name_")));
-					testrayCaseTypeMetric.setTestrayStatusMetric(
-						_getTestrayStatusMetric(value));
-
-					return testrayCaseTypeMetric;
+				value -> new TestrayCaseTypeMetric() {
+					{
+						testrayCaseTypeId = GetterUtil.getLong(
+							value.get("c_casetypeid_"));
+						testrayCaseTypeName = GetterUtil.getString(
+							value.get("name_"));
+						testrayStatusMetric = _getTestrayStatusMetric(value);
+					}
 				}),
 			pagination, totalCount);
 	}
@@ -116,25 +121,27 @@ public class TestrayStatusMetricResourceImpl
 	public Page<TestrayComponentMetric>
 			getTestrayStatusMetricByTestrayBuildIdTestrayBuildTestrayComponentsMetricsPage(
 				Long testrayBuildId, String testrayCasePriorities,
-				String testrayCaseTypes, Long testrayTeamId,
+				String testrayCaseTypes, String testrayTeamIds,
 				Pagination pagination)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(23);
+		StringBundler sb = new StringBundler(27);
 
 		sb.append("select co.c_componentId_, co.name_, count(cr.dueStatus_) ");
-		sb.append("as total, sum(case when cr.dueStatus_ = 'blocked' then 1 ");
+		sb.append("as total, sum(case when cr.dueStatus_ = 'BLOCKED' then 1 ");
 		sb.append("else 0 end) as blocked, sum(case when cr.dueStatus_ =  ");
-		sb.append("'failed' then 1 else 0 end) as failed, sum(case when ");
-		sb.append("cr.dueStatus_ = 'inprogress' then 1 else 0 end) as  ");
-		sb.append("inprogress, sum(case when cr.dueStatus_ = 'passed' then 1 ");
-		sb.append("else 0 end) as passed, sum(case when cr.dueStatus_ = ");
-		sb.append("'testfix' then 1 else 0 end) as testfix, sum(case when ");
-		sb.append("cr.dueStatus_ = 'untested' then 1 else 0 end) as untested ");
-		sb.append("from O_[%COMPANY_ID%]_Build b, ");
-		sb.append("O_[%COMPANY_ID%]_CaseResult cr, O_[%COMPANY_ID%]_Case c, ");
-		sb.append("O_[%COMPANY_ID%]_Component co where b.c_buildId_ = ? and ");
-		sb.append("b.c_buildId_  = cr.r_buildToCaseResult_c_buildId and ");
+		sb.append("'FAILED' then 1 else 0 end) as failed, sum(case when ");
+		sb.append("cr.dueStatus_ = 'INCOMPLETE' then 1 else 0 end) as ");
+		sb.append("incomplete, sum(case when cr.dueStatus_ = 'INPROGRESS' ");
+		sb.append("then 1 else 0 end) as inprogress, sum(case when ");
+		sb.append("cr.dueStatus_ = 'PASSED' then 1 else 0 end) as passed, ");
+		sb.append("sum(case when cr.dueStatus_ = 'TESTFIX' then 1 else 0 ");
+		sb.append("end) as testfix, sum(case when cr.dueStatus_ = 'UNTESTED' ");
+		sb.append("then 1 else 0 end) as untested from ");
+		sb.append("O_[%COMPANY_ID%]_Build b, O_[%COMPANY_ID%]_CaseResult cr, ");
+		sb.append("O_[%COMPANY_ID%]_Case c, O_[%COMPANY_ID%]_Component co ");
+		sb.append("where b.c_buildId_ = ? and b.c_buildId_  = ");
+		sb.append("cr.r_buildToCaseResult_c_buildId and ");
 		sb.append("cr.r_caseToCaseResult_c_caseId = c.c_caseId_ and ");
 		sb.append("c.r_componentToCases_c_componentId = co.c_componentId_ ");
 
@@ -144,19 +151,21 @@ public class TestrayStatusMetricResourceImpl
 
 		if (Validator.isNotNull(testrayCasePriorities)) {
 			sb.append("and c.priority_ in (");
-			sb.append(_interpolateParams(params, testrayCasePriorities));
+			sb.append(
+				TestrayUtil.interpolateParams(params, testrayCasePriorities));
 			sb.append(") ");
 		}
 
 		if (Validator.isNotNull(testrayCaseTypes)) {
 			sb.append("and c.r_caseTypeToCases_c_caseTypeId in (");
-			sb.append(_interpolateParams(params, testrayCaseTypes));
+			sb.append(TestrayUtil.interpolateParams(params, testrayCaseTypes));
 			sb.append(") ");
 		}
 
-		if (Validator.isNotNull(testrayTeamId)) {
-			sb.append("and t.c_teamId_ = ? ");
-			params.add(testrayTeamId);
+		if (Validator.isNotNull(testrayTeamIds)) {
+			sb.append("and co.r_teamToComponents_c_teamId in (");
+			sb.append(TestrayUtil.interpolateParams(params, testrayTeamIds));
+			sb.append(") ");
 		}
 
 		sb.append(
@@ -168,28 +177,27 @@ public class TestrayStatusMetricResourceImpl
 
 		long totalCount = TestrayUtil.getTotalCount(sql, params);
 
-		sql += " limit ? offset ?";
+		if (pagination != null) {
+			sql += " limit ? offset ?";
 
-		params.add(pagination.getPageSize());
-		params.add(pagination.getStartPosition());
+			params.add(pagination.getPageSize());
+			params.add(pagination.getStartPosition());
+		}
 
-		List<Map<String, Object>> values = TestrayUtil.runSQL(sql, params);
+		List<Map<String, Object>> values = TestrayUtil.executeQuery(
+			sql, params);
 
 		return Page.of(
 			transform(
 				values,
-				value -> {
-					TestrayComponentMetric testrayComponentMetric =
-						new TestrayComponentMetric();
-
-					testrayComponentMetric.setTestrayComponentId(
-						GetterUtil.getLong(value.get("c_componentId_")));
-					testrayComponentMetric.setTestrayComponentName(
-						GetterUtil.getString(value.get("name_")));
-					testrayComponentMetric.setTestrayStatusMetric(
-						_getTestrayStatusMetric(value));
-
-					return testrayComponentMetric;
+				value -> new TestrayComponentMetric() {
+					{
+						testrayComponentId = GetterUtil.getLong(
+							value.get("c_componentid_"));
+						testrayComponentName = GetterUtil.getString(
+							value.get("name_"));
+						testrayStatusMetric = _getTestrayStatusMetric(value);
+					}
 				}),
 			pagination, totalCount);
 	}
@@ -198,23 +206,24 @@ public class TestrayStatusMetricResourceImpl
 	public Page<TestrayRunMetric>
 			getTestrayStatusMetricByTestrayBuildIdTestrayBuildTestrayRunsMetricsPage(
 				Long testrayBuildId, String testrayCasePriorities,
-				String testrayCaseTypes, Long testrayTeamId,
+				String testrayCaseTypes, String testrayTeamIds,
 				Pagination pagination)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(26);
+		StringBundler sb = new StringBundler(29);
 
 		sb.append("select r.c_runId_, r.name_, r.number_, ");
 		sb.append("count(cr.dueStatus_) as total, sum(case when ");
-		sb.append("cr.dueStatus_ = 'blocked' then 1 else 0 end) as blocked, ");
-		sb.append("sum(case when cr.dueStatus_ = 'failed' then 1 else 0 end) ");
-		sb.append("as failed, sum(case when cr.dueStatus_ = 'inprogress' ");
-		sb.append("then 1 else 0 end) as inprogress, sum(case when ");
-		sb.append("cr.dueStatus_ = 'passed' then 1 else 0 end) as passed, ");
-		sb.append("sum(case when cr.dueStatus_ = 'testfix' then 1 else 0 ");
-		sb.append("end) as testfix, sum(case when cr.dueStatus_ = 'untested' ");
-		sb.append("then 1 else 0 end) as untested from ");
-		sb.append("O_[%COMPANY_ID%]_Build b, O_[%COMPANY_ID%]_Run r, ");
+		sb.append("cr.dueStatus_ = 'BLOCKED' then 1 else 0 end) as blocked, ");
+		sb.append("sum(case when cr.dueStatus_ = 'FAILED' then 1 else 0 end) ");
+		sb.append("as failed, sum(case when cr.dueStatus_ = 'INCOMPLETE' ");
+		sb.append("then 1 else 0 end) as incomplete, sum(case when ");
+		sb.append("cr.dueStatus_ = 'INPROGRESS' then 1 else 0 end) as ");
+		sb.append("inprogress, sum(case when cr.dueStatus_ = 'PASSED' then 1 ");
+		sb.append("else 0 end) as passed, sum(case when cr.dueStatus_ = ");
+		sb.append("'TESTFIX' then 1 else 0 end) as testfix, sum(case when ");
+		sb.append("cr.dueStatus_ = 'UNTESTED' then 1 else 0 end) as untested ");
+		sb.append("from O_[%COMPANY_ID%]_Build b, O_[%COMPANY_ID%]_Run r, ");
 		sb.append("O_[%COMPANY_ID%]_CaseResult cr, O_[%COMPANY_ID%]_Case c, ");
 		sb.append("O_[%COMPANY_ID%]_Component co where b.c_buildId_  = ? and ");
 		sb.append("b.c_buildId_  = r.r_buildToRuns_c_buildId and ");
@@ -229,19 +238,21 @@ public class TestrayStatusMetricResourceImpl
 
 		if (Validator.isNotNull(testrayCasePriorities)) {
 			sb.append("and c.priority_ in (");
-			sb.append(_interpolateParams(params, testrayCasePriorities));
+			sb.append(
+				TestrayUtil.interpolateParams(params, testrayCasePriorities));
 			sb.append(") ");
 		}
 
 		if (Validator.isNotNull(testrayCaseTypes)) {
 			sb.append("and c.r_caseTypeToCases_c_caseTypeId in (");
-			sb.append(_interpolateParams(params, testrayCaseTypes));
+			sb.append(TestrayUtil.interpolateParams(params, testrayCaseTypes));
 			sb.append(") ");
 		}
 
-		if (Validator.isNotNull(testrayTeamId)) {
-			sb.append("and co.r_teamToComponents_c_teamId  = ? ");
-			params.add(testrayTeamId);
+		if (Validator.isNotNull(testrayTeamIds)) {
+			sb.append("and co.r_teamToComponents_c_teamId in (");
+			sb.append(TestrayUtil.interpolateParams(params, testrayTeamIds));
+			sb.append(") ");
 		}
 
 		sb.append("group by r.c_runId_, r.name_ order by r.number_ asc ");
@@ -252,29 +263,29 @@ public class TestrayStatusMetricResourceImpl
 
 		long totalCount = TestrayUtil.getTotalCount(sql, params);
 
-		sql += " limit ? offset ?";
+		if (pagination != null) {
+			sql += " limit ? offset ?";
 
-		params.add(pagination.getPageSize());
-		params.add(pagination.getStartPosition());
+			params.add(pagination.getPageSize());
+			params.add(pagination.getStartPosition());
+		}
 
-		List<Map<String, Object>> values = TestrayUtil.runSQL(sql, params);
+		List<Map<String, Object>> values = TestrayUtil.executeQuery(
+			sql, params);
 
 		return Page.of(
 			transform(
 				values,
-				value -> {
-					TestrayRunMetric testrayRunMetric = new TestrayRunMetric();
-
-					testrayRunMetric.setTestrayRunId(
-						GetterUtil.getLong(value.get("c_runId_")));
-					testrayRunMetric.setTestrayRunName(
-						GetterUtil.getString(value.get("name_")));
-					testrayRunMetric.setTestrayRunNumber(
-						GetterUtil.getLong(value.get("number_")));
-					testrayRunMetric.setTestrayStatusMetric(
-						_getTestrayStatusMetric(value));
-
-					return testrayRunMetric;
+				value -> new TestrayRunMetric() {
+					{
+						testrayRunId = GetterUtil.getLong(
+							value.get("c_runid_"));
+						testrayRunName = GetterUtil.getString(
+							value.get("name_"));
+						testrayRunNumber = GetterUtil.getLong(
+							value.get("number_"));
+						testrayStatusMetric = _getTestrayStatusMetric(value);
+					}
 				}),
 			pagination, totalCount);
 	}
@@ -283,26 +294,27 @@ public class TestrayStatusMetricResourceImpl
 	public Page<TestrayTeamMetric>
 			getTestrayStatusMetricByTestrayBuildIdTestrayBuildTestrayTeamsMetricsPage(
 				Long testrayBuildId, String testrayCasePriorities,
-				String testrayCaseTypes, Long testrayRunId, Long testrayTeamId,
-				Pagination pagination)
+				String testrayCaseTypes, Long testrayRunId,
+				String testrayTeamIds, Pagination pagination)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(27);
+		StringBundler sb = new StringBundler(30);
 
 		sb.append("select t.c_teamId_ , t.name_, count(cr.dueStatus_) as ");
-		sb.append("TOTAL, sum(case when cr.dueStatus_ = 'blocked' then 1 ");
+		sb.append("total, sum(case when cr.dueStatus_ = 'BLOCKED' then 1 ");
 		sb.append("else 0 end) as blocked, sum(case when cr.dueStatus_ = ");
-		sb.append("'failed' then 1 else 0 end) as failed, sum(case when ");
-		sb.append("cr.dueStatus_ = 'inprogress' then 1 else 0 end) as ");
-		sb.append("inprogress, sum(case when cr.dueStatus_ = 'passed' then 1 ");
-		sb.append("else 0 end) as passed, sum(case when cr.dueStatus_ = ");
-		sb.append("'testfix' then 1 else 0 end) as testfix, sum(case when ");
-		sb.append("cr.dueStatus_ = 'untested' then 1 else 0 end) as untested ");
-		sb.append("from O_[%COMPANY_ID%]_Build b, ");
-		sb.append("O_[%COMPANY_ID%]_CaseResult cr, O_[%COMPANY_ID%]_Case c, ");
-		sb.append("O_[%COMPANY_ID%]_Component co, O_[%COMPANY_ID%]_Team t ");
-		sb.append("where b.c_buildId_ = ? and b.c_buildId_ = ");
-		sb.append("cr.r_buildToCaseResult_c_buildId and ");
+		sb.append("'FAILED' then 1 else 0 end) as failed, sum(case when ");
+		sb.append("cr.dueStatus_ = 'INCOMPLETE' then 1 else 0 end) as ");
+		sb.append("incomplete, sum(case when cr.dueStatus_ = 'INPROGRESS' ");
+		sb.append("then 1 else 0 end) as inprogress, sum(case when ");
+		sb.append("cr.dueStatus_ = 'PASSED' then 1 else 0 end) as passed, ");
+		sb.append("sum(case when cr.dueStatus_ = 'TESTFIX' then 1 else 0 ");
+		sb.append("end) as testfix, sum(case when cr.dueStatus_ = 'UNTESTED' ");
+		sb.append("then 1 else 0 end) as untested from ");
+		sb.append("O_[%COMPANY_ID%]_Build b, O_[%COMPANY_ID%]_CaseResult cr, ");
+		sb.append("O_[%COMPANY_ID%]_Case c, O_[%COMPANY_ID%]_Component co, ");
+		sb.append("O_[%COMPANY_ID%]_Team t where b.c_buildId_ = ? and ");
+		sb.append("b.c_buildId_ = cr.r_buildToCaseResult_c_buildId and ");
 		sb.append("cr.r_caseToCaseResult_c_caseId = c.c_caseId_ ");
 
 		List<Object> params = new ArrayList<>();
@@ -311,13 +323,14 @@ public class TestrayStatusMetricResourceImpl
 
 		if (Validator.isNotNull(testrayCasePriorities)) {
 			sb.append("and c.priority_ in (");
-			sb.append(_interpolateParams(params, testrayCasePriorities));
+			sb.append(
+				TestrayUtil.interpolateParams(params, testrayCasePriorities));
 			sb.append(") ");
 		}
 
 		if (Validator.isNotNull(testrayCaseTypes)) {
 			sb.append("and c.r_caseTypeToCases_c_caseTypeId in (");
-			sb.append(_interpolateParams(params, testrayCaseTypes));
+			sb.append(TestrayUtil.interpolateParams(params, testrayCaseTypes));
 			sb.append(") ");
 		}
 
@@ -326,9 +339,10 @@ public class TestrayStatusMetricResourceImpl
 			params.add(testrayRunId);
 		}
 
-		if (Validator.isNotNull(testrayTeamId)) {
-			sb.append("and t.c_teamId_ = ? ");
-			params.add(testrayTeamId);
+		if (Validator.isNotNull(testrayTeamIds)) {
+			sb.append("and t.c_teamId_ in (");
+			sb.append(TestrayUtil.interpolateParams(params, testrayTeamIds));
+			sb.append(") ");
 		}
 
 		sb.append("and cr.r_componentToCaseResult_c_componentId  = ");
@@ -342,28 +356,279 @@ public class TestrayStatusMetricResourceImpl
 
 		long totalCount = TestrayUtil.getTotalCount(sql, params);
 
-		sql += " limit ? offset ?";
+		if (pagination != null) {
+			sql += " limit ? offset ?";
 
-		params.add(pagination.getPageSize());
-		params.add(pagination.getStartPosition());
+			params.add(pagination.getPageSize());
+			params.add(pagination.getStartPosition());
+		}
 
-		List<Map<String, Object>> values = TestrayUtil.runSQL(sql, params);
+		List<Map<String, Object>> values = TestrayUtil.executeQuery(
+			sql, params);
 
 		return Page.of(
 			transform(
 				values,
-				value -> {
-					TestrayTeamMetric testrayTeamMetric =
-						new TestrayTeamMetric();
+				value -> new TestrayTeamMetric() {
+					{
+						testrayStatusMetric = _getTestrayStatusMetric(value);
+						testrayTeamId = GetterUtil.getLong(
+							value.get("c_teamid_"));
+						testrayTeamName = GetterUtil.getString(
+							value.get("name_"));
+					}
+				}),
+			pagination, totalCount);
+	}
 
-					testrayTeamMetric.setTestrayTeamId(
-						GetterUtil.getLong(value.get("c_teamId_")));
-					testrayTeamMetric.setTestrayTeamName(
-						GetterUtil.getString(value.get("name_")));
-					testrayTeamMetric.setTestrayStatusMetric(
-						_getTestrayStatusMetric(value));
+	@Override
+	public Page<TestrayRoutineMetric>
+			getTestrayStatusMetricByTestrayProjectIdTestrayProjectTestrayRoutinesMetricsPage(
+				Long testrayProjectId, Pagination pagination, Sort[] sorts)
+		throws Exception {
 
-					return testrayTeamMetric;
+		StringBundler sb = new StringBundler(28);
+
+		sb.append("select (b.caseresultblocked_ + b.caseresultfailed_ + ");
+		sb.append("b.caseresultincomplete_ + b.caseresultinprogress_ + ");
+		sb.append("b.caseresultpassed_ + b.caseresulttestfix_ + ");
+		sb.append("b.caseresultuntested_) as total, b.caseResultBlocked_ as ");
+		sb.append("blocked, b.caseresultfailed_ as failed, ");
+		sb.append("b.caseresultincomplete_ as incomplete, ");
+		sb.append("b.caseresultinprogress_ as inprogress, ");
+		sb.append("b.caseresultpassed_ as passed, b.caseresulttestfix_ as ");
+		sb.append("testfix, b.caseresultuntested_ as untested, ");
+		sb.append("r.c_routineId_, r.name_, b.dueDate_, bx.cpuUseTime_ from ");
+		sb.append("O_[%COMPANY_ID%]_Project p, O_[%COMPANY_ID%]_Routine r, ");
+		sb.append("O_[%COMPANY_ID%]_Build b, O_[%COMPANY_ID%]_Build_x bx ");
+		sb.append("where p.c_projectId_ = ? and r.c_routineId_ = ");
+		sb.append("b.r_routineToBuilds_c_routineId and p.c_projectId_ = ");
+		sb.append("r.r_routineToProjects_c_projectId and b.c_buildId_ = ");
+		sb.append("(select b2.c_buildId_ from O_[%COMPANY_ID%]_Build b2 ");
+		sb.append("where b2.r_routineToBuilds_c_routineId = r.c_routineId_ ");
+		sb.append("and b2.dueDate_ = (select max(b3.dueDate_) from ");
+		sb.append("O_[%COMPANY_ID%]_Build b3 where ");
+		sb.append("b3.r_routineToBuilds_c_routineId = r.c_routineId_ and ");
+		sb.append("exists  (select 1 from O_[%COMPANY_ID%]_CaseResult cr ");
+		sb.append("where cr.r_buildToCaseResult_c_buildId = b3.c_buildId_)) ");
+		sb.append("limit 1) and b.c_buildId_ = bx.c_buildId_ group by ");
+		sb.append("r.c_routineId_, r.name_, b.dueDate_, bx.cpuUseTime_, ");
+		sb.append("b.caseresultblocked_, b.caseresultfailed_, ");
+		sb.append("b.caseresultincomplete_, b.caseresultinprogress_, ");
+		sb.append("b.caseresultpassed_, b.caseresulttestfix_, ");
+		sb.append("b.caseresultuntested_ order by r.name_ ");
+
+		List<Object> params = new ArrayList<>();
+
+		params.add(testrayProjectId);
+
+		String sql = StringUtil.replace(
+			sb.toString(), "[%COMPANY_ID%]",
+			String.valueOf(contextCompany.getCompanyId()));
+
+		long totalCount = TestrayUtil.getTotalCount(sql, params);
+
+		if ((sorts != null) && sorts[0].isReverse()) {
+			sql += "desc";
+		}
+
+		if (pagination != null) {
+			sql += " limit ? offset ?";
+
+			params.add(pagination.getPageSize());
+			params.add(pagination.getStartPosition());
+		}
+
+		List<Map<String, Object>> values = TestrayUtil.executeQuery(
+			sql, params);
+
+		return Page.of(
+			transform(
+				values,
+				value -> new TestrayRoutineMetric() {
+					{
+						testrayRoutineId = GetterUtil.getLong(
+							value.get("c_routineid_"));
+						testrayRoutineName = GetterUtil.getString(
+							value.get("name_"));
+						testrayStatusMetric = _getTestrayStatusMetric(value);
+
+						setTestrayBuildCPUUseTime(
+							() -> {
+								if (Validator.isNull(
+										value.get("cpuusetime_"))) {
+
+									return null;
+								}
+
+								return value.get(
+									"cpuusetime_"
+								).toString();
+							});
+						setTestrayBuildDueDate(
+							() -> {
+								if (value.get("duedate_") == null) {
+									return null;
+								}
+
+								return value.get(
+									"duedate_"
+								).toString();
+							});
+					}
+				}),
+			pagination, totalCount);
+	}
+
+	@Override
+	public Page<TestrayBuildMetric>
+			getTestrayStatusMetricByTestrayRoutineIdTestrayRoutineTestrayBuildsMetricsPage(
+				Long testrayRoutineId, Long testrayBuildId,
+				String testrayBuildName, String testrayProductVersion,
+				String testrayTaskStatus, Pagination pagination)
+		throws Exception {
+
+		StringBundler sb = new StringBundler(14);
+
+		sb.append("select b.c_buildId_ from O_[%COMPANY_ID%]_Build b, ");
+		sb.append("O_[%COMPANY_ID%]_ProductVersion pv ");
+
+		if (Validator.isNotNull(testrayTaskStatus)) {
+			sb.append(", O_[%COMPANY_ID%]_Task t ");
+		}
+
+		sb.append("where b.r_routineToBuilds_c_routineId = ? and ");
+		sb.append("pv.c_productVersionId_ = ");
+		sb.append("b.r_productVersionToBuilds_c_productVersionId and ");
+		sb.append("b.template_ = false and b.archived_ = false ");
+
+		List<Object> params = new ArrayList<>();
+
+		params.add(testrayRoutineId);
+
+		if (Validator.isNotNull(testrayProductVersion)) {
+			sb.append("and pv.c_productVersionId_ = ? ");
+			params.add(GetterUtil.getLong(testrayProductVersion));
+		}
+
+		if (Validator.isNotNull(testrayBuildName)) {
+			sb.append("and b.name_ like ? ");
+			params.add("%" + testrayBuildName + "%");
+		}
+
+		if (Validator.isNotNull(testrayTaskStatus)) {
+			sb.append("and t.r_buildToTasks_c_buildId = b.c_buildId_ and ");
+			sb.append("t.dueStatus_ in (");
+			sb.append(TestrayUtil.interpolateParams(params, testrayTaskStatus));
+			sb.append(") ");
+		}
+
+		sb.append("group by b.c_buildId_");
+
+		String sql = StringUtil.replace(
+			sb.toString(), "[%COMPANY_ID%]",
+			String.valueOf(contextCompany.getCompanyId()));
+
+		long totalCount = TestrayUtil.getTotalCount(sql, params);
+
+		sb = new StringBundler(29);
+
+		sb.append("select (b.caseresultblocked_ + b.caseresultfailed_ + ");
+		sb.append("b.caseresultincomplete_ + b.caseresultinprogress_ + ");
+		sb.append("b.caseresultpassed_ + b.caseresulttestfix_ + ");
+		sb.append("b.caseresultuntested_) as total, b.caseResultBlocked_ as ");
+		sb.append("blocked, b.caseresultfailed_ as failed, ");
+		sb.append("b.caseresultincomplete_ as incomplete, ");
+		sb.append("b.caseresultinprogress_ as inprogress, ");
+		sb.append("b.caseresultpassed_ as passed, b.caseresulttestfix_ as ");
+		sb.append("testfix, b.caseresultuntested_ as untested, b.c_buildId_, ");
+		sb.append("bx.cpuUseTime_, b.dueDate_, bx.importStatus_, b.gitHash_, ");
+		sb.append("b.name_, b.promoted_, b.archived_, pv.name_ as ");
+		sb.append("productVersionName, (select dueStatus_ from ");
+		sb.append("O_[%COMPANY_ID%]_Task t where t.r_buildToTasks_c_buildId ");
+		sb.append("= b.c_buildId_) as taskStatus from O_[%COMPANY_ID%]_Build ");
+		sb.append("b, O_[%COMPANY_ID%]_Build_x bx, ");
+		sb.append("O_[%COMPANY_ID%]_ProductVersion pv ");
+
+		if (Validator.isNotNull(testrayTaskStatus)) {
+			sb.append(", O_[%COMPANY_ID%]_Task t ");
+		}
+
+		sb.append("where b.r_routineToBuilds_c_routineId = ? and ");
+		sb.append("bx.c_buildid_ = b.c_buildid_ and pv.c_productVersionId_ = ");
+		sb.append("b.r_productVersionToBuilds_c_productVersionId and ");
+		sb.append("b.template_ = false and b.archived_ = false ");
+
+		params = new ArrayList<>();
+
+		params.add(testrayRoutineId);
+
+		if (Validator.isNotNull(testrayProductVersion)) {
+			sb.append("and pv.c_productVersionId_ = ? ");
+			params.add(GetterUtil.getLong(testrayProductVersion));
+		}
+
+		if (Validator.isNotNull(testrayBuildName)) {
+			sb.append("and b.name_ like ? ");
+			params.add("%" + testrayBuildName + "%");
+		}
+
+		if (Validator.isNotNull(testrayTaskStatus)) {
+			sb.append("and t.r_buildToTasks_c_buildId = b.c_buildId_ and ");
+			sb.append("t.dueStatus_ in (");
+			sb.append(TestrayUtil.interpolateParams(params, testrayTaskStatus));
+			sb.append(") ");
+		}
+
+		sb.append("group by b.c_buildId_, bx.importstatus_, pv.name_, ");
+		sb.append("bx.cpuUseTime_ order by b.c_buildId_ desc limit ? offset ?");
+
+		sql = StringUtil.replace(
+			sb.toString(), "[%COMPANY_ID%]",
+			String.valueOf(contextCompany.getCompanyId()));
+
+		params.add(pagination.getPageSize());
+		params.add(pagination.getStartPosition());
+
+		List<Map<String, Object>> values = TestrayUtil.executeQuery(
+			sql, params);
+
+		return Page.of(
+			transform(
+				values,
+				value -> new TestrayBuildMetric() {
+					{
+						testrayBuildArchived = GetterUtil.getBoolean(
+							String.valueOf(value.get("archived_")));
+						testrayBuildCPUUseTime = GetterUtil.getString(
+							value.get("cpuusetime_"));
+						testrayBuildGitHash = GetterUtil.getString(
+							value.get("githash_"));
+						testrayBuildId = GetterUtil.getLong(
+							value.get("c_buildid_"));
+						testrayBuildImportStatus = GetterUtil.getString(
+							value.get("importstatus_"));
+						testrayBuildName = GetterUtil.getString(
+							value.get("name_"));
+						testrayBuildProductVersion = GetterUtil.getString(
+							value.get("productversionname"));
+						testrayBuildPromoted = GetterUtil.getBoolean(
+							String.valueOf(value.get("promoted_")));
+						testrayBuildTaskStatus = GetterUtil.getString(
+							value.get("taskstatus"));
+						testrayStatusMetric = _getTestrayStatusMetric(value);
+
+						setTestrayBuildDueDate(
+							() -> {
+								if (value.get("duedate_") == null) {
+									return null;
+								}
+
+								return value.get(
+									"duedate_"
+								).toString();
+							});
+					}
 				}),
 			pagination, totalCount);
 	}
@@ -375,6 +640,8 @@ public class TestrayStatusMetricResourceImpl
 
 		testrayStatusMetric.setBlocked(GetterUtil.getLong(map.get("blocked")));
 		testrayStatusMetric.setFailed(GetterUtil.getLong(map.get("failed")));
+		testrayStatusMetric.setIncomplete(
+			GetterUtil.getLong(map.get("incomplete")));
 		testrayStatusMetric.setInProgress(
 			GetterUtil.getLong(map.get("inprogress")));
 		testrayStatusMetric.setPassed(GetterUtil.getLong(map.get("passed")));
@@ -384,22 +651,6 @@ public class TestrayStatusMetricResourceImpl
 			GetterUtil.getLong(map.get("untested")));
 
 		return testrayStatusMetric;
-	}
-
-	private String _interpolateParams(List<Object> params, String values) {
-		String[] valuesArray = StringUtil.split(values);
-
-		StringBundler sb = new StringBundler();
-
-		for (String value : valuesArray) {
-			sb.append("? ");
-			sb.append(", ");
-			params.add(value);
-		}
-
-		sb.setIndex(sb.index() - 1);
-
-		return sb.toString();
 	}
 
 }

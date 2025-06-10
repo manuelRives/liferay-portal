@@ -6,27 +6,41 @@
 package com.liferay.asset.publisher.util.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.asset.publisher.test.util.AssetPublisherTestUtil;
 import com.liferay.asset.publisher.util.AssetEntryResult;
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
 import com.liferay.asset.publisher.util.AssetQueryRule;
 import com.liferay.asset.test.util.AssetTestUtil;
+import com.liferay.info.pagination.InfoPage;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.test.util.JournalTestUtil;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
+import com.liferay.layout.page.template.test.util.LayoutPageTemplateTestUtil;
+import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutPrototype;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.LayoutPrototypeLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
+import com.liferay.portal.kernel.test.portlet.MockPortletPreferences;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -37,18 +51,18 @@ import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.view.count.ViewCountManager;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletPreferences;
 import com.liferay.ratings.test.util.RatingsTestUtil;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -286,6 +300,84 @@ public class AssetPublisherHelperTest {
 	}
 
 	@Test
+	public void testGetAssetEntriesForManualCollectionWithPagination()
+		throws Exception {
+
+		JournalArticle journalArticle1 = JournalTestUtil.addArticle(
+			_group1.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+		JournalArticle journalArticle2 = JournalTestUtil.addArticle(
+			_group1.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+		JournalArticle journalArticle3 = JournalTestUtil.addArticle(
+			_group1.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
+			ContentLayoutTestUtil.getMockLiferayPortletActionRequest(
+				_companyLocalService.getCompany(TestPropsValues.getCompanyId()),
+				_group1,
+				LayoutTestUtil.addTypePortletLayout(_group1.getGroupId()));
+
+		PortletPreferences portletPreferences = new MockPortletPreferences();
+
+		portletPreferences.setValue("selectionStyle", "manual");
+
+		AssetRendererFactory<?> assetRendererFactory =
+			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
+				JournalArticle.class.getName());
+
+		AssetEntry assetEntry1 = assetRendererFactory.getAssetEntry(
+			JournalArticle.class.getName(),
+			journalArticle1.getResourcePrimKey());
+		AssetEntry assetEntry2 = assetRendererFactory.getAssetEntry(
+			JournalArticle.class.getName(),
+			journalArticle2.getResourcePrimKey());
+		AssetEntry assetEntry3 = assetRendererFactory.getAssetEntry(
+			JournalArticle.class.getName(),
+			journalArticle3.getResourcePrimKey());
+
+		portletPreferences.setValues(
+			"assetEntryXml",
+			AssetPublisherTestUtil.getAssetEntryXml(assetEntry1),
+			AssetPublisherTestUtil.getAssetEntryXml(assetEntry2));
+
+		InfoPage<AssetEntry> infoPage = _assetPublisherHelper.getInfoPage(
+			mockLiferayPortletActionRequest, portletPreferences,
+			PermissionThreadLocal.getPermissionChecker(),
+			new long[] {_group1.getGroupId()}, null, null, false, false, 0, 2);
+
+		Assert.assertEquals(2, infoPage.getTotalCount());
+
+		List<AssetEntry> assetEntries =
+			(List<AssetEntry>)infoPage.getPageItems();
+
+		Assert.assertTrue(assetEntries.contains(assetEntry1));
+		Assert.assertTrue(assetEntries.contains(assetEntry2));
+		Assert.assertFalse(assetEntries.contains(assetEntry3));
+
+		portletPreferences.setValues(
+			"assetEntryXml",
+			AssetPublisherTestUtil.getAssetEntryXml(assetEntry1),
+			AssetPublisherTestUtil.getAssetEntryXml(assetEntry2),
+			AssetPublisherTestUtil.getAssetEntryXml(assetEntry3));
+
+		infoPage = _assetPublisherHelper.getInfoPage(
+			mockLiferayPortletActionRequest, portletPreferences,
+			PermissionThreadLocal.getPermissionChecker(),
+			new long[] {_group1.getGroupId()}, null, null, false, false,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		Assert.assertEquals(3, infoPage.getTotalCount());
+
+		assetEntries = (List<AssetEntry>)infoPage.getPageItems();
+
+		Assert.assertTrue(assetEntries.contains(assetEntry1));
+		Assert.assertTrue(assetEntries.contains(assetEntry2));
+		Assert.assertTrue(assetEntries.contains(assetEntry3));
+	}
+
+	@Test
 	public void testGetAssetTagNamesContainsAllTagName() throws Exception {
 		String assetTagName = RandomTestUtil.randomString();
 
@@ -439,6 +531,28 @@ public class AssetPublisherHelperTest {
 
 		Assert.assertEquals(
 			Arrays.toString(assetTagNames), 0, assetTagNames.length);
+	}
+
+	@Test
+	public void testGetItemSelectorScopeGroupWithLayoutPrototype()
+		throws Exception {
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			LayoutPageTemplateTestUtil.addLayoutPageTemplateEntry(
+				_group1.getGroupId(),
+				LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE,
+				WorkflowConstants.STATUS_APPROVED);
+
+		LayoutPrototype layoutPrototype =
+			_layoutPrototypeLocalService.getLayoutPrototype(
+				layoutPageTemplateEntry.getLayoutPrototypeId());
+
+		Assert.assertEquals(
+			_group1, _assetPublisherHelper.getItemSelectorScopeGroup(_group1));
+		Assert.assertEquals(
+			_group1,
+			_assetPublisherHelper.getItemSelectorScopeGroup(
+				layoutPrototype.getGroup()));
 	}
 
 	@Test
@@ -708,14 +822,17 @@ public class AssetPublisherHelperTest {
 	@Inject
 	private CompanyLocalService _companyLocalService;
 
-	@Inject
-	private FeatureFlagManager _featureFlagManager;
-
 	@DeleteAfterTestRun
 	private Group _group1;
 
 	@DeleteAfterTestRun
 	private Group _group2;
+
+	@Inject
+	private LayoutPageTemplateEntryService _layoutPageTemplateEntryService;
+
+	@Inject
+	private LayoutPrototypeLocalService _layoutPrototypeLocalService;
 
 	@Inject
 	private Portal _portal;

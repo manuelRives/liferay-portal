@@ -19,7 +19,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,12 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * @author Javier Gamarra
@@ -58,7 +56,9 @@ public class MessageFormSubmissionResult implements Serializable {
 			MessageFormSubmissionResult.class, json);
 	}
 
-	@Schema(description = "The localized submission of message type.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized submission of message type."
+	)
 	@Valid
 	public FragmentInlineValue getMessage() {
 		if (_messageSupplier != null) {
@@ -100,8 +100,10 @@ public class MessageFormSubmissionResult implements Serializable {
 	@JsonIgnore
 	private Supplier<FragmentInlineValue> _messageSupplier;
 
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The message form submission type (embedded, none)."
+	)
 	@JsonGetter("messageType")
-	@Schema(description = "The message form submission type (embedded, none).")
 	@Valid
 	public MessageType getMessageType() {
 		if (_messageTypeSupplier != null) {
@@ -156,7 +158,7 @@ public class MessageFormSubmissionResult implements Serializable {
 	@JsonIgnore
 	private Supplier<MessageType> _messageTypeSupplier;
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getShowNotification() {
 		if (_showNotificationSupplier != null) {
 			showNotification = _showNotificationSupplier.get();
@@ -271,8 +273,8 @@ public class MessageFormSubmissionResult implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.MessageFormSubmissionResult",
 		name = "x-class-name"
 	)
@@ -356,7 +358,10 @@ public class MessageFormSubmissionResult implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -48,6 +48,7 @@ type RendererProps = {
 	filterSchema: string;
 	form: any;
 	isLoading?: boolean;
+	onApply: () => void;
 	onChange: (event: any) => void;
 };
 
@@ -57,6 +58,7 @@ const Renderer: React.FC<RendererProps> = ({
 	filter,
 	form,
 	isLoading = false,
+	onApply,
 	onChange,
 }) => {
 	const [fieldDisabled, setFieldDisabled] = useState({});
@@ -121,7 +123,7 @@ const Renderer: React.FC<RendererProps> = ({
 							? {
 									...fieldDisabled,
 									[name]: !(fieldDisabled as any)[name],
-							  }
+								}
 							: false
 					);
 				};
@@ -135,7 +137,7 @@ const Renderer: React.FC<RendererProps> = ({
 								: {
 										label: option,
 										value: option,
-								  }
+									}
 						);
 
 					return _options;
@@ -147,6 +149,11 @@ const Renderer: React.FC<RendererProps> = ({
 							<Form.Input
 								disabled={isFieldDisabled()}
 								onChange={onChange}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter') {
+										onApply();
+									}
+								}}
 								value={getFieldValue()}
 								{...(field as any)}
 							/>
@@ -204,7 +211,7 @@ const Renderer: React.FC<RendererProps> = ({
 								value: formValue.includes(inputValue)
 									? formValue.filter(
 											(value) => value !== inputValue
-									  )
+										)
 									: [...formValue, inputValue],
 							},
 						});
@@ -224,13 +231,12 @@ const Renderer: React.FC<RendererProps> = ({
 									<Form.Checkbox
 										checked={
 											Array.isArray(form[name]) &&
-											form[
-												name
-											].some((option: Options | string) =>
-												typeof option === 'string'
-													? option === optionValue
-													: option.value ===
-													  optionValue
+											form[name].some(
+												(option: Options | string) =>
+													typeof option === 'string'
+														? option === optionValue
+														: option.value ===
+															optionValue
 											)
 										}
 										disabled={disabled}

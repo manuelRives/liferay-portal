@@ -41,14 +41,14 @@ import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.CustomAttributesUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -116,7 +116,8 @@ public class CommercePriceListDisplayContext
 
 		return _commerceCurrencyLocalService.getCommerceCurrencies(
 			themeDisplay.getCompanyId(), true, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS, new CommerceCurrencyPriorityComparator(true));
+			QueryUtil.ALL_POS,
+			CommerceCurrencyPriorityComparator.getInstance(true));
 	}
 
 	public CommercePriceModifier getCommercePriceModifier()

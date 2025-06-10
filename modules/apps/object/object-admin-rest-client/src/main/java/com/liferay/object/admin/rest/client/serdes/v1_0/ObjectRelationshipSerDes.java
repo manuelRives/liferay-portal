@@ -8,13 +8,13 @@ package com.liferay.object.admin.rest.client.serdes.v1_0;
 import com.liferay.object.admin.rest.client.dto.v1_0.ObjectRelationship;
 import com.liferay.object.admin.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -206,6 +206,20 @@ public class ObjectRelationshipSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(objectRelationship.getObjectDefinitionName2()));
+
+			sb.append("\"");
+		}
+
+		if (objectRelationship.getObjectDefinitionScope2() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionScope2\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectRelationship.getObjectDefinitionScope2()));
 
 			sb.append("\"");
 		}
@@ -426,6 +440,15 @@ public class ObjectRelationshipSerDes {
 				String.valueOf(objectRelationship.getObjectDefinitionName2()));
 		}
 
+		if (objectRelationship.getObjectDefinitionScope2() == null) {
+			map.put("objectDefinitionScope2", null);
+		}
+		else {
+			map.put(
+				"objectDefinitionScope2",
+				String.valueOf(objectRelationship.getObjectDefinitionScope2()));
+		}
+
 		if (objectRelationship.getObjectDefinitionSystem2() == null) {
 			map.put("objectDefinitionSystem2", null);
 		}
@@ -502,6 +525,99 @@ public class ObjectRelationshipSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "deletionType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "edge")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "label")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"objectDefinitionExternalReferenceCode1")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"objectDefinitionExternalReferenceCode2")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "objectDefinitionId1")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "objectDefinitionId2")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "objectDefinitionModifiable2")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "objectDefinitionName2")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "objectDefinitionScope2")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "objectDefinitionSystem2")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "objectField")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "parameterObjectFieldId")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "parameterObjectFieldName")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "reverse")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "system")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			ObjectRelationship objectRelationship, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -509,8 +625,7 @@ public class ObjectRelationshipSerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					objectRelationship.setActions(
-						(Map)ObjectRelationshipSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "deletionType")) {
@@ -542,8 +657,7 @@ public class ObjectRelationshipSerDes {
 			else if (Objects.equals(jsonParserFieldName, "label")) {
 				if (jsonParserFieldValue != null) {
 					objectRelationship.setLabel(
-						(Map)ObjectRelationshipSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "name")) {
@@ -600,6 +714,14 @@ public class ObjectRelationshipSerDes {
 
 				if (jsonParserFieldValue != null) {
 					objectRelationship.setObjectDefinitionName2(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "objectDefinitionScope2")) {
+
+				if (jsonParserFieldValue != null) {
+					objectRelationship.setObjectDefinitionScope2(
 						(String)jsonParserFieldValue);
 				}
 			}
@@ -683,36 +805,7 @@ public class ObjectRelationshipSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -722,6 +815,42 @@ public class ObjectRelationshipSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

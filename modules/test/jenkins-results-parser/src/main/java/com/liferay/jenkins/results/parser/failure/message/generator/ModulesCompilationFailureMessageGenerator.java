@@ -6,6 +6,9 @@
 package com.liferay.jenkins.results.parser.failure.message.generator;
 
 import com.liferay.jenkins.results.parser.Build;
+import com.liferay.jenkins.results.parser.Dom4JUtil;
+
+import java.io.IOException;
 
 import org.dom4j.Element;
 
@@ -14,6 +17,44 @@ import org.dom4j.Element;
  */
 public class ModulesCompilationFailureMessageGenerator
 	extends BaseFailureMessageGenerator {
+
+	@Override
+	public String getMessage(Build build) {
+		String jobVariant = build.getJobVariant();
+
+		if (!jobVariant.contains("modules-compile")) {
+			return null;
+		}
+
+		Element messageElement = getMessageElement(build.getConsoleText());
+
+		if (messageElement == null) {
+			return null;
+		}
+
+		try {
+			return Dom4JUtil.format(messageElement);
+		}
+		catch (IOException ioException) {
+			return ioException.getMessage();
+		}
+	}
+
+	@Override
+	public String getMessage(String consoleText) {
+		Element messageElement = getMessageElement(consoleText);
+
+		if (messageElement == null) {
+			return null;
+		}
+
+		try {
+			return Dom4JUtil.format(getMessageElement(consoleText));
+		}
+		catch (IOException ioException) {
+			return ioException.getMessage();
+		}
+	}
 
 	@Override
 	public Element getMessageElement(Build build) {
@@ -28,7 +69,10 @@ public class ModulesCompilationFailureMessageGenerator
 
 	@Override
 	public Element getMessageElement(String consoleText) {
-		if (!consoleText.contains(_TOKEN_COULD_NOT_RESOLVE_CONFIG)) {
+		if (!consoleText.contains(_TOKEN_COMPILATION_FAILED) &&
+			!consoleText.contains(_TOKEN_COULD_NOT_RESOLVE_CONFIG) &&
+			!consoleText.contains(_TOKEN_EXECUTION_FAILED_FOR_TASK)) {
+
 			return null;
 		}
 
@@ -45,8 +89,14 @@ public class ModulesCompilationFailureMessageGenerator
 		return getConsoleTextSnippetElement(consoleText, true, start, end);
 	}
 
+	private static final String _TOKEN_COMPILATION_FAILED =
+		"Compilation failed;";
+
 	private static final String _TOKEN_COULD_NOT_RESOLVE_CONFIG =
 		"Could not resolve all files for configuration";
+
+	private static final String _TOKEN_EXECUTION_FAILED_FOR_TASK =
+		"Execution failed for task";
 
 	private static final String _TOKEN_MERGE_TEST_RESULTS =
 		"merge-test-results:";

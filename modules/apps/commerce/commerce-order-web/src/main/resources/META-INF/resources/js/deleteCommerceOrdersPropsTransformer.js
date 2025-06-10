@@ -3,15 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	fetch,
-	openConfirmModal,
-	openToast,
-	postForm,
-	sub,
-} from 'frontend-js-web';
+import {openConfirmModal, openToast} from 'frontend-js-components-web';
+import {fetch, postForm, sub} from 'frontend-js-web';
 
-import {CommerceStatusDataRenderer} from './CommerceStatusDataRenderer';
+import CommerceStatusDataRenderer from './CommerceStatusDataRenderer';
 
 export default function propsTransformer({
 	additionalProps: {namespace},

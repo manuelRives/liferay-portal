@@ -1,10 +1,11 @@
-@component-name = "portal-batch-planner"
+@component-name = "portal-headless"
 definition {
 
 	property custom.properties = "feature.flag.COMMERCE-8087=true";
+	property portal.acceptance = "quarantine";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Import/Export";
+	property testray.main.component.name = "Data Migration Center";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -92,16 +93,14 @@ definition {
 
 	@priority = 4
 	test CanCreateAndUpdateExistingSiteScopedObjectEntriesWithSameFile {
-		property portal.acceptance = "true";
-
-		task ("When importing .jsonl file as 'C_Student' Entity Type with default settings") {
+		task ("When importing .jsonl file as 'Student' Entity Type with default settings") {
 			ImportExport.replaceAttachmentIdAndHrefInFile(
 				en_US_plural_label = "students",
 				fileName = "multiple_site_scope_objectEntries_import_create_update.jsonl",
 				scopeKey = "true");
 
 			ImportExport.importFile(
-				entityType = "C_Student (v1_0 - Liferay Object REST)",
+				entityType = "Student (v1.0 - Liferay Object REST)",
 				fileName = "multiple_site_scope_objectEntries_import_create_update.jsonl",
 				scope = "true");
 		}
@@ -137,11 +136,9 @@ definition {
 
 	@priority = 4
 	test CanCreateSiteScopedObjectEntryFromFileContainingExistingAndNewWithUncheckedStopImportOnError {
-		property portal.acceptance = "true";
-
-		task ("When importing .json file as 'C_Student' Entity Type with 'Only Add New Records Import Strategy', 'Stop the Import on Error' unchecked") {
+		task ("When importing .json file as 'Student' Entity Type with 'Only Add New Records Import Strategy', 'Stop the Import on Error' unchecked") {
 			ImportExport.importFile(
-				entityType = "C_Student (v1_0 - Liferay Object REST)",
+				entityType = "Student (v1.0 - Liferay Object REST)",
 				fileName = "multiple_site_scope_objectEntries_import_create.jsonl",
 				importStrategy = "Only Add New Records",
 				scope = "true",
@@ -163,11 +160,9 @@ definition {
 
 	@priority = 4
 	test CannotCreateSiteScopedObjectEntryWithoutRequiredFields {
-		property portal.acceptance = "true";
-
-		task ("When importing .json file as 'C_Student' Entity Type with default setting") {
+		task ("When importing .json file as 'Student' Entity Type with default setting") {
 			ImportExport.importFile(
-				entityType = "C_Student (v1_0 - Liferay Object REST)",
+				entityType = "Student (v1.0 - Liferay Object REST)",
 				fileName = "site_scope_objectEntry_import_without_required_fields.json",
 				noImport = "true",
 				scope = "true");
@@ -184,14 +179,12 @@ definition {
 
 	@priority = 4
 	test CanSeeScopeSelecterInImportFile {
-		property portal.acceptance = "true";
-
-		task ("When 'C_Student' as Entity Type in Data Migration Center -> Import File") {
+		task ("When 'Student' as Entity Type in Data Migration Center -> Import File") {
 			ImportExport.openImportExportAdmin();
 
 			ImportExport.gotoImport();
 
-			ImportExport.selectEntity(entityType = "C_Student (v1_0 - Liferay Object REST)");
+			ImportExport.selectEntity(entityType = "Student (v1.0 - Liferay Object REST)");
 		}
 
 		task ("Then 'Scope' is present with default and Global sites in dropdown list") {
@@ -207,11 +200,9 @@ definition {
 
 	@priority = 4
 	test CanUpdateSiteScopedObjectEntry {
-		property portal.acceptance = "true";
-
-		task ("When importing .jsonl file as 'C_Student' Entity Type with default setting") {
+		task ("When importing .jsonl file as 'Student' Entity Type with default setting") {
 			ImportExport.importFile(
-				entityType = "C_Student (v1_0 - Liferay Object REST)",
+				entityType = "Student (v1.0 - Liferay Object REST)",
 				fileName = "site_scope_objectEntry_import_update.jsonl",
 				scope = "true");
 		}

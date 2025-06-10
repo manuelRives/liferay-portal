@@ -4,7 +4,8 @@
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
-import {fetch, objectToFormData, openToast, sub} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, objectToFormData, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
 
@@ -54,8 +55,8 @@ export function SavedContentEntry({
 
 				const mySavedContentLink = `
 					<a href="${mySavedContentURL}" class="alert-link">${Liferay.Language.get(
-					'my-saved-content'
-				)}</a>
+						'my-saved-content'
+					)}</a>
 				`.trim();
 
 				showNotification(
@@ -63,7 +64,7 @@ export function SavedContentEntry({
 						saved
 							? Liferay.Language.get(
 									'x-has-been-successfully-removed-from-x'
-							  )
+								)
 							: Liferay.Language.get('x-has-been-saved-in-x'),
 						contentTitle,
 						mySavedContentLink

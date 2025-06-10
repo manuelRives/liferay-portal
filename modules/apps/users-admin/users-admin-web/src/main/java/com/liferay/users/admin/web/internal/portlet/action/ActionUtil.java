@@ -21,9 +21,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -77,10 +77,10 @@ public class ActionUtil {
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
+		Organization organization = null;
+
 		long organizationId = ParamUtil.getLong(
 			httpServletRequest, "organizationId");
-
-		Organization organization = null;
 
 		if (organizationId > 0) {
 			organization = OrganizationServiceUtil.getOrganization(

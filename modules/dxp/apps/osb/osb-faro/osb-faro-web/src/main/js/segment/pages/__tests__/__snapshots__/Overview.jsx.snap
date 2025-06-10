@@ -10,16 +10,16 @@ exports[`SegmentOverview should render 1`] = `
     >
       <div
         class="card card-root segment-profile-card-root"
-        id="segmentMembershipCardRoot"
+        id="container.report.segmentMembershipCard"
       >
         <div
           class="card-header"
         >
-          <h5
+          <div
             class="card-title"
           >
             Segment Membership
-          </h5>
+          </div>
         </div>
         <div
           class="card-body"
@@ -54,17 +54,17 @@ exports[`SegmentOverview should render 1`] = `
       </div>
       <div
         class="card card-root interests-card-root"
-        id="topInterestsCardRoot"
+        id="container.report.topInterestsCard"
         style="min-height: 536px;"
       >
         <div
           class="card-header"
         >
-          <h5
+          <div
             class="card-title"
           >
             Top Interests
-          </h5>
+          </div>
         </div>
         <div
           class="error-display-root flex-grow-1 error-spacer no-results-root flex-grow-1"
@@ -72,11 +72,11 @@ exports[`SegmentOverview should render 1`] = `
           <div
             class="no-results-content"
           >
-            <h4
-              class="no-results-title"
+            <div
+              class="h4 no-results-title"
             >
               An unexpected error occurred.
-            </h4>
+            </div>
             <button
               class="button-root btn btn-secondary"
               type="button"
@@ -106,7 +106,7 @@ exports[`SegmentOverview should render 1`] = `
       </div>
       <div
         class="card card-root distribution-card-root"
-        id="distributionBreakdownCardRoot"
+        id="container.report.distributionBreakdownCard"
         style="min-height: 536px;"
       >
         <div
@@ -176,11 +176,11 @@ exports[`SegmentOverview should render 1`] = `
               <div
                 class="no-results-content"
               >
-                <h4
-                  class="no-results-title"
+                <div
+                  class="h4 no-results-title"
                 >
                   There are no results found.
-                </h4>
+                </div>
                 <div
                   class="no-results-description"
                 >
@@ -228,16 +228,16 @@ exports[`SegmentOverview should render 1`] = `
     >
       <div
         class="card card-root composition-card-root"
-        id="segmentCompositionCardRoot"
+        id="container.report.segmentCompositionCard"
       >
         <div
           class="card-header"
         >
-          <h5
+          <div
             class="card-title"
           >
             Segment Composition
-          </h5>
+          </div>
         </div>
         <div
           class="card-body"
@@ -301,13 +301,16 @@ exports[`SegmentOverview should render 1`] = `
                 </div>
                 <div
                   class="legend-template-column justify-content-end"
+                  data-testid="active-count"
                 >
                   0
                 </div>
                 <div
                   class="legend-template-column justify-content-end"
                 >
-                  <b>
+                  <b
+                    data-testid="active-porcentage"
+                  >
                     0%
                   </b>
                 </div>
@@ -332,13 +335,16 @@ exports[`SegmentOverview should render 1`] = `
                 </div>
                 <div
                   class="legend-template-column justify-content-end"
+                  data-testid="active-count"
                 >
                   0
                 </div>
                 <div
                   class="legend-template-column justify-content-end"
                 >
-                  <b>
+                  <b
+                    data-testid="active-porcentage"
+                  >
                     0%
                   </b>
                 </div>

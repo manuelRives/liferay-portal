@@ -7,7 +7,7 @@ package com.liferay.jethr0.job;
 
 import com.liferay.jethr0.bui1d.BuildEntity;
 import com.liferay.jethr0.entity.Entity;
-import com.liferay.jethr0.git.branch.GitBranchEntity;
+import com.liferay.jethr0.git.commit.GitCommitEntity;
 import com.liferay.jethr0.jenkins.cohort.JenkinsCohortEntity;
 import com.liferay.jethr0.routine.RoutineEntity;
 import com.liferay.jethr0.task.TaskEntity;
@@ -33,10 +33,6 @@ public interface JobEntity extends Entity {
 
 	public void addBuildEntity(BuildEntity buildEntity);
 
-	public void addGitBranchEntities(Set<GitBranchEntity> gitBranchEntities);
-
-	public void addGitBranchEntity(GitBranchEntity gitBranchEntity);
-
 	public void addJenkinsCohortEntities(
 		Set<JenkinsCohortEntity> jenkinsCohortEntities);
 
@@ -50,9 +46,13 @@ public interface JobEntity extends Entity {
 
 	public void addTestSuiteEntity(TestSuiteEntity testSuiteEntity);
 
+	public boolean getBlessed();
+
 	public Set<BuildEntity> getBuildEntities();
 
-	public Set<GitBranchEntity> getGitBranchEntities();
+	public GitCommitEntity getGitCommitEntity();
+
+	public long getGitCommitEntityId();
 
 	public Set<BuildEntity> getInitialBuildEntities();
 
@@ -88,10 +88,6 @@ public interface JobEntity extends Entity {
 
 	public void removeBuildEntity(BuildEntity buildEntity);
 
-	public void removeGitBranchEntities(Set<GitBranchEntity> gitBranchEntities);
-
-	public void removeGitBranchEntity(GitBranchEntity gitBranchEntity);
-
 	public void removeJenkinsCohortEntities(
 		Set<JenkinsCohortEntity> jenkinsCohortEntities);
 
@@ -105,6 +101,10 @@ public interface JobEntity extends Entity {
 	public void removeTestSuiteEntities(Set<TestSuiteEntity> testSuiteEntities);
 
 	public void removeTestSuiteEntity(TestSuiteEntity testSuiteEntity);
+
+	public void setBlessed(boolean blessed);
+
+	public void setGitCommitEntity(GitCommitEntity gitCommitEntity);
 
 	public void setJenkinsBranchURL(URL jenkinsGitHubURL);
 
@@ -223,6 +223,7 @@ public interface JobEntity extends Entity {
 		PORTAL_PULL_REQUEST("portalPullRequest", "Portal Pull Request"),
 		PORTAL_PULL_REQUEST_SF("portalPullRequestSF", "Portal Pull Request SF"),
 		PORTAL_RELEASE("portalRelease", "Portal Release"),
+		PORTAL_UPSTREAM("portalUpstream", "Portal Upstream"),
 		PORTAL_UPSTREAM_ACCEPTANCE(
 			"portalUpstreamAcceptance", "Portal Upstream Acceptance"),
 		PORTAL_UPSTREAM_TEST_SUITE(
@@ -240,10 +241,13 @@ public interface JobEntity extends Entity {
 		ROOT_CAUSE_ANALYSIS_TOOL(
 			"rootCauseAnalysisTool", "Root Cause Analysis Tool"),
 		SANITIZE_LANGUAGE("sanitizeLanguage", "Sanitize Language"),
+		SCANCODE_PIPELINES("scancodePipelines", "Scancode Pipelines"),
 		SUBREPOSITORY_PULL_REQUEST(
 			"subrepositoryPullRequest", "Subrepository Pull Request"),
 		VERIFICATION("verification", "Verification"),
-		VERIFICATION_NODE("verificationNode", "Verification Node");
+		VERIFICATION_NODE("verificationNode", "Verification Node"),
+		VERIFICATION_SERVERS_DAILY(
+			"verificationServersDaily", "verificationServersDaily");
 
 		public static Type get(Object picklistValue) {
 			return _types.get(

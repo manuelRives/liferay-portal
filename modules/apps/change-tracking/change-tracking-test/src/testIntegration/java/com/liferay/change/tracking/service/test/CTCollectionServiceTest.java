@@ -6,9 +6,12 @@
 package com.liferay.change.tracking.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.change.tracking.configuration.CTSettingsConfiguration;
 import com.liferay.change.tracking.constants.CTActionKeys;
 import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.exception.CTPublishConflictException;
 import com.liferay.change.tracking.model.CTCollection;
+import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.model.CTProcess;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTCollectionService;
@@ -23,14 +26,25 @@ import com.liferay.journal.test.util.JournalFolderFixture;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.background.task.model.BackgroundTask;
+import com.liferay.portal.background.task.service.BackgroundTaskLocalService;
+import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
+import com.liferay.portal.kernel.backgroundtask.display.BackgroundTaskDisplay;
+import com.liferay.portal.kernel.backgroundtask.display.BackgroundTaskDisplayFactory;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -39,8 +53,17 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.search.searcher.SearchRequestBuilder;
+import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
+import com.liferay.portal.search.searcher.SearchResponse;
+import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -90,13 +113,57 @@ public class CTCollectionServiceTest {
 	}
 
 	@Test
+	public void testAddCTCollectionWithCustomOwnerPermissions()
+		throws Exception {
+
+		UserTestUtil.setUser(_user);
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		_ctCollection = _ctCollectionLocalService.addCTCollection(
+			null, TestPropsValues.getCompanyId(), _user.getUserId(), 0,
+			RandomTestUtil.randomString(), null);
+
+		Assert.assertTrue(
+			_ctCollectionModelResourcePermission.contains(
+				permissionChecker, _ctCollection, CTActionKeys.PUBLISH));
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						CTSettingsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"defaultOwnerActionIds",
+							new String[] {
+								ActionKeys.UPDATE, ActionKeys.VIEW,
+								CTActionKeys.INVITE_USERS
+							}
+						).build())) {
+
+			UserTestUtil.setUser(_user);
+
+			permissionChecker = PermissionThreadLocal.getPermissionChecker();
+
+			_ctCollection = _ctCollectionLocalService.addCTCollection(
+				null, TestPropsValues.getCompanyId(), _user.getUserId(), 0,
+				RandomTestUtil.randomString(), null);
+
+			Assert.assertFalse(
+				_ctCollectionModelResourcePermission.contains(
+					permissionChecker, _ctCollection, CTActionKeys.PUBLISH));
+		}
+	}
+
+	@Test
 	public void testDiscardCTEntryWithRemovedParent() throws Exception {
 		UserTestUtil.setUser(_user);
 
 		JournalFolder folder = _journalFolderFixture.addFolder(
 			_group.getGroupId(), RandomTestUtil.randomString());
 
-		JournalArticle article = JournalTestUtil.addArticle(
+		JournalArticle journalArticle = JournalTestUtil.addArticle(
 			_group.getGroupId(), folder.getFolderId());
 
 		_ctCollection = _ctCollectionService.addCTCollection(
@@ -108,13 +175,13 @@ public class CTCollectionServiceTest {
 					_ctCollection.getCtCollectionId())) {
 
 			_journalArticleLocalService.moveArticle(
-				_group.getGroupId(), article.getArticleId(),
+				_group.getGroupId(), journalArticle.getArticleId(),
 				JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID, null);
 
 			_journalFolderLocalService.deleteFolder(folder);
 		}
 
-		long articleClassNameId = _classNameLocalService.getClassNameId(
+		long journalArticleClassNameId = _classNameLocalService.getClassNameId(
 			JournalArticle.class);
 
 		long folderClassNameId = _classNameLocalService.getClassNameId(
@@ -122,22 +189,22 @@ public class CTCollectionServiceTest {
 
 		Assert.assertFalse(
 			_ctCollectionLocalService.isCTEntryEnclosed(
-				_ctCollection.getCtCollectionId(), articleClassNameId,
-				article.getPrimaryKey()));
+				_ctCollection.getCtCollectionId(), journalArticleClassNameId,
+				journalArticle.getPrimaryKey()));
 
 		_ctCollectionService.discardCTEntry(
-			_ctCollection.getCtCollectionId(), articleClassNameId,
-			article.getPrimaryKey());
+			_ctCollection.getCtCollectionId(), journalArticleClassNameId,
+			journalArticle.getPrimaryKey());
 
 		Assert.assertNull(
 			_ctEntryLocalService.fetchCTEntry(
-				_ctCollection.getCtCollectionId(), articleClassNameId,
-				article.getPrimaryKey()));
+				_ctCollection.getCtCollectionId(), journalArticleClassNameId,
+				journalArticle.getPrimaryKey()));
 
 		Assert.assertTrue(
 			_ctCollectionLocalService.isCTEntryEnclosed(
 				_ctCollection.getCtCollectionId(), folderClassNameId,
-				article.getPrimaryKey()));
+				journalArticle.getPrimaryKey()));
 
 		_ctCollectionService.discardCTEntry(
 			_ctCollection.getCtCollectionId(), folderClassNameId,
@@ -152,13 +219,193 @@ public class CTCollectionServiceTest {
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				StringBundler.concat(
 					"select count(*) from JournalArticle where id_ = ",
-					article.getPrimaryKey(), " and ctCollectionId = ",
+					journalArticle.getPrimaryKey(), " and ctCollectionId = ",
 					_ctCollection.getCtCollectionId()));
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			Assert.assertTrue(resultSet.next());
 
 			Assert.assertEquals(0, resultSet.getInt(1));
+		}
+
+		SearchRequestBuilder searchRequestBuilder =
+			_searchRequestBuilderFactory.builder(
+			).companyId(
+				TestPropsValues.getCompanyId()
+			).emptySearchEnabled(
+				true
+			).fields(
+				StringPool.STAR
+			).modelIndexerClasses(
+				CTEntry.class
+			).withSearchContext(
+				searchContext -> searchContext.setAttribute(
+					"ctCollectionId", _ctCollection.getCtCollectionId())
+			);
+
+		SearchResponse searchResponse = _searcher.search(
+			searchRequestBuilder.build());
+
+		Assert.assertEquals(0, searchResponse.getTotalHits());
+	}
+
+	@Test
+	public void testMoveCTEntryWithConstraintConflict() throws Exception {
+		UserTestUtil.setUser(_user);
+
+		CTCollection fromCollection = _ctCollectionService.addCTCollection(
+			null, _user.getCompanyId(), _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
+
+		JournalFolder journalFolder = null;
+		String folderName = RandomTestUtil.randomString();
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					fromCollection.getCtCollectionId())) {
+
+			journalFolder = _journalFolderFixture.addFolder(
+				_group.getGroupId(), folderName);
+		}
+
+		CTCollection toCTCollection = _ctCollectionService.addCTCollection(
+			null, _user.getCompanyId(), _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					toCTCollection.getCtCollectionId())) {
+
+			_journalFolderFixture.addFolder(_group.getGroupId(), folderName);
+		}
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.change.tracking.service.impl." +
+					"CTCollectionLocalServiceImpl",
+				LoggerTestUtil.ERROR)) {
+
+			_ctCollectionService.moveCTEntry(
+				fromCollection.getCtCollectionId(),
+				toCTCollection.getCtCollectionId(),
+				_classNameLocalService.getClassNameId(JournalFolder.class),
+				journalFolder.getPrimaryKey());
+
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+			LogEntry logEntry = logEntries.get(0);
+
+			Assert.assertEquals("Conflict detected", logEntry.getMessage());
+		}
+		catch (PortalException portalException) {
+			Assert.assertTrue(
+				portalException instanceof CTPublishConflictException);
+		}
+	}
+
+	@Test
+	public void testMoveCTEntryWithModificationConflict() throws Exception {
+		UserTestUtil.setUser(_user);
+
+		CTCollection fromCollection = _ctCollectionService.addCTCollection(
+			null, _user.getCompanyId(), _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
+
+		JournalArticle journalArticle1 = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		JournalArticle journalArticle2 = null;
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					fromCollection.getCtCollectionId())) {
+
+			journalArticle2 = JournalTestUtil.updateArticle(journalArticle1);
+		}
+
+		CTCollection toCTCollection = _ctCollectionService.addCTCollection(
+			null, _user.getCompanyId(), _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					toCTCollection.getCtCollectionId())) {
+
+			JournalTestUtil.updateArticle(journalArticle1);
+		}
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.change.tracking.service.impl." +
+					"CTCollectionLocalServiceImpl",
+				LoggerTestUtil.ERROR)) {
+
+			_ctCollectionService.moveCTEntry(
+				fromCollection.getCtCollectionId(),
+				toCTCollection.getCtCollectionId(),
+				_classNameLocalService.getClassNameId(JournalArticle.class),
+				journalArticle2.getPrimaryKey());
+
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+			LogEntry logEntry = logEntries.get(0);
+
+			Assert.assertEquals("Conflict detected", logEntry.getMessage());
+		}
+		catch (PortalException portalException) {
+			Assert.assertTrue(
+				portalException instanceof CTPublishConflictException);
+		}
+	}
+
+	@Test
+	public void testMoveCTEntryWithoutParent() throws Exception {
+		UserTestUtil.setUser(_user);
+
+		CTCollection fromCollection = _ctCollectionService.addCTCollection(
+			null, _user.getCompanyId(), _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
+
+		JournalArticle journalArticle = null;
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					fromCollection.getCtCollectionId())) {
+
+			journalArticle = JournalTestUtil.addArticle(
+				_group.getGroupId(),
+				JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+		}
+
+		CTCollection toCTCollection = _ctCollectionService.addCTCollection(
+			null, _user.getCompanyId(), _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.change.tracking.service.impl." +
+					"CTCollectionLocalServiceImpl",
+				LoggerTestUtil.ERROR)) {
+
+			_ctCollectionService.moveCTEntry(
+				fromCollection.getCtCollectionId(),
+				toCTCollection.getCtCollectionId(),
+				_classNameLocalService.getClassNameId(JournalArticle.class),
+				journalArticle.getPrimaryKey());
+
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+			LogEntry logEntry = logEntries.get(0);
+
+			Assert.assertEquals("Conflict detected", logEntry.getMessage());
+		}
+		catch (PortalException portalException) {
+			Assert.assertTrue(
+				portalException instanceof CTPublishConflictException);
 		}
 	}
 
@@ -207,9 +454,25 @@ public class CTCollectionServiceTest {
 
 		CTProcess ctProcess = ctProcesses.get(0);
 
+		BackgroundTask backgroundTask =
+			_backgroundTaskLocalService.getBackgroundTask(
+				ctProcess.getBackgroundTaskId());
+
+		BackgroundTaskDisplay backgroundTaskDisplay =
+			_backgroundTaskDisplayFactory.getBackgroundTaskDisplay(
+				backgroundTask.getBackgroundTaskId());
+
+		Assert.assertEquals(100, backgroundTaskDisplay.getPercentage());
+
 		Assert.assertEquals(
 			_ctCollection.getCtCollectionId(), ctProcess.getCtCollectionId());
 	}
+
+	@Inject
+	private static BackgroundTaskDisplayFactory _backgroundTaskDisplayFactory;
+
+	@Inject
+	private static BackgroundTaskLocalService _backgroundTaskLocalService;
 
 	@Inject
 	private static ClassNameLocalService _classNameLocalService;
@@ -242,6 +505,12 @@ public class CTCollectionServiceTest {
 	@DeleteAfterTestRun
 	private CTCollection _ctCollection;
 
+	@Inject(
+		filter = "model.class.name=com.liferay.change.tracking.model.CTCollection"
+	)
+	private volatile ModelResourcePermission<CTCollection>
+		_ctCollectionModelResourcePermission;
+
 	@DeleteAfterTestRun
 	private Group _group;
 
@@ -250,6 +519,12 @@ public class CTCollectionServiceTest {
 
 	@DeleteAfterTestRun
 	private Role _role;
+
+	@Inject
+	private Searcher _searcher;
+
+	@Inject
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 	@DeleteAfterTestRun
 	private User _user;

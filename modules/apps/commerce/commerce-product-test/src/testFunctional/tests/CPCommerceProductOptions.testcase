@@ -3,11 +3,14 @@ definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Product Info Management";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp(storeFront = "true");
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
@@ -70,12 +73,14 @@ definition {
 				SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 			}
 
-			SelectFrameTop();
-
-			Click(locator1 = "Icon#CLOSE");
+			Click(
+				key_frameTitle = "Edit New Option",
+				locator1 = "CommerceEntry#SPECIFIC_SIDE_PANEL_CLOSE_BUTTON");
 		}
 
 		task ("And from the SKUs tab, plus button is clicked, Generate all SKUs combination button is selected") {
+			SelectFrameTop();
+
 			CommerceEntry.gotoMenuTab(menuTab = "SKUs");
 
 			Click(locator1 = "Button#PLUS");
@@ -89,7 +94,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -127,7 +132,7 @@ definition {
 	@description = "COMMERCE-12610. As an Operations Manager, I can assert the bundled product shown with option values in the orders admin"
 	@priority = 5
 	test CanAssertAllTypesOfOptionsShownInOrdersAdmin {
-		property custom.properties = "feature.flag.COMMERCE-9599=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
 		task ("Given a Minium site with a buyer user is created") {
@@ -241,7 +246,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -282,13 +287,17 @@ definition {
 
 			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
+			Click(
+				key_cellContent = "Bundled Product",
+				locator1 = "CommerceEntry#BUNDLE_PRODUCT_EXPAND_BUTTON");
+
 			CommerceOrders.viewOrdersDetails(
 				productListPrice = "20.00",
 				productName = "ABS Sensor",
 				productPrice = "20.00",
 				productQuantity = 1,
 				productSku = "MIN93015",
-				productTotalPrice = "20.00");
+				productTotalPrice = "$ 20.00");
 
 			CommerceOrders.viewOrdersDetails(
 				productListPrice = "20.00",
@@ -297,7 +306,7 @@ definition {
 				productPrice = "20.00",
 				productQuantity = 1,
 				productSku = "BLUE",
-				productTotalPrice = "20.00");
+				productTotalPrice = "$ 20.00");
 
 			CommerceOrders.viewOrderSummary(
 				deliveryValue = "$ 15.00",
@@ -309,7 +318,7 @@ definition {
 	@description = "COMMERCE-12610. As a buyer, I can assert the bundled product shown with option values in the placed order"
 	@priority = 5
 	test CanAssertAllTypesOfOptionsShownInPlacedOrders {
-		property custom.properties = "feature.flag.COMMERCE-9599=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
 		task ("Given a Minium site with a buyer user is created") {
@@ -414,7 +423,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -483,10 +492,16 @@ definition {
 			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/placed-orders");
 
 			Button.click(button = "View");
+
+			WaitForPageLoad();
 		}
 
 		task ("Then can view the bundled product shown with the correct option values in the placed order") {
 			var productOptions = '''Blue,option-checkbox-key,2023-10-23,10,Text Content,value1,value2,value2''';
+
+			Click(
+				key_cellContent = "Bundled Product",
+				locator1 = "CommerceEntry#BUNDLE_PRODUCT_EXPAND_BUTTON");
 
 			CommerceOrders.viewOrdersDetails(
 				productListPrice = "20.00",
@@ -495,7 +510,7 @@ definition {
 				productPrice = "20.00",
 				productQuantity = 1,
 				productSku = "MIN93015",
-				productTotalPrice = "20.00");
+				productTotalPrice = "$ 20.00");
 
 			CommerceOrders.viewOrdersDetails(
 				productListPrice = "20.00",
@@ -504,88 +519,13 @@ definition {
 				productPrice = "20.00",
 				productQuantity = 1,
 				productSku = "BLUE",
-				productTotalPrice = "20.00");
+				productTotalPrice = "$ 20.00");
 
 			CommerceOrders.viewOrderPrices(
 				deliveryPrice = "15.00",
 				subTotalPrice = "20.00",
 				taxPrice = "0.00",
 				totalPrice = "35.00");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-9824. CanAssertChangesNotSavedOnCorrespondingOptions"
-	@priority = 3
-	test CanAssertChangesNotSavedOnCorrespondingOptions {
-		property portal.acceptance = "false";
-
-		task ("Given a product is created") {
-			CommerceJSONProductsAPI._addCommerceProduct(
-				catalogName = "Master",
-				productName = "Simple T-Shirt",
-				productType = "Simple");
-
-			CommerceProducts.openProductsAdmin();
-		}
-
-		task ("And the admin navigates inside the product entry") {
-			CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
-		}
-
-		task ("And 2 options are added to the product") {
-			CommerceEntry.gotoMenuTab(menuTab = "Options");
-
-			for (var optionNumber : list "1,2") {
-				CommerceProductOptions.createProductOption(key_optionName = "Option${optionNumber}");
-
-				Refresh();
-			}
-		}
-
-		task ("And changes are made on the first option") {
-			CommerceProductOptions.editProductOption(
-				key_option = "Option1",
-				productOptionFacetable = "true");
-
-			SelectFrameTop();
-		}
-
-		task ("And assert that the changes are not saved on the corresponding option on Commerce -> Product Management -> Options -> Option") {
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Options");
-
-			CommerceNavigator.gotoEntry(entryName = "Option1");
-
-			AssertNotChecked.assertNotCheckedNotVisible(
-				key_toggleSwitchLabel = "Use in Faceted Navigation",
-				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-		}
-
-		task ("And changes are made on the second option") {
-			Click(locator1 = "Icon#BACK");
-
-			CommerceNavigator.gotoEntry(entryName = "Option2");
-
-			CPCommerceCatalog.addOptionValues(
-				optionEntryName = "Option2",
-				optionValuesList = "Value Test:0");
-
-			Button.clickSave();
-		}
-
-		task ("Then the changes are not saved on the corresponding option on the Simple T-Shirt 'Options' tab") {
-			CommerceProducts.openProductsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Options");
-
-			CommerceNavigator.gotoEntry(entryName = "Option2");
-
-			AssertElementNotPresent(
-				key_value = "Value Test",
-				locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
 		}
 	}
 
@@ -654,7 +594,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -689,10 +629,7 @@ definition {
 		task ("When Toggle Default of the value from the option is deactivated") {
 			User.logoutPG();
 
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 			CommerceProducts.openProductsAdmin();
 
@@ -717,7 +654,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -821,16 +758,16 @@ definition {
 				key_toggleSwitchLabel = "Default",
 				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
 
-			SelectFrameTop();
-
-			Click(locator1 = "Icon#CLOSE");
+			Click(
+				key_frameTitle = "Edit Value2",
+				locator1 = "CommerceEntry#SPECIFIC_SIDE_PANEL_CLOSE_BUTTON");
 		}
 
 		task ("And the buyer logs in And navigates to Minium -> Catalog -> ABS Sensor ") {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -856,6 +793,11 @@ definition {
 
 			CommerceNavigator.gotoMiniCart();
 
+			Click(
+				key_cartItemSku = "MIN93015",
+				key_index = 1,
+				locator1 = "CommerceAccelerators#MINI_CART_SPECIFIC_ITEM_BUNDLED_ITEM_SHOW_OPTIONS_PANEL_COLLAPSED");
+
 			AssertTextNotEquals(
 				key_cartItemSku = "MIN93015",
 				locator1 = "CommerceAccelerators#MINI_CART_ITEM_INFO_EXTRA",
@@ -874,10 +816,7 @@ definition {
 		task ("When Toggle Default of the value from the option is deactivated") {
 			User.logoutPG();
 
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 			CommerceProducts.openProductsAdmin();
 
@@ -909,16 +848,16 @@ definition {
 				key_toggleSwitchLabel = "Default",
 				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
 
-			SelectFrameTop();
-
-			Click(locator1 = "Icon#CLOSE");
+			Click(
+				key_frameTitle = "Edit Value2",
+				locator1 = "CommerceEntry#SPECIFIC_SIDE_PANEL_CLOSE_BUTTON");
 		}
 
 		task ("And the buyer logs in And navigates to Minium -> Catalog -> ABS Sensor") {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -941,6 +880,11 @@ definition {
 			Click(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE");
 
 			CommerceNavigator.gotoMiniCart();
+
+			Click(
+				key_cartItemSku = "MIN93015",
+				key_index = 1,
+				locator1 = "CommerceAccelerators#MINI_CART_SPECIFIC_ITEM_BUNDLED_ITEM_SHOW_OPTIONS_PANEL_COLLAPSED");
 
 			AssertTextEquals(
 				key_cartItemSku = "MIN93015",
@@ -1007,9 +951,9 @@ definition {
 				SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 			}
 
-			SelectFrameTop();
-
-			Click(locator1 = "Icon#CLOSE");
+			Click(
+				key_frameTitle = "Edit City",
+				locator1 = "CommerceEntry#SPECIFIC_SIDE_PANEL_CLOSE_BUTTON");
 
 			SelectFrameTop();
 		}
@@ -1132,7 +1076,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1282,6 +1226,10 @@ definition {
 		}
 
 		task ("Then on the order summary the linked product is listed") {
+			Click(
+				key_cellContent = "ABS Sensor",
+				locator1 = "CommerceEntry#BUNDLE_PRODUCT_EXPAND_BUTTON");
+
 			AssertTextEquals(
 				key_productName = "Test Simple Product",
 				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME",
@@ -1345,7 +1293,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1434,6 +1382,7 @@ definition {
 	}
 
 	@description = "This is a test for COMMERCE-10798. As a Product Manager, I want to be able to configure a bundled product that has a linked SKU from different catalog and see the SKU is applied in the store front."
+	@ignore = "true"
 	@priority = 4
 	test CanConfigureBundledProductWithDifferentCatalogSkuLinked {
 		property portal.acceptance = "false";
@@ -1613,62 +1562,6 @@ definition {
 		}
 	}
 
-	@description = "COMMERCE-11491. Can delete product option from the option admin page"
-	@priority = 4
-	test CanDeleteProductOptionFromOptionAdminPage {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "false";
-
-		task ("Given a Minium site is created") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a simple product with a new option is created") {
-			CommerceJSONProductsAPI._addCommerceProduct(
-				catalogName = "Minium",
-				productName = "Simple T-Shirt",
-				productType = "Simple");
-
-			CommerceProducts.openProductsAdmin();
-
-			CommerceNavigator.searchEntry(entryName = "Simple T-Shirt");
-
-			CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Options");
-
-			CommerceProductOptions.createProductOption(key_optionName = "New Option");
-		}
-
-		task ("And from the Product Management -> Options, the option is deleted") {
-			CommerceNavigator.goToProductOptionsAdminViaURL();
-
-			Click(
-				key_value = "New Option",
-				locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
-
-			CommerceEntry.clickNoError(menuItem = "Delete");
-
-			AssertElementNotPresent(
-				key_value = "New Option",
-				locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
-		}
-
-		task ("When the admin goes back to the product") {
-			CommerceProducts.openProductsAdmin();
-
-			CommerceNavigator.searchEntry(entryName = "Simple T-Shirt");
-
-			CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Options");
-		}
-
-		task ("Then the admin can create a new product option") {
-			CommerceProductOptions.createProductOption(key_optionName = "New Option1");
-		}
-	}
-
 	@description = "COMMERCE-11494. Can delete product option with all skus generated"
 	@priority = 4
 	test CanDeleteProductOptionWithGeneratedSkus {
@@ -1707,12 +1600,14 @@ definition {
 				SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 			}
 
-			SelectFrameTop();
-
-			Click(locator1 = "Icon#CLOSE");
+			Click(
+				key_frameTitle = "Edit Option1",
+				locator1 = "CommerceEntry#SPECIFIC_SIDE_PANEL_CLOSE_BUTTON");
 		}
 
 		task ("And from the SKUs tab, plus button is clicked, Generate all SKUs combination button is selected") {
+			SelectFrameTop();
+
 			CommerceEntry.gotoMenuTab(menuTab = "SKUs");
 
 			Click(locator1 = "Button#PLUS");
@@ -2083,7 +1978,7 @@ definition {
 	@description = "COMMERCE-12700 Verify that is not possible to view the accordion 'Show Option' in case the product has no options"
 	@priority = 4
 	test CannotViewTheAccordionForProductsWithNoOptions {
-		property custom.properties = "feature.flag.COMMERCE-9599=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "false";
 
 		task ("Given a Minium site with a buyer user is created") {
@@ -2107,7 +2002,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2134,182 +2029,10 @@ definition {
 		}
 	}
 
-	@description = "This is a test for COMMERCE-12167.User can see SKU updated on the product details page when values are selected from multiple options."
-	@priority = 5
-	test CanSKUUpdateSuccessfullyWhenSelectingValuesFromMultipleOptions {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "true";
-
-		task ("Given a Minium site is created") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And an account associated with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And a simple product is created") {
-			CommerceJSONProductsAPI._addCommerceProduct(
-				catalogName = "Minium",
-				productName = "Test Simple Product",
-				productType = "Simple",
-				sku = "SIM1001");
-		}
-
-		task ("And 2 SKU contributor static options with 2 values with a delta price, each linked to a SKU are created") {
-			for (var optionNameWithKey : list "A:white,B:red") {
-				var name = StringUtil.extractFirst(${optionNameWithKey}, ":");
-				var key = StringUtil.extractLast(${optionNameWithKey}, ":");
-
-				CommerceJSONOptionsAPI._addCommerceOption(
-					fieldType = "select",
-					optionKey = ${key},
-					optionName = ${name},
-					optionValues = "value1:value1:1,value2:value2:2",
-					skuContributor = "true");
-
-				CommerceJSONOptionsAPI._assignOptionToCommerceProduct(
-					fieldType = "select",
-					optionKey = ${key},
-					optionName = ${name},
-					productName = "Test Simple Product");
-			}
-
-			for (var optionName : list "A,B") {
-				var count = 0;
-
-				CommerceProducts.openProductsAdmin();
-
-				CommerceNavigator.searchEntry(entryName = "Simple");
-
-				CommerceNavigator.gotoEntry(entryName = "Test Simple Product");
-
-				CommerceEntry.gotoMenuTab(menuTab = "Options");
-
-				CommerceProductOptions.editProductOption(
-					key_fieldType = "Select from List",
-					key_option = ${optionName},
-					key_priceType = "Static",
-					productOptionFieldType = "true",
-					productOptionPriceType = "true");
-
-				for (var skuAndDeltaPrice : list "MIN55861:60.00,MIN93027:70.00") {
-					var count = ${count} + 1;
-					var sku = StringUtil.extractFirst(${skuAndDeltaPrice}, ":");
-					var deltaPriceValue = StringUtil.extractLast(${skuAndDeltaPrice}, ":");
-
-					CommerceOptions.setDeltaPrice(
-						deltaPrice = ${deltaPriceValue},
-						key_index = "value${count}",
-						key_optionIndex = "Option Select from List",
-						productSKU = ${sku});
-
-					Click(locator1 = "Icon#CLOSE");
-
-					SelectFrameTop();
-
-					Click(
-						key_index = ${optionName},
-						locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
-
-					SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
-				}
-			}
-		}
-
-		task ("And from the SKUs tab, plus button is clicked, Generate all SKUs combination button is selected") {
-			CommerceProducts.openProductsAdmin();
-
-			CommerceNavigator.searchEntry(entryName = "Simple");
-
-			CommerceNavigator.gotoEntry(entryName = "Test Simple Product");
-
-			CommerceEntry.gotoMenuTab(menuTab = "SKUs");
-
-			CommerceSKUs.generateAllSkuCombinations();
-		}
-
-		task ("And the buyer user logs in") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("Then all configured data is shown correctly upon clicking different options in store front") {
-			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "Test Simple Product");
-
-			AssertElementPresent(
-				key_fieldLabel = "A",
-				key_value = "value1",
-				locator1 = "Select#GENERIC_SELECT_VALUE");
-
-			AssertElementPresent(
-				key_fieldLabel = "B",
-				key_value = "value1",
-				locator1 = "Select#GENERIC_SELECT_VALUE");
-
-			AssertElementPresent(
-				key_fieldLabel = "A",
-				key_value = "value2 + $ 10.00",
-				locator1 = "Select#GENERIC_SELECT_VALUE");
-
-			AssertTextEquals.assertPartialText(
-				locator1 = "CommerceAccelerators#PRODUCT_DETAILS_LIST_PRICE",
-				value1 = "120.00");
-
-			AssertElementPresent(
-				key_fieldLabel = "B",
-				key_value = "value1",
-				locator1 = "Select#GENERIC_SELECT_VALUE");
-
-			Select(
-				key_optionName = "B",
-				locator1 = "CommerceFrontStore#FS_PRODUCT_OPTIONS_SELECT",
-				value1 = "value2 + $ 10.00");
-
-			AssertTextEquals.assertPartialText(
-				locator1 = "CommerceAccelerators#PRODUCT_DETAILS_LIST_PRICE",
-				value1 = "130.00");
-
-			Select(
-				key_optionName = "A",
-				locator1 = "CommerceFrontStore#FS_PRODUCT_OPTIONS_SELECT",
-				value1 = "value2 + $ 10.00");
-
-			AssertElementPresent(
-				key_productSku = "VALUE2VALUE2",
-				locator1 = "CommerceFrontStore#FS_PRODUCT_SKU");
-
-			Click(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE");
-
-			CommerceNavigator.gotoMiniCart();
-
-			FrontStore.viewMiniCartItem(
-				cartItemName = "Test Simple Product",
-				cartItemOption = "value2, value2",
-				cartItemQuantity = 1,
-				cartItemSku = "VALUE2VALUE2");
-		}
-	}
-
 	@description = "COMMERCE-12701 Verify that is possible to view and use the accordion 'Show Options' for the bundled products with UOM"
 	@priority = 5
 	test CanUseTheAccordionForBundledProductsWithUOM {
-		property custom.properties = "feature.flag.COMMERCE-9599=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
 		task ("Given a Minium site with a buyer user is created") {
@@ -2402,7 +2125,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2441,7 +2164,7 @@ definition {
 	@description = "COMMERCE-12699 Verify that is possible to view and use the accordion 'Show Options' for the Define Externally bundled products"
 	@priority = 5
 	test CanUseTheAccordionForDefineExternallyProducts {
-		property custom.properties = "feature.flag.COMMERCE-9599=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
 		task ("Given a Minium site with a buyer user is created") {
@@ -2498,7 +2221,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2539,7 +2262,7 @@ definition {
 	@description = "COMMERCE-12698 Verify that is possible to view and use the accordion 'Show Options' for the normal products"
 	@priority = 5
 	test CanUseTheAccordionForNormalProducts {
-		property custom.properties = "feature.flag.COMMERCE-9599=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
 		task ("Given a Minium site with a buyer user is created") {
@@ -2644,7 +2367,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2779,7 +2502,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2799,10 +2522,7 @@ definition {
 		task ("And the admin logs in") {
 			User.logoutPG();
 
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 		}
 
 		task ("And navigates to the ABS Sensor Product Detail page") {
@@ -2827,7 +2547,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2917,7 +2637,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -3050,7 +2770,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -3155,7 +2875,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}

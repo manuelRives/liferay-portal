@@ -37,11 +37,10 @@ import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
+import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -56,9 +55,10 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.ratings.kernel.service.RatingsEntryLocalServiceUtil;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalServiceUtil;
 import com.liferay.subscription.service.SubscriptionLocalServiceUtil;
@@ -73,7 +73,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -91,7 +90,9 @@ public class KBArticleLocalServiceTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -101,19 +102,10 @@ public class KBArticleLocalServiceTest {
 		_kbFolderClassNameId = ClassNameLocalServiceUtil.getClassNameId(
 			KBFolderConstants.getClassName());
 
-		_originalName = PrincipalThreadLocal.getName();
-
-		PrincipalThreadLocal.setName(TestPropsValues.getUserId());
-
 		_user = TestPropsValues.getUser();
 
 		_serviceContext = ServiceContextTestUtil.getServiceContext(
 			_group, _user.getUserId());
-	}
-
-	@After
-	public void tearDown() {
-		PrincipalThreadLocal.setName(_originalName);
 	}
 
 	@Test
@@ -264,7 +256,6 @@ public class KBArticleLocalServiceTest {
 			null, _serviceContext);
 	}
 
-	@FeatureFlags("LPS-188058")
 	@Test
 	public void testAddKBArticleDisplayDateKBArticleStatusScheduled()
 		throws Exception {
@@ -333,6 +324,18 @@ public class KBArticleLocalServiceTest {
 			StringUtil.randomString(), StringUtil.randomString(), null, null,
 			new Date(), null, Date.from(instant.minus(Duration.ofDays(1))),
 			null, _serviceContext);
+	}
+
+	@Test(expected = KBArticleDisplayDateException.class)
+	public void testAddKBArticleShouldFailIfDisplayDateIsNull()
+		throws Exception {
+
+		_kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), _kbFolderClassNameId,
+			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), null, null,
+			null, null, null, null, _serviceContext);
 	}
 
 	@Test
@@ -460,6 +463,27 @@ public class KBArticleLocalServiceTest {
 
 			Assert.assertTrue(matcher.matches());
 		}
+	}
+
+	@Test
+	public void testAddKBArticleWithDisplayDateExpirationDateReviewDate()
+		throws Exception {
+
+		Date displayDate = new Date();
+		Date expirationDate = new Date(
+			System.currentTimeMillis() + (2 * Time.MINUTE));
+		Date reviewDate = new Date(System.currentTimeMillis() + Time.MINUTE);
+
+		KBArticle kbArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), _kbFolderClassNameId,
+			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), null, null,
+			displayDate, expirationDate, reviewDate, null, _serviceContext);
+
+		Assert.assertEquals(displayDate, kbArticle.getDisplayDate());
+		Assert.assertEquals(expirationDate, kbArticle.getExpirationDate());
+		Assert.assertEquals(reviewDate, kbArticle.getReviewDate());
 	}
 
 	@Test(expected = KBArticleUrlTitleException.class)
@@ -765,6 +789,169 @@ public class KBArticleLocalServiceTest {
 			originalKBArticleTreePath, kbArticle.buildTreePath());
 	}
 
+	@Test(expected = KBArticleStatusException.class)
+	public void testCheckKBArticlesFailsWhenPublishingAndParentKBArticleIsScheduled()
+		throws Exception {
+
+		Date displayDate = new Date(
+			System.currentTimeMillis() + (2 * Time.DAY));
+
+		KBArticle parentKBArticle = _addKbArticle(displayDate);
+
+		KBArticle childKBArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), parentKBArticle.getClassNameId(),
+			parentKBArticle.getResourcePrimKey(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, displayDate, null, null,
+			null, _serviceContext);
+
+		_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, parentKBArticle.getStatus());
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, childKBArticle.getStatus());
+
+		childKBArticle.setDisplayDate(new Date());
+
+		_kbArticleLocalService.updateKBArticle(childKBArticle);
+
+		_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+	}
+
+	@Test
+	public void testCheckKBArticlesWhenChildKBArticleIsPublishedAfterParentKBArticleIsPublished()
+		throws Exception {
+
+		Date displayDate = new Date(
+			System.currentTimeMillis() + (2 * Time.DAY));
+
+		KBArticle parentKBArticle = _addKbArticle(displayDate);
+
+		KBArticle childKBArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), parentKBArticle.getClassNameId(),
+			parentKBArticle.getResourcePrimKey(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, displayDate, null, null,
+			null, _serviceContext);
+
+		_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+
+		childKBArticle = _kbArticleLocalService.fetchKBArticle(
+			childKBArticle.getKbArticleId());
+		parentKBArticle = _kbArticleLocalService.fetchKBArticle(
+			parentKBArticle.getKbArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, childKBArticle.getStatus());
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, parentKBArticle.getStatus());
+
+		parentKBArticle.setDisplayDate(new Date());
+
+		parentKBArticle = _kbArticleLocalService.updateKBArticle(
+			parentKBArticle);
+
+		_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+
+		childKBArticle = _kbArticleLocalService.fetchKBArticle(
+			childKBArticle.getKbArticleId());
+		parentKBArticle = _kbArticleLocalService.fetchKBArticle(
+			parentKBArticle.getKbArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, childKBArticle.getStatus());
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, parentKBArticle.getStatus());
+
+		childKBArticle.setDisplayDate(new Date());
+
+		childKBArticle = _kbArticleLocalService.updateKBArticle(childKBArticle);
+
+		_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+
+		childKBArticle = _kbArticleLocalService.fetchKBArticle(
+			childKBArticle.getKbArticleId());
+		parentKBArticle = _kbArticleLocalService.fetchKBArticle(
+			parentKBArticle.getKbArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, childKBArticle.getStatus());
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, parentKBArticle.getStatus());
+	}
+
+	@Test
+	public void testCheckKBArticlesWhenChildKBArticleIsPublishedOnlyAfterParentKBArticleIsPublished()
+		throws Exception {
+
+		Date displayDate = new Date(
+			System.currentTimeMillis() + (2 * Time.DAY));
+
+		KBArticle parentKBArticle = _addKbArticle(displayDate);
+
+		KBArticle childKBArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), parentKBArticle.getClassNameId(),
+			parentKBArticle.getResourcePrimKey(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, displayDate, null, null,
+			null, _serviceContext);
+
+		_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+
+		childKBArticle = _kbArticleLocalService.fetchKBArticle(
+			childKBArticle.getKbArticleId());
+		parentKBArticle = _kbArticleLocalService.fetchKBArticle(
+			parentKBArticle.getKbArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, childKBArticle.getStatus());
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, parentKBArticle.getStatus());
+
+		displayDate = new Date(System.currentTimeMillis() - (2 * Time.MINUTE));
+
+		childKBArticle.setDisplayDate(displayDate);
+
+		childKBArticle = _kbArticleLocalService.updateKBArticle(childKBArticle);
+
+		try {
+			_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+
+			Assert.fail();
+		}
+		catch (Exception exception) {
+			Assert.assertTrue(exception instanceof KBArticleStatusException);
+		}
+
+		childKBArticle = _kbArticleLocalService.fetchKBArticle(
+			childKBArticle.getKbArticleId());
+		parentKBArticle = _kbArticleLocalService.fetchKBArticle(
+			parentKBArticle.getKbArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, childKBArticle.getStatus());
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, parentKBArticle.getStatus());
+
+		parentKBArticle.setDisplayDate(displayDate);
+
+		parentKBArticle = _kbArticleLocalService.updateKBArticle(
+			parentKBArticle);
+
+		_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+
+		childKBArticle = _kbArticleLocalService.fetchKBArticle(
+			childKBArticle.getKbArticleId());
+		parentKBArticle = _kbArticleLocalService.fetchKBArticle(
+			parentKBArticle.getKbArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, childKBArticle.getStatus());
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, parentKBArticle.getStatus());
+	}
+
 	@Test
 	public void testDeleteGroupKBArticlesDeletesKBArticles() throws Exception {
 		_addKbArticle();
@@ -872,7 +1059,7 @@ public class KBArticleLocalServiceTest {
 				KBArticleConstants.getClassName(), kbArticle.getClassPK()));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testDeleteKBArticleWithLock() throws PortalException {
 		KBArticle kbArticle = _addKbArticle();
@@ -882,7 +1069,7 @@ public class KBArticleLocalServiceTest {
 			() -> _kbArticleLocalService.deleteKBArticle(kbArticle));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testDeleteKBArticleWithLockByPreviousUser() throws Exception {
 		KBArticle kbArticle = _addKbArticle();
@@ -908,7 +1095,7 @@ public class KBArticleLocalServiceTest {
 			WorkflowConstants.STATUS_DRAFT, kbArticle.getStatus());
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testExpireKBArticleWithLock() throws PortalException {
 		KBArticle kbArticle = _addKbArticle();
@@ -920,7 +1107,7 @@ public class KBArticleLocalServiceTest {
 				_serviceContext));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testExpireKBArticleWithLockByPreviousUser() throws Exception {
 		KBArticle kbArticle = _addKbArticle();
@@ -930,6 +1117,49 @@ public class KBArticleLocalServiceTest {
 			() -> _kbArticleLocalService.expireKBArticle(
 				_user.getUserId(), kbArticle.getResourcePrimKey(),
 				_serviceContext));
+	}
+
+	@Test
+	public void testFetchKBArticleByUrlTitle() throws Exception {
+		KBFolder kbFolder = _kbFolderLocalService.addKBFolder(
+			null, _user.getUserId(), _group.getGroupId(), _kbFolderClassNameId,
+			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), StringUtil.randomString(),
+			_serviceContext);
+
+		KBArticle kbArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), _kbFolderClassNameId,
+			kbFolder.getKbFolderId(), "Article with versions",
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, new Date(), null, null, null,
+			_serviceContext);
+
+		Assert.assertEquals(1, kbArticle.getVersion());
+
+		kbArticle = _kbArticleLocalService.updateKBArticle(
+			_user.getUserId(), kbArticle.getResourcePrimKey(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, kbArticle.getDisplayDate(),
+			null, null, null, null, _serviceContext);
+
+		Assert.assertEquals(2, kbArticle.getVersion());
+
+		kbArticle = _kbArticleLocalService.fetchKBArticleByUrlTitle(
+			kbArticle.getGroupId(), kbFolder.getUrlTitle(),
+			kbArticle.getUrlTitle());
+
+		Assert.assertEquals(2, kbArticle.getVersion());
+	}
+
+	@Test
+	public void testFetchPersistedModelByResourcePrimKey() throws Exception {
+		KBArticle kBArticle = _addKbArticle();
+
+		PersistedModel persistedModel =
+			_kbArticleLocalService.fetchPersistedModel(
+				kBArticle.getResourcePrimKey());
+
+		Assert.assertNotNull(persistedModel);
 	}
 
 	@Test
@@ -982,7 +1212,7 @@ public class KBArticleLocalServiceTest {
 			_kbArticleLocalService.getAllDescendantKBArticles(
 				parentKBArticle.getResourcePrimKey(),
 				WorkflowConstants.STATUS_APPROVED,
-				new KBArticlePriorityComparator(true));
+				KBArticlePriorityComparator.getInstance(true));
 
 		Assert.assertEquals(
 			kbArticleAndAllDescendantKBArticles.toString(), 5,
@@ -1066,7 +1296,7 @@ public class KBArticleLocalServiceTest {
 			_kbArticleLocalService.getKBArticleAndAllDescendantKBArticles(
 				parentKBArticle.getResourcePrimKey(),
 				WorkflowConstants.STATUS_APPROVED,
-				new KBArticlePriorityComparator(true));
+				KBArticlePriorityComparator.getInstance(true));
 
 		Assert.assertEquals(
 			kbArticleAndAllDescendantKBArticles.toString(), 6,
@@ -1215,7 +1445,7 @@ public class KBArticleLocalServiceTest {
 			kbArticle.getParentResourcePrimKey());
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testMoveKBArticleToTrashKBArticleWithLock()
 		throws PortalException {
@@ -1228,7 +1458,7 @@ public class KBArticleLocalServiceTest {
 				_user.getUserId(), kbArticle.getResourcePrimKey()));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testMoveKBArticleToTrashKBArticleWithLockByPreviousUser()
 		throws Exception {
@@ -1241,7 +1471,7 @@ public class KBArticleLocalServiceTest {
 				_user.getUserId(), kbArticle.getResourcePrimKey()));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testMoveKBArticleWithLock() throws PortalException {
 		KBArticle kbArticle = _addKbArticle();
@@ -1255,7 +1485,7 @@ public class KBArticleLocalServiceTest {
 				parentKBArticle.getPriority()));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testMoveKBArticleWithLockByPreviousUser() throws Exception {
 		KBArticle kbArticle = _addKbArticle();
@@ -1352,7 +1582,7 @@ public class KBArticleLocalServiceTest {
 		Assert.assertNull(latestKBArticle.getReviewDate());
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testRevertKBArticleWithLock() throws PortalException {
 		KBArticle kbArticle = _addKbArticle();
@@ -1372,7 +1602,7 @@ public class KBArticleLocalServiceTest {
 				_serviceContext));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testRevertKBArticleWithLockByPreviousUser() throws Exception {
 		KBArticle kbArticle = _addKbArticle();
@@ -1392,7 +1622,7 @@ public class KBArticleLocalServiceTest {
 				_serviceContext));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testUpdateAndUnlockKBArticleWithPreviousLockByCurrentUser()
 		throws Exception {
@@ -1432,6 +1662,143 @@ public class KBArticleLocalServiceTest {
 			kbArticle.getDescription(), null, kbArticle.getSourceURL(), null,
 			kbArticle.getExpirationDate(), kbArticle.getReviewDate(), null,
 			null, _serviceContext);
+	}
+
+	@Test
+	public void testUpdateKBArticleDisplayDateExpiredKBArticleCanBePublished()
+		throws Exception {
+
+		KBArticle kbArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), _kbFolderClassNameId,
+			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), null, null,
+			new Date(), null, null, null, _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, kbArticle.getStatus());
+
+		kbArticle = _kbArticleLocalService.expireKBArticle(
+			_user.getUserId(), kbArticle.getResourcePrimKey(), _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_EXPIRED, kbArticle.getStatus());
+
+		Date displayDate = new Date(System.currentTimeMillis() + Time.DAY);
+
+		kbArticle = _kbArticleLocalService.updateKBArticle(
+			_user.getUserId(), kbArticle.getResourcePrimKey(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, displayDate, null, null,
+			null, null, _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, kbArticle.getStatus());
+
+		displayDate = new Date(System.currentTimeMillis() - Time.DAY);
+
+		kbArticle.setDisplayDate(displayDate);
+
+		kbArticle = _kbArticleLocalService.updateKBArticle(kbArticle);
+
+		_kbArticleLocalService.checkKBArticles(_group.getCompanyId());
+
+		kbArticle = _kbArticleLocalService.fetchKBArticle(
+			kbArticle.getKbArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, kbArticle.getStatus());
+	}
+
+	@Test
+	public void testUpdateKBArticleDisplayDateOnDraftKBArticleUpdatesStatusToScheduled()
+		throws Exception {
+
+		_serviceContext.setWorkflowAction(WorkflowConstants.ACTION_SAVE_DRAFT);
+
+		Date displayDate = new Date(
+			System.currentTimeMillis() - (2 * Time.DAY));
+
+		KBArticle kbArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), _kbFolderClassNameId,
+			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), null, null,
+			displayDate, null, null, null, _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_DRAFT, kbArticle.getStatus());
+
+		_serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
+
+		displayDate = new Date(System.currentTimeMillis() + (2 * Time.DAY));
+
+		kbArticle = _kbArticleLocalService.updateKBArticle(
+			_user.getUserId(), kbArticle.getResourcePrimKey(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, displayDate, null, null,
+			null, null, _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, kbArticle.getStatus());
+	}
+
+	@Test
+	public void testUpdateKBArticleDisplayDateUpdatesKBArticleStatusToApproved()
+		throws Exception {
+
+		Date displayDate = new Date(
+			System.currentTimeMillis() + (2 * Time.DAY));
+
+		KBArticle kbArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), _kbFolderClassNameId,
+			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), null, null,
+			displayDate, null, null, null, _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, kbArticle.getStatus());
+
+		displayDate = new Date(System.currentTimeMillis() - (2 * Time.DAY));
+
+		kbArticle = _kbArticleLocalService.updateKBArticle(
+			_user.getUserId(), kbArticle.getResourcePrimKey(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, displayDate, null, null,
+			null, null, _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, kbArticle.getStatus());
+	}
+
+	@Test
+	public void testUpdateKBArticleDisplayDateUpdatesKBArticleStatusToScheduled()
+		throws Exception {
+
+		Date displayDate = new Date(
+			System.currentTimeMillis() - (2 * Time.DAY));
+
+		KBArticle kbArticle = _kbArticleLocalService.addKBArticle(
+			null, _user.getUserId(), _kbFolderClassNameId,
+			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), null, null,
+			displayDate, null, null, null, _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, kbArticle.getStatus());
+
+		displayDate = new Date(System.currentTimeMillis() + (2 * Time.DAY));
+
+		kbArticle = _kbArticleLocalService.updateKBArticle(
+			_user.getUserId(), kbArticle.getResourcePrimKey(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), null, null, displayDate, null, null,
+			null, null, _serviceContext);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_SCHEDULED, kbArticle.getStatus());
 	}
 
 	@Test
@@ -1506,7 +1873,7 @@ public class KBArticleLocalServiceTest {
 		Assert.assertTrue(assetEntry.isVisible());
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testUpdateKBArticleWithLockByPreviousUser() throws Exception {
 		KBArticle kbArticle = _addKbArticle();
@@ -1520,7 +1887,7 @@ public class KBArticleLocalServiceTest {
 				null, null, new ServiceContext()));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testUpdateKBArticleWithoutPreviousLock() throws Exception {
 		KBArticle kbArticle = _addKbArticle();
@@ -1536,7 +1903,7 @@ public class KBArticleLocalServiceTest {
 				_user.getUserId(), kbArticle.getResourcePrimKey()));
 	}
 
-	@FeatureFlags("LPD-11003")
+	@FeatureFlag("LPD-11003")
 	@Test
 	public void testUpdateKBArticleWithPreviousLockByCurrentUser()
 		throws Exception {
@@ -1555,6 +1922,9 @@ public class KBArticleLocalServiceTest {
 		Assert.assertTrue(
 			_kbArticleLocalService.hasKBArticleLock(
 				_user.getUserId(), kbArticle.getResourcePrimKey()));
+
+		_kbArticleLocalService.unlockKBArticle(
+			_user.getUserId(), kbArticle.getResourcePrimKey());
 	}
 
 	protected void importMarkdownArticles() throws PortalException {
@@ -1583,12 +1953,16 @@ public class KBArticleLocalServiceTest {
 	}
 
 	private KBArticle _addKbArticle() throws PortalException {
+		return _addKbArticle(new Date());
+	}
+
+	private KBArticle _addKbArticle(Date displayDate) throws PortalException {
 		return _kbArticleLocalService.addKBArticle(
 			null, _user.getUserId(), _kbFolderClassNameId,
 			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), StringUtil.randomString(),
 			StringUtil.randomString(), StringUtil.randomString(), null, null,
-			new Date(), null, null, null, _serviceContext);
+			displayDate, null, null, null, _serviceContext);
 	}
 
 	private void _testKBArticleLock(
@@ -1639,7 +2013,8 @@ public class KBArticleLocalServiceTest {
 			Assert.assertEquals(duplicateLock.getLockId(), lock.getLockId());
 		}
 
-		_kbArticleLocalService.unlockKBArticle(resourcePrimKey);
+		_kbArticleLocalService.unlockKBArticle(
+			previousUser.getUserId(), resourcePrimKey);
 
 		Assert.assertFalse(
 			LockManagerUtil.isLocked(
@@ -1668,11 +2043,7 @@ public class KBArticleLocalServiceTest {
 	@Inject
 	private KBFolderLocalService _kbFolderLocalService;
 
-	private String _originalName;
 	private ServiceContext _serviceContext;
 	private User _user;
-
-	@Inject
-	private UserLocalService _userLocalService;
 
 }

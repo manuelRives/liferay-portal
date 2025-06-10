@@ -10,25 +10,26 @@ import {
 	parseName,
 	parseNestedFieldName,
 } from '../../utils/repeatable.es';
+import {
+	replaceURLObjectPathnameSegment,
+	updateURLObjectSearchParam,
+} from '../../utils/url';
 import {PagesVisitor} from '../../utils/visitors.es';
 import {EVENT_TYPES} from '../actions/eventTypes.es';
 
-export function createRepeatedField(sourceField, repeatedIndex) {
+export function createRepeatedField(
+	defaultLanguageId,
+	sourceField,
+	repeatedIndex
+) {
 	const instanceId = generateInstanceId();
-	const {locale, name, nestedFields, predefinedValue} = sourceField;
-	let localizedValue;
+	const {name, nestedFields, predefinedValue} = sourceField;
+	const localizedValue = {};
+	const localizedValueEdited = {};
 
 	if (sourceField.localizedValue) {
-		localizedValue = Object.keys(sourceField.localizedValue).reduce(
-			(localizedValues, key) => {
-				localizedValues[key] = '';
-
-				return localizedValues;
-			},
-			{}
-		);
-
-		localizedValue[locale] = predefinedValue ?? localizedValue[locale];
+		localizedValue[defaultLanguageId] = predefinedValue || '';
+		localizedValueEdited[defaultLanguageId] = true;
 	}
 
 	return {
@@ -36,9 +37,10 @@ export function createRepeatedField(sourceField, repeatedIndex) {
 		confirmationValue: '',
 		instanceId,
 		localizedValue,
+		localizedValueEdited,
 		name: generateName(name, {instanceId, repeatedIndex}),
 		nestedFields: nestedFields?.map((nestedField) =>
-			createRepeatedField(nestedField)
+			createRepeatedField(defaultLanguageId, nestedField)
 		),
 		valid: true,
 		value: predefinedValue,
@@ -55,9 +57,10 @@ export function updateNestedFieldNames(parentFieldName, nestedFields) {
 		return {
 			...nestedField,
 			...(nestedField.editorConfig && {
-				editorConfig: updateEditorConfigFieldName(
+				editorConfig: updateEditorConfigFilebrowsersURL(
 					nestedField.editorConfig,
-					newNestedFieldName
+					newNestedFieldName,
+					nestedField.fieldName
 				),
 			}),
 			name: newNestedFieldName,
@@ -70,26 +73,51 @@ export function updateNestedFieldNames(parentFieldName, nestedFields) {
 	});
 }
 
-function updateEditorConfigFieldName(editorConfig, name) {
-	const updatedEditorConfig = {...editorConfig};
-	for (const [key, value] of Object.entries(updatedEditorConfig)) {
-		if (typeof value === 'string') {
-			const parsedName = parseName(decodeURIComponent(value));
+export function updateEditorConfigFilebrowsersURL(
+	editorConfig,
+	name,
+	fieldName
+) {
+	const newEditorConfig = {...editorConfig};
+	const newItemSelectedEventName = name + 'selectItem';
 
-			if (Object.keys(parsedName).length) {
-				const currentName = encodeURIComponent(
-					generateName(null, parsedName)
+	for (const [configProperty, configValue] of Object.entries(
+		newEditorConfig
+	)) {
+		const isFilebrowserURLConfigProperty = ['filebrowser', 'Url'].every(
+			(subString) => configProperty.includes(subString)
+		);
+
+		if (isFilebrowserURLConfigProperty) {
+			try {
+				const url = new URL(configValue);
+
+				replaceURLObjectPathnameSegment(
+					newItemSelectedEventName,
+					['_', fieldName, 'portlet', 'selectItem'],
+					url
 				);
 
-				updatedEditorConfig[key] = value.replace(
-					currentName,
-					encodeURIComponent(name) + 'selectItem'
+				updateURLObjectSearchParam(
+					newItemSelectedEventName,
+					['_', 'itemSelectedEventName', 'ItemSelectorPortlet'],
+					url
+				);
+
+				newEditorConfig[configProperty] = url.toString();
+			}
+			catch (error) {
+				console.error(
+					Liferay.Language.get(
+						'an-error-occurred-while-parsing-the-url'
+					),
+					error
 				);
 			}
 		}
 	}
 
-	return updatedEditorConfig;
+	return newEditorConfig;
 }
 
 export default function fieldReducer(state, action) {
@@ -219,6 +247,7 @@ export default function fieldReducer(state, action) {
 						if (sourceFieldIndex > -1) {
 							const newFieldIndex = sourceFieldIndex + 1;
 							const newField = createRepeatedField(
+								state.defaultLanguageId,
 								fields[sourceFieldIndex],
 								newFieldIndex
 							);
@@ -237,17 +266,20 @@ export default function fieldReducer(state, action) {
 									const name = generateName(
 										currentField.name,
 										{
-											repeatedIndex: currentRepeatedIndex++,
+											repeatedIndex:
+												currentRepeatedIndex++,
 										}
 									);
 
 									return {
 										...currentField,
 										...(currentField.editorConfig && {
-											editorConfig: updateEditorConfigFieldName(
-												currentField.editorConfig,
-												name
-											),
+											editorConfig:
+												updateEditorConfigFilebrowsersURL(
+													currentField.editorConfig,
+													name,
+													currentField.fieldName
+												),
 										}),
 										name,
 										nestedFields: updateNestedFieldNames(

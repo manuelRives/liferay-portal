@@ -58,15 +58,16 @@ public class FragmentEntryStagedModelRepository
 		}
 
 		return _fragmentEntryLocalService.addFragmentEntry(
-			userId, fragmentEntry.getGroupId(),
-			fragmentEntry.getFragmentCollectionId(),
+			fragmentEntry.getExternalReferenceCode(), userId,
+			fragmentEntry.getGroupId(), fragmentEntry.getFragmentCollectionId(),
 			fragmentEntry.getFragmentEntryKey(), fragmentEntry.getName(),
 			fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.isCacheable(),
 			fragmentEntry.getConfiguration(), fragmentEntry.getIcon(),
-			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.isReadOnly(),
-			fragmentEntry.getType(), fragmentEntry.getTypeOptions(),
-			fragmentEntry.getStatus(), serviceContext);
+			fragmentEntry.getPreviewFileEntryId(), false,
+			fragmentEntry.isReadOnly(), fragmentEntry.getType(),
+			fragmentEntry.getTypeOptions(), fragmentEntry.getStatus(),
+			serviceContext);
 	}
 
 	@Override

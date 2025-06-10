@@ -31,15 +31,16 @@ public class TemplateEntryLocalServiceImpl
 
 	@Override
 	public TemplateEntry addTemplateEntry(
-			long userId, long groupId, long ddmTemplateId,
-			String infoItemClassName, String infoItemFormVariationKey,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long ddmTemplateId, String infoItemClassName,
+			String infoItemFormVariationKey, ServiceContext serviceContext)
 		throws PortalException {
 
 		TemplateEntry templateEntry = templateEntryPersistence.create(
 			counterLocalService.increment());
 
 		templateEntry.setUuid(serviceContext.getUuid());
+		templateEntry.setExternalReferenceCode(externalReferenceCode);
 		templateEntry.setGroupId(groupId);
 
 		User user = _userLocalService.getUser(userId);
@@ -56,10 +57,31 @@ public class TemplateEntryLocalServiceImpl
 	}
 
 	@Override
-	public TemplateEntry deleteTemplateEntry(long templateEntryId)
-		throws PortalException {
+	public void deleteTemplateEntries(long groupId) {
+		templateEntryPersistence.removeByGroupId(groupId);
+	}
 
-		return templateEntryPersistence.remove(templateEntryId);
+	@Override
+	public TemplateEntry deleteTemplateEntry(long templateEntryId) {
+		TemplateEntry templateEntry =
+			templateEntryPersistence.fetchByPrimaryKey(templateEntryId);
+
+		return deleteTemplateEntry(templateEntry);
+	}
+
+	@Override
+	public TemplateEntry deleteTemplateEntry(
+		String externalReferenceCode, long groupId) {
+
+		TemplateEntry templateEntry = templateEntryPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
+
+		return deleteTemplateEntry(templateEntry);
+	}
+
+	@Override
+	public TemplateEntry deleteTemplateEntry(TemplateEntry templateEntry) {
+		return templateEntryPersistence.remove(templateEntry);
 	}
 
 	@Override
@@ -116,6 +138,18 @@ public class TemplateEntryLocalServiceImpl
 			templateEntryId);
 
 		return templateEntryPersistence.update(templateEntry);
+	}
+
+	@Override
+	public TemplateEntry updateTemplateEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		TemplateEntry templateEntry = templateEntryPersistence.findByERC_G(
+			externalReferenceCode, groupId);
+
+		return templateEntryLocalService.updateTemplateEntry(
+			templateEntry.getTemplateEntryId());
 	}
 
 	@Reference

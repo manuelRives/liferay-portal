@@ -33,16 +33,16 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.io.IOException;
 
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_DISPLAY,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_DISPLAY,
 		"mvc.command.name=/knowledge_base/update_root_kb_folder_id"
 	},
 	service = MVCActionCommand.class
@@ -99,7 +99,7 @@ public class UpdateRootKBFolderIdMVCActionCommand extends BaseMVCActionCommand {
 		if (kbArticle == null) {
 			List<KBArticle> kbArticles = _kbArticleLocalService.getKBArticles(
 				groupId, newKBFolderId, WorkflowConstants.STATUS_APPROVED, 0, 1,
-				new KBArticlePriorityComparator(true));
+				KBArticlePriorityComparator.getInstance(true));
 
 			if (!kbArticles.isEmpty()) {
 				kbArticle = kbArticles.get(0);

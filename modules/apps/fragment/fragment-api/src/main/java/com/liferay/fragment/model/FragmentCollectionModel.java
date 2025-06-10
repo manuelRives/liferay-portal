@@ -7,6 +7,7 @@ package com.liferay.fragment.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedGroupedModel;
@@ -30,7 +31,8 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface FragmentCollectionModel
 	extends BaseModel<FragmentCollection>, CTModel<FragmentCollection>,
-			MVCCModel, ShardedModel, StagedGroupedModel {
+			ExternalReferenceCodeModel, MVCCModel, ShardedModel,
+			StagedGroupedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -102,6 +104,23 @@ public interface FragmentCollectionModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this fragment collection.
+	 *
+	 * @return the external reference code of this fragment collection
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this fragment collection.
+	 *
+	 * @param externalReferenceCode the external reference code of this fragment collection
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the fragment collection ID of this fragment collection.
@@ -274,6 +293,27 @@ public interface FragmentCollectionModel
 	 * @param description the description of this fragment collection
 	 */
 	public void setDescription(String description);
+
+	/**
+	 * Returns the marketplace of this fragment collection.
+	 *
+	 * @return the marketplace of this fragment collection
+	 */
+	public boolean getMarketplace();
+
+	/**
+	 * Returns <code>true</code> if this fragment collection is marketplace.
+	 *
+	 * @return <code>true</code> if this fragment collection is marketplace; <code>false</code> otherwise
+	 */
+	public boolean isMarketplace();
+
+	/**
+	 * Sets whether this fragment collection is marketplace.
+	 *
+	 * @param marketplace the marketplace of this fragment collection
+	 */
+	public void setMarketplace(boolean marketplace);
 
 	/**
 	 * Returns the last publish date of this fragment collection.

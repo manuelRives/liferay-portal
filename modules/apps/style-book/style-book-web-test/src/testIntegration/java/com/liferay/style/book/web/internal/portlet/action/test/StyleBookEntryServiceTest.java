@@ -51,8 +51,8 @@ public class StyleBookEntryServiceTest {
 	public void testCopyStyleBookEntry() throws Exception {
 		StyleBookEntry sourceStyleBookEntry =
 			_styleBookEntryService.addStyleBookEntry(
-				_group.getGroupId(), RandomTestUtil.randomString(),
-				"STYLE_BOOK_ENTRY_KEY",
+				null, _group.getGroupId(), RandomTestUtil.randomString(),
+				"STYLE_BOOK_ENTRY_KEY", RandomTestUtil.randomString(),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		StyleBookEntry targetStyleBookEntry =

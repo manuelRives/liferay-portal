@@ -18,10 +18,10 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.util.JaxRsLinkUtil;
 import com.liferay.segments.model.SegmentsExperience;
 
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.ws.rs.core.UriInfo;
 
 /**
  * @author Jürgen Kappler
@@ -64,12 +64,12 @@ public class RenderedPageUtil {
 
 				setPageTemplateId(
 					() -> {
-						if (layoutPageTemplateEntry != null) {
-							return layoutPageTemplateEntry.
-								getLayoutPageTemplateEntryKey();
+						if (layoutPageTemplateEntry == null) {
+							return null;
 						}
 
-						return null;
+						return layoutPageTemplateEntry.
+							getLayoutPageTemplateEntryKey();
 					});
 
 				setPageTemplateName(

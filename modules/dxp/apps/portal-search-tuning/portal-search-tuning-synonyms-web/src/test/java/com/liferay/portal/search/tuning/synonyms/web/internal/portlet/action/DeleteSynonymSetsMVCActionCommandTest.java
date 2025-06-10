@@ -13,13 +13,13 @@ import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSet;
 import com.liferay.portal.search.tuning.synonyms.web.internal.synchronizer.IndexToFilterSynchronizer;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -65,6 +65,32 @@ public class DeleteSynonymSetsMVCActionCommandTest
 	}
 
 	@Test
+	public void testDeleteSynonymSets() throws Exception {
+		SynonymSet.SynonymSetBuilder synonymSetBuilder =
+			new SynonymSet.SynonymSetBuilder();
+
+		_deleteSynonymSetsMVCActionCommand.deleteSynonymSets(
+			Mockito.mock(SynonymSetIndexName.class),
+			Arrays.asList(
+				synonymSetBuilder.synonyms(
+					"car,atumobile"
+				).synonymSetDocumentId(
+					"id-1"
+				).build(),
+				synonymSetBuilder.synonyms(
+					"clever,smart"
+				).synonymSetDocumentId(
+					"id-2"
+				).build()));
+
+		Mockito.verify(
+			synonymSetStorageAdapter, Mockito.times(2)
+		).delete(
+			Mockito.any(), Mockito.anyString()
+		);
+	}
+
+	@Test
 	public void testDoProcessAction() throws Exception {
 		setUpHttpServletRequestParameterValues(
 			_httpServletRequest, "rowIds", new String[] {"id"});
@@ -103,32 +129,6 @@ public class DeleteSynonymSetsMVCActionCommandTest
 				Assert.assertEquals("car,automobile", synonymSet.getSynonyms());
 				Assert.assertEquals("id", synonymSet.getSynonymSetDocumentId());
 			});
-	}
-
-	@Test
-	public void testRemoveSynonymSets() throws Exception {
-		SynonymSet.SynonymSetBuilder synonymSetBuilder =
-			new SynonymSet.SynonymSetBuilder();
-
-		_deleteSynonymSetsMVCActionCommand.removeSynonymSets(
-			Mockito.mock(SynonymSetIndexName.class),
-			Arrays.asList(
-				synonymSetBuilder.synonyms(
-					"car,atumobile"
-				).synonymSetDocumentId(
-					"id-1"
-				).build(),
-				synonymSetBuilder.synonyms(
-					"clever,smart"
-				).synonymSetDocumentId(
-					"id-2"
-				).build()));
-
-		Mockito.verify(
-			synonymSetStorageAdapter, Mockito.times(2)
-		).delete(
-			Mockito.any(), Mockito.anyString()
-		);
 	}
 
 	private final ActionRequest _actionRequest = Mockito.mock(

@@ -31,16 +31,16 @@ import com.liferay.portal.kernel.security.permission.resource.PortletResourcePer
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.RenderURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-import javax.portlet.RenderURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Luca Pellizzon
@@ -97,13 +97,13 @@ public class CommerceInventoryDisplayContext {
 			_cpRequestHelper.getRequest(),
 			"commerceInventoryReplenishmentItemId");
 
-		if (commerceInventoryReplenishmentItemId > 0) {
-			return _commerceInventoryReplenishmentItemService.
-				getCommerceInventoryReplenishmentItem(
-					commerceInventoryReplenishmentItemId);
+		if (commerceInventoryReplenishmentItemId <= 0) {
+			return null;
 		}
 
-		return null;
+		return _commerceInventoryReplenishmentItemService.
+			getCommerceInventoryReplenishmentItem(
+				commerceInventoryReplenishmentItemId);
 	}
 
 	public long getCommerceInventoryReplenishmentItemId()
@@ -126,13 +126,12 @@ public class CommerceInventoryDisplayContext {
 		long commerceInventoryWarehouseItemId = ParamUtil.getLong(
 			_cpRequestHelper.getRequest(), "commerceInventoryWarehouseItemId");
 
-		if (commerceInventoryWarehouseItemId > 0) {
-			return _commerceInventoryWarehouseItemService.
-				getCommerceInventoryWarehouseItem(
-					commerceInventoryWarehouseItemId);
+		if (commerceInventoryWarehouseItemId <= 0) {
+			return null;
 		}
 
-		return null;
+		return _commerceInventoryWarehouseItemService.
+			getCommerceInventoryWarehouseItem(commerceInventoryWarehouseItemId);
 	}
 
 	public long getCommerceInventoryWarehouseItemId() throws PortalException {
@@ -233,11 +232,6 @@ public class CommerceInventoryDisplayContext {
 		return creationMenu;
 	}
 
-	public String getParsedQuantity(BigDecimal quantity) throws Exception {
-		return _commerceQuantityFormatter.parse(
-			quantity, _cpRequestHelper.getLocale());
-	}
-
 	public PortletURL getPortletURL() {
 		LiferayPortletResponse liferayPortletResponse =
 			_cpRequestHelper.getLiferayPortletResponse();
@@ -256,6 +250,11 @@ public class CommerceInventoryDisplayContext {
 		}
 
 		return portletURL;
+	}
+
+	public String getQuantity(BigDecimal quantity) throws Exception {
+		return _commerceQuantityFormatter.format(
+			quantity, _cpRequestHelper.getLocale());
 	}
 
 	public CreationMenu getReplenishmentCreationMenu() throws Exception {

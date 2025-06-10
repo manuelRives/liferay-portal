@@ -99,8 +99,8 @@ public class OnDemandAdminControlPanelEntryTest {
 				_onDemandAdminPortlet));
 
 		Role role = _roleLocalService.addRole(
-			companyAdminUser.getUserId(), null, 0,
-			RandomTestUtil.randomString(), null, null,
+			RandomTestUtil.randomString(), companyAdminUser.getUserId(), null,
+			0, RandomTestUtil.randomString(), null, null,
 			RoleConstants.TYPE_REGULAR, null, null);
 
 		RoleTestUtil.addResourcePermission(
@@ -121,12 +121,12 @@ public class OnDemandAdminControlPanelEntryTest {
 	private GroupLocalService _groupLocalService;
 
 	@Inject(
-		filter = "javax.portlet.name=" + OnDemandAdminPortletKeys.ON_DEMAND_ADMIN
+		filter = "jakarta.portlet.name=" + OnDemandAdminPortletKeys.ON_DEMAND_ADMIN
 	)
 	private ControlPanelEntry _onDemandAdminControlPanelEntry;
 
 	@Inject(
-		filter = "javax.portlet.name=" + OnDemandAdminPortletKeys.ON_DEMAND_ADMIN
+		filter = "jakarta.portlet.name=" + OnDemandAdminPortletKeys.ON_DEMAND_ADMIN
 	)
 	private Portlet _onDemandAdminPortlet;
 

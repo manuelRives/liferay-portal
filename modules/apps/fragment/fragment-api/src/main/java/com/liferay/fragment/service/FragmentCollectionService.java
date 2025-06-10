@@ -48,17 +48,22 @@ public interface FragmentCollectionService extends BaseService {
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.fragment.service.impl.FragmentCollectionServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the fragment collection remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link FragmentCollectionServiceUtil} if injection and service tracking are not available.
 	 */
 	public FragmentCollection addFragmentCollection(
-			long groupId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, String name,
+			String description, ServiceContext serviceContext)
 		throws PortalException;
 
 	public FragmentCollection addFragmentCollection(
-			long groupId, String fragmentCollectionKey, String name,
-			String description, ServiceContext serviceContext)
+			String externalReferenceCode, long groupId,
+			String fragmentCollectionKey, String name, String description,
+			boolean marketplace, ServiceContext serviceContext)
 		throws PortalException;
 
 	public FragmentCollection deleteFragmentCollection(
 			long fragmentCollectionId)
+		throws PortalException;
+
+	public FragmentCollection deleteFragmentCollection(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	public void deleteFragmentCollections(long[] fragmentCollectionIds)
@@ -66,6 +71,11 @@ public interface FragmentCollectionService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FragmentCollection fetchFragmentCollection(long fragmentCollectionId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentCollection getFragmentCollectionByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -109,7 +119,17 @@ public interface FragmentCollectionService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentCollection> getFragmentCollections(
+		long[] groupIds, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentCollection> getFragmentCollections(
 		long[] groupIds, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentCollection> getFragmentCollections(
+		long[] groupIds, String name, boolean marketplace, int start, int end,
 		OrderByComparator<FragmentCollection> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -134,7 +154,15 @@ public interface FragmentCollectionService extends BaseService {
 	public int getFragmentCollectionsCount(long[] groupIds);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getFragmentCollectionsCount(
+		long[] groupIds, boolean marketplace);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getFragmentCollectionsCount(long[] groupIds, String name);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getFragmentCollectionsCount(
+		long[] groupIds, String name, boolean marketplace);
 
 	/**
 	 * Returns the OSGi service identifier.

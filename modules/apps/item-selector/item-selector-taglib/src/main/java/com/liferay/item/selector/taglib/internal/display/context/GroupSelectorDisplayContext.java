@@ -23,10 +23,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.search.GroupSearch;
 
+import jakarta.portlet.PortletURL;
+
 import java.util.List;
 import java.util.Set;
-
-import javax.portlet.PortletURL;
 
 /**
  * @author Cristina González
@@ -124,11 +124,7 @@ public class GroupSelectorDisplayContext {
 	}
 
 	public boolean isGroupTypeActive(String groupType) {
-		if (groupType.equals(_getGroupType())) {
-			return true;
-		}
-
-		return false;
+		return groupType.equals(_getGroupType());
 	}
 
 	protected GroupSelectorDisplayContext(

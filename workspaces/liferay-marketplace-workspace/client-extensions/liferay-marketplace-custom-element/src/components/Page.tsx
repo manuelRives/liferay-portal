@@ -12,12 +12,14 @@ import Loading from './Loading';
 
 export type PageRendererProps = {
 	children: any;
+	className?: string;
 	error?: FetcherError;
-	isLoading: boolean;
+	isLoading?: boolean;
 };
 
 const PageRenderer: React.FC<PageRendererProps> = ({
 	children,
+	className,
 	error,
 	isLoading,
 }) => {
@@ -35,15 +37,15 @@ const PageRenderer: React.FC<PageRendererProps> = ({
 		);
 	}
 
-	return children;
+	return className ? <div className={className}>{children}</div> : children;
 };
 
 type PageProps = {
 	children: any;
-	description: string;
+	description?: string;
 	pageRendererProps?: Omit<ComponentProps<typeof PageRenderer>, 'children'>;
 	rightButton?: ReactNode;
-	title: string;
+	title?: string;
 };
 
 const Page: React.FC<PageProps> = ({
@@ -55,8 +57,9 @@ const Page: React.FC<PageProps> = ({
 }) => (
 	<div className="w-100">
 		<div className="align-items-center d-flex justify-content-between">
-			<Header description={description} title={title} />
-
+			{(description || title) && (
+				<Header description={description} title={title} />
+			)}
 			{rightButton}
 		</div>
 

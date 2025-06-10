@@ -20,6 +20,7 @@ import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.LayoutPageTemplateTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -74,14 +75,8 @@ public class GroupModelListenerTest {
 	public void testDeletingGroupDeletesFragmentEntryLinks() throws Exception {
 		Group group = GroupTestUtil.addGroup();
 
-		LayoutPageTemplateCollection layoutPageTemplateCollection =
-			_addLayoutPageTemplateCollection(group.getGroupId());
-
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
-			_addLayoutPageTemplateEntry(
-				layoutPageTemplateCollection.
-					getLayoutPageTemplateCollectionId(),
-				group.getGroupId());
+			_addLayoutPageTemplateEntry(group.getGroupId());
 
 		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
 			group.getGroupId(), layoutPageTemplateEntry.getPlid());
@@ -121,17 +116,9 @@ public class GroupModelListenerTest {
 			_layoutPageTemplateEntryLocalService.getLayoutPageTemplateEntries(
 				group.getGroupId());
 
-		LayoutPageTemplateCollection layoutPageTemplateCollection =
-			_addLayoutPageTemplateCollection(group.getGroupId());
-
-		_addLayoutPageTemplateEntry(
-			layoutPageTemplateCollection.getLayoutPageTemplateCollectionId(),
-			group.getGroupId());
-
-		_addLayoutPageTemplateEntry(
-			RandomTestUtil.randomLong(), group.getGroupId());
-
-		_addLayoutPageTemplateEntry(0, group.getGroupId());
+		_addLayoutPageTemplateEntry(group.getGroupId());
+		_addLayoutPageTemplateEntry(group.getGroupId());
+		_addLayoutPageTemplateEntry(group.getGroupId());
 
 		_groupLocalService.deleteGroup(group);
 
@@ -153,8 +140,8 @@ public class GroupModelListenerTest {
 				groupId, TestPropsValues.getUserId());
 
 		return _fragmentCollectionLocalService.addFragmentCollection(
-			TestPropsValues.getUserId(), groupId, RandomTestUtil.randomString(),
-			StringPool.BLANK, serviceContext);
+			null, TestPropsValues.getUserId(), groupId,
+			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 	}
 
 	private FragmentEntryLink _addFragmentEntryLink(long groupId, long plid)
@@ -168,16 +155,16 @@ public class GroupModelListenerTest {
 
 		FragmentEntry fragmentEntry =
 			_fragmentEntryLocalService.addFragmentEntry(
-				TestPropsValues.getUserId(), groupId,
+				null, TestPropsValues.getUserId(), groupId,
 				fragmentCollection.getFragmentCollectionId(), null,
 				RandomTestUtil.randomString(), StringPool.BLANK,
 				RandomTestUtil.randomString(), StringPool.BLANK, false,
-				StringPool.BLANK, null, 0, false,
+				StringPool.BLANK, null, 0, false, false,
 				FragmentConstants.TYPE_SECTION, null,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 
 		return _fragmentEntryLinkLocalService.addFragmentEntryLink(
-			TestPropsValues.getUserId(), groupId, 0,
+			null, TestPropsValues.getUserId(), groupId, 0,
 			fragmentEntry.getFragmentEntryId(),
 			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
 				plid),
@@ -197,27 +184,20 @@ public class GroupModelListenerTest {
 
 		return _layoutPageTemplateCollectionLocalService.
 			addLayoutPageTemplateCollection(
-				TestPropsValues.getUserId(), groupId,
+				null, TestPropsValues.getUserId(), groupId,
 				LayoutPageTemplateConstants.
 					PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
-				RandomTestUtil.randomString(), StringPool.BLANK,
+				null, RandomTestUtil.randomString(), StringPool.BLANK,
 				LayoutPageTemplateCollectionTypeConstants.BASIC,
 				serviceContext);
 	}
 
-	private LayoutPageTemplateEntry _addLayoutPageTemplateEntry(
-			long layoutPageTemplateCollectionId, long groupId)
+	private LayoutPageTemplateEntry _addLayoutPageTemplateEntry(long groupId)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				groupId, TestPropsValues.getUserId());
-
-		return _layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-			TestPropsValues.getUserId(), groupId,
-			layoutPageTemplateCollectionId, RandomTestUtil.randomString(),
-			LayoutPageTemplateEntryTypeConstants.BASIC, 0,
-			WorkflowConstants.STATUS_DRAFT, serviceContext);
+		return LayoutPageTemplateTestUtil.addLayoutPageTemplateEntry(
+			groupId, LayoutPageTemplateEntryTypeConstants.BASIC,
+			WorkflowConstants.STATUS_DRAFT);
 	}
 
 	@Inject

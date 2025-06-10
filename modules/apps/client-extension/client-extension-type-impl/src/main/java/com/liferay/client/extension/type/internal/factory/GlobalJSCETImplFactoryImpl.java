@@ -9,7 +9,6 @@ import com.liferay.client.extension.exception.ClientExtensionEntryTypeSettingsEx
 import com.liferay.client.extension.type.GlobalJSCET;
 import com.liferay.client.extension.type.internal.GlobalJSCETImpl;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -17,11 +16,11 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Date;
 import java.util.Properties;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Iván Zaera Avellón
@@ -74,17 +73,13 @@ public class GlobalJSCETImplFactoryImpl
 				url);
 		}
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-10981")) {
-			return;
-		}
-
 		JSONObject scriptElementAttributesJSONObject =
 			_jsonFactory.createJSONObject(
 				newGlobalJSCET.getScriptElementAttributesJSON());
 
-		Set<String> keySet = scriptElementAttributesJSONObject.keySet();
+		Set<String> keys = scriptElementAttributesJSONObject.keySet();
 
-		if (keySet.contains("src")) {
+		if (keys.contains("src")) {
 			throw new ClientExtensionEntryTypeSettingsException(
 				"Use the \"JavaScript URL\" field instead of the attribute " +
 					"\"src\"",

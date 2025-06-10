@@ -100,15 +100,19 @@ describe('Event Analysis Edit', () => {
 	afterEach(cleanup);
 
 	it('should render', async () => {
-		const {container} = render(<WrappedComponent />);
+		const {container, getByText} = render(<WrappedComponent />);
 
 		await waitForLoadingToBeRemoved(container);
+
+		expect(getByText('Download Reports')).toBeTruthy();
 
 		expect(container).toMatchSnapshot();
 	});
 
 	it('should render event analysis with data', async () => {
-		const {container, getByText} = render(<WrappedComponent />);
+		const {container, getAllByText, getByText} = render(
+			<WrappedComponent />
+		);
 
 		jest.runAllTimers();
 
@@ -136,6 +140,63 @@ describe('Event Analysis Edit', () => {
 			container.querySelector('.compare-to-previous-checkbox input')
 				.checked
 		).toBeTruthy();
+		expect(getAllByText('displayName-0')).toBeTruthy();
+	});
+
+	it('should check if search autocomplete is working properly', async () => {
+		const {container, queryByText} = render(<WrappedComponent />);
+
+		jest.runAllTimers();
+
+		await waitForLoadingToBeRemoved(container);
+
+		const addAttributeButton = container.querySelector(
+			'.attribute-filter-section-root .add-attribute'
+		);
+
+		fireEvent.click(addAttributeButton);
+
+		jest.runAllTimers();
+
+		const dropdown = document.querySelector(
+			'.base-dropdown-menu-root.show'
+		);
+
+		await waitForElement(() => dropdown);
+
+		const individualTab = document.querySelector(
+			'[data-testid="INDIVIDUAL"] button'
+		);
+
+		fireEvent.click(individualTab);
+
+		jest.runAllTimers();
+
+		expect(queryByText('jobTitle')).toBeTruthy();
+		expect(queryByText('languageId')).toBeTruthy();
+		expect(queryByText('Role')).toBeTruthy();
+		expect(queryByText('Site Membership')).toBeTruthy();
+		expect(queryByText('Team')).toBeTruthy();
+		expect(queryByText('User Group')).toBeTruthy();
+
+		const searchInput = document.querySelectorAll(
+			'[placeholder="Search"]'
+		)[1];
+
+		fireEvent.change(searchInput, {
+			target: {
+				value: 'jobTitle'
+			}
+		});
+
+		jest.runAllTimers();
+
+		expect(queryByText('jobTitle')).toBeTruthy();
+		expect(queryByText('languageId')).not.toBeTruthy();
+		expect(queryByText('Role')).not.toBeTruthy();
+		expect(queryByText('Site Membership')).not.toBeTruthy();
+		expect(queryByText('Team')).not.toBeTruthy();
+		expect(queryByText('User Group')).not.toBeTruthy();
 	});
 
 	it('should enable the save button when name is changed', async () => {

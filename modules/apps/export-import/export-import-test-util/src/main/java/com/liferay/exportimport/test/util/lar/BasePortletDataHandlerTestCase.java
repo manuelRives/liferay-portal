@@ -36,6 +36,8 @@ import com.liferay.portal.kernel.zip.ZipWriterFactory;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portlet.PortletPreferencesImpl;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -46,8 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -198,18 +198,18 @@ public abstract class BasePortletDataHandlerTestCase {
 
 		List<StagedModel> importedStagedModels = getStagedModels();
 
-		Set<String> exportedUuidSet = new HashSet<>();
-		Set<String> importedUuidSet = new HashSet<>();
+		Set<String> exportedUuids = new HashSet<>();
+		Set<String> importedUuids = new HashSet<>();
 
 		for (StagedModel stagedModel : exportedStagedModels) {
-			exportedUuidSet.add(stagedModel.getUuid());
+			exportedUuids.add(stagedModel.getUuid());
 		}
 
 		for (StagedModel stagedModel : importedStagedModels) {
-			importedUuidSet.add(stagedModel.getUuid());
+			importedUuids.add(stagedModel.getUuid());
 		}
 
-		Assert.assertEquals(exportedUuidSet, importedUuidSet);
+		Assert.assertEquals(exportedUuids, importedUuids);
 	}
 
 	@Test
@@ -537,13 +537,13 @@ public abstract class BasePortletDataHandlerTestCase {
 			BundleContext bundleContext = bundle.getBundleContext();
 
 			Collection<ServiceReference<PortletDataHandler>>
-				portletDataHandlerReferences =
+				portletDataHandlerServiceReferences =
 					bundleContext.getServiceReferences(
 						PortletDataHandler.class,
-						"(javax.portlet.name=" + portletId + ")");
+						"(jakarta.portlet.name=" + portletId + ")");
 
 			Iterator<ServiceReference<PortletDataHandler>> iterator =
-				portletDataHandlerReferences.iterator();
+				portletDataHandlerServiceReferences.iterator();
 
 			return bundleContext.getService(iterator.next());
 		}
@@ -619,7 +619,7 @@ public abstract class BasePortletDataHandlerTestCase {
 
 	protected boolean isDisplayPortlet() {
 		if (isDataPortletInstanceLevel() &&
-			!ArrayUtil.isEmpty(
+			ArrayUtil.isNotEmpty(
 				portletDataHandler.getDataPortletPreferences())) {
 
 			return true;

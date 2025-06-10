@@ -19,11 +19,11 @@ import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,9 +66,10 @@ public class WishListContentCommerceHealthStatus
 			Layout.class.getName(), httpServletRequest);
 
 		Layout layout = _layoutService.addLayout(
-			groupId, privateLayout, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			"Wish List", "Wish List", null, LayoutConstants.TYPE_PORTLET, true,
-			"/wishlist", serviceContext);
+			null, groupId, privateLayout,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "Wish List", "Wish List",
+			null, LayoutConstants.TYPE_PORTLET, true, "/wishlist",
+			serviceContext);
 
 		LayoutTypePortlet layoutTypePortlet =
 			(LayoutTypePortlet)layout.getLayoutType();

@@ -26,6 +26,7 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -97,10 +98,10 @@ public class ImportMVCResourceCommandTest {
 
 		_layoutPageTemplateCollectionLocalService.
 			addLayoutPageTemplateCollection(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				LayoutPageTemplateConstants.
 					PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
-				"imported", StringPool.BLANK,
+				null, "imported", StringPool.BLANK,
 				LayoutPageTemplateCollectionTypeConstants.BASIC,
 				_serviceContext);
 
@@ -148,10 +149,10 @@ public class ImportMVCResourceCommandTest {
 
 		_layoutPageTemplateCollectionLocalService.
 			addLayoutPageTemplateCollection(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				LayoutPageTemplateConstants.
 					PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
-				"imported", StringPool.BLANK,
+				null, "imported", StringPool.BLANK,
 				LayoutPageTemplateCollectionTypeConstants.BASIC,
 				_serviceContext);
 
@@ -216,6 +217,7 @@ public class ImportMVCResourceCommandTest {
 	}
 
 	@Test
+	@TestInfo("LPS-182022")
 	public void testImportFileWithOverwriteStrategyAndWithExistingLockedLayoutPageTemplateEntry()
 		throws Exception {
 
@@ -309,7 +311,7 @@ public class ImportMVCResourceCommandTest {
 		throws Exception {
 
 		return _layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-			TestPropsValues.getUserId(), _group.getGroupId(), 0,
+			null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
 			"Existing Master Page",
 			LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 			WorkflowConstants.STATUS_APPROVED,

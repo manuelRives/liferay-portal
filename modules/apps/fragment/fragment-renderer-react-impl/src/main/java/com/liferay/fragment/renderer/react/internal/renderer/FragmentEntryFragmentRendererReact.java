@@ -19,6 +19,7 @@ import com.liferay.frontend.js.loader.modules.extender.npm.ModuleNameUtil;
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -30,6 +31,9 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -39,9 +43,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -164,7 +165,7 @@ public class FragmentEntryFragmentRendererReact implements FragmentRenderer {
 			Map<String, Object> data, HttpServletRequest httpServletRequest)
 		throws IOException {
 
-		StringBundler sb = new StringBundler(9);
+		StringBundler sb = new StringBundler(11);
 
 		sb.append("<div id=\"");
 		sb.append(fragmentElementId);
@@ -191,7 +192,11 @@ public class FragmentEntryFragmentRendererReact implements FragmentRenderer {
 			if (fragmentRendererContext.isEditMode() ||
 				fragmentRendererContext.isIndexMode()) {
 
-				sb.append("<style>");
+				sb.append("<style");
+				sb.append(
+					ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+						httpServletRequest));
+				sb.append(StringPool.GREATER_THAN);
 				sb.append(fragmentEntryLink.getCss());
 				sb.append("</style>");
 			}
@@ -223,7 +228,11 @@ public class FragmentEntryFragmentRendererReact implements FragmentRenderer {
 				}
 
 				if (!cssLoaded) {
-					sb.append("<style>");
+					sb.append("<style");
+					sb.append(
+						ContentSecurityPolicyNonceProviderUtil.
+							getNonceAttribute(httpServletRequest));
+					sb.append(StringPool.GREATER_THAN);
 					sb.append(fragmentEntryLink.getCss());
 					sb.append("</style>");
 

@@ -3,14 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	addParams,
-	fetch,
-	objectToFormData,
-	openSelectionModal,
-	openToast,
-	sub,
-} from 'frontend-js-web';
+import {openSelectionModal, openToast} from 'frontend-js-components-web';
+import {addParams, fetch, objectToFormData, sub} from 'frontend-js-web';
 
 import showSuccessMessage from './utils/showSuccessMessage';
 
@@ -53,10 +47,13 @@ class MoveKBObject {
 					body: objectToFormData({
 						[`${portletNamespace}dragAndDrop`]: true,
 						[`${portletNamespace}position`]: index?.next ?? -1,
-						[`${portletNamespace}resourceClassNameId`]: kbObjectClassNameId,
+						[`${portletNamespace}resourceClassNameId`]:
+							kbObjectClassNameId,
 						[`${portletNamespace}resourcePrimKey`]: kbObjectId,
-						[`${portletNamespace}parentResourceClassNameId`]: destinationItem.classNameId,
-						[`${portletNamespace}parentResourcePrimKey`]: destinationItem.id,
+						[`${portletNamespace}parentResourceClassNameId`]:
+							destinationItem.classNameId,
+						[`${portletNamespace}parentResourcePrimKey`]:
+							destinationItem.id,
 					}),
 					method: 'POST',
 				})

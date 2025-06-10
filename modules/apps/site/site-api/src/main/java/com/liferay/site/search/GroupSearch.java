@@ -21,10 +21,10 @@ import com.liferay.portal.kernel.util.comparator.GroupDescriptiveNameComparator;
 import com.liferay.portal.kernel.util.comparator.GroupNameComparator;
 import com.liferay.portal.kernel.util.comparator.GroupTypeComparator;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import java.util.Locale;
 
 /**
  * @author Brian Wing Shun Chan
@@ -83,7 +83,7 @@ public class GroupSearch extends SearchContainer<Group> {
 			return new GroupNameComparator(orderByAsc, locale);
 		}
 		else if (orderByCol.equals("type")) {
-			return new GroupTypeComparator(orderByAsc);
+			return GroupTypeComparator.getInstance(orderByAsc);
 		}
 
 		return new GroupNameComparator(orderByAsc, locale);

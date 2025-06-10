@@ -45,14 +45,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 import com.liferay.template.info.item.provider.TemplateInfoItemFieldSetProvider;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
@@ -115,7 +115,7 @@ public class JournalArticleInfoItemFieldValuesProvider
 				"Caught unexpected exception", noSuchInfoItemException);
 		}
 		catch (Exception exception) {
-			throw new RuntimeException("Unexpected exception", exception);
+			throw new RuntimeException(exception);
 		}
 	}
 
@@ -123,7 +123,7 @@ public class JournalArticleInfoItemFieldValuesProvider
 		JournalArticle article) {
 
 		return _ddmFormValuesInfoFieldValuesProvider.getInfoFieldValues(
-			article, article.getDDMFormValues());
+			article, article.getDDMFormValues(true));
 	}
 
 	private List<InfoFieldValue<Object>> _getDDMTemplateInfoFieldValues(

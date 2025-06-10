@@ -31,14 +31,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -112,6 +113,15 @@ public class I18nFilter extends BasePortalFilter {
 			PropsKeys.LOCALE_PREPEND_FRIENDLY_URL_STYLE);
 
 		if (localePrependFriendlyURLStyle == 0) {
+			String virtualHostLanguageId =
+				(String)httpServletRequest.getAttribute(
+					WebKeys.VIRTUAL_HOST_LANGUAGE_ID);
+
+			if (Validator.isNotNull(virtualHostLanguageId)) {
+				httpServletRequest.setAttribute(
+					WebKeys.I18N_LANGUAGE_ID, virtualHostLanguageId);
+			}
+
 			return null;
 		}
 
@@ -219,11 +229,11 @@ public class I18nFilter extends BasePortalFilter {
 	protected String getRequestedLanguageId(
 		HttpServletRequest httpServletRequest, String userLanguageId) {
 
+		String requestedLanguageId = null;
+
 		HttpSession httpSession = httpServletRequest.getSession();
 
 		Locale locale = (Locale)httpSession.getAttribute(WebKeys.LOCALE);
-
-		String requestedLanguageId = null;
 
 		if (locale != null) {
 			requestedLanguageId = LocaleUtil.toLanguageId(locale);
@@ -242,6 +252,28 @@ public class I18nFilter extends BasePortalFilter {
 		if (Validator.isNull(requestedLanguageId)) {
 			requestedLanguageId = (String)httpServletRequest.getAttribute(
 				WebKeys.VIRTUAL_HOST_LANGUAGE_ID);
+		}
+
+		if (Validator.isNull(requestedLanguageId) &&
+			PropsValues.LOCALE_DEFAULT_REQUEST) {
+
+			Enumeration<Locale> enumeration = httpServletRequest.getLocales();
+
+			while (enumeration.hasMoreElements()) {
+				Locale requestLocale = enumeration.nextElement();
+
+				if (Validator.isNull(requestLocale.getCountry())) {
+					requestLocale = _language.getLocale(
+						requestLocale.getLanguage());
+				}
+
+				if (_language.isAvailableLocale(requestLocale)) {
+					requestedLanguageId = LocaleUtil.toLanguageId(
+						requestLocale);
+
+					break;
+				}
+			}
 		}
 
 		return requestedLanguageId;
@@ -324,11 +356,6 @@ public class I18nFilter extends BasePortalFilter {
 				defaultLanguageId, requestedLanguageId);
 		}
 		else if (prependFriendlyUrlStyle == 2) {
-			if (PropsValues.LOCALE_DEFAULT_REQUEST) {
-				return LocaleUtil.toLanguageId(
-					_portal.getLocale(httpServletRequest));
-			}
-
 			return requestedLanguageId;
 		}
 		else if (prependFriendlyUrlStyle == 3) {
@@ -405,13 +432,8 @@ public class I18nFilter extends BasePortalFilter {
 	}
 
 	private boolean _isPermanentRedirect(long companyId) {
-		if (Objects.equals(
-				_getFriendlyURLRedirectionType(companyId), "permanent")) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			_getFriendlyURLRedirectionType(companyId), "permanent");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(I18nFilter.class);

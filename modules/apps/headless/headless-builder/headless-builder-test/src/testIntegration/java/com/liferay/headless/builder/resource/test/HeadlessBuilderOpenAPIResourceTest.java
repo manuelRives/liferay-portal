@@ -52,6 +52,7 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
@@ -73,7 +74,11 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
  * @author Carlos Correa
  */
 @DataGuard(scope = DataGuard.Scope.METHOD)
-@FeatureFlags({"LPD-10964", "LPS-178642"})
+@FeatureFlags(
+	featureFlags = {
+		@FeatureFlag(value = "LPD-10964"), @FeatureFlag(value = "LPS-178642")
+	}
+)
 @RunWith(Arquillian.class)
 public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 
@@ -306,7 +311,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 			null, TestPropsValues.getUserId(),
 			_objectDefinition1.getObjectDefinitionId(),
 			_objectDefinition2.getObjectDefinitionId(), 0,
-			ObjectRelationshipConstants.DELETION_TYPE_CASCADE,
+			ObjectRelationshipConstants.DELETION_TYPE_CASCADE, false,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			relationshipName, false,
 			ObjectRelationshipConstants.TYPE_ONE_TO_MANY, null);
@@ -379,6 +384,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 	@Test
 	public void test() throws Exception {
 		_addAPIApplication();
+		_addUnrelatedAPIApplication();
 
 		String apiApplicationURL = "/c/" + _API_BASE_URL;
 
@@ -586,7 +592,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 							).put(
 								"name", "recordProperty3"
 							).put(
-								"r_apiPropertyToAPIProperties_c_apiPropertyERC",
+								"r_apiPropertyToAPIProperties_l_apiPropertyERC",
 								_API_PROPERTY_RECORD_ERC_1
 							).put(
 								"type", "record"
@@ -609,7 +615,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 							).put(
 								"name", "recordProperty5"
 							).put(
-								"r_apiPropertyToAPIProperties_c_apiPropertyERC",
+								"r_apiPropertyToAPIProperties_l_apiPropertyERC",
 								_API_PROPERTY_RECORD_ERC_2
 							).put(
 								"type", "record"
@@ -625,7 +631,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 								"objectFieldERC",
 								_API_SCHEMA_OBJECT_PROPERTY_TEXT_FIELD_ERC
 							).put(
-								"r_apiPropertyToAPIProperties_c_apiPropertyERC",
+								"r_apiPropertyToAPIProperties_l_apiPropertyERC",
 								_API_PROPERTY_RECORD_ERC_1
 							),
 							JSONUtil.put(
@@ -639,7 +645,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 								"objectFieldERC",
 								_API_SCHEMA_OBJECT_PROPERTY_LONG_TEXT_FIELD_ERC
 							).put(
-								"r_apiPropertyToAPIProperties_c_apiPropertyERC",
+								"r_apiPropertyToAPIProperties_l_apiPropertyERC",
 								_API_PROPERTY_RECORD_ERC_3
 							))
 					).put(
@@ -750,7 +756,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 						"pathParameter",
 						HeadlessBuilderConstants.PATH_PARAMETER_ID
 					).put(
-						"r_responseAPISchemaToAPIEndpoints_c_apiSchemaERC",
+						"r_responseAPISchemaToAPIEndpoints_l_apiSchemaERC",
 						_API_SINGLE_ELEMENT_SCHEMA_ERC
 					).put(
 						"retrieveType",
@@ -777,7 +783,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 						"pathParameter",
 						HeadlessBuilderConstants.PATH_PARAMETER_ERC
 					).put(
-						"r_responseAPISchemaToAPIEndpoints_c_apiSchemaERC",
+						"r_responseAPISchemaToAPIEndpoints_l_apiSchemaERC",
 						_API_SINGLE_ELEMENT_SITE_SCOPED_SCHEMA_ERC
 					).put(
 						"retrieveType",
@@ -817,7 +823,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 					).put(
 						"path", "/site-scoped-path"
 					).put(
-						"r_responseAPISchemaToAPIEndpoints_c_apiSchemaERC",
+						"r_responseAPISchemaToAPIEndpoints_l_apiSchemaERC",
 						_API_SITE_SCOPED_SCHEMA_ERC
 					).put(
 						"retrieveType",
@@ -855,7 +861,7 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 					).put(
 						"path", "/path"
 					).put(
-						"r_responseAPISchemaToAPIEndpoints_c_apiSchemaERC",
+						"r_responseAPISchemaToAPIEndpoints_l_apiSchemaERC",
 						_API_SCHEMA_ERC
 					).put(
 						"retrieveType",
@@ -874,9 +880,9 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 					).put(
 						"name", "post endpoint"
 					).put(
-						"path", "/post-path"
+						"path", "/path"
 					).put(
-						"r_requestAPISchemaToAPIEndpoints_c_apiSchemaERC",
+						"r_requestAPISchemaToAPIEndpoints_l_apiSchemaERC",
 						_API_SCHEMA_ERC
 					).put(
 						"retrieveType",
@@ -896,12 +902,12 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 					).put(
 						"name", "site scoped post endpoint"
 					).put(
-						"path", "/site-scoped-post-path"
+						"path", "/site-scoped-path"
 					).put(
-						"r_requestAPISchemaToAPIEndpoints_c_apiSchemaERC",
+						"r_requestAPISchemaToAPIEndpoints_l_apiSchemaERC",
 						_API_SITE_SCOPED_SCHEMA_ERC
 					).put(
-						"r_responseAPISchemaToAPIEndpoints_c_apiSchemaERC",
+						"r_responseAPISchemaToAPIEndpoints_l_apiSchemaERC",
 						_API_SITE_SCOPED_SCHEMA_ERC
 					).put(
 						"retrieveType",
@@ -914,6 +920,40 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 			"headless-builder/applications/by-external-reference-code/" +
 				_API_APPLICATION_ERC,
 			Http.Method.PATCH);
+	}
+
+	private void _addUnrelatedAPIApplication() throws Exception {
+		HTTPTestUtil.invokeToJSONObject(
+			JSONUtil.put(
+				"apiApplicationToAPISchemas",
+				JSONUtil.put(
+					JSONUtil.put(
+						"apiSchemaToAPIProperties",
+						JSONUtil.put(
+							JSONUtil.put(
+								"description", RandomTestUtil.randomString()
+							).put(
+								"name", RandomTestUtil.randomString()
+							).put(
+								"objectFieldERC", "APPLICATION_STATUS"
+							))
+					).put(
+						"description", RandomTestUtil.randomString()
+					).put(
+						"mainObjectDefinitionERC", "L_API_APPLICATION"
+					).put(
+						"name", RandomTestUtil.randomString()
+					))
+			).put(
+				"applicationStatus", "unpublished"
+			).put(
+				"baseURL", StringUtil.toLowerCase(RandomTestUtil.randomString())
+			).put(
+				"externalReferenceCode", RandomTestUtil.randomString()
+			).put(
+				"title", RandomTestUtil.randomString()
+			).toString(),
+			"headless-builder/applications", Http.Method.POST);
 	}
 
 	private ObjectFieldSetting _createObjectFieldSetting(
@@ -934,12 +974,13 @@ public class HeadlessBuilderOpenAPIResourceTest extends BaseTestCase {
 
 		ObjectDefinition objectDefinition =
 			_objectDefinitionLocalService.addCustomObjectDefinition(
-				TestPropsValues.getUserId(), 0, false, false, false,
+				TestPropsValues.getUserId(), 0, null, false, false, true, false,
+				false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				ObjectDefinitionTestUtil.getRandomName(), null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				true, scope, ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
-				objectFields);
+				Collections.emptyList(), objectFields);
 
 		return _objectDefinitionLocalService.publishCustomObjectDefinition(
 			TestPropsValues.getUserId(),

@@ -28,19 +28,25 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
+
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
 
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,10 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -79,7 +81,7 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -93,11 +95,15 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 		_skuVirtualSettingsResource.setContextCompany(testCompany);
 
-		SkuVirtualSettingsResource.Builder builder =
-			SkuVirtualSettingsResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		skuVirtualSettingsResource = builder.authentication(
-			"test@liferay.com", "test"
+		skuVirtualSettingsResource = SkuVirtualSettingsResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -111,7 +117,33 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		SkuVirtualSettings skuVirtualSettings1 = randomSkuVirtualSettings();
+
+		String json = objectMapper.writeValueAsString(skuVirtualSettings1);
+
+		SkuVirtualSettings skuVirtualSettings2 = SkuVirtualSettingsSerDes.toDTO(
+			json);
+
+		Assert.assertTrue(equals(skuVirtualSettings1, skuVirtualSettings2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		SkuVirtualSettings skuVirtualSettings = randomSkuVirtualSettings();
+
+		String json1 = objectMapper.writeValueAsString(skuVirtualSettings);
+		String json2 = SkuVirtualSettingsSerDes.toJSON(skuVirtualSettings);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -126,41 +158,6 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		SkuVirtualSettings skuVirtualSettings1 = randomSkuVirtualSettings();
-
-		String json = objectMapper.writeValueAsString(skuVirtualSettings1);
-
-		SkuVirtualSettings skuVirtualSettings2 = SkuVirtualSettingsSerDes.toDTO(
-			json);
-
-		Assert.assertTrue(equals(skuVirtualSettings1, skuVirtualSettings2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		SkuVirtualSettings skuVirtualSettings = randomSkuVirtualSettings();
-
-		String json1 = objectMapper.writeValueAsString(skuVirtualSettings);
-		String json2 = SkuVirtualSettingsSerDes.toJSON(skuVirtualSettings);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -194,38 +191,297 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 	public void testGetSkuByExternalReferenceCodeSkuVirtualSettings()
 		throws Exception {
 
-		Assert.assertTrue(false);
+		SkuVirtualSettings postSkuVirtualSettings =
+			testGetSkuByExternalReferenceCodeSkuVirtualSettings_addSkuVirtualSettings();
+
+		SkuVirtualSettings getSkuVirtualSettings =
+			skuVirtualSettingsResource.
+				getSkuByExternalReferenceCodeSkuVirtualSettings(
+					testGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode());
+
+		assertEquals(postSkuVirtualSettings, getSkuVirtualSettings);
+		assertValid(getSkuVirtualSettings);
+	}
+
+	protected String
+			testGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected SkuVirtualSettings
+			testGetSkuByExternalReferenceCodeSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings()
 		throws Exception {
 
-		Assert.assertTrue(true);
+		SkuVirtualSettings skuVirtualSettings =
+			testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_addSkuVirtualSettings();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				skuVirtualSettings,
+				SkuVirtualSettingsSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"skuByExternalReferenceCodeSkuVirtualSettings",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"externalReferenceCode",
+											"\"" +
+												testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode() +
+													"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/skuByExternalReferenceCodeSkuVirtualSettings"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				skuVirtualSettings,
+				SkuVirtualSettingsSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"skuByExternalReferenceCodeSkuVirtualSettings",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode() +
+														"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/skuByExternalReferenceCodeSkuVirtualSettings"))));
+	}
+
+	protected String
+			testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettingsNotFound()
 		throws Exception {
 
-		Assert.assertTrue(true);
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"skuByExternalReferenceCodeSkuVirtualSettings",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"skuByExternalReferenceCodeSkuVirtualSettings",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected SkuVirtualSettings
+			testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		return testGraphQLSkuVirtualSettings_addSkuVirtualSettings();
 	}
 
 	@Test
 	public void testGetSkuIdSkuVirtualSettings() throws Exception {
-		Assert.assertTrue(false);
+		SkuVirtualSettings postSkuVirtualSettings =
+			testGetSkuIdSkuVirtualSettings_addSkuVirtualSettings();
+
+		SkuVirtualSettings getSkuVirtualSettings =
+			skuVirtualSettingsResource.getSkuIdSkuVirtualSettings(
+				testGetSkuIdSkuVirtualSettings_getId(postSkuVirtualSettings));
+
+		assertEquals(postSkuVirtualSettings, getSkuVirtualSettings);
+		assertValid(getSkuVirtualSettings);
+	}
+
+	protected Long testGetSkuIdSkuVirtualSettings_getId(
+			SkuVirtualSettings skuVirtualSettings)
+		throws Exception {
+
+		return skuVirtualSettings.getId();
+	}
+
+	protected SkuVirtualSettings
+			testGetSkuIdSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLGetSkuIdSkuVirtualSettings() throws Exception {
-		Assert.assertTrue(true);
+		SkuVirtualSettings skuVirtualSettings =
+			testGraphQLGetSkuIdSkuVirtualSettings_addSkuVirtualSettings();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				skuVirtualSettings,
+				SkuVirtualSettingsSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"skuIdSkuVirtualSettings",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"id",
+											testGraphQLGetSkuIdSkuVirtualSettings_getId(
+												skuVirtualSettings));
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/skuIdSkuVirtualSettings"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				skuVirtualSettings,
+				SkuVirtualSettingsSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"skuIdSkuVirtualSettings",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												testGraphQLGetSkuIdSkuVirtualSettings_getId(
+													skuVirtualSettings));
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/skuIdSkuVirtualSettings"))));
+	}
+
+	protected Long testGraphQLGetSkuIdSkuVirtualSettings_getId(
+			SkuVirtualSettings skuVirtualSettings)
+		throws Exception {
+
+		return skuVirtualSettings.getId();
 	}
 
 	@Test
 	public void testGraphQLGetSkuIdSkuVirtualSettingsNotFound()
 		throws Exception {
 
-		Assert.assertTrue(true);
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"skuIdSkuVirtualSettings",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"skuIdSkuVirtualSettings",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected SkuVirtualSettings
+			testGraphQLGetSkuIdSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		return testGraphQLSkuVirtualSettings_addSkuVirtualSettings();
+	}
+
+	protected SkuVirtualSettings
+			testGraphQLSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	protected void assertContains(
@@ -312,6 +568,10 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 		throws Exception {
 
 		boolean valid = true;
+
+		if (skuVirtualSettings.getId() == null) {
+			valid = false;
+		}
 
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
@@ -619,6 +879,17 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				if (!Objects.deepEquals(
 						skuVirtualSettings1.getDuration(),
 						skuVirtualSettings2.getDuration())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("id", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						skuVirtualSettings1.getId(),
+						skuVirtualSettings2.getId())) {
 
 					return false;
 				}
@@ -938,6 +1209,11 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("id")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("maxUsages")) {
 			sb.append(String.valueOf(skuVirtualSettings.getMaxUsages()));
 
@@ -1218,7 +1494,8 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1252,6 +1529,7 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				attachment = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				duration = RandomTestUtil.randomLong();
+				id = RandomTestUtil.randomLong();
 				maxUsages = RandomTestUtil.randomInt();
 				override = RandomTestUtil.randomBoolean();
 				sampleAttachment = StringUtil.toLowerCase(
@@ -1294,12 +1572,12 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1308,11 +1586,16 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1344,6 +1627,24 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1365,16 +1666,6 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1472,7 +1763,9 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseSkuVirtualSettingsResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.catalog.resource.v1_0.

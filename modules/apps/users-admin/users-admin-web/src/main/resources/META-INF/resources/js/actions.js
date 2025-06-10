@@ -4,14 +4,16 @@
  */
 
 import {
-	createActionURL,
-	createRenderURL,
-	fetch,
-	getCheckedCheckboxes,
 	openConfirmModal,
 	openModal,
 	openSelectionModal,
 	openToast,
+} from 'frontend-js-components-web';
+import {
+	createActionURL,
+	createRenderURL,
+	fetch,
+	getCheckedCheckboxes,
 	postForm,
 } from 'frontend-js-web';
 
@@ -175,7 +177,8 @@ export const ACTIONS = {
 					const assignmentsRedirectURL = createRenderURL(
 						basePortletURL,
 						{
-							mvcRenderCommandName: '/users_admin/view',
+							mvcRenderCommandName:
+								'/users_admin/organizations_view_tree',
 							organizationId,
 							screenNavigationCategoryKey: 'organizations',
 							usersListView: 'tree',
@@ -190,8 +193,9 @@ export const ACTIONS = {
 
 					const editAssignmentURL = createActionURL(basePortletURL, {
 						'addUserIds': values.join(','),
-						'assignmentsRedirect': assignmentsRedirectURL.toString(),
-						'javax.portlet.action':
+						'assignmentsRedirect':
+							assignmentsRedirectURL.toString(),
+						'jakarta.portlet.action':
 							'/users_admin/edit_organization_assignments',
 						organizationId,
 						'p_auth': Liferay.authToken,

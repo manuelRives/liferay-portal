@@ -22,13 +22,15 @@ const RoutineOutlet = () => {
 	const {actions} = useRoutineActions({isHeaderActions: true});
 	const {pathname} = useLocation();
 	const {projectId, routineId, ...otherParams} = useParams();
-	const {
-		testrayProject,
-	}: {testrayProject: TestrayProject} = useOutletContext();
+	const {testrayProject}: {testrayProject: TestrayProject} =
+		useOutletContext();
 
-	const {data: testrayRoutine, error, loading, mutate} = useFetch<
-		TestrayRoutine
-	>(`/routines/${routineId}`);
+	const {
+		data: testrayRoutine,
+		error,
+		loading,
+		mutate,
+	} = useFetch<TestrayRoutine>(`/routines/${routineId}`);
 
 	const hasOtherParams = !!Object.values(otherParams).length;
 
@@ -51,9 +53,14 @@ const RoutineOutlet = () => {
 				title: i18n.translate('current'),
 			},
 			{
-				active: pathname !== basePath,
+				active: pathname === `${basePath}/archived`,
 				path: `${basePath}/archived`,
 				title: i18n.translate('archived'),
+			},
+			{
+				active: pathname === `${basePath}/duration`,
+				path: `${basePath}/duration`,
+				title: i18n.translate('duration'),
 			},
 		]);
 	}, [basePath, pathname, setTabs]);

@@ -9,7 +9,8 @@ import ClayIcon from '@clayui/icon';
 import ClayModal from '@clayui/modal';
 import ClayMultiSelect from '@clayui/multi-select';
 import classNames from 'classnames';
-import {openToast, sub} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useContext, useEffect, useState} from 'react';
 
 import ChartContext from '../ChartContext';
@@ -62,12 +63,12 @@ export default function InviteUserModal({closeModal, observer, parentData}) {
 						? sub(
 								Liferay.Language.get('1-user-was-added-to-x'),
 								parentData.name
-						  )
+							)
 						: sub(
 								Liferay.Language.get('x-users-were-added-to-x'),
 								users.length,
 								parentData.name
-						  );
+							);
 
 				openToast({
 					message,

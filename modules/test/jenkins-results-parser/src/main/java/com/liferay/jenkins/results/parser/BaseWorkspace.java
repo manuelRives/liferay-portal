@@ -139,6 +139,17 @@ public abstract class BaseWorkspace implements Workspace {
 
 	@Override
 	public synchronized void startSynchronizeToGitHubDev() {
+		startSynchronizeToGitHubDev(true);
+	}
+
+	@Override
+	public synchronized void startSynchronizeToGitHubDev(
+		boolean synchronizePrimaryWorkspaceGitRepository) {
+
+		if (synchronizePrimaryWorkspaceGitRepository) {
+			_primaryWorkspaceGitRepository.synchronizeToGitHubDev();
+		}
+
 		if (_parallelExecutor != null) {
 			return;
 		}
@@ -147,6 +158,12 @@ public abstract class BaseWorkspace implements Workspace {
 
 		for (final WorkspaceGitRepository workspaceGitRepository :
 				getWorkspaceGitRepositories()) {
+
+			if (synchronizePrimaryWorkspaceGitRepository &&
+				workspaceGitRepository.equals(_primaryWorkspaceGitRepository)) {
+
+				continue;
+			}
 
 			Callable<Object> callable =
 				new ParallelExecutor.SequentialCallable<Object>(
@@ -247,6 +264,27 @@ public abstract class BaseWorkspace implements Workspace {
 			GitRepositoryFactory.getWorkspaceGitRepository(
 				this.jsonObject.getString("primary_repository_name"),
 				this.jsonObject.getString("primary_upstream_branch_name"));
+
+		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
+
+		String workspaceRepositoryDirNames = jsonObject.getString(
+			"workspace_repository_dir_names");
+
+		_workspaceGitRepositories = new HashMap<>();
+
+		for (final String workspaceRepositoryDirName :
+				workspaceRepositoryDirNames.split("\\s*,\\s*")) {
+
+			try {
+				_workspaceGitRepositories.put(
+					workspaceRepositoryDirName,
+					buildDatabase.getWorkspaceGitRepository(
+						workspaceRepositoryDirName));
+			}
+			catch (Exception exception) {
+				exception.printStackTrace();
+			}
+		}
 	}
 
 	protected BaseWorkspace(

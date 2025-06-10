@@ -137,6 +137,7 @@ export default function FormBuilder() {
 
 			setErrorList(errorMessages);
 		},
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[setErrorList]
 	);
@@ -157,10 +158,12 @@ export default function FormBuilder() {
 	}, []);
 
 	useEffect(() => {
-		if (session && !session.get('autoExtend')) {
-			Liferay.Session.set('autoExtend', true);
+		if (session && !session.autoExtend) {
+			Liferay.Session.autoExtend = true;
 
-			return () => Liferay.Session.set('autoExtend', false);
+			return () => {
+				Liferay.Session.autoExtend = false;
+			};
 		}
 	}, [session]);
 
@@ -464,7 +467,8 @@ export default function FormBuilder() {
 							className={classNames(
 								'container ddm-form-builder',
 								{
-									'ddm-form-builder--sidebar-open': sidebarOpen,
+									'ddm-form-builder--sidebar-open':
+										sidebarOpen,
 								}
 							)}
 						>
@@ -477,9 +481,8 @@ export default function FormBuilder() {
 										action: (payload) =>
 											dispatch({
 												payload,
-												type:
-													CORE_EVENT_TYPES.FIELD
-														.DUPLICATE,
+												type: CORE_EVENT_TYPES.FIELD
+													.DUPLICATE,
 											}),
 										label: Liferay.Language.get(
 											'duplicate'
@@ -491,9 +494,8 @@ export default function FormBuilder() {
 												fieldDelete({
 													action: {
 														payload,
-														type:
-															CORE_EVENT_TYPES
-																.FIELD.DELETE,
+														type: CORE_EVENT_TYPES
+															.FIELD.DELETE,
 													},
 													modalDispatch,
 													onClose,

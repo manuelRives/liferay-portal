@@ -6,6 +6,8 @@
 package com.liferay.segments.internal.upgrade.registry;
 
 import com.liferay.counter.kernel.service.CounterLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.upgrade.BaseExternalReferenceCodeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
 import com.liferay.portal.kernel.upgrade.MVCCVersionUpgradeProcess;
@@ -14,6 +16,7 @@ import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import com.liferay.segments.internal.upgrade.v2_0_0.SchemaUpgradeProcess;
 import com.liferay.segments.internal.upgrade.v2_0_0.SegmentsExperienceUpgradeProcess;
 import com.liferay.segments.internal.upgrade.v2_8_1.SegmentsExperimentUpgradeProcess;
+import com.liferay.segments.internal.upgrade.v3_1_1.SegmentsEntryUpgradeProcess;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -94,9 +97,32 @@ public class SegmentsServiceUpgradeStepRegistrator
 		registry.register(
 			"2.8.1", "3.0.0",
 			UpgradeProcessFactory.dropColumns("SegmentsEntry", "type_"));
+
+		registry.register(
+			"3.0.0", "3.1.0",
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[][] getTableAndPrimaryKeyColumnNames() {
+					return new String[][] {
+						{"SegmentsExperience", "segmentsExperienceId"}
+					};
+				}
+
+			});
+
+		registry.register("3.1.0", "3.1.1", new SegmentsEntryUpgradeProcess());
+
+		registry.register(
+			"3.1.1", "3.2.0",
+			new com.liferay.segments.internal.upgrade.v3_2_0.
+				SegmentsExperienceUpgradeProcess(_layoutLocalService));
 	}
 
 	@Reference
 	private CounterLocalService _counterLocalService;
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
 
 }

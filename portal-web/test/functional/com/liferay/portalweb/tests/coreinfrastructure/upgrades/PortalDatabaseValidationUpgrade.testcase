@@ -1,4 +1,4 @@
-@component-name = "portal-database-upgrade-framework"
+@component-name = "portal-db-infrastructure"
 definition {
 
 	property app.server.types = "tomcat";
@@ -14,6 +14,7 @@ definition {
 	test CompareLatest7413PartitionedUpgradedAndFreshDBSchemas {
 		property database.bare.enabled = "true";
 		property database.partition.enabled = "true";
+		property database.types = "mysql,postgresql";
 		property portal.acceptance = "true";
 		property portal.smoke.upgrades = "false";
 		property skip.start.app.server = "true";
@@ -32,11 +33,15 @@ definition {
 			var upgradedCompanyId = JSONCompany.getCompanyId(portalInstanceName = "www.able.com");
 		}
 
+		task ("Set the buildDate to an older date to make sure the indexes from the modules are regenerated") {
+			SQL.executeSQLStatement(sqlStatement = "update Release_ set buildDate = '1970-01-01 00:00:00' where releaseId = 1;");
+		}
+
 		task ("And the server is upgraded to a new version") {
 			Upgrade.restoreOriginalBundleAndUpgrade();
 
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@www.able.com",
 				virtualHostsURL = "http://www.able.com:8080");
 
@@ -50,20 +55,19 @@ definition {
 		}
 
 		task ("When the server is started again with a fresh database") {
-			AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
+			AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.bare.enabled=true");
 
 			TestCase.updatePortalProperties(
 				newProperty = "upgrade.database.auto.run=false",
 				oldProperty = "upgrade.database.auto.run=true");
 
-			SQL.executeSQLStatement(sqlStatement = "DROP DATABASE lpartition_${upgradedCompanyId};");
+			var databaseType = PropsUtil.get("database.type");
+
+			if (${databaseType} == "mysql") {
+				SQL.executeSQLStatement(sqlStatement = "DROP DATABASE lpartition_${upgradedCompanyId};");
+			}
 
 			Portlet.startServer();
-
-			User.firstLoginPG(
-				password = "test",
-				userEmailAddress = "test@liferay.com",
-				virtualHostsURL = "http://localhost:8080");
 		}
 
 		task ("And a new partition is created to emulate the same enviroment as before") {
@@ -73,7 +77,7 @@ definition {
 				virtualHost = "www.baker.com");
 
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@www.baker.com",
 				virtualHostsURL = "http://www.baker.com:8080");
 		}
@@ -99,7 +103,6 @@ definition {
 		}
 	}
 
-	@ignore = "true"
 	@priority = 4
 	test ComparePartitionedUpgradedAndFreshDBSchemas7413 {
 		property data.archive.type = "data-archive-portal-partition";
@@ -128,7 +131,7 @@ definition {
 			Portlet.startServer();
 
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com",
 				virtualHostsURL = "http://localhost:8080");
 		}
@@ -145,7 +148,7 @@ definition {
 				virtualHost = "www.baker.com");
 
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@www.able.com",
 				virtualHostsURL = "http://www.able.com:8080");
 		}
@@ -176,165 +179,6 @@ definition {
 				freshDBSchemaName = "lportal",
 				upgradedDBSchemaName = "lportal");
 		}
-	}
-
-	@priority = 4
-	test CompareUpgradedAndFreshDatabaseSchemas6130 {
-		property custom.properties = "feature.flag.LPS-157670=true";
-		property data.archive.type = "data-archive-portal";
-		property portal.version = "6.1.30";
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=upgraded -Ddatabase.schema.name=lportal");
-
-		AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
-
-		Portlet.startServer();
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=fresh -Ddatabase.schema.name=lportal");
-
-		UpgradeSchema.validateSchemas(
-			freshDBSchemaName = "lportal",
-			upgradedDBSchemaName = "lportal");
-	}
-
-	@priority = 4
-	test CompareUpgradedAndFreshDatabaseSchemas7210 {
-		property data.archive.type = "data-archive-portal";
-		property portal.version = "7.2.10";
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=upgraded -Ddatabase.schema.name=lportal");
-
-		AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
-
-		Portlet.startServer();
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=fresh -Ddatabase.schema.name=lportal");
-
-		UpgradeSchema.validateSchemas(
-			freshDBSchemaName = "lportal",
-			upgradedDBSchemaName = "lportal");
-	}
-
-	@priority = 4
-	test CompareUpgradedAndFreshDatabaseSchemas7310 {
-		property data.archive.type = "data-archive-portal";
-		property portal.version = "7.3.10";
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=upgraded -Ddatabase.schema.name=lportal");
-
-		AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
-
-		Portlet.startServer();
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=fresh -Ddatabase.schema.name=lportal");
-
-		UpgradeSchema.validateSchemas(
-			freshDBSchemaName = "lportal",
-			upgradedDBSchemaName = "lportal");
-	}
-
-	@priority = 4
-	test CompareUpgradedAndFreshDatabaseSchemas7413 {
-		property data.archive.type = "data-archive-portal";
-		property portal.acceptance = "true";
-		property portal.smoke.upgrades = "true";
-		property portal.version = "7.4.13";
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=upgraded -Ddatabase.schema.name=lportal");
-
-		AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
-
-		Portlet.startServer();
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=fresh -Ddatabase.schema.name=lportal");
-
-		UpgradeSchema.validateSchemas(
-			freshDBSchemaName = "lportal",
-			upgradedDBSchemaName = "lportal");
-	}
-
-	@priority = 4
-	test CompareUpgradedAndFreshDatabaseSchemas70106 {
-		property data.archive.type = "data-archive-portal";
-		property portal.version = "7.0.10.6";
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=upgraded -Ddatabase.schema.name=lportal");
-
-		AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
-
-		Portlet.startServer();
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=fresh -Ddatabase.schema.name=lportal");
-
-		UpgradeSchema.validateSchemas(
-			freshDBSchemaName = "lportal",
-			upgradedDBSchemaName = "lportal");
-	}
-
-	@priority = 4
-	test CompareUpgradedAndFreshDatabaseSchemas71103 {
-		property data.archive.type = "data-archive-portal";
-		property portal.version = "7.1.10.3";
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=upgraded -Ddatabase.schema.name=lportal");
-
-		AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
-
-		Portlet.startServer();
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=fresh -Ddatabase.schema.name=lportal");
-
-		UpgradeSchema.validateSchemas(
-			freshDBSchemaName = "lportal",
-			upgradedDBSchemaName = "lportal");
-	}
-
-	@priority = 4
-	test CompareUpgradedAndFreshDatabaseSchemas621021 {
-		property data.archive.type = "data-archive-portal";
-		property portal.acceptance = "true";
-		property portal.smoke.upgrades = "true";
-		property portal.version = "6.2.10.21";
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=upgraded -Ddatabase.schema.name=lportal");
-
-		AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
-
-		Portlet.startServer();
-
-		Portlet.shutdownServer();
-
-		AntCommands.runCommand("build-test.xml", "export-database-schema -Ddatabase.file.prefix=fresh -Ddatabase.schema.name=lportal");
-
-		UpgradeSchema.validateSchemas(
-			freshDBSchemaName = "lportal",
-			upgradedDBSchemaName = "lportal");
 	}
 
 }

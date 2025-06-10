@@ -22,6 +22,10 @@ import com.liferay.portal.osgi.web.servlet.context.helper.definition.WebXMLDefin
 import com.liferay.portal.osgi.web.servlet.context.helper.internal.definition.WebXMLDefinitionLoader;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextListener;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,10 +54,6 @@ import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextListener;
 
 import javax.xml.parsers.SAXParserFactory;
 
@@ -314,11 +314,7 @@ public class ServletContextHelperRegistrationImpl
 			return false;
 		}
 
-		if (classResource.startsWith(array[-index - 2])) {
-			return true;
-		}
-
-		return false;
+		return classResource.startsWith(array[-index - 2]);
 	}
 
 	private ServiceRegistration<?> _createDefaultServlet() {

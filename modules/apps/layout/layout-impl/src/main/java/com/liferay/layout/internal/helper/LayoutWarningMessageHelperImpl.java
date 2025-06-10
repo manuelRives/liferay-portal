@@ -46,8 +46,12 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,9 +60,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -318,19 +319,18 @@ public class LayoutWarningMessageHelperImpl
 	}
 
 	private Object _getInfoItem(JSONObject layoutObjectReferenceJSONObject) {
-		long classNameId = layoutObjectReferenceJSONObject.getLong(
-			"classNameId");
+		String className = _portal.fetchClassName(
+			layoutObjectReferenceJSONObject.getLong("classNameId"));
 		long classPK = layoutObjectReferenceJSONObject.getLong("classPK");
 
-		if ((classNameId <= 0) && (classPK <= 0)) {
+		if (Validator.isNull(className) && (classPK <= 0)) {
 			return null;
 		}
 
 		InfoItemObjectProvider<Object> infoItemObjectProvider =
 			(InfoItemObjectProvider<Object>)
 				_infoItemServiceRegistry.getFirstInfoItemService(
-					InfoItemObjectProvider.class,
-					_portal.getClassName(classNameId),
+					InfoItemObjectProvider.class, className,
 					ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 		if (infoItemObjectProvider == null) {
@@ -438,11 +438,7 @@ public class LayoutWarningMessageHelperImpl
 				themeDisplay);
 		}
 
-		if (_exceedsFileSize(fileEntryId)) {
-			return true;
-		}
-
-		return false;
+		return _exceedsFileSize(fileEntryId);
 	}
 
 	private boolean _showWarningMessage(

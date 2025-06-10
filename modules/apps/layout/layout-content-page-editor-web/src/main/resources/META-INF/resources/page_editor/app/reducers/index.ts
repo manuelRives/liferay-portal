@@ -46,12 +46,12 @@ const REDUCER_MAP = {
 } as const;
 
 export type Action = Parameters<
-	typeof REDUCER_MAP[keyof typeof REDUCER_MAP]
+	(typeof REDUCER_MAP)[keyof typeof REDUCER_MAP]
 >[1];
 
 export type State = {
-	[key in keyof typeof REDUCER_MAP]: ReturnType<typeof REDUCER_MAP[key]>;
-} & {segmentsExperienceId: string | null};
+	[key in keyof typeof REDUCER_MAP]: ReturnType<(typeof REDUCER_MAP)[key]>;
+} & {segmentsExperienceId: string};
 
 const combinedReducer = (state: State, action: Action): State =>
 	Object.entries(REDUCER_MAP).reduce(

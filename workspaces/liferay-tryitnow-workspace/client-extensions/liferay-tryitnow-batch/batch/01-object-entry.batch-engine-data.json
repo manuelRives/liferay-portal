@@ -5,6 +5,7 @@
 			"containsHeaders": "true",
 			"createStrategy": "UPSERT",
 			"onErrorFail": "false",
+			"taskItemDelegateName": "C_M2H8ProgressTracker",
 			"updateStrategy": "UPDATE"
 		},
 		"taskItemDelegateName": "C_M2H8ProgressTracker"
@@ -44,6 +45,11 @@
 			"done": false,
 			"externalReferenceCode": "STEP_7",
 			"stepNumber": 7
+		},
+		{
+			"done": false,
+			"externalReferenceCode": "STEP_8",
+			"stepNumber": 8
 		}
 	]
 }

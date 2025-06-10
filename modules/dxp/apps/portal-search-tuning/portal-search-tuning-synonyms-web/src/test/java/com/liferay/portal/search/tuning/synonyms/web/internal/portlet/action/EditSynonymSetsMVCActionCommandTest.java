@@ -14,10 +14,10 @@ import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSet;
 import com.liferay.portal.search.tuning.synonyms.web.internal.synchronizer.IndexToFilterSynchronizer;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -96,17 +96,6 @@ public class EditSynonymSetsMVCActionCommandTest
 	}
 
 	@Test
-	public void testUpdateSynonymSet() throws Exception {
-		_editSynonymSetsMVCActionCommand.updateSynonymSet(_actionRequest);
-
-		Mockito.verify(
-			_indexToFilterSynchronizer, Mockito.times(1)
-		).copyToFilter(
-			Mockito.any(), Mockito.nullable(String.class), Mockito.anyBoolean()
-		);
-	}
-
-	@Test
 	public void testUpdateSynonymSetIndex() throws PortalException {
 		_editSynonymSetsMVCActionCommand.updateSynonymSetIndex(
 			Mockito.mock(SynonymSetIndexName.class), "car,automobile", null);
@@ -132,6 +121,17 @@ public class EditSynonymSetsMVCActionCommandTest
 			synonymSetStorageAdapter, Mockito.times(1)
 		).update(
 			Mockito.any(), Mockito.any()
+		);
+	}
+
+	@Test
+	public void testUpdateSynonymSets() throws Exception {
+		_editSynonymSetsMVCActionCommand.updateSynonymSets(_actionRequest);
+
+		Mockito.verify(
+			_indexToFilterSynchronizer, Mockito.times(1)
+		).copyToFilter(
+			Mockito.any(), Mockito.nullable(String.class), Mockito.anyBoolean()
 		);
 	}
 

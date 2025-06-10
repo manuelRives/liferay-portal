@@ -23,11 +23,13 @@ import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.MessageBusUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.model.RememberMeToken;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserTracker;
 import com.liferay.portal.kernel.security.auth.AuthException;
 import com.liferay.portal.kernel.security.auth.Authenticator;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.RememberMeTokenLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -39,16 +41,17 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.liveusers.LiveUsers;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Tomas Polesovsky
@@ -66,14 +69,8 @@ public class AuthenticatedSessionManagerUtil {
 		return user.getUserId();
 	}
 
-	public static void login(
-			HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse, String login,
-			String password, boolean rememberMe, String authType)
-		throws Exception {
-
-		httpServletRequest = PortalUtil.getOriginalServletRequest(
-			httpServletRequest);
+	public static boolean isPasswordParameterInQueryString(
+		HttpServletRequest httpServletRequest) {
 
 		String queryString = HttpComponentsUtil.getQueryString(
 			httpServletRequest);
@@ -108,8 +105,24 @@ public class AuthenticatedSessionManagerUtil {
 							"referer header: ", referer));
 				}
 
-				return;
+				return true;
 			}
+		}
+
+		return false;
+	}
+
+	public static void login(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String login,
+			String password, boolean rememberMe, String authType)
+		throws Exception {
+
+		httpServletRequest = PortalUtil.getOriginalServletRequest(
+			httpServletRequest);
+
+		if (isPasswordParameterInQueryString(httpServletRequest)) {
+			return;
 		}
 
 		CookiesManagerUtil.validateSupportCookie(httpServletRequest);
@@ -162,8 +175,6 @@ public class AuthenticatedSessionManagerUtil {
 			companyIdCookie.setDomain(domain);
 		}
 
-		companyIdCookie.setPath(StringPool.SLASH);
-
 		Cookie idCookie = new Cookie(
 			CookiesConstants.NAME_ID,
 			EncryptorUtil.encrypt(company.getKeyObj(), userIdString));
@@ -171,8 +182,6 @@ public class AuthenticatedSessionManagerUtil {
 		if (domain != null) {
 			idCookie.setDomain(domain);
 		}
-
-		idCookie.setPath(StringPool.SLASH);
 
 		int loginMaxAge = PropsValues.COMPANY_SECURITY_AUTO_LOGIN_MAX_AGE;
 
@@ -200,46 +209,40 @@ public class AuthenticatedSessionManagerUtil {
 			httpServletRequest, httpServletResponse);
 
 		if (rememberMe) {
-			Cookie loginCookie = new Cookie(CookiesConstants.NAME_LOGIN, login);
-
-			if (domain != null) {
-				loginCookie.setDomain(domain);
-			}
-
-			loginCookie.setMaxAge(loginMaxAge);
-			loginCookie.setPath(StringPool.SLASH);
-
 			CookiesManagerUtil.addCookie(
-				CookiesConstants.CONSENT_TYPE_FUNCTIONAL, loginCookie,
+				CookiesConstants.CONSENT_TYPE_FUNCTIONAL,
+				_createCookie(
+					CookiesConstants.NAME_LOGIN, login, domain, loginMaxAge),
+				httpServletRequest, httpServletResponse);
+			CookiesManagerUtil.addCookie(
+				CookiesConstants.CONSENT_TYPE_FUNCTIONAL,
+				_createCookie(
+					CookiesConstants.NAME_REMEMBER_ME, Boolean.TRUE.toString(),
+					domain, loginMaxAge),
 				httpServletRequest, httpServletResponse);
 
-			Cookie passwordCookie = new Cookie(
-				CookiesConstants.NAME_PASSWORD,
-				EncryptorUtil.encrypt(company.getKeyObj(), password));
+			Cookie cookie = _createCookie(
+				CookiesConstants.NAME_REMEMBER_ME_TOKEN_VALUE, StringPool.BLANK,
+				domain, loginMaxAge);
 
-			if (domain != null) {
-				passwordCookie.setDomain(domain);
-			}
-
-			passwordCookie.setMaxAge(loginMaxAge);
-			passwordCookie.setPath(StringPool.SLASH);
+			RememberMeToken rememberMeToken =
+				RememberMeTokenLocalServiceUtil.addRememberMeToken(
+					user.getCompanyId(), user.getUserId(),
+					new Date(
+						System.currentTimeMillis() +
+							((long)loginMaxAge * 1000)),
+					cookie::setValue);
 
 			CookiesManagerUtil.addCookie(
-				CookiesConstants.CONSENT_TYPE_FUNCTIONAL, passwordCookie,
+				CookiesConstants.CONSENT_TYPE_FUNCTIONAL,
+				_createCookie(
+					CookiesConstants.NAME_REMEMBER_ME_TOKEN_ID,
+					String.valueOf(rememberMeToken.getRememberMeTokenId()),
+					domain, loginMaxAge),
 				httpServletRequest, httpServletResponse);
 
-			Cookie rememberMeCookie = new Cookie(
-				CookiesConstants.NAME_REMEMBER_ME, Boolean.TRUE.toString());
-
-			if (domain != null) {
-				rememberMeCookie.setDomain(domain);
-			}
-
-			rememberMeCookie.setMaxAge(loginMaxAge);
-			rememberMeCookie.setPath(StringPool.SLASH);
-
 			CookiesManagerUtil.addCookie(
-				CookiesConstants.CONSENT_TYPE_FUNCTIONAL, rememberMeCookie,
+				CookiesConstants.CONSENT_TYPE_FUNCTIONAL, cookie,
 				httpServletRequest, httpServletResponse);
 		}
 	}
@@ -261,21 +264,37 @@ public class AuthenticatedSessionManagerUtil {
 			domain = null;
 		}
 
-		boolean rememberMe = GetterUtil.getBoolean(
-			CookiesManagerUtil.getCookieValue(
-				CookiesConstants.NAME_REMEMBER_ME, httpServletRequest, false));
+		if (!GetterUtil.getBoolean(
+				CookiesManagerUtil.getCookieValue(
+					CookiesConstants.NAME_REMEMBER_ME, httpServletRequest,
+					false))) {
+
+			CookiesManagerUtil.deleteCookies(
+				domain, httpServletRequest, httpServletResponse,
+				CookiesConstants.NAME_LOGIN);
+		}
+
+		String rememberMeTokenId = CookiesManagerUtil.getCookieValue(
+			CookiesConstants.NAME_REMEMBER_ME_TOKEN_ID, httpServletRequest);
+
+		if (Validator.isNotNull(rememberMeTokenId)) {
+			RememberMeToken rememberMeToken =
+				RememberMeTokenLocalServiceUtil.fetchRememberMeToken(
+					GetterUtil.getLong(rememberMeTokenId));
+
+			if (rememberMeToken != null) {
+				RememberMeTokenLocalServiceUtil.deleteRememberMeToken(
+					rememberMeToken);
+			}
+		}
 
 		CookiesManagerUtil.deleteCookies(
 			domain, httpServletRequest, httpServletResponse,
 			CookiesConstants.NAME_COMPANY_ID,
 			CookiesConstants.NAME_GUEST_LANGUAGE_ID, CookiesConstants.NAME_ID,
-			CookiesConstants.NAME_PASSWORD, CookiesConstants.NAME_REMEMBER_ME);
-
-		if (!rememberMe) {
-			CookiesManagerUtil.deleteCookies(
-				domain, httpServletRequest, httpServletResponse,
-				CookiesConstants.NAME_LOGIN);
-		}
+			CookiesConstants.NAME_PASSWORD, CookiesConstants.NAME_REMEMBER_ME,
+			CookiesConstants.NAME_REMEMBER_ME_TOKEN_ID,
+			CookiesConstants.NAME_REMEMBER_ME_TOKEN_VALUE);
 
 		try {
 			httpSession.invalidate();
@@ -367,6 +386,20 @@ public class AuthenticatedSessionManagerUtil {
 			MessageBusUtil.sendMessage(
 				DestinationNames.LIVE_USERS, jsonObject.toString());
 		}
+	}
+
+	private static Cookie _createCookie(
+		String name, String value, String domain, int maxAge) {
+
+		Cookie cookie = new Cookie(name, value);
+
+		if (domain != null) {
+			cookie.setDomain(domain);
+		}
+
+		cookie.setMaxAge(maxAge);
+
+		return cookie;
 	}
 
 	private static User _getAuthenticatedUser(

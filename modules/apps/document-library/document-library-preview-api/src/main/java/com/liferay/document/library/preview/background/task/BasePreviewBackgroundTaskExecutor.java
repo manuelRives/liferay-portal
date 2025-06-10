@@ -19,10 +19,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
-
-import java.io.Serializable;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -44,13 +41,8 @@ public abstract class BasePreviewBackgroundTaskExecutor
 	public BackgroundTaskResult execute(BackgroundTask backgroundTask)
 		throws Exception {
 
-		Map<String, Serializable> taskContextMap =
-			backgroundTask.getTaskContextMap();
-
-		long companyId = GetterUtil.getLong(taskContextMap.get("companyId"));
-
 		try {
-			generatePreviews(companyId);
+			generatePreviews(backgroundTask.getCompanyId());
 		}
 		catch (PortalException portalException) {
 			_log.error(portalException);
@@ -79,7 +71,7 @@ public abstract class BasePreviewBackgroundTaskExecutor
 		}
 
 		dlFileEntryLocalService.forEachFileEntry(
-			companyId, 0, _getProcessDlFileEntryConsumer(),
+			companyId, 0, _getProcessDLFileEntryConsumer(),
 			previewableProcessorMaxSize, getMimeTypes());
 	}
 
@@ -91,7 +83,7 @@ public abstract class BasePreviewBackgroundTaskExecutor
 	@Reference
 	protected DLFileEntryLocalService dlFileEntryLocalService;
 
-	private Consumer<DLFileEntry> _getProcessDlFileEntryConsumer() {
+	private Consumer<DLFileEntry> _getProcessDLFileEntryConsumer() {
 		Map<Long, Long> groupPreviewableProcessorMaxSizeMap =
 			dlFileEntryConfigurationProvider.
 				getGroupPreviewableProcessorMaxSizeMap();
@@ -107,12 +99,12 @@ public abstract class BasePreviewBackgroundTaskExecutor
 						PREVIEWABLE_PROCESSOR_MAX_SIZE_UNLIMITED) ||
 				(dlFileEntry.getSize() <= previewableProcessorMaxSize)) {
 
-				_processDlFileEntry(dlFileEntry);
+				_processDLFileEntry(dlFileEntry);
 			}
 		};
 	}
 
-	private void _processDlFileEntry(DLFileEntry dlFileEntry) {
+	private void _processDLFileEntry(DLFileEntry dlFileEntry) {
 		FileEntry fileEntry = new LiferayFileEntry(dlFileEntry);
 
 		try {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import CodeMirror from '@liferay/frontend-js-codemirror-web';
+import {CodeMirror} from '@liferay/frontend-js-codemirror-web';
 import React, {ReactNode, RefObject} from 'react';
 
 import {Collapsible} from './Collapsible';
@@ -44,7 +44,9 @@ export function Sidebar({
 	return (
 		<div className="lfr-objects__code-editor-sidebar">
 			<div className="px-3">
-				<h5 className="my-3">{Liferay.Language.get('elements')}</h5>
+				<div className="h5 my-3">
+					{Liferay.Language.get('elements')}
+				</div>
 
 				{CustomSidebarContent}
 

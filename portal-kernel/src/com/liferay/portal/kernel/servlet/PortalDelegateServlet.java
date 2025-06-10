@@ -7,9 +7,11 @@ package com.liferay.portal.kernel.servlet;
 
 import com.liferay.portal.kernel.util.InstanceFactory;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServlet;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 
 /**
  * <p>
@@ -22,14 +24,16 @@ import javax.servlet.http.HttpServlet;
 public class PortalDelegateServlet extends SecureServlet {
 
 	@Override
-	protected void doPortalDestroy() {
+	public void destroy() {
 		PortalDelegatorServlet.removeDelegate(_subcontext);
 
-		servlet.destroy();
+		super.destroy();
 	}
 
 	@Override
-	protected void doPortalInit() throws Exception {
+	public void init(ServletConfig servletConfig) throws ServletException {
+		this.servletConfig = servletConfig;
+
 		ServletContext servletContext = servletConfig.getServletContext();
 
 		ClassLoader classLoader = (ClassLoader)servletContext.getAttribute(
@@ -43,8 +47,13 @@ public class PortalDelegateServlet extends SecureServlet {
 			_subcontext = getServletName();
 		}
 
-		servlet = (Servlet)InstanceFactory.newInstance(
-			classLoader, servletClass);
+		try {
+			servlet = (Servlet)InstanceFactory.newInstance(
+				classLoader, servletClass);
+		}
+		catch (Exception exception) {
+			throw new ServletException(exception);
+		}
 
 		if (!(servlet instanceof HttpServlet)) {
 			throw new IllegalArgumentException(

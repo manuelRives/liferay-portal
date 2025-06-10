@@ -44,9 +44,10 @@ const Runs = () => {
 		}
 	);
 
-	const factorItems = useMemo(() => factorsData?.items || [], [
-		factorsData?.items,
-	]);
+	const factorItems = useMemo(
+		() => factorsData?.items || [],
+		[factorsData?.items]
+	);
 
 	const factorCategoryName = factorItems
 		.map(({factorCategory}) => ({
@@ -89,48 +90,56 @@ const Runs = () => {
 						...factorCategoryName,
 						{
 							clickable: true,
-							key: 'testrayStatusMetric',
-							render: ({untested}) => untested,
+							key: 'untested',
+							render: (_, {testrayStatusMetric}) =>
+								testrayStatusMetric.untested,
 
 							value: i18n.translate('untested'),
 						},
 						{
 							clickable: true,
-							key: 'testrayStatusMetric',
-							render: ({inProgress}) => inProgress,
+							key: 'in-progress',
+							render: (_, {testrayStatusMetric}) =>
+								testrayStatusMetric.inProgress,
 							value: i18n.translate('in-progress'),
 						},
 						{
 							clickable: true,
-							key: 'testrayStatusMetric',
-							render: ({passed}) => passed,
+							key: 'passed',
+							render: (_, {testrayStatusMetric}) =>
+								testrayStatusMetric.passed,
 							value: i18n.translate('passed'),
 						},
 						{
 							clickable: true,
-							key: 'testrayStatusMetric',
-							render: ({failed}) => failed,
+							key: 'failed',
+							render: (_, {testrayStatusMetric}) =>
+								testrayStatusMetric.failed,
 							value: i18n.translate('failed'),
 						},
 						{
 							clickable: true,
-							key: 'testrayStatusMetric',
-							render: ({blocked}) => blocked,
+							key: 'blocked',
+							render: (_, {testrayStatusMetric}) =>
+								testrayStatusMetric.blocked,
 							value: i18n.translate('blocked'),
 						},
 						{
 							clickable: true,
-							key: 'testrayStatusMetric',
-							render: ({testfix}) => testfix,
+							key: 'test-fix',
+							render: (_, {testrayStatusMetric}) =>
+								testrayStatusMetric.testfix,
 							value: i18n.translate('test-fix'),
 						},
 						{
 							clickable: true,
-							key: 'testrayStatusMetric',
-							render: ({total}) => total,
+							key: 'total',
+							render: (_, {testrayStatusMetric}) =>
+								testrayStatusMetric.total,
 							value: i18n.translate('total'),
 						},
 						{
+							clickable: true,
 							key: 'testrayStatusMetric',
 							render: (testrayStatusMetric) => (
 								<ProgressBar
@@ -145,8 +154,8 @@ const Runs = () => {
 										blocked: testrayStatusMetric?.blocked,
 										failed: testrayStatusMetric?.failed,
 										incomplete:
-											testrayStatusMetric?.untested +
-											testrayStatusMetric?.inProgress,
+											testrayStatusMetric?.incomplete +
+											testrayStatusMetric?.untested,
 										passed: testrayStatusMetric?.passed,
 										test_fix: testrayStatusMetric?.testfix,
 									}}
@@ -160,7 +169,7 @@ const Runs = () => {
 					navigateTo: ({testrayRunId}) =>
 						`..?${new URLSearchParams({
 							filter: JSON.stringify({
-								'runToCaseResult/id': [testrayRunId],
+								testrayRunId: [testrayRunId],
 							}),
 							filterSchema: 'buildResults',
 						})}`,

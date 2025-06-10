@@ -27,7 +27,10 @@ LockedLayoutsConfigurationDisplayContext lockedLayoutsConfigurationDisplayContex
 	</clay:content-col>
 </clay:content-row>
 
-<clay:sheet-section role="group" aria-labelledby='<%= liferayPortletResponse.getNamespace() + "automaticUnlockingTitle" %>'>
+<clay:sheet-section
+	aria-labelledby='<%= liferayPortletResponse.getNamespace() + "automaticUnlockingTitle" %>'
+	role="group"
+>
 	<clay:content-row
 		containerElement="h3"
 		cssClass="c-mb-3 sheet-subtitle"
@@ -74,7 +77,7 @@ LockedLayoutsConfigurationDisplayContext lockedLayoutsConfigurationDisplayContex
 	</clay:content-row>
 </clay:sheet-section>
 
-<script>
+<aui:script>
 	const numericInput = document.getElementById(
 		'<portlet:namespace />autosaveMinutes'
 	);
@@ -88,4 +91,4 @@ LockedLayoutsConfigurationDisplayContext lockedLayoutsConfigurationDisplayContex
 			}
 		});
 	}
-</script>
+</aui:script>

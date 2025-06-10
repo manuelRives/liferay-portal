@@ -15,6 +15,9 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.util.PropsValues;
+
+import java.io.InputStream;
 
 import java.nio.charset.StandardCharsets;
 
@@ -42,6 +45,16 @@ public class HTTPTestUtil {
 		Http.Response response = options.getResponse();
 
 		return response.getResponseCode();
+	}
+
+	public static InputStream invokeToInputStream(
+			String body, String endpoint, Http.Method httpMethod)
+		throws Exception {
+
+		Http.Options options = _getHttpOptions(
+			body, endpoint, null, httpMethod);
+
+		return HttpUtil.URLtoInputStream(options);
 	}
 
 	public static JSONObject invokeToJSONObject(
@@ -92,12 +105,17 @@ public class HTTPTestUtil {
 
 			_credentials = _newCredentials;
 
+			boolean defaultModulePath = _modulePath;
+
+			_modulePath = _newModulePath;
+
 			try {
 				unsafeRunnable.run();
 			}
 			finally {
 				_baseURL = defaultBaseURL;
 				_credentials = defaultCredentials;
+				_modulePath = defaultModulePath;
 			}
 		}
 
@@ -115,8 +133,21 @@ public class HTTPTestUtil {
 			return this;
 		}
 
+		public HTTPTestUtilCustomizer withGuest() {
+			_newCredentials = null;
+
+			return this;
+		}
+
+		public HTTPTestUtilCustomizer withoutModulePath() {
+			_newModulePath = false;
+
+			return this;
+		}
+
 		private String _newBaseURL = _baseURL;
 		private String _newCredentials = _credentials;
+		private boolean _newModulePath = _modulePath;
 
 	}
 
@@ -128,14 +159,26 @@ public class HTTPTestUtil {
 
 		options.addHeader(
 			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
-		options.addHeader(
-			"Authorization", "Basic " + Base64.encode(_credentials.getBytes()));
+
+		if (_credentials != null) {
+			options.addHeader(
+				"Authorization",
+				"Basic " + Base64.encode(_credentials.getBytes()));
+		}
 
 		if (MapUtil.isNotEmpty(headers)) {
 			headers.forEach(options::addHeader);
 		}
 
-		options.setLocation(_baseURL + "/o/" + endpoint);
+		options.setCookieSpec(Http.CookieSpec.STANDARD);
+
+		if (_modulePath) {
+			options.setLocation(_baseURL + "/o/" + endpoint);
+		}
+		else {
+			options.setLocation(_baseURL + "/" + endpoint);
+		}
+
 		options.setMethod(httpMethod);
 
 		if (body != null) {
@@ -148,6 +191,8 @@ public class HTTPTestUtil {
 	}
 
 	private static String _baseURL = "http://localhost:8080";
-	private static String _credentials = "test@liferay.com:test";
+	private static String _credentials =
+		"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD;
+	private static boolean _modulePath = true;
 
 }

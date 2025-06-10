@@ -56,6 +56,7 @@ const passwordRequiredStructure = {
 
 const buildStructure = {
 	caseIds: yup.array().of(yup.number()),
+	cpuUseTime: yup.string(),
 	description: yup.string(),
 	dueStatus: yup.string(),
 	factorStacks: yup.mixed(),
@@ -98,6 +99,7 @@ const yupSchema = {
 		caseId: yup.number(),
 		comment: yup.string(),
 		dueStatus: yup.string().required(),
+		errors: yup.string().nullable(),
 		issues: yup.string(),
 		mbMessageId: yup.number().nullable(),
 		mbThreadId: yup.number().nullable(),
@@ -142,10 +144,6 @@ const yupSchema = {
 		buildId: yup.number(),
 		id: yup.string(),
 		number: yup.number(),
-	}),
-	jiraImportRequirement: yup.object({
-		issues: yup.string().required(),
-		projectId: yup.number().required(),
 	}),
 	jiraIssues: yup.object({
 		issues: yup.array(
@@ -219,7 +217,6 @@ const yupSchema = {
 		userId: yup.number(),
 	}),
 	subtaskToCaseResult: yup.object({
-		caseResultId: yup.number(),
 		issues: yup.string(),
 		name: yup.string(),
 		subtaskId: yup.number(),
@@ -239,7 +236,6 @@ const yupSchema = {
 	}),
 	task: yup.object({
 		buildId: yup.number(),
-		caseTypes: yup.array(yup.number()).required(),
 		dueStatus: yup.string(),
 		id: yup.number().required(),
 		name: yup.string().required(i18n.sub('x-is-a-required-field', 'name')),

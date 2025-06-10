@@ -33,20 +33,24 @@ public class CommerceReturnTableFDSView extends BaseTableFDSView {
 
 		return fdsTableSchemaBuilder.add(
 			"id", "return-id",
-			fdsTableSchemaField -> {
-				fdsTableSchemaField.setContentRenderer("actionLink");
-				fdsTableSchemaField.setSortable(true);
-			}
+			fdsTableSchemaField -> fdsTableSchemaField.setContentRenderer(
+				"actionLink"
+			).setSortable(
+				true
+			)
 		).add(
-			"totalAmount", "amount"
+			"totalAmount", "amount",
+			fdsTableSchemaField -> fdsTableSchemaField.setContentRenderer(
+				"commerceCurrencyDataRenderer")
 		).add(
 			"requestedItems", "number-of-items"
 		).add(
 			"dateCreated", "return-date",
-			fdsTableSchemaField -> {
-				fdsTableSchemaField.setContentRenderer("dateTime");
-				fdsTableSchemaField.setSortable(true);
-			}
+			fdsTableSchemaField -> fdsTableSchemaField.setContentRenderer(
+				"dateTime"
+			).setSortable(
+				true
+			)
 		).add(
 			"r_commerceOrderToCommerceReturns_commerceOrderId", "order-id",
 			fdsTableSchemaField -> fdsTableSchemaField.setSortable(true)
@@ -57,7 +61,7 @@ public class CommerceReturnTableFDSView extends BaseTableFDSView {
 		).add(
 			"returnStatus", "return-status",
 			fdsTableSchemaField -> fdsTableSchemaField.setContentRenderer(
-				"commerceStatusDataRenderer")
+				"commerceReturnStatusDataRenderer")
 		).build();
 	}
 

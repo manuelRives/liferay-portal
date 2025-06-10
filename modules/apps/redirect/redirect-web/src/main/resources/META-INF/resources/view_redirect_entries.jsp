@@ -28,6 +28,7 @@ RedirectEntriesDisplayContext redirectEntriesDisplayContext = (RedirectEntriesDi
 
 	<clay:container-fluid
 		cssClass="sidenav-content"
+		fullWidth="<%= true %>"
 	>
 		<c:if test="<%= redirectEntriesDisplayContext.isStagingGroup() %>">
 			<div class="lfr-search-container">
@@ -38,7 +39,16 @@ RedirectEntriesDisplayContext redirectEntriesDisplayContext = (RedirectEntriesDi
 			</div>
 		</c:if>
 
-		<aui:form action="<%= redirectEntriesDisplayContext.getActionURL() %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
+		<c:if test="<%= redirectEntriesDisplayContext.isLiveGroup() %>">
+			<div class="lfr-search-container">
+				<clay:alert
+					displayType="warning"
+					message="redirect-functionality-may-not-work-as-expected-in-the-staging-environment"
+				/>
+			</div>
+		</c:if>
+
+		<aui:form action="<%= redirectEntriesDisplayContext.getActionURL() %>" cssClass="container-fluid" name="fm">
 			<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 
 			<liferay-ui:search-container
@@ -126,10 +136,8 @@ RedirectEntriesDisplayContext redirectEntriesDisplayContext = (RedirectEntriesDi
 	</clay:container-fluid>
 </div>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {delegate} = frontendJsWeb;
-
-	delegate(
+<aui:script sandbox="<%= true %>">
+	Liferay.Util.delegate(
 		document.querySelector('#<portlet:namespace />fm'),
 		'click',
 		'.icon-shortcut',

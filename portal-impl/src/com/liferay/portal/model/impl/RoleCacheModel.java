@@ -67,7 +67,7 @@ public class RoleCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(33);
+		StringBundler sb = new StringBundler(37);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -75,6 +75,8 @@ public class RoleCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", roleId=");
 		sb.append(roleId);
 		sb.append(", companyId=");
@@ -101,6 +103,8 @@ public class RoleCacheModel
 		sb.append(type);
 		sb.append(", subtype=");
 		sb.append(subtype);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -118,6 +122,13 @@ public class RoleCacheModel
 		}
 		else {
 			roleImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			roleImpl.setExternalReferenceCode("");
+		}
+		else {
+			roleImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		roleImpl.setRoleId(roleId);
@@ -178,6 +189,8 @@ public class RoleCacheModel
 			roleImpl.setSubtype(subtype);
 		}
 
+		roleImpl.setStatus(status);
+
 		roleImpl.resetOriginalValues();
 
 		return roleImpl;
@@ -191,6 +204,7 @@ public class RoleCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		roleId = objectInput.readLong();
 
@@ -210,6 +224,8 @@ public class RoleCacheModel
 
 		type = objectInput.readInt();
 		subtype = objectInput.readUTF();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -223,6 +239,13 @@ public class RoleCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(roleId);
@@ -274,11 +297,14 @@ public class RoleCacheModel
 		else {
 			objectOutput.writeUTF(subtype);
 		}
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long roleId;
 	public long companyId;
 	public long userId;
@@ -292,5 +318,6 @@ public class RoleCacheModel
 	public String description;
 	public int type;
 	public String subtype;
+	public int status;
 
 }

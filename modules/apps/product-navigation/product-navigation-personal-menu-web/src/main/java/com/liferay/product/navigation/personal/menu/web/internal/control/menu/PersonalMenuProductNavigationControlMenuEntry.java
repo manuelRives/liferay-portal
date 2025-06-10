@@ -6,12 +6,12 @@
 package com.liferay.product.navigation.personal.menu.web.internal.control.menu;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserNotificationDeliveryConstants;
 import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.product.navigation.control.menu.BaseJSPProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
@@ -19,11 +19,11 @@ import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuCo
 import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuConfigurationRegistry;
 import com.liferay.product.navigation.personal.menu.web.internal.constants.PersonalMenuWebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -103,11 +103,9 @@ public class PersonalMenuProductNavigationControlMenuEntry
 			return true;
 		}
 
-		String themeId = themeDisplay.getThemeId();
+		Layout layout = themeDisplay.getLayout();
 
-		if (!themeId.equals(
-				PropsValues.CONTROL_PANEL_LAYOUT_REGULAR_THEME_ID)) {
-
+		if (!layout.isTypeControlPanel()) {
 			return false;
 		}
 

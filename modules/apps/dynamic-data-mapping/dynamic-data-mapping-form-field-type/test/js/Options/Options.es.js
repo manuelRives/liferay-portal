@@ -8,7 +8,7 @@ import userEvent from '@testing-library/user-event';
 import {PageProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import Options from '../../../src/main/resources/META-INF/resources/Options/Options.es';
+import Options from '../../../src/main/resources/META-INF/resources/js/Options/Options.es';
 
 const DEFAULT_OPTION_NAME_REGEX = /^Option[0-9]{1,}$/;
 
@@ -40,10 +40,12 @@ const optionsValue = {
 };
 
 describe('Options', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
 	beforeAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = (...args) => {
 			if (/DataProvider: Trying/.test(args[0])) {
@@ -58,6 +60,7 @@ describe('Options', () => {
 	});
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 

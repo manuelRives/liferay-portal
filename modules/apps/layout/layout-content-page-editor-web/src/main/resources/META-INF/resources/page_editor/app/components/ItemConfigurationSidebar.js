@@ -9,19 +9,50 @@ import {ReactPortal} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
 import React from 'react';
 
+import MultiSelectMessage from '../../common/components/MultiSelectMessage';
 import {config} from '../config/index';
-import {useActiveItemId, useActiveItemType} from '../contexts/ControlsContext';
+import {useActiveItemIds, useActiveItemType} from '../contexts/ControlsContext';
 import {useDispatch, useSelector} from '../contexts/StoreContext';
 import selectItemConfigurationOpen from '../selectors/selectItemConfigurationOpen';
 import switchSidebarPanel from '../thunks/switchSidebarPanel';
 import ItemConfiguration from './ItemConfiguration';
 
 export default function ItemConfigurationSidebar() {
-	const activeItemId = useActiveItemId();
+	const activeItemIds = useActiveItemIds();
 	const activeItemType = useActiveItemType();
 	const dispatch = useDispatch();
 
+	const [activeItemId] = activeItemIds;
+
 	const itemConfigurationOpen = useSelector(selectItemConfigurationOpen);
+
+	const ItemConfigurationSidebarContent = () => {
+		if (activeItemIds.length > 1) {
+			return <MultiSelectMessage />;
+		}
+		else if (activeItemId) {
+			return (
+				<ItemConfiguration
+					activeItemId={activeItemId}
+					activeItemType={activeItemType}
+				/>
+			);
+		}
+		else {
+			return (
+				<ClayEmptyState
+					className="p-5"
+					description={Liferay.Language.get(
+						'select-a-page-element-to-activate-this-panel'
+					)}
+					imgSrc={`${config.imagesPath}/no_item.svg`}
+					imgSrcReducedMotion={null}
+					small
+					title={Liferay.Language.get('select-a-page-element')}
+				/>
+			);
+		}
+	};
 
 	return (
 		<ReactPortal className="cadmin">
@@ -30,7 +61,8 @@ export default function ItemConfigurationSidebar() {
 				className={classNames(
 					'flex-column page-editor__item-configuration-sidebar',
 					{
-						'page-editor__item-configuration-sidebar--open': itemConfigurationOpen,
+						'page-editor__item-configuration-sidebar--open':
+							itemConfigurationOpen,
 					}
 				)}
 				tabIndex={activeItemId ? null : 0}
@@ -60,22 +92,7 @@ export default function ItemConfigurationSidebar() {
 					/>
 				</div>
 
-				{activeItemId ? (
-					<ItemConfiguration
-						activeItemId={activeItemId}
-						activeItemType={activeItemType}
-					/>
-				) : (
-					<ClayEmptyState
-						className="p-5"
-						description={Liferay.Language.get(
-							'select-a-page-element-to-activate-this-panel'
-						)}
-						imgSrc={`${config.imagesPath}/no_item.svg`}
-						small
-						title={Liferay.Language.get('select-a-page-element')}
-					/>
-				)}
+				<ItemConfigurationSidebarContent />
 			</div>
 		</ReactPortal>
 	);

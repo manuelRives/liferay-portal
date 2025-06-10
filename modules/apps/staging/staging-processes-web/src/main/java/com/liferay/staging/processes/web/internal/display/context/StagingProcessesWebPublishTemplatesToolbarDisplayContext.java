@@ -24,12 +24,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.staging.processes.web.internal.search.PublishConfigurationDisplayTerms;
 import com.liferay.staging.processes.web.internal.search.PublishConfigurationSearchTerms;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Péter Alius
@@ -119,7 +119,7 @@ public class StagingProcessesWebPublishTemplatesToolbarDisplayContext
 
 		searchContainer.setOrderByCol("name");
 		searchContainer.setOrderByComparator(
-			new ExportImportConfigurationNameComparator(
+			ExportImportConfigurationNameComparator.getInstance(
 				Objects.equals(getOrderByType(), "asc")));
 		searchContainer.setOrderByType(getOrderByType());
 

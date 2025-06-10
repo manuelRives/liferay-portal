@@ -27,7 +27,7 @@ interface ModalAddObjectField {
 	objectDefinitionExternalReferenceCode: string;
 	objectDefinitionName?: string;
 	onAfterSubmit: (value: ObjectField) => void;
-	setVisibility: (value: boolean) => void;
+	setVisible: (value: boolean) => void;
 }
 
 export function ModalAddObjectField({
@@ -35,16 +35,15 @@ export function ModalAddObjectField({
 	creationLanguageId,
 	objectDefinitionExternalReferenceCode,
 	onAfterSubmit,
-	setVisibility,
+	setVisible,
 }: ModalAddObjectField) {
 	const [error, setError] = useState<string>('');
-	const [objectDefinition, setObjectDefinition] = useState<
-		ObjectDefinition
-	>();
+	const [objectDefinition, setObjectDefinition] =
+		useState<ObjectDefinition>();
 	const [objectFieldBusinessTypes, setObjectFieldBusinessTypes] = useState<
 		ObjectFieldBusinessType[]
 	>([]);
-	const {observer, onClose} = useModal({onClose: () => setVisibility(false)});
+	const {observer, onClose} = useModal({onClose: () => setVisible(false)});
 	const formId = 'modalAddObjectField';
 	const initialValues: Partial<ObjectField> = {
 		indexed: true,
@@ -52,6 +51,7 @@ export function ModalAddObjectField({
 		indexedLanguageId: '',
 		listTypeDefinitionExternalReferenceCode: '',
 		listTypeDefinitionId: 0,
+		localized: false,
 		readOnly: 'false',
 		readOnlyConditionExpression: '',
 		required: false,
@@ -92,27 +92,34 @@ export function ModalAddObjectField({
 		}
 	};
 
-	const {
-		errors,
-		handleChange,
-		handleSubmit,
-		setValues,
-		values,
-	} = useObjectFieldForm({
-		initialValues,
-		onSubmit,
-	});
+	const {errors, handleChange, handleSubmit, setValues, values} =
+		useObjectFieldForm({
+			initialValues,
+			onSubmit,
+		});
 
 	const showEnableTranslationToggle =
 		values.businessType === 'LongText' ||
 		values.businessType === 'RichText' ||
-		values.businessType === 'Text';
+		values.businessType === 'Text' ||
+		(Liferay.FeatureFlags['LPD-32050'] &&
+			(values.businessType === 'Attachment' ||
+				values.businessType === 'Boolean' ||
+				values.businessType === 'Date' ||
+				values.businessType === 'DateTime' ||
+				values.businessType === 'Decimal' ||
+				values.businessType === 'Integer' ||
+				values.businessType === 'LongInteger' ||
+				values.businessType === 'MultiselectPicklist' ||
+				values.businessType === 'Picklist' ||
+				values.businessType === 'PrecisionDecimal'));
 
 	useEffect(() => {
 		const makeFetch = async () => {
-			const objectDefinitionResponse = await API.getObjectDefinitionByExternalReferenceCode(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectDefinitionResponse =
+				await API.getObjectDefinitionByExternalReferenceCode(
+					objectDefinitionExternalReferenceCode
+				);
 
 			setObjectDefinition(objectDefinitionResponse);
 
@@ -126,11 +133,10 @@ export function ModalAddObjectField({
 				method: 'GET',
 			});
 
-			const {
-				objectFieldBusinessTypes,
-			} = (await objectFieldBusinessTypesResponse.json()) as {
-				objectFieldBusinessTypes: ObjectFieldBusinessType[];
-			};
+			const {objectFieldBusinessTypes} =
+				(await objectFieldBusinessTypesResponse.json()) as {
+					objectFieldBusinessTypes: ObjectFieldBusinessType[];
+				};
 
 			setObjectFieldBusinessTypes(
 				objectFieldBusinessTypes.filter((objectFieldBusinessType) => {
@@ -145,11 +151,6 @@ export function ModalAddObjectField({
 
 		makeFetch();
 
-		setValues({
-			localized:
-				objectDefinition?.enableLocalization &&
-				showEnableTranslationToggle,
-		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [objectDefinitionExternalReferenceCode, values.businessType]);
 
@@ -200,17 +201,19 @@ export function ModalAddObjectField({
 									<div className="lfr-objects__modal-add-object-field-enable-translations-toggle">
 										<Toggle
 											disabled={
-												!objectDefinition?.enableLocalization
+												!objectDefinition?.enableLocalization ||
+												(!Liferay.FeatureFlags[
+													'LPD-32050'
+												] &&
+													values.required)
 											}
 											label={Liferay.Language.get(
 												'enable-entry-translations'
 											)}
+											name="enableEntryTranslations"
 											onToggle={(localized) =>
 												setValues({
 													localized,
-													required:
-														!localized &&
-														values.required,
 												})
 											}
 											toggled={values.localized}

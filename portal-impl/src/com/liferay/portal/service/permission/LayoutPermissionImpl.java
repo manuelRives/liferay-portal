@@ -8,7 +8,6 @@ package com.liferay.portal.service.permission;
 import com.liferay.exportimport.kernel.staging.permission.StagingPermissionUtil;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
@@ -215,8 +214,7 @@ public class LayoutPermissionImpl implements LayoutPermission {
 		}
 
 		if (containsLayoutUpdatePermission(permissionChecker, layout) ||
-			(FeatureFlagManagerUtil.isEnabled("LPD-11070") &&
-			 contains(permissionChecker, layout, ActionKeys.PREVIEW_DRAFT))) {
+			contains(permissionChecker, layout, ActionKeys.PREVIEW_DRAFT)) {
 
 			return true;
 		}
@@ -361,9 +359,9 @@ public class LayoutPermissionImpl implements LayoutPermission {
 		}
 
 		if (PropsValues.PERMISSIONS_VIEW_DYNAMIC_INHERITANCE &&
-			!actionId.equals(ActionKeys.VIEW)) {
+			actionId.equals(ActionKeys.VIEW)) {
 
-			// Check upward recursively to see if any pages above grant the
+			// Check upward recursively to see if any pages above forbid the
 			// action
 
 			long layoutGroupId = layout.getGroupId();
@@ -380,8 +378,8 @@ public class LayoutPermissionImpl implements LayoutPermission {
 				Layout parentLayout = LayoutLocalServiceUtil.getLayout(
 					layoutGroupId, layout.isPrivateLayout(), parentLayoutId);
 
-				if (contains(permissionChecker, parentLayout, actionId)) {
-					return true;
+				if (!contains(permissionChecker, parentLayout, actionId)) {
+					return false;
 				}
 
 				parentLayoutId = parentLayout.getParentLayoutId();
@@ -480,11 +478,7 @@ public class LayoutPermissionImpl implements LayoutPermission {
 		Group group = GroupLocalServiceUtil.getGroup(layout.getGroupId());
 
 		if (group.isControlPanel() && layout.isTypeControlPanel()) {
-			if (!permissionChecker.isSignedIn()) {
-				return false;
-			}
-
-			return true;
+			return permissionChecker.isSignedIn();
 		}
 
 		// Inactive sites are not viewable
@@ -527,13 +521,8 @@ public class LayoutPermissionImpl implements LayoutPermission {
 		// access it
 
 		if (group.isStagingGroup()) {
-			if (GroupPermissionUtil.contains(
-					permissionChecker, group, ActionKeys.VIEW_STAGING)) {
-
-				return true;
-			}
-
-			return false;
+			return GroupPermissionUtil.contains(
+				permissionChecker, group, ActionKeys.VIEW_STAGING);
 		}
 
 		// Site layouts are only viewable by users who are members of the site
@@ -562,22 +551,12 @@ public class LayoutPermissionImpl implements LayoutPermission {
 			return false;
 		}
 		else if (group.isLayoutPrototype()) {
-			if (LayoutPrototypePermissionUtil.contains(
-					permissionChecker, group.getClassPK(), ActionKeys.VIEW)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutPrototypePermissionUtil.contains(
+				permissionChecker, group.getClassPK(), ActionKeys.VIEW);
 		}
 		else if (group.isLayoutSetPrototype()) {
-			if (LayoutSetPrototypePermissionUtil.contains(
-					permissionChecker, group.getClassPK(), ActionKeys.VIEW)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutSetPrototypePermissionUtil.contains(
+				permissionChecker, group.getClassPK(), ActionKeys.VIEW);
 		}
 		else if (group.isOrganization()) {
 			long organizationId = group.getOrganizationId();

@@ -10,7 +10,6 @@ import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {LinkOrButton} from '@clayui/shared';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
-import classnames from 'classnames';
 import React, {useContext} from 'react';
 
 import FrontendDataSetContext, {
@@ -144,12 +143,6 @@ function ActionsDropdown({
 	) {
 		const [action] = actions;
 
-		const {data: actionData} = action;
-
-		if (actionData?.id && !action?.href) {
-			return null;
-		}
-
 		if (loading) {
 			return <ClayLoadingIndicator className="mb-2 mt-2" />;
 		}
@@ -163,7 +156,7 @@ function ActionsDropdown({
 						action.target,
 						action.onClick ? action.onClick : null
 					)
-						? formatActionURL(action.href, itemData)
+						? formatActionURL(action.href, itemData, action.target)
 						: null
 				}
 				monospaced={Boolean(action.icon)}
@@ -199,26 +192,29 @@ function ActionsDropdown({
 			return (
 				<DropdownItem
 					action={item}
-					closeMenu={() => onMenuActiveChange(false)}
+					closeMenu={() =>
+						onMenuActiveChange && onMenuActiveChange(false)
+					}
 					key={i}
 					onClick={onClick}
 					setLoading={setLoading}
-					url={item.href && formatActionURL(item.href, itemData)}
+					url={
+						item.href &&
+						formatActionURL(item.href, itemData, item.target)
+					}
 				/>
 			);
 		});
 
 	return (
-		<div
-			className={classnames('d-flex', {
-				'justify-content-end': !Liferay.FeatureFlags['LPS-193005'],
-			})}
-		>
+		<div className="d-flex">
 			{inlineEditingAlwaysOn && inlineEditingActions}
 
 			<ClayDropDown
 				active={menuActive}
-				onActiveChange={() => onMenuActiveChange(!menuActive)}
+				onActiveChange={() =>
+					onMenuActiveChange && onMenuActiveChange(!menuActive)
+				}
 				trigger={
 					<ClayButton
 						className="component-action dropdown-toggle"

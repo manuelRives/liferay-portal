@@ -12,7 +12,7 @@ export default function addFragment({
 	groupId,
 	parentItemId,
 	position,
-	selectItem = () => {},
+	selectItems = () => {},
 	type,
 }) {
 	return (dispatch, getState) => {
@@ -35,7 +35,7 @@ export default function addFragment({
 				})
 			);
 
-			selectItem(itemId);
+			selectItems([itemId]);
 		};
 
 		if (type === FRAGMENT_ENTRY_TYPES.composition) {

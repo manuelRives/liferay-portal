@@ -126,6 +126,7 @@ const BuildForm = () => {
 	} = useForm<BuildFormType>({
 		defaultValues: testrayBuild
 			? {
+					cpuUseTime: testrayBuild.cpuUseTime,
 					description: testrayBuild.description,
 					factorStacks: [{}],
 					gitHash: testrayBuild.gitHash,
@@ -136,7 +137,7 @@ const BuildForm = () => {
 					runOptions: [],
 					template: testrayBuild.template,
 					templateTestrayBuildId: buildTemplateId ?? '',
-			  }
+				}
 			: {
 					dueStatus: BuildStatuses.ACTIVATED,
 					factorStacks: [{}],
@@ -145,7 +146,7 @@ const BuildForm = () => {
 					runOptions: [],
 					template: false,
 					templateTestrayBuildId: buildTemplateId ?? '',
-			  },
+				},
 		resolver: yupResolver(
 			buildTemplate ? yupSchema.buildTemplate : yupSchema.build
 		),
@@ -335,7 +336,7 @@ const BuildForm = () => {
 
 			<ProductVersionFormModal
 				modal={newProductVersionModal}
-				projectId={(projectId as unknown) as number}
+				projectId={projectId as unknown as number}
 			/>
 		</Container>
 	);

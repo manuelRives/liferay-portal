@@ -8,6 +8,7 @@ package com.liferay.object.internal.sort;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.petra.sql.dsl.DynamicObjectDefinitionTable;
+import com.liferay.object.relationship.util.ObjectRelationshipUtil;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
 import com.liferay.petra.sql.dsl.Column;
@@ -18,7 +19,6 @@ import com.liferay.petra.sql.dsl.spi.ast.BaseASTNode;
 import com.liferay.petra.sql.dsl.spi.query.GroupBy;
 import com.liferay.petra.sql.dsl.spi.query.Select;
 import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -38,6 +38,7 @@ public class ObjectEntry1ToMRelationshipSortDSLQueryVisitor
 		super(objectFieldLocalService, objectRelationshipLocalService);
 	}
 
+	@Override
 	public DSLQuery visit(DSLQuery dslQuery, Sort sort) throws PortalException {
 		RelationshipSort relationshipSort = (RelationshipSort)sort;
 
@@ -47,9 +48,9 @@ public class ObjectEntry1ToMRelationshipSortDSLQueryVisitor
 		ObjectRelationship objectRelationship =
 			relationshipSort.getObjectRelationship();
 
-		String dbColumnName = StringBundler.concat(
-			"r_", objectRelationship.getName(), "_",
-			objectDefinition.getPKObjectFieldName());
+		String dbColumnName =
+			ObjectRelationshipUtil.getObjectRelationshipFieldName(
+				objectDefinition, objectRelationship.getName());
 
 		ObjectDefinition relatedObjectDefinition =
 			relationshipSort.getRelatedObjectDefinition();
@@ -67,7 +68,7 @@ public class ObjectEntry1ToMRelationshipSortDSLQueryVisitor
 			dslQuery = addLeftJoin(
 				(Column<DynamicObjectDefinitionTable, Long>)
 					dynamicObjectDefinitionTable.getColumn(dbColumnName),
-				dslQuery, dynamicObjectDefinitionTable);
+				null, dslQuery, dynamicObjectDefinitionTable);
 		}
 
 		Stack<BaseASTNode> allBaseASTNodes = getAllBaseASTNodes(

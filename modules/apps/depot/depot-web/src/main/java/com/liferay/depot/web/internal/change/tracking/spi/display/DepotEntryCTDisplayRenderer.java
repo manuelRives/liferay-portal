@@ -21,12 +21,12 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -106,7 +106,7 @@ public class DepotEntryCTDisplayRenderer
 
 	@Override
 	public String getTypeName(Locale locale) {
-		return _language.get(locale, "depot");
+		return _language.get(locale, "asset-library");
 	}
 
 	@Override

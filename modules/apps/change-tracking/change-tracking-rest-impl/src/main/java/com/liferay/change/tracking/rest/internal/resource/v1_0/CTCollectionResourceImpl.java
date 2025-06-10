@@ -10,29 +10,22 @@ import com.liferay.change.tracking.mapping.CTMappingTableInfo;
 import com.liferay.change.tracking.on.demand.user.ticket.generator.CTOnDemandUserTicketGenerator;
 import com.liferay.change.tracking.rest.dto.v1_0.CTCollection;
 import com.liferay.change.tracking.rest.internal.odata.entity.v1_0.CTCollectionEntityModel;
-import com.liferay.change.tracking.rest.internal.util.v1_0.PublishUtil;
 import com.liferay.change.tracking.rest.resource.v1_0.CTCollectionResource;
+import com.liferay.change.tracking.scheduler.PublishScheduler;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTCollectionService;
 import com.liferay.change.tracking.service.CTEntryLocalService;
-import com.liferay.change.tracking.service.CTPreferencesLocalService;
 import com.liferay.change.tracking.service.CTPreferencesService;
-import com.liferay.change.tracking.spi.history.CTCollectionHistoryProvider;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Ticket;
-import com.liferay.portal.kernel.scheduler.SchedulerEngineHelper;
-import com.liferay.portal.kernel.scheduler.TriggerFactory;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
@@ -45,17 +38,14 @@ import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -126,30 +116,6 @@ public class CTCollectionResourceImpl extends BaseCTCollectionResourceImpl {
 		throws Exception {
 
 		return _getShareLink(ctCollectionId);
-	}
-
-	@Override
-	public Page<CTCollection> getCTCollectionsHistoryPage(
-			Integer classNameId, Integer classPK)
-		throws Exception {
-
-		CTCollectionHistoryProvider<?> ctCollectionHistoryProvider =
-			_serviceTrackerMap.getService(Long.valueOf(classNameId));
-
-		if (ctCollectionHistoryProvider == null) {
-			return Page.of(
-				TransformUtil.transform(
-					_ctCollectionLocalService.
-						getExclusivePublishedCTCollections(
-							classNameId, classPK),
-					this::_toCTCollection));
-		}
-
-		return Page.of(
-			TransformUtil.transform(
-				ctCollectionHistoryProvider.getCTCollections(
-					classNameId, classPK),
-				this::_toCTCollection));
 	}
 
 	@Override
@@ -278,28 +244,6 @@ public class CTCollectionResourceImpl extends BaseCTCollectionResourceImpl {
 				ctCollection.getDescription()));
 	}
 
-	@Activate
-	protected void activate(BundleContext bundleContext) {
-		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			bundleContext,
-			(Class<CTCollectionHistoryProvider<?>>)
-				(Class<?>)CTCollectionHistoryProvider.class,
-			null,
-			(serviceReference, emitter) -> {
-				CTCollectionHistoryProvider<?> ctCollectionHistoryProvider =
-					bundleContext.getService(serviceReference);
-
-				try {
-					emitter.emit(
-						_classNameLocalService.getClassNameId(
-							ctCollectionHistoryProvider.getModelClass()));
-				}
-				finally {
-					bundleContext.ungetService(serviceReference);
-				}
-			});
-	}
-
 	private DefaultDTOConverterContext _getDTOConverterContext(
 			com.liferay.change.tracking.model.CTCollection ctCollection)
 		throws Exception {
@@ -359,6 +303,20 @@ public class CTCollectionResourceImpl extends BaseCTCollectionResourceImpl {
 						_ctCollectionModelResourcePermission);
 				}
 			).put(
+				"reactivate",
+				() -> {
+					if (ctCollection.getStatus() !=
+							WorkflowConstants.STATUS_EXPIRED) {
+
+						return null;
+					}
+
+					return addAction(
+						ActionKeys.UPDATE, ctCollection.getCtCollectionId(),
+						"putCTCollection",
+						_ctCollectionModelResourcePermission);
+				}
+			).put(
 				"schedule",
 				() -> {
 					if (!_isPublishEnabled(ctCollection.getCtCollectionId()) ||
@@ -374,9 +332,18 @@ public class CTCollectionResourceImpl extends BaseCTCollectionResourceImpl {
 				}
 			).put(
 				"update",
-				() -> addAction(
-					ActionKeys.UPDATE, ctCollection.getCtCollectionId(),
-					"putCTCollection", _ctCollectionModelResourcePermission)
+				() -> {
+					if (ctCollection.getStatus() !=
+							WorkflowConstants.STATUS_DRAFT) {
+
+						return null;
+					}
+
+					return addAction(
+						ActionKeys.UPDATE, ctCollection.getCtCollectionId(),
+						"putCTCollection",
+						_ctCollectionModelResourcePermission);
+				}
 			).build(),
 			null, contextHttpServletRequest, ctCollection.getCtCollectionId(),
 			contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
@@ -415,6 +382,13 @@ public class CTCollectionResourceImpl extends BaseCTCollectionResourceImpl {
 			return true;
 		}
 
+		com.liferay.change.tracking.model.CTCollection ctCollection =
+			_ctCollectionLocalService.fetchCTCollection(ctCollectionId);
+
+		if (ctCollection.getStatus() == WorkflowConstants.STATUS_DRAFT) {
+			return true;
+		}
+
 		return false;
 	}
 
@@ -439,15 +413,11 @@ public class CTCollectionResourceImpl extends BaseCTCollectionResourceImpl {
 			_ctCollectionLocalService.fetchCTCollection(ctCollectionId);
 
 		if (ctCollection.getStatus() == WorkflowConstants.STATUS_SCHEDULED) {
-			PublishUtil.unschedulePublish(
-				ctCollectionId, _ctCollectionLocalService,
-				_schedulerEngineHelper);
+			_publishScheduler.unschedulePublish(ctCollectionId);
 		}
 
-		PublishUtil.schedulePublish(
-			ctCollectionId, _ctCollectionLocalService,
-			_ctPreferencesLocalService, _schedulerEngineHelper, publishDate,
-			_triggerFactory, contextUser.getUserId());
+		_publishScheduler.schedulePublish(
+			ctCollectionId, contextUser.getUserId(), publishDate);
 	}
 
 	private CTCollection _toCTCollection(
@@ -483,9 +453,6 @@ public class CTCollectionResourceImpl extends BaseCTCollectionResourceImpl {
 	private static final EntityModel _entityModel =
 		new CTCollectionEntityModel();
 
-	@Reference
-	private ClassNameLocalService _classNameLocalService;
-
 	@Reference(
 		target = "(component.name=com.liferay.change.tracking.rest.internal.dto.v1_0.converter.CTCollectionDTOConverter)"
 	)
@@ -515,18 +482,9 @@ public class CTCollectionResourceImpl extends BaseCTCollectionResourceImpl {
 	private CTOnDemandUserTicketGenerator _ctOnDemandUserTicketGenerator;
 
 	@Reference
-	private CTPreferencesLocalService _ctPreferencesLocalService;
-
-	@Reference
 	private CTPreferencesService _ctPreferencesService;
 
 	@Reference
-	private SchedulerEngineHelper _schedulerEngineHelper;
-
-	private ServiceTrackerMap<Long, CTCollectionHistoryProvider<?>>
-		_serviceTrackerMap;
-
-	@Reference
-	private TriggerFactory _triggerFactory;
+	private PublishScheduler _publishScheduler;
 
 }

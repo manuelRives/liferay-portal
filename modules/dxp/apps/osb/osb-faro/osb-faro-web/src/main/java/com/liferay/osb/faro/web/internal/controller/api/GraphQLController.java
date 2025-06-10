@@ -6,6 +6,7 @@
 package com.liferay.osb.faro.web.internal.controller.api;
 
 import com.liferay.oauth2.provider.scope.RequiresNoScope;
+import com.liferay.osb.faro.engine.client.constants.OSBAsahHeaderConstants;
 import com.liferay.osb.faro.engine.client.util.EngineServiceURLUtil;
 import com.liferay.osb.faro.engine.client.util.TokenUtil;
 import com.liferay.osb.faro.model.FaroChannel;
@@ -21,6 +22,15 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -32,15 +42,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.cxf.helpers.IOUtils;
@@ -103,9 +104,10 @@ public class GraphQLController extends BaseFaroController {
 				new ByteArrayEntity(
 					requestBody.getBytes(StandardCharsets.UTF_8)));
 			httpPost.setHeader(
-				ASAH_PROJECT_ID_HEADER, faroProject.getProjectId());
+				OSBAsahHeaderConstants.FARO_BACKEND_SECURITY_SIGNATURE,
+				getSecuritySignature(uri));
 			httpPost.setHeader(
-				ASAH_SECURITY_SIGNATURE_HEADER, getSecuritySignature(uri));
+				OSBAsahHeaderConstants.PROJECT_ID, faroProject.getProjectId());
 			httpPost.setHeader("content-type", "application/json");
 
 			CloseableHttpResponse closeableHttpResponse =
@@ -134,12 +136,6 @@ public class GraphQLController extends BaseFaroController {
 			TokenUtil.getOSBAsahSecurityToken() +
 				url.substring(0, url.lastIndexOf(uri.getPath())));
 	}
-
-	protected static final String ASAH_PROJECT_ID_HEADER =
-		"OSB-Asah-Project-ID";
-
-	protected static final String ASAH_SECURITY_SIGNATURE_HEADER =
-		"OSB-Asah-Faro-Backend-Security-Signature";
 
 	private boolean _hasChannelPermission(
 		FaroProject faroProject, String channelId) {

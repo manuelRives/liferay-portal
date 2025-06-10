@@ -7,6 +7,7 @@ package com.liferay.headless.site.internal.resource.v1_0;
 
 import com.liferay.headless.site.dto.v1_0.Site;
 import com.liferay.headless.site.resource.v1_0.SiteResource;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.events.ServicePreAction;
 import com.liferay.portal.events.ThemeServicePreAction;
 import com.liferay.portal.kernel.change.tracking.CTAware;
@@ -44,14 +45,14 @@ import com.liferay.site.initializer.SiteInitializerRegistry;
 import com.liferay.site.initializer.SiteInitializerSerializer;
 import com.liferay.sites.kernel.util.Sites;
 
+import jakarta.ws.rs.core.Response;
+
 import java.io.File;
 
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -190,7 +191,6 @@ public class SiteResourceImpl extends BaseSiteResourceImpl {
 				ActionKeys.UPDATE);
 		}
 
-		long companyId = CompanyThreadLocal.getCompanyId();
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 		String name = PrincipalThreadLocal.getName();
@@ -203,8 +203,10 @@ public class SiteResourceImpl extends BaseSiteResourceImpl {
 
 		tempFile.delete();
 
-		try {
-			CompanyThreadLocal.setCompanyId(contextCompany.getCompanyId());
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					contextCompany.getCompanyId())) {
+
 			PermissionThreadLocal.setPermissionChecker(
 				PermissionCheckerFactoryUtil.create(contextUser));
 			PrincipalThreadLocal.setName(contextUser.getUserId());
@@ -227,7 +229,6 @@ public class SiteResourceImpl extends BaseSiteResourceImpl {
 			throw exception;
 		}
 		finally {
-			CompanyThreadLocal.setCompanyId(companyId);
 			PermissionThreadLocal.setPermissionChecker(permissionChecker);
 			PrincipalThreadLocal.setName(name);
 

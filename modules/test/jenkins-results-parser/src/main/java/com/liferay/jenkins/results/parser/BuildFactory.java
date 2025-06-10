@@ -68,7 +68,9 @@ public class BuildFactory {
 			return new DefaultTopLevelBuild(url, (TopLevelBuild)parentBuild);
 		}
 
-		if (jobName.contains("-downstream")) {
+		if (jobName.equals("app-server-bundle-builder") ||
+			jobName.contains("-downstream")) {
+
 			String queryString = matcher.group("queryString");
 
 			if ((queryString != null) && queryString.contains("JOB_VARIANT")) {
@@ -123,6 +125,10 @@ public class BuildFactory {
 		if (jobName.equals("root-cause-analysis-tool")) {
 			return new RootCauseAnalysisToolBuild(
 				url, (TopLevelBuild)parentBuild);
+		}
+
+		if (jobName.startsWith("test-jenkins-acceptance-pullrequest")) {
+			return new JenkinsTopLevelBuild(url, (TopLevelBuild)parentBuild);
 		}
 
 		if (jobName.startsWith("test-plugins-acceptance-pullrequest")) {

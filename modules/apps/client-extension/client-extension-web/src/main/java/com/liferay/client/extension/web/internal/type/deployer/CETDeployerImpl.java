@@ -28,7 +28,6 @@ import com.liferay.frontend.js.importmaps.extender.JSImportMapsContributor;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.module.service.Snapshot;
@@ -39,13 +38,13 @@ import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.Portlet;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.Portlet;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -63,8 +62,7 @@ public class CETDeployerImpl implements CETDeployer {
 	public List<ServiceRegistration<?>> deploy(CET cet) {
 		if (Objects.equals(
 				cet.getType(),
-				ClientExtensionEntryConstants.TYPE_COMMERCE_CHECKOUT_STEP) &&
-			FeatureFlagManagerUtil.isEnabled("LPD-15804")) {
+				ClientExtensionEntryConstants.TYPE_COMMERCE_CHECKOUT_STEP)) {
 
 			return _deploy((CommerceCheckoutStepCET)cet);
 		}
@@ -166,7 +164,8 @@ public class CETDeployerImpl implements CETDeployer {
 		serviceRegistrations.add(
 			_register(
 				Portlet.class,
-				new CustomElementCETPortlet(customElementCET, portletId)));
+				new CustomElementCETPortlet(
+					customElementCET, _portal, portletId)));
 
 		return serviceRegistrations;
 	}
@@ -222,7 +221,8 @@ public class CETDeployerImpl implements CETDeployer {
 			_register(
 				JSImportMapsContributor.class,
 				new ClientExtensionJSImportMapsContributor(
-					jsImportMapsEntryCET.getBareSpecifier(), _jsonFactory,
+					jsImportMapsEntryCET.getBareSpecifier(),
+					jsImportMapsEntryCET.getCompanyId(), _jsonFactory,
 					jsImportMapsEntryCET.getURL())));
 	}
 
@@ -254,7 +254,7 @@ public class CETDeployerImpl implements CETDeployer {
 
 	private static final Snapshot<CommerceCETDeployer>
 		_commerceCETDeployerSnapshot = new Snapshot<>(
-			CETDeployer.class, CommerceCETDeployer.class);
+			CETDeployerImpl.class, CommerceCETDeployer.class);
 
 	private BundleContext _bundleContext;
 

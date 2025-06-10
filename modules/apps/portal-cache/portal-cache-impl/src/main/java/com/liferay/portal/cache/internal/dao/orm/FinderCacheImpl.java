@@ -40,13 +40,14 @@ import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.servlet.filters.threadlocal.ThreadLocalFilterThreadLocal;
 
 import java.io.Serializable;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -158,6 +159,8 @@ public class FinderCacheImpl
 		}
 
 		if (cacheValue == null) {
+			finderPath.touch();
+
 			PortalCache<Serializable, Serializable> portalCache =
 				_getPortalCache(finderPath.getCacheName());
 
@@ -186,15 +189,21 @@ public class FinderCacheImpl
 			return cacheValue;
 		}
 
-		Map.Entry<String, Serializable> cacheResultEntry =
-			(Map.Entry<String, Serializable>)cacheValue;
+		if (cacheValue instanceof Serializable[]) {
+			Serializable[] primaryKeys = (Serializable[])cacheValue;
 
-		cacheValue = cacheResultEntry.getValue();
+			if (primaryKeys.length == 1) {
+				Serializable result = basePersistence.fetchByPrimaryKey(
+					primaryKeys[0]);
 
-		if (cacheValue instanceof List<?>) {
-			List<Serializable> primaryKeys = (List<Serializable>)cacheValue;
+				if (result == null) {
+					return null;
+				}
 
-			Set<Serializable> primaryKeysSet = new HashSet<>(primaryKeys);
+				return Arrays.asList(result);
+			}
+
+			Set<Serializable> primaryKeysSet = SetUtil.fromArray(primaryKeys);
 
 			Map<Serializable, ? extends BaseModel<?>> map =
 				basePersistence.fetchByPrimaryKeys(primaryKeysSet);
@@ -203,7 +212,7 @@ public class FinderCacheImpl
 				return null;
 			}
 
-			List<Serializable> list = new ArrayList<>(primaryKeys.size());
+			List<Serializable> list = new ArrayList<>(primaryKeys.length);
 
 			for (Serializable curPrimaryKey : primaryKeys) {
 				list.add(map.get(curPrimaryKey));
@@ -239,7 +248,7 @@ public class FinderCacheImpl
 	@Override
 	public void putResult(FinderPath finderPath, Object[] args, Object result) {
 		if (!_valueObjectFinderCacheEnabled || !CacheRegistryUtil.isActive() ||
-			(result == null)) {
+			(result == null) || !finderPath.isTouched()) {
 
 			return;
 		}
@@ -249,13 +258,7 @@ public class FinderCacheImpl
 		if (result instanceof BaseModel<?>) {
 			BaseModel<?> model = (BaseModel<?>)result;
 
-			if (finderPath.isBaseModelResult()) {
-				cacheValue = new AbstractMap.SimpleEntry<>(
-					model.getModelClassName(), model.getPrimaryKeyObj());
-			}
-			else {
-				cacheValue = model.getPrimaryKeyObj();
-			}
+			cacheValue = model.getPrimaryKeyObj();
 		}
 		else if (result instanceof List<?>) {
 			List<?> objects = (List<?>)result;
@@ -271,22 +274,15 @@ public class FinderCacheImpl
 				return;
 			}
 			else if (finderPath.isBaseModelResult()) {
-				String baseModelClassName = null;
-				ArrayList<Serializable> primaryKeys = new ArrayList<>(
-					objects.size());
+				Serializable[] primaryKeys = new Serializable[objects.size()];
 
-				for (Object object : objects) {
-					BaseModel<?> baseModel = (BaseModel<?>)object;
+				for (int i = 0; i < objects.size(); i++) {
+					BaseModel<?> baseModel = (BaseModel<?>)objects.get(i);
 
-					if (baseModelClassName == null) {
-						baseModelClassName = baseModel.getModelClassName();
-					}
-
-					primaryKeys.add(baseModel.getPrimaryKeyObj());
+					primaryKeys[i] = baseModel.getPrimaryKeyObj();
 				}
 
-				cacheValue = new AbstractMap.SimpleEntry<String, Serializable>(
-					baseModelClassName, primaryKeys);
+				cacheValue = primaryKeys;
 			}
 		}
 
@@ -517,7 +513,14 @@ public class FinderCacheImpl
 				public ArgumentsResolverHolder addingService(
 					ServiceReference<ArgumentsResolver> serviceReference) {
 
-					return new ArgumentsResolverHolder(serviceReference);
+					ArgumentsResolverHolder argumentsResolverHolder =
+						new ArgumentsResolverHolder(serviceReference);
+
+					_argumentsResolverHolderMap.put(
+						argumentsResolverHolder.getTableName(),
+						argumentsResolverHolder);
+
+					return argumentsResolverHolder;
 				}
 
 				@Override
@@ -530,6 +533,9 @@ public class FinderCacheImpl
 				public void removedService(
 					ServiceReference<ArgumentsResolver> serviceReference,
 					ArgumentsResolverHolder argumentsResolverHolder) {
+
+					_argumentsResolverHolderMap.remove(
+						argumentsResolverHolder.getTableName());
 
 					argumentsResolverHolder.ungetArgumentsResolver();
 				}
@@ -650,16 +656,17 @@ public class FinderCacheImpl
 
 		String groupKey = _GROUP_KEY_PREFIX.concat(className);
 
-		String modleImplClassName = className;
+		String modelImplClassName = className;
 
 		if (className.endsWith(".List1") || className.endsWith(".List2")) {
-			modleImplClassName = className.substring(0, className.length() - 6);
+			modelImplClassName = className.substring(0, className.length() - 6);
 		}
 
-		boolean sharded = false;
+		boolean ctAware = false;
+		boolean sharded = DBPartition.isPartitionEnabled();
 
 		ArgumentsResolverHolder argumentsResolverHolder =
-			_serviceTrackerMap.getService(modleImplClassName);
+			_serviceTrackerMap.getService(modelImplClassName);
 
 		if (argumentsResolverHolder != null) {
 			ArgumentsResolver argumentsResolver =
@@ -682,9 +689,53 @@ public class FinderCacheImpl
 							modelImplClass);
 					}
 
-					if (CTModel.class.isAssignableFrom(modelImplClass)) {
-						portalCache = new CTAwarePortalCache(
-							_multiVMPool, groupKey, false, sharded);
+					ctAware = CTModel.class.isAssignableFrom(modelImplClass);
+				}
+				catch (ClassNotFoundException classNotFoundException) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(classNotFoundException);
+					}
+				}
+			}
+		}
+		else {
+			String[] tableNames = FinderPath.decodeDSLQueryCacheName(className);
+
+			for (String tableName : tableNames) {
+				argumentsResolverHolder = _argumentsResolverHolderMap.get(
+					tableName);
+
+				if (argumentsResolverHolder == null) {
+					continue;
+				}
+
+				ArgumentsResolver argumentsResolver =
+					argumentsResolverHolder.getArgumentsResolver();
+
+				if (Objects.equals(
+						argumentsResolver.getClassName(),
+						argumentsResolver.getTableName())) {
+
+					continue;
+				}
+
+				Class<?> clazz = argumentsResolver.getClass();
+
+				ClassLoader classLoader = clazz.getClassLoader();
+
+				try {
+					Class<?> modelImplClass = classLoader.loadClass(
+						argumentsResolver.getClassName());
+
+					ctAware = CTModel.class.isAssignableFrom(modelImplClass);
+
+					if (DBPartition.isPartitionEnabled()) {
+						sharded = DBPartition.isPartitionedModel(
+							modelImplClass);
+					}
+
+					if (ctAware) {
+						break;
 					}
 				}
 				catch (ClassNotFoundException classNotFoundException) {
@@ -695,7 +746,11 @@ public class FinderCacheImpl
 			}
 		}
 
-		if (portalCache == null) {
+		if (ctAware) {
+			portalCache = new CTAwarePortalCache(
+				_multiVMPool, groupKey, false, sharded);
+		}
+		else {
 			portalCache =
 				(PortalCache<Serializable, Serializable>)
 					_multiVMPool.getPortalCache(groupKey, false, sharded);
@@ -750,6 +805,8 @@ public class FinderCacheImpl
 	private static final MethodKey _clearDSLQueryCacheMethodKey = new MethodKey(
 		FinderCacheUtil.class, "clearDSLQueryCache", String.class);
 
+	private final Map<String, ArgumentsResolverHolder>
+		_argumentsResolverHolderMap = new ConcurrentHashMap<>();
 	private volatile CacheKeyGenerator _baseModelCacheKeyGenerator;
 	private BundleContext _bundleContext;
 	private volatile CacheKeyGenerator _cacheKeyGenerator;

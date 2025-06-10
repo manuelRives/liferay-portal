@@ -4,7 +4,7 @@
  */
 
 import ClayForm, {ClayInput} from '@clayui/form';
-import {useLiferayState} from '@liferay/frontend-js-state-web';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import classnames from 'classnames';
 import React, {useEffect, useState} from 'react';
 
@@ -30,9 +30,8 @@ const ProductOptionText = ({
 	const skuOptionsKey = isFromMiniCart ? 'miniCartSkuOptions' : 'skuOptions';
 	const [text, setText] = useState('');
 
-	const [skuOptionsAtomState, setSkuOptionsAtomState] = useLiferayState(
-		skuOptionsAtom
-	);
+	const [skuOptionsAtomState, setSkuOptionsAtomState] =
+		useLiferayState(skuOptionsAtom);
 
 	useEffect(
 		() =>
@@ -45,6 +44,7 @@ const ProductOptionText = ({
 					skuOptionsAtomState
 				),
 			}),
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[hasErrors]
 	);
@@ -87,7 +87,7 @@ const ProductOptionText = ({
 							skuOptionName: productOption.name,
 							value: [value],
 						},
-				  ],
+					],
 		});
 
 		return () =>
@@ -96,8 +96,9 @@ const ProductOptionText = ({
 						...skuOptionsAtomState,
 						miniCartErrors: [],
 						miniCartSkuOptions: [],
-				  })
+					})
 				: setSkuOptionsAtomState(initialSkuOptionsAtomState);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 

@@ -1,9 +1,7 @@
 Bundle-Name: Liferay Portal Security SSO OpenID Connect Persistence Service
 Bundle-SymbolicName: com.liferay.portal.security.sso.openid.connect.persistence.service
-Bundle-Version: 6.0.26
+Bundle-Version: 6.0.35
 Import-Package:\
-	!com.google.crypto.tink.*,\
-	\
 	!net.shibboleth.utilities.*,\
 	\
 	!org.bouncycastle.*,\
@@ -15,6 +13,7 @@ Import-Package:\
 	!org.opensaml.*,\
 	\
 	*
-Liferay-Require-SchemaVersion: 2.1.0
+Liferay-Require-SchemaVersion: 2.1.1
 Liferay-Service: true
 -dsannotations-options: inherit
+-fixupmessages: Classes found in the wrong directory: ...;is:=ignore

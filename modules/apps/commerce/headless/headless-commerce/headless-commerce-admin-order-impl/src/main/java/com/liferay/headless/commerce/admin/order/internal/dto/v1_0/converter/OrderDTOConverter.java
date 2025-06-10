@@ -11,6 +11,7 @@ import com.liferay.commerce.constants.CommerceOrderPaymentConstants;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
 import com.liferay.commerce.currency.util.CommercePriceFormatter;
+import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderType;
 import com.liferay.commerce.model.CommerceShippingMethod;
@@ -21,6 +22,8 @@ import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.commerce.service.CommerceOrderTypeService;
+import com.liferay.commerce.term.model.CommerceTermEntry;
+import com.liferay.commerce.term.service.CommerceTermEntryLocalService;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.Status;
@@ -89,6 +92,18 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 				setAccountId(commerceOrder::getCommerceAccountId);
 				setActions(dtoConverterContext::getActions);
 				setAdvanceStatus(commerceOrder::getAdvanceStatus);
+				setBillingAddressExternalReferenceCode(
+					() -> {
+						CommerceAddress billingCommerceAddress =
+							commerceOrder.getBillingAddress();
+
+						if (billingCommerceAddress == null) {
+							return null;
+						}
+
+						return billingCommerceAddress.
+							getExternalReferenceCode();
+					});
 				setBillingAddressId(commerceOrder::getBillingAddressId);
 				setChannelExternalReferenceCode(
 					commerceChannel::getExternalReferenceCode);
@@ -107,6 +122,9 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 						return user.getEmailAddress();
 					});
 				setCurrencyCode(commerceCurrency::getCode);
+				setCurrencyExternalReferenceCode(
+					commerceCurrency::getExternalReferenceCode);
+				setCurrencyId(commerceCurrency::getCommerceCurrencyId);
 				setCustomFields(
 					() -> {
 						ExpandoBridge expandoBridge =
@@ -116,6 +134,20 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 					});
 				setDeliveryTermDescription(
 					commerceOrder::getDeliveryCommerceTermEntryDescription);
+				setDeliveryTermExternalReferenceCode(
+					() -> {
+						CommerceTermEntry commerceTermEntry =
+							_commerceTermEntryLocalService.
+								fetchCommerceTermEntry(
+									commerceOrder.
+										getDeliveryCommerceTermEntryId());
+
+						if (commerceTermEntry == null) {
+							return null;
+						}
+
+						return commerceTermEntry.getExternalReferenceCode();
+					});
 				setDeliveryTermId(
 					commerceOrder::getDeliveryCommerceTermEntryId);
 				setDeliveryTermName(
@@ -125,6 +157,7 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 				setId(commerceOrder::getCommerceOrderId);
 				setLastPriceUpdateDate(commerceOrder::getLastPriceUpdateDate);
 				setModifiedDate(commerceOrder::getModifiedDate);
+				setName(commerceOrder::getName);
 				setOrderDate(commerceOrder::getOrderDate);
 				setOrderStatus(commerceOrder::getOrderStatus);
 				setOrderStatusInfo(
@@ -153,6 +186,20 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 									commerceOrder.getPaymentStatus()))));
 				setPaymentTermDescription(
 					commerceOrder::getPaymentCommerceTermEntryDescription);
+				setPaymentTermExternalReferenceCode(
+					() -> {
+						CommerceTermEntry commerceTermEntry =
+							_commerceTermEntryLocalService.
+								fetchCommerceTermEntry(
+									commerceOrder.
+										getPaymentCommerceTermEntryId());
+
+						if (commerceTermEntry == null) {
+							return null;
+						}
+
+						return commerceTermEntry.getExternalReferenceCode();
+					});
 				setPaymentTermId(commerceOrder::getPaymentCommerceTermEntryId);
 				setPaymentTermName(
 					commerceOrder::getPaymentCommerceTermEntryName);
@@ -160,8 +207,22 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 				setPurchaseOrderNumber(commerceOrder::getPurchaseOrderNumber);
 				setRequestedDeliveryDate(
 					commerceOrder::getRequestedDeliveryDate);
+				setShippable(commerceOrder::isShippable);
+				setShippingAddressExternalReferenceCode(
+					() -> {
+						CommerceAddress shippingCommerceAddress =
+							commerceOrder.getShippingAddress();
+
+						if (shippingCommerceAddress == null) {
+							return null;
+						}
+
+						return shippingCommerceAddress.
+							getExternalReferenceCode();
+					});
 				setShippingAddressId(commerceOrder::getShippingAddressId);
 
+				setShippingAmount(commerceOrder::getShippingAmount);
 				setShippingAmountFormatted(
 					() -> {
 						CommerceMoney commerceOrderShippingAmountCommerceMoney =
@@ -566,6 +627,7 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 
 						return taxAmount.doubleValue();
 					});
+				setTotal(commerceOrder::getTotal);
 				setTotalAmount(
 					() -> {
 						CommerceMoney commerceOrderTotalCommerceMoney =
@@ -905,6 +967,9 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 
 	@Reference
 	private CommercePriceFormatter _commercePriceFormatter;
+
+	@Reference
+	private CommerceTermEntryLocalService _commerceTermEntryLocalService;
 
 	@Reference
 	private Language _language;

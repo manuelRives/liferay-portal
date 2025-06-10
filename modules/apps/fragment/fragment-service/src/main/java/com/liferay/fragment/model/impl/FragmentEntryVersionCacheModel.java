@@ -69,7 +69,7 @@ public class FragmentEntryVersionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(61);
+		StringBundler sb = new StringBundler(65);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -81,6 +81,8 @@ public class FragmentEntryVersionCacheModel
 		sb.append(version);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", fragmentEntryId=");
 		sb.append(fragmentEntryId);
 		sb.append(", groupId=");
@@ -115,6 +117,8 @@ public class FragmentEntryVersionCacheModel
 		sb.append(icon);
 		sb.append(", previewFileEntryId=");
 		sb.append(previewFileEntryId);
+		sb.append(", marketplace=");
+		sb.append(marketplace);
 		sb.append(", readOnly=");
 		sb.append(readOnly);
 		sb.append(", type=");
@@ -152,6 +156,14 @@ public class FragmentEntryVersionCacheModel
 		}
 		else {
 			fragmentEntryVersionImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			fragmentEntryVersionImpl.setExternalReferenceCode("");
+		}
+		else {
+			fragmentEntryVersionImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		fragmentEntryVersionImpl.setFragmentEntryId(fragmentEntryId);
@@ -234,6 +246,7 @@ public class FragmentEntryVersionCacheModel
 		}
 
 		fragmentEntryVersionImpl.setPreviewFileEntryId(previewFileEntryId);
+		fragmentEntryVersionImpl.setMarketplace(marketplace);
 		fragmentEntryVersionImpl.setReadOnly(readOnly);
 		fragmentEntryVersionImpl.setType(type);
 
@@ -286,6 +299,7 @@ public class FragmentEntryVersionCacheModel
 
 		version = objectInput.readInt();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		fragmentEntryId = objectInput.readLong();
 
@@ -310,6 +324,8 @@ public class FragmentEntryVersionCacheModel
 		icon = objectInput.readUTF();
 
 		previewFileEntryId = objectInput.readLong();
+
+		marketplace = objectInput.readBoolean();
 
 		readOnly = objectInput.readBoolean();
 
@@ -339,6 +355,13 @@ public class FragmentEntryVersionCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(fragmentEntryId);
@@ -414,6 +437,8 @@ public class FragmentEntryVersionCacheModel
 
 		objectOutput.writeLong(previewFileEntryId);
 
+		objectOutput.writeBoolean(marketplace);
+
 		objectOutput.writeBoolean(readOnly);
 
 		objectOutput.writeInt(type);
@@ -446,6 +471,7 @@ public class FragmentEntryVersionCacheModel
 	public long fragmentEntryVersionId;
 	public int version;
 	public String uuid;
+	public String externalReferenceCode;
 	public long fragmentEntryId;
 	public long groupId;
 	public long companyId;
@@ -463,6 +489,7 @@ public class FragmentEntryVersionCacheModel
 	public String configuration;
 	public String icon;
 	public long previewFileEntryId;
+	public boolean marketplace;
 	public boolean readOnly;
 	public int type;
 	public String typeOptions;

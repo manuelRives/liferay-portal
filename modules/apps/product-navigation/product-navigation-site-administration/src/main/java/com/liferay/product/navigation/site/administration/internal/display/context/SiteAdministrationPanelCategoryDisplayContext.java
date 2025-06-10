@@ -45,15 +45,15 @@ import com.liferay.product.navigation.site.administration.internal.constants.Sit
 import com.liferay.site.manager.RecentGroupManager;
 import com.liferay.site.provider.GroupURLProvider;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.net.ConnectException;
 
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -424,14 +424,9 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 			return false;
 		}
 
-		if (GroupPermissionUtil.contains(
-				_themeDisplay.getPermissionChecker(), group,
-				ActionKeys.VIEW_SITE_ADMINISTRATION)) {
-
-			return true;
-		}
-
-		return false;
+		return GroupPermissionUtil.contains(
+			_themeDisplay.getPermissionChecker(), group,
+			ActionKeys.VIEW_SITE_ADMINISTRATION);
 	}
 
 	public boolean isShowSiteSelector() throws PortalException {
@@ -444,11 +439,7 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 		List<Group> recentSites = _recentGroupManager.getRecentGroups(
 			PortalUtil.getHttpServletRequest(_portletRequest));
 
-		if (!recentSites.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return !recentSites.isEmpty();
 	}
 
 	public boolean isShowStagingInfo() throws PortalException {

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {State, useLiferayState} from '@liferay/frontend-js-state-web';
+import {State} from '@liferay/frontend-js-state-web';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import {useEffect} from 'react';
 
 import {useSelector} from '../contexts/StoreContext';
@@ -51,6 +52,8 @@ const INITIAL_STATE: ContentsState = {
 
 export const pageContentsAtom = State.atom('page-contents', INITIAL_STATE);
 
+const EMPTY_ARRAY: PageContent[] = [];
+
 export default function usePageContents() {
 	const segmentsExperienceId = useSelector(selectSegmentsExperienceId);
 
@@ -74,7 +77,7 @@ export default function usePageContents() {
 		}
 	}, [contents, segmentsExperienceId, setContents]);
 
-	return contents.data || [];
+	return contents.data || EMPTY_ARRAY;
 }
 
 export function clearPageContents() {

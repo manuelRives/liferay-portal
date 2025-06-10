@@ -20,7 +20,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -29,12 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * @author Javier Gamarra
@@ -56,7 +54,7 @@ public class FragmentLink implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FragmentLink.class, json);
 	}
 
-	@Schema(deprecated = true)
+	@io.swagger.v3.oas.annotations.media.Schema(deprecated = true)
 	@Valid
 	public Object getHref() {
 		if (_hrefSupplier != null) {
@@ -97,8 +95,8 @@ public class FragmentLink implements Serializable {
 	@JsonIgnore
 	private Supplier<Object> _hrefSupplier;
 
+	@io.swagger.v3.oas.annotations.media.Schema(deprecated = true)
 	@JsonGetter("target")
-	@Schema(deprecated = true)
 	@Valid
 	public Target getTarget() {
 		if (_targetSupplier != null) {
@@ -152,7 +150,9 @@ public class FragmentLink implements Serializable {
 	@JsonIgnore
 	private Supplier<Target> _targetSupplier;
 
-	@Schema(description = "The fragment link's value.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment link's value."
+	)
 	@Valid
 	public FragmentLinkValue getValue() {
 		if (_valueSupplier != null) {
@@ -194,7 +194,9 @@ public class FragmentLink implements Serializable {
 	@JsonIgnore
 	private Supplier<FragmentLinkValue> _valueSupplier;
 
-	@Schema(description = "The localized fragment link's values.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized fragment link's values."
+	)
 	@Valid
 	public Map<String, FragmentLinkValue> getValue_i18n() {
 		if (_value_i18nSupplier != null) {
@@ -331,8 +333,8 @@ public class FragmentLink implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentLink",
 		name = "x-class-name"
 	)
@@ -416,7 +418,10 @@ public class FragmentLink implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -309,7 +309,7 @@ definition {
 				AssertTextEquals(
 					key_cellName1 = ${sku},
 					key_cellName2 = ${orderId},
-					key_columnNumber = 3,
+					key_columnNumber = 4,
 					locator1 = "CommerceEntry#TABLE_CELL_BY_COLUMN_ORDER_NO_TITLE",
 					value1 = ${outstandingQuantity});
 
@@ -483,7 +483,11 @@ definition {
 			locator1 = "TextInput#GENERIC_TEXT_INPUT",
 			value1 = ${keyReferenceCode});
 
-		Button.click(button = "Submit");
+		SelectFrame.selectFrameTop();
+
+		Click(
+			key_text = "Submit",
+			locator1 = "Modal#MODAL_FOOTER_BUTTON");
 
 		if (isSet(checkReferenceCode)) {
 			AssertElementPresent(
@@ -543,7 +547,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro editOrderAddressCP(editedCountry = null, editedName = null, editedStreet1 = null, editedCity = null, editedZipCode = null, editedRegion = null) {
+	macro editOrderAddressCP(editedCountry = null, editedName = null, editedStreet1 = null, editedCity = null, editedZipCode = null, editedRegion = null, selectOuterButton = null) {
 		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
 
 		if (IsElementPresent(locator1 = "Button#PLUS")) {
@@ -592,8 +596,12 @@ definition {
 
 		if (isSet(editedRegion)) {
 			Select(
-				locator1 = "Select#REGION",
+				locator1 = "Select#NEW_REGION",
 				value1 = ${editedRegion});
+		}
+
+		if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+			SelectFrameTop();
 		}
 
 		Button.click(button = "Submit");
@@ -753,7 +761,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro editOrdersEntryTerms(newTerm = null, type = null) {
+	macro editOrdersEntryTerms(newTerm = null, type = null, selectOuterButton = null) {
 		if (${type} == "Payment") {
 			Click(
 				key_buttonName = "Edit",
@@ -767,9 +775,9 @@ definition {
 				locator1 = "Select#GENERIC_SELECT_FIELD",
 				value1 = ${newTerm});
 
-			AssertClickNoError(
-				locator1 = "Button#SUBMIT",
-				value1 = "Submit");
+			if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+				SelectFrameTop();
+			}
 		}
 		else if (${type} == "Delivery") {
 			Click(
@@ -784,10 +792,14 @@ definition {
 				locator1 = "Select#GENERIC_SELECT_FIELD",
 				value1 = ${newTerm});
 
-			AssertClickNoError(
-				locator1 = "Button#SUBMIT",
-				value1 = "Submit");
+			if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+				SelectFrameTop();
+			}
 		}
+
+		Button.click(button = "Submit");
+
+		Alert.viewSuccessMessage();
 	}
 
 	@summary = "Default summary"
@@ -975,9 +987,9 @@ definition {
 			key_radioOption = ${paymentMethod},
 			locator1 = "CommerceEntry#RADIO_BUTTON_SPECIFIC");
 
-		Click(locator1 = "Button#MODAL_IFRAME_FOOTER_SUBMIT");
-
 		IFrame.selectTopFrame();
+
+		Click(locator1 = "Button#SUBMIT");
 	}
 
 	@summary = "Default summary"
@@ -993,13 +1005,14 @@ definition {
 			selectFieldId = "paymentStatus",
 			value1 = ${paymentStatus});
 
-		Click(locator1 = "Button#MODAL_IFRAME_FOOTER_SUBMIT");
+		Click(locator1 = "Button#SUBMIT");
 
 		IFrame.selectTopFrame();
 	}
 
 	@summary = "Default summary"
-	macro getOrderCreationDateFromTable(columnIndex = null, rowIndex = null) {
+	macro getOrderCreationDateFromTable(columnIndex = null, orderId = null, rowIndex = null) {
+		var key_cellContent = ${orderId};
 		var key_columnIndex = ${columnIndex};
 		var key_rowIndex = ${rowIndex};
 		var orderCreationDate = selenium.getText("CommerceEntry#TABLE_ENTRY_ROW_FIELD_GENERIC");
@@ -1536,21 +1549,17 @@ definition {
 		}
 
 		if (isSet(estimatedDeliveryDate)) {
-
-			// TODO Clean up after CLDR update is finished
-
-			var estimatedDeliveryDateYY = DateUtil.format(${estimatedDeliveryDate}, "MMM d, yyyy", "MMM d, yy");
-
-			AssertElementPresent(locator1 = "//h5[contains(.,'Estimated Delivery Date')]/../../div[contains(.,'${estimatedDeliveryDate}') or contains(.,'${estimatedDeliveryDateYY}')]");
+			AssertTextEquals(
+				key_estimatedDate = "Estimated Delivery Date",
+				locator1 = "CommerceOrders#ORDER_SHIPMENTS_ESTIMATED_DATE",
+				value1 = ${estimatedDeliveryDate});
 		}
 
 		if (isSet(estimatedShippingDate)) {
-
-			// TODO Clean up after CLDR update is finished
-
-			var estimatedShippingDateYY = DateUtil.format(${estimatedShippingDate}, "MMM d, yyyy", "MMM d, yy");
-
-			AssertElementPresent(locator1 = "//h5[contains(.,'Estimated Shipping Date')]/../../div[contains(.,'${estimatedShippingDate}') or contains(.,'${estimatedShippingDateYY}')]");
+			AssertTextEquals(
+				key_estimatedDate = "Estimated Shipping Date",
+				locator1 = "CommerceOrders#ORDER_SHIPMENTS_ESTIMATED_DATE",
+				value1 = ${estimatedShippingDate});
 		}
 	}
 

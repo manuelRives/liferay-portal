@@ -23,9 +23,8 @@ export function ModalUnbindObjectDefinition({
 	onVisibilityChange,
 	selectedObjectDefinitionToUnbind,
 }: ModalUnbindObjectDefinitionProps) {
-	const [rootObjectDefinition, setRootObjectDefinition] = useState<
-		ObjectDefinition
-	>();
+	const [rootObjectDefinition, setRootObjectDefinition] =
+		useState<ObjectDefinition>();
 	const [loading, setLoading] = useState(false);
 
 	const {observer, onClose} = useModal({
@@ -67,9 +66,10 @@ export function ModalUnbindObjectDefinition({
 			else if (
 				selectedObjectDefinitionToUnbind?.rootObjectDefinitionExternalReferenceCode
 			) {
-				const rootObjectDefinitionResponse = await API.getObjectDefinitionByExternalReferenceCode(
-					selectedObjectDefinitionToUnbind?.rootObjectDefinitionExternalReferenceCode
-				);
+				const rootObjectDefinitionResponse =
+					await API.getObjectDefinitionByExternalReferenceCode(
+						selectedObjectDefinitionToUnbind?.rootObjectDefinitionExternalReferenceCode
+					);
 
 				setRootObjectDefinition(rootObjectDefinitionResponse);
 			}
@@ -78,6 +78,7 @@ export function ModalUnbindObjectDefinition({
 		};
 
 		makeFetch();
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -99,30 +100,36 @@ export function ModalUnbindObjectDefinition({
 										'please-confirm-before-unbinding-the-root-x'
 									),
 									[
-										stringUtils.getLocalizableLabel(
-											rootObjectDefinition?.defaultLanguageId as Liferay.Language.Locale,
-											rootObjectDefinition?.label,
-											rootObjectDefinition?.name
-										),
+										stringUtils.getLocalizableLabel({
+											fallbackLabel:
+												rootObjectDefinition?.name,
+											fallbackLanguageId:
+												rootObjectDefinition?.defaultLanguageId as Liferay.Language.Locale,
+											labels: rootObjectDefinition?.label,
+										}),
 									]
-							  )
+								)
 							: sub(
 									Liferay.Language.get(
 										'please-confirm-before-unbinding-the-object-x-from-the-root-x'
 									),
 									[
-										stringUtils.getLocalizableLabel(
-											selectedObjectDefinitionToUnbind?.defaultLanguageId as Liferay.Language.Locale,
-											selectedObjectDefinitionToUnbind?.label,
-											selectedObjectDefinitionToUnbind?.name
-										),
-										stringUtils.getLocalizableLabel(
-											rootObjectDefinition?.defaultLanguageId as Liferay.Language.Locale,
-											rootObjectDefinition?.label,
-											rootObjectDefinition?.name
-										),
+										stringUtils.getLocalizableLabel({
+											fallbackLabel:
+												selectedObjectDefinitionToUnbind?.name,
+											fallbackLanguageId:
+												selectedObjectDefinitionToUnbind?.defaultLanguageId as Liferay.Language.Locale,
+											labels: selectedObjectDefinitionToUnbind?.label,
+										}),
+										stringUtils.getLocalizableLabel({
+											fallbackLabel:
+												rootObjectDefinition?.name,
+											fallbackLanguageId:
+												rootObjectDefinition?.defaultLanguageId as Liferay.Language.Locale,
+											labels: rootObjectDefinition?.label,
+										}),
 									]
-							  )}
+								)}
 					</span>
 				)}
 			</ClayModal.Body>

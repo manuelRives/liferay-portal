@@ -8,6 +8,7 @@ package com.liferay.depot.web.internal.util;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryService;
 import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCriterion;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Company;
@@ -24,14 +25,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.search.GroupSearch;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -46,7 +45,9 @@ public class DepotAdminGroupSearchProvider {
 			PortletRequest portletRequest, PortletURL portletURL)
 		throws PortalException {
 
-		if (!groupItemSelectorCriterion.isIncludeAllVisibleGroups()) {
+		if (Validator.isNull(ParamUtil.getString(portletRequest, "keywords")) &&
+			!groupItemSelectorCriterion.isIncludeAllVisibleGroups()) {
+
 			return _getGroupConnectedDepotGroupsGroupSearch(
 				portletRequest, portletURL);
 		}
@@ -61,13 +62,6 @@ public class DepotAdminGroupSearchProvider {
 		throws PortalException {
 
 		return _getGroupSearch(null, portletRequest, portletURL);
-	}
-
-	@Activate
-	protected void activate() {
-		_classNameIds = new long[] {
-			_portal.getClassNameId(DepotEntry.class.getName())
-		};
 	}
 
 	private GroupSearch _getGroupConnectedDepotGroupsGroupSearch(
@@ -89,13 +83,8 @@ public class DepotAdminGroupSearchProvider {
 						themeDisplay.getScopeGroupId(), groupSearch.getStart(),
 						groupSearch.getEnd());
 
-				List<Group> groups = new ArrayList<>();
-
-				for (DepotEntry depotEntry : depotEntries) {
-					groups.add(depotEntry.getGroup());
-				}
-
-				return groups;
+				return TransformUtil.transform(
+					depotEntries, depotEntry -> depotEntry.getGroup());
 			},
 			_depotEntryService.getGroupConnectedDepotEntriesCount(
 				themeDisplay.getScopeGroupId()));
@@ -132,29 +121,61 @@ public class DepotAdminGroupSearchProvider {
 
 		if (Validator.isNotNull(keywords)) {
 			groupSearch.setResultsAndTotal(
-				() -> _groupService.search(
-					company.getCompanyId(), _classNameIds, keywords,
-					groupParams, groupSearch.getStart(), groupSearch.getEnd(),
-					groupSearch.getOrderByComparator()),
+				() -> _processGroups(
+					themeDisplay.getScopeGroup(),
+					_groupService.search(
+						company.getCompanyId(),
+						new long[] {
+							_portal.getClassNameId(DepotEntry.class.getName())
+						},
+						keywords, groupParams, groupSearch.getStart(),
+						groupSearch.getEnd(),
+						groupSearch.getOrderByComparator())),
 				_groupService.searchCount(
-					company.getCompanyId(), _classNameIds, keywords,
-					groupParams));
+					company.getCompanyId(),
+					new long[] {
+						_portal.getClassNameId(DepotEntry.class.getName())
+					},
+					keywords, groupParams));
 		}
 		else {
 			groupSearch.setResultsAndTotal(
-				() -> _groupService.search(
-					company.getCompanyId(), _classNameIds, keywords,
-					groupParams, groupSearch.getStart(), groupSearch.getEnd(),
-					groupSearch.getOrderByComparator()),
+				() -> _processGroups(
+					themeDisplay.getScopeGroup(),
+					_groupService.search(
+						company.getCompanyId(),
+						new long[] {
+							_portal.getClassNameId(DepotEntry.class.getName())
+						},
+						keywords, groupParams, groupSearch.getStart(),
+						groupSearch.getEnd(),
+						groupSearch.getOrderByComparator())),
 				_groupService.searchCount(
-					company.getCompanyId(), _classNameIds, keywords,
-					groupParams));
+					company.getCompanyId(),
+					new long[] {
+						_portal.getClassNameId(DepotEntry.class.getName())
+					},
+					keywords, groupParams));
 		}
 
 		return groupSearch;
 	}
 
-	private long[] _classNameIds;
+	private List<Group> _processGroups(Group group, List<Group> groups) {
+		if (!group.isStagingGroup()) {
+			return groups;
+		}
+
+		return TransformUtil.transform(
+			groups,
+			curGroup -> {
+				if (curGroup.hasStagingGroup()) {
+					return curGroup.getStagingGroup();
+				}
+
+				return curGroup;
+			});
+	}
 
 	@Reference
 	private DepotEntryService _depotEntryService;

@@ -135,7 +135,21 @@ public class ObjectEntryPersistenceTest {
 
 		newObjectEntry.setObjectDefinitionId(RandomTestUtil.nextLong());
 
+		newObjectEntry.setObjectEntryFolderId(RandomTestUtil.nextLong());
+
 		newObjectEntry.setRootObjectEntryId(RandomTestUtil.nextLong());
+
+		newObjectEntry.setDefaultLanguageId(RandomTestUtil.randomString());
+
+		newObjectEntry.setDisplayDate(RandomTestUtil.nextDate());
+
+		newObjectEntry.setExpirationDate(RandomTestUtil.nextDate());
+
+		newObjectEntry.setReviewDate(RandomTestUtil.nextDate());
+
+		newObjectEntry.setTreePath(RandomTestUtil.randomString());
+
+		newObjectEntry.setVersion(RandomTestUtil.nextInt());
 
 		newObjectEntry.setLastPublishDate(RandomTestUtil.nextDate());
 
@@ -181,8 +195,27 @@ public class ObjectEntryPersistenceTest {
 			existingObjectEntry.getObjectDefinitionId(),
 			newObjectEntry.getObjectDefinitionId());
 		Assert.assertEquals(
+			existingObjectEntry.getObjectEntryFolderId(),
+			newObjectEntry.getObjectEntryFolderId());
+		Assert.assertEquals(
 			existingObjectEntry.getRootObjectEntryId(),
 			newObjectEntry.getRootObjectEntryId());
+		Assert.assertEquals(
+			existingObjectEntry.getDefaultLanguageId(),
+			newObjectEntry.getDefaultLanguageId());
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingObjectEntry.getDisplayDate()),
+			Time.getShortTimestamp(newObjectEntry.getDisplayDate()));
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingObjectEntry.getExpirationDate()),
+			Time.getShortTimestamp(newObjectEntry.getExpirationDate()));
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingObjectEntry.getReviewDate()),
+			Time.getShortTimestamp(newObjectEntry.getReviewDate()));
+		Assert.assertEquals(
+			existingObjectEntry.getTreePath(), newObjectEntry.getTreePath());
+		Assert.assertEquals(
+			existingObjectEntry.getVersion(), newObjectEntry.getVersion());
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingObjectEntry.getLastPublishDate()),
 			Time.getShortTimestamp(newObjectEntry.getLastPublishDate()));
@@ -242,6 +275,14 @@ public class ObjectEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_OEFI() throws Exception {
+		_persistence.countByG_OEFI(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByG_OEFI(0L, 0L);
+	}
+
+	@Test
 	public void testCountByU_ODI() throws Exception {
 		_persistence.countByU_ODI(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
@@ -255,6 +296,14 @@ public class ObjectEntryPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByODI_NotS(0L, 0);
+	}
+
+	@Test
+	public void testCountByROEI_NotS() throws Exception {
+		_persistence.countByROEI_NotS(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
+
+		_persistence.countByROEI_NotS(0L, 0);
 	}
 
 	@Test
@@ -324,9 +373,11 @@ public class ObjectEntryPersistenceTest {
 			"externalReferenceCode", true, "objectEntryId", true, "groupId",
 			true, "companyId", true, "userId", true, "userName", true,
 			"createDate", true, "modifiedDate", true, "objectDefinitionId",
-			true, "rootObjectEntryId", true, "lastPublishDate", true, "status",
-			true, "statusByUserId", true, "statusByUserName", true,
-			"statusDate", true);
+			true, "objectEntryFolderId", true, "rootObjectEntryId", true,
+			"defaultLanguageId", true, "displayDate", true, "expirationDate",
+			true, "reviewDate", true, "treePath", true, "version", true,
+			"lastPublishDate", true, "status", true, "statusByUserId", true,
+			"statusByUserName", true, "statusDate", true);
 	}
 
 	@Test
@@ -660,7 +711,21 @@ public class ObjectEntryPersistenceTest {
 
 		objectEntry.setObjectDefinitionId(RandomTestUtil.nextLong());
 
+		objectEntry.setObjectEntryFolderId(RandomTestUtil.nextLong());
+
 		objectEntry.setRootObjectEntryId(RandomTestUtil.nextLong());
+
+		objectEntry.setDefaultLanguageId(RandomTestUtil.randomString());
+
+		objectEntry.setDisplayDate(RandomTestUtil.nextDate());
+
+		objectEntry.setExpirationDate(RandomTestUtil.nextDate());
+
+		objectEntry.setReviewDate(RandomTestUtil.nextDate());
+
+		objectEntry.setTreePath(RandomTestUtil.randomString());
+
+		objectEntry.setVersion(RandomTestUtil.nextInt());
 
 		objectEntry.setLastPublishDate(RandomTestUtil.nextDate());
 

@@ -546,11 +546,9 @@ public class ${entity.name}PersistenceImpl extends BasePersistenceImpl<${entity.
 					</#list>
 				};
 
-				${finderCache}.putResult(_finderPathCountBy${uniqueEntityFinder.name}, args, Long.valueOf(1)
-					<#if serviceBuilder.isVersionLTE_7_3_0()>
-						, false
-					</#if>
-					);
+				<#if serviceBuilder.isVersionLTE_7_3_0()>
+					${finderCache}.putResult(_finderPathCountBy${uniqueEntityFinder.name}, args, Long.valueOf(1), false);
+				</#if>
 				${finderCache}.putResult(_finderPathFetchBy${uniqueEntityFinder.name}, args, ${entity.variableName}ModelImpl
 					<#if serviceBuilder.isVersionLTE_7_3_0()>
 						, false
@@ -859,7 +857,11 @@ public class ${entity.name}PersistenceImpl extends BasePersistenceImpl<${entity.
 
 				<#if entity.hasExternalReferenceCode()>
 					<#if serviceBuilder.isVersionGTE_7_4_0()>
-						${entity.name} erc${entity.name} = fetchByERC_${entity.externalReferenceCode?cap_first[0..0]}(${entity.variableName}.getExternalReferenceCode(), ${entity.variableName}.get${entity.externalReferenceCode?cap_first}Id());
+						<#if entity.versionEntity??>
+							${entity.name} erc${entity.name} = fetchByERC_${entity.externalReferenceCode?cap_first[0..0]}_Head(${entity.variableName}.getExternalReferenceCode(), ${entity.variableName}.get${entity.externalReferenceCode?cap_first}Id(), ${entity.variableName}.isHead());
+						<#else>
+							${entity.name} erc${entity.name} = fetchByERC_${entity.externalReferenceCode?cap_first[0..0]}(${entity.variableName}.getExternalReferenceCode(), ${entity.variableName}.get${entity.externalReferenceCode?cap_first}Id());
+						</#if>
 					<#else>
 						${entity.name} erc${entity.name} = fetchBy${entity.externalReferenceCode?cap_first[0..0]}_ERC(${entity.variableName}.get${entity.externalReferenceCode?cap_first}Id(), ${entity.variableName}.getExternalReferenceCode());
 					</#if>
@@ -2864,9 +2866,13 @@ public class ${entity.name}PersistenceImpl extends BasePersistenceImpl<${entity.
 					</#if>
 
 					);
+
+				<#if entityFinder.isPretouch()>
+					_finderPathFetchBy${entityFinder.name}.touch();
+				</#if>
 			</#if>
 
-			<#if !entityFinder.hasCustomComparator()>
+			<#if !entityFinder.hasCustomComparator() && (entityFinder.isCollection() || serviceBuilder.isVersionLTE_7_3_0())>
 				_finderPathCountBy${entityFinder.name} =
 					<#if serviceBuilder.isVersionGTE_7_4_0()>
 						new FinderPath(

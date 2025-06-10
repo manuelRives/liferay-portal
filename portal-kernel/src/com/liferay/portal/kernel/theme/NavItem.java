@@ -24,6 +24,8 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.webserver.WebServerServletTokenUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -32,8 +34,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * Represents a portal navigation item, providing access to layouts and metadata
@@ -169,6 +169,10 @@ public class NavItem implements Serializable {
 		return _children;
 	}
 
+	public String getDisplayIcon() throws Exception {
+		return StringPool.BLANK;
+	}
+
 	public Map<String, Serializable> getExpandoAttributes() {
 		if (_layout != null) {
 			ExpandoBridge expandoBridge = _layout.getExpandoBridge();
@@ -301,11 +305,7 @@ public class NavItem implements Serializable {
 	public boolean hasBrowsableChildren() throws Exception {
 		List<NavItem> browsableChildren = getBrowsableChildren();
 
-		if (!browsableChildren.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return !browsableChildren.isEmpty();
 	}
 
 	/**
@@ -319,11 +319,7 @@ public class NavItem implements Serializable {
 	public boolean hasChildren() throws Exception {
 		List<NavItem> children = getChildren();
 
-		if (!children.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return !children.isEmpty();
 	}
 
 	@Override
@@ -404,11 +400,7 @@ public class NavItem implements Serializable {
 		LayoutTypeController layoutTypeController =
 			layoutType.getLayoutTypeController();
 
-		if (layoutTypeController.isWorkflowEnabled()) {
-			return true;
-		}
-
-		return false;
+		return layoutTypeController.isWorkflowEnabled();
 	}
 
 	private NavItem(

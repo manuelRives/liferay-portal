@@ -6,12 +6,13 @@
 package com.liferay.headless.delivery.client.serdes.v1_0;
 
 import com.liferay.headless.delivery.client.dto.v1_0.AdaptedImage;
-import com.liferay.headless.delivery.client.dto.v1_0.CustomField;
 import com.liferay.headless.delivery.client.dto.v1_0.Document;
 import com.liferay.headless.delivery.client.dto.v1_0.RelatedContent;
 import com.liferay.headless.delivery.client.dto.v1_0.RenderedContent;
 import com.liferay.headless.delivery.client.dto.v1_0.TaxonomyCategoryBrief;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -21,8 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -157,7 +156,7 @@ public class DocumentSerDes {
 			sb.append("[");
 
 			for (int i = 0; i < document.getCustomFields().length; i++) {
-				sb.append(String.valueOf(document.getCustomFields()[i]));
+				sb.append(document.getCustomFields()[i]);
 
 				if ((i + 1) < document.getCustomFields().length) {
 					sb.append(", ");
@@ -182,6 +181,21 @@ public class DocumentSerDes {
 			sb.append("\"");
 		}
 
+		if (document.getDateExpired() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateExpired\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(document.getDateExpired()));
+
+			sb.append("\"");
+		}
+
 		if (document.getDateModified() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -197,6 +211,21 @@ public class DocumentSerDes {
 			sb.append("\"");
 		}
 
+		if (document.getDatePublished() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"datePublished\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(document.getDatePublished()));
+
+			sb.append("\"");
+		}
+
 		if (document.getDescription() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -207,6 +236,21 @@ public class DocumentSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(document.getDescription()));
+
+			sb.append("\"");
+		}
+
+		if (document.getDocumentFolderExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"documentFolderExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(document.getDocumentFolderExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -321,11 +365,7 @@ public class DocumentSerDes {
 			sb.append("[");
 
 			for (int i = 0; i < document.getKeywords().length; i++) {
-				sb.append("\"");
-
-				sb.append(_escape(document.getKeywords()[i]));
-
-				sb.append("\"");
+				sb.append(_toJSON(document.getKeywords()[i]));
 
 				if ((i + 1) < document.getKeywords().length) {
 					sb.append(", ");
@@ -567,6 +607,15 @@ public class DocumentSerDes {
 				liferayToJSONDateFormat.format(document.getDateCreated()));
 		}
 
+		if (document.getDateExpired() == null) {
+			map.put("dateExpired", null);
+		}
+		else {
+			map.put(
+				"dateExpired",
+				liferayToJSONDateFormat.format(document.getDateExpired()));
+		}
+
 		if (document.getDateModified() == null) {
 			map.put("dateModified", null);
 		}
@@ -576,11 +625,30 @@ public class DocumentSerDes {
 				liferayToJSONDateFormat.format(document.getDateModified()));
 		}
 
+		if (document.getDatePublished() == null) {
+			map.put("datePublished", null);
+		}
+		else {
+			map.put(
+				"datePublished",
+				liferayToJSONDateFormat.format(document.getDatePublished()));
+		}
+
 		if (document.getDescription() == null) {
 			map.put("description", null);
 		}
 		else {
 			map.put("description", String.valueOf(document.getDescription()));
+		}
+
+		if (document.getDocumentFolderExternalReferenceCode() == null) {
+			map.put("documentFolderExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"documentFolderExternalReferenceCode",
+				String.valueOf(
+					document.getDocumentFolderExternalReferenceCode()));
 		}
 
 		if (document.getDocumentFolderId() == null) {
@@ -743,6 +811,117 @@ public class DocumentSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "adaptedImages")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "aggregateRating")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "assetLibraryKey")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentUrl")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentValue")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "creator")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateExpired")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "datePublished")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "description")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"documentFolderExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "documentFolderId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "documentType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "encodingFormat")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fileExtension")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fileName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "friendlyUrlPath")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "keywords")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "numberOfComments")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "relatedContents")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "renderedContents")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "siteId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "sizeInBytes")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryBriefs")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryIds")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "title")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "viewableBy")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Document document, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -750,8 +929,7 @@ public class DocumentSerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					document.setActions(
-						(Map)DocumentSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "adaptedImages")) {
@@ -803,12 +981,16 @@ public class DocumentSerDes {
 					Object[] jsonParserFieldValues =
 						(Object[])jsonParserFieldValue;
 
-					CustomField[] customFieldsArray =
-						new CustomField[jsonParserFieldValues.length];
+					com.liferay.headless.delivery.client.custom.field.
+						CustomField[] customFieldsArray = new
+						com.liferay.headless.delivery.client.custom.field.
+							CustomField[jsonParserFieldValues.length];
 
 					for (int i = 0; i < customFieldsArray.length; i++) {
-						customFieldsArray[i] = CustomFieldSerDes.toDTO(
-							(String)jsonParserFieldValues[i]);
+						customFieldsArray[i] =
+							com.liferay.headless.delivery.client.custom.field.
+								CustomField.toDTO(
+									(String)jsonParserFieldValues[i]);
 					}
 
 					document.setCustomFields(customFieldsArray);
@@ -820,15 +1002,36 @@ public class DocumentSerDes {
 						toDate((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "dateExpired")) {
+				if (jsonParserFieldValue != null) {
+					document.setDateExpired(
+						toDate((String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
 				if (jsonParserFieldValue != null) {
 					document.setDateModified(
 						toDate((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "datePublished")) {
+				if (jsonParserFieldValue != null) {
+					document.setDatePublished(
+						toDate((String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "description")) {
 				if (jsonParserFieldValue != null) {
 					document.setDescription((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"documentFolderExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					document.setDocumentFolderExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "documentFolderId")) {
@@ -1006,36 +1209,7 @@ public class DocumentSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -1045,6 +1219,42 @@ public class DocumentSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

@@ -12,6 +12,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -27,6 +28,8 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLTypeExtension;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 import com.liferay.portal.vulcan.internal.test.util.PaginationConfigurationTestUtil;
 
+import jakarta.ws.rs.NotFoundException;
+
 import java.lang.reflect.Field;
 
 import java.util.Arrays;
@@ -34,8 +37,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.NotFoundException;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -353,7 +354,31 @@ public class GraphQLServletTest {
 					new GraphQLField(
 						"testPath_v1_0",
 						new GraphQLField(
+							"testNoPermissionOverDTO", new GraphQLField("id"))),
+					"query"),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				_invoke(
+					new GraphQLField(
+						"testPath_v1_0",
+						new GraphQLField(
 							"testNotFoundDTO", new GraphQLField("id"))),
+					"query"),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		Assert.assertEquals(
+			"Forbidden",
+			JSONUtil.getValueAsString(
+				_invoke(
+					new GraphQLField(
+						"testPath_v1_0",
+						new GraphQLField(
+							"testUnauthorizedUser", new GraphQLField("id"))),
 					"query"),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
@@ -375,7 +400,27 @@ public class GraphQLServletTest {
 			"Not Found",
 			JSONUtil.getValueAsString(
 				_invoke(
+					new GraphQLField(
+						"testNoPermissionOverDTO", new GraphQLField("id")),
+					"query"),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				_invoke(
 					new GraphQLField("testNotFoundDTO", new GraphQLField("id")),
+					"query"),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		Assert.assertEquals(
+			"Forbidden",
+			JSONUtil.getValueAsString(
+				_invoke(
+					new GraphQLField(
+						"testUnauthorizedUser", new GraphQLField("id")),
 					"query"),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
@@ -398,12 +443,7 @@ public class GraphQLServletTest {
 							new GraphQLField("isDeprecated"),
 							new GraphQLField("name"),
 							new GraphQLField(
-								"type",
-								new GraphQLField(
-									"fields",
-									new GraphQLField("deprecationReason"),
-									new GraphQLField("isDeprecated"),
-									new GraphQLField("name")))))),
+								"type", new GraphQLField("name"))))),
 				"query"),
 			"JSONObject/data", "JSONObject/__schema", "JSONObject/mutationType",
 			"JSONArray/fields");
@@ -412,11 +452,24 @@ public class GraphQLServletTest {
 			true, mutationFieldsJSONArray, true, "createTestDTO");
 		_assertGraphQLSchemaField(
 			false, mutationFieldsJSONArray, true, "testPath_v1_0");
+
+		String mutationName = JSONUtil.getValueAsString(
+			_getJSONObject(mutationFieldsJSONArray, "testPath_v1_0"),
+			"JSONObject/type", "Object/name");
+
 		_assertGraphQLSchemaField(
 			false,
 			JSONUtil.getValueAsJSONArray(
-				_getJSONObject(mutationFieldsJSONArray, "testPath_v1_0"),
-				"JSONObject/type", "JSONArray/fields"),
+				_invoke(
+					new GraphQLField(
+						"__type(name: \"" + mutationName + "\")",
+						new GraphQLField(
+							"fields(includeDeprecated: true)",
+							new GraphQLField("deprecationReason"),
+							new GraphQLField("isDeprecated"),
+							new GraphQLField("name"))),
+					"query"),
+				"JSONObject/data", "JSONObject/__type", "JSONArray/fields"),
 			true, "createTestDTO");
 
 		// Query fields
@@ -433,12 +486,7 @@ public class GraphQLServletTest {
 							new GraphQLField("isDeprecated"),
 							new GraphQLField("name"),
 							new GraphQLField(
-								"type",
-								new GraphQLField(
-									"fields",
-									new GraphQLField("deprecationReason"),
-									new GraphQLField("isDeprecated"),
-									new GraphQLField("name")))))),
+								"type", new GraphQLField("name"))))),
 				"query"),
 			"JSONObject/data", "JSONObject/__schema", "JSONObject/queryType",
 			"JSONArray/fields");
@@ -447,9 +495,21 @@ public class GraphQLServletTest {
 		_assertGraphQLSchemaField(
 			true, queryFieldsJSONArray, false, "testDTOPage");
 
-		JSONArray namespacedQueryFieldsJSONArray = JSONUtil.getValueAsJSONArray(
+		String queryName = JSONUtil.getValueAsString(
 			_getJSONObject(queryFieldsJSONArray, "testPath_v1_0"),
-			"JSONObject/type", "JSONArray/fields");
+			"JSONObject/type", "Object/name");
+
+		JSONArray namespacedQueryFieldsJSONArray = JSONUtil.getValueAsJSONArray(
+			_invoke(
+				new GraphQLField(
+					"__type(name: \"" + queryName + "\")",
+					new GraphQLField(
+						"fields(includeDeprecated: true)",
+						new GraphQLField("deprecationReason"),
+						new GraphQLField("isDeprecated"),
+						new GraphQLField("name"))),
+				"query"),
+			"JSONObject/data", "JSONObject/__type", "JSONArray/fields");
 
 		_assertGraphQLSchemaField(
 			false, namespacedQueryFieldsJSONArray, false, "testDTO");
@@ -567,8 +627,21 @@ public class GraphQLServletTest {
 		}
 
 		@com.liferay.portal.vulcan.graphql.annotation.GraphQLField
+		public TestDTO testNoPermissionOverDTO()
+			throws PrincipalException.MustHavePermission {
+
+			throw new PrincipalException.MustHavePermission(
+				0L, StringUtil.randomString());
+		}
+
+		@com.liferay.portal.vulcan.graphql.annotation.GraphQLField
 		public TestDTO testNotFoundDTO() {
 			throw new NotFoundException();
+		}
+
+		@com.liferay.portal.vulcan.graphql.annotation.GraphQLField
+		public TestDTO testUnauthorizedUser() throws SecurityException {
+			throw new SecurityException();
 		}
 
 		@GraphQLTypeExtension(TestDTO.class)

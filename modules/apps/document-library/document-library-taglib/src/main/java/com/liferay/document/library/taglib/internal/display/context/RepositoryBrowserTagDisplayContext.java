@@ -61,6 +61,10 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
@@ -68,10 +72,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -87,7 +87,8 @@ public class RepositoryBrowserTagDisplayContext {
 		long folderId, HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse,
-		PortletRequest portletRequest, long repositoryId, long rootFolderId) {
+		PortletRequest portletRequest, long repositoryId, long rootFolderId,
+		boolean viewableByGuest) {
 
 		_actions = actions;
 		_dlAppService = dlAppService;
@@ -102,6 +103,7 @@ public class RepositoryBrowserTagDisplayContext {
 		_portletRequest = portletRequest;
 		_repositoryId = repositoryId;
 		_rootFolderId = rootFolderId;
+		_viewableByGuest = viewableByGuest;
 
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -190,7 +192,8 @@ public class RepositoryBrowserTagDisplayContext {
 		return new RepositoryBrowserManagementToolbarDisplayContext(
 			_actions, _folderId, _folderModelResourcePermission,
 			_httpServletRequest, _liferayPortletRequest,
-			_liferayPortletResponse, _repositoryId, getSearchContainer());
+			_liferayPortletResponse, _repositoryId, getSearchContainer(),
+			_viewableByGuest);
 	}
 
 	public Map<String, Object> getRepositoryBrowserComponentContext() {
@@ -200,6 +203,8 @@ public class RepositoryBrowserTagDisplayContext {
 			"repositoryBrowserURL", _getRepositoryBrowserURL()
 		).put(
 			"repositoryId", String.valueOf(_repositoryId)
+		).put(
+			"viewableByGuest", String.valueOf(_viewableByGuest)
 		).build();
 	}
 
@@ -350,19 +355,11 @@ public class RepositoryBrowserTagDisplayContext {
 	}
 
 	public boolean isDescriptiveDisplayStyle() {
-		if (Objects.equals(getDisplayStyle(), "descriptive")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getDisplayStyle(), "descriptive");
 	}
 
 	public boolean isIconDisplayStyle() {
-		if (Objects.equals(getDisplayStyle(), "icon")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getDisplayStyle(), "icon");
 	}
 
 	public boolean isRepositoryEntryNavigable(RepositoryEntry repositoryEntry) {
@@ -713,5 +710,6 @@ public class RepositoryBrowserTagDisplayContext {
 	private final long _rootFolderId;
 	private SearchContainer<Object> _searchContainer;
 	private final ThemeDisplay _themeDisplay;
+	private final boolean _viewableByGuest;
 
 }

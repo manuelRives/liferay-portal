@@ -9,6 +9,7 @@ import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.search.SearchEngine;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration;
@@ -19,9 +20,9 @@ import com.liferay.portal.search.elasticsearch7.internal.connection.Elasticsearc
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionFixture;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionManager;
 import com.liferay.portal.search.elasticsearch7.internal.index.CompanyIndexFactory;
-import com.liferay.portal.search.elasticsearch7.internal.index.CompanyIndexFactoryHelper;
-import com.liferay.portal.search.elasticsearch7.internal.index.IndexConfigurationDynamicUpdatesExecutor;
+import com.liferay.portal.search.elasticsearch7.internal.index.CompanyIndexHelper;
 import com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.ElasticsearchEngineAdapterFixture;
+import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.test.util.search.engine.SearchEngineFixture;
@@ -86,9 +87,7 @@ public class ElasticsearchSearchEngineFixture implements SearchEngineFixture {
 		_elasticsearchConnectionManager = elasticsearchConnectionManager;
 		_elasticsearchSearchEngine = _createElasticsearchSearchEngine(
 			elasticsearchConnectionFixture, elasticsearchConfigurationWrapper,
-			elasticsearchConnectionManager,
-			Mockito.mock(IndexConfigurationDynamicUpdatesExecutor.class),
-			indexNameBuilder);
+			elasticsearchConnectionManager, indexNameBuilder);
 		_frameworkUtilMockedStatic = _createFrameworkUtil();
 		_indexNameBuilder = indexNameBuilder;
 	}
@@ -106,11 +105,11 @@ public class ElasticsearchSearchEngineFixture implements SearchEngineFixture {
 			_companyIndexFactory = null;
 		}
 
-		if (_companyIndexFactoryHelper != null) {
+		if (_companyIndexHelper != null) {
 			ReflectionTestUtil.invoke(
-				_companyIndexFactoryHelper, "deactivate", new Class<?>[0]);
+				_companyIndexHelper, "deactivate", new Class<?>[0]);
 
-			_companyIndexFactoryHelper = null;
+			_companyIndexHelper = null;
 		}
 
 		if (_frameworkUtilMockedStatic != null) {
@@ -126,33 +125,36 @@ public class ElasticsearchSearchEngineFixture implements SearchEngineFixture {
 
 		_companyIndexFactory = new CompanyIndexFactory();
 
-		_companyIndexFactoryHelper = new CompanyIndexFactoryHelper();
+		_companyIndexHelper = new CompanyIndexHelper();
 
 		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactoryHelper, "_elasticsearchConfigurationWrapper",
+			_companyIndexHelper, "_elasticsearchConfigurationWrapper",
 			elasticsearchConfigurationWrapper);
 		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactoryHelper, "_indexNameBuilder", indexNameBuilder);
+			_companyIndexHelper, "_indexNameBuilder", indexNameBuilder);
 		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactoryHelper, "_jsonFactory", new JSONFactoryImpl());
+			_companyIndexHelper, "_jsonFactory", new JSONFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_companyIndexHelper, "_searchEngineInformation",
+			_createSearchEngineInformation());
 
 		ReflectionTestUtil.invoke(
-			_companyIndexFactoryHelper, "activate",
+			_companyIndexHelper, "activate",
 			new Class<?>[] {BundleContext.class},
 			SystemBundleUtil.getBundleContext());
 
 		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactory, "_companyIndexFactoryHelper",
-			_companyIndexFactoryHelper);
+			_companyIndexFactory, "_companyIndexHelper", _companyIndexHelper);
 
+		ReflectionTestUtil.setFieldValue(
+			_companyIndexFactory, "_companyLocalService",
+			Mockito.mock(CompanyLocalService.class));
 		ReflectionTestUtil.setFieldValue(
 			_companyIndexFactory, "_elasticsearchConfigurationWrapper",
 			elasticsearchConfigurationWrapper);
 
 		ReflectionTestUtil.invoke(
-			_companyIndexFactory, "activate",
-			new Class<?>[] {BundleContext.class},
-			SystemBundleUtil.getBundleContext());
+			_companyIndexFactory, "activate", new Class<?>[0]);
 
 		return _companyIndexFactory;
 	}
@@ -198,8 +200,6 @@ public class ElasticsearchSearchEngineFixture implements SearchEngineFixture {
 		ElasticsearchClientResolver elasticsearchClientResolver,
 		ElasticsearchConfigurationWrapper elasticsearchConfigurationWrapper,
 		ElasticsearchConnectionManager elasticsearchConnectionManager,
-		IndexConfigurationDynamicUpdatesExecutor
-			indexConfigurationDynamicUpdatesExecutor,
 		IndexNameBuilder indexNameBuilder) {
 
 		ElasticsearchSearchEngine elasticsearchSearchEngine =
@@ -208,10 +208,6 @@ public class ElasticsearchSearchEngineFixture implements SearchEngineFixture {
 		ReflectionTestUtil.setFieldValue(
 			elasticsearchSearchEngine, "_elasticsearchConnectionManager",
 			elasticsearchConnectionManager);
-		ReflectionTestUtil.setFieldValue(
-			elasticsearchSearchEngine,
-			"_indexConfigurationDynamicUpdatesExecutor",
-			indexConfigurationDynamicUpdatesExecutor);
 		ReflectionTestUtil.setFieldValue(
 			elasticsearchSearchEngine, "_indexFactory",
 			_createCompanyIndexFactory(
@@ -283,8 +279,21 @@ public class ElasticsearchSearchEngineFixture implements SearchEngineFixture {
 		return _elasticsearchEngineAdapterFixture.getSearchEngineAdapter();
 	}
 
+	private SearchEngineInformation _createSearchEngineInformation() {
+		SearchEngineInformation searchEngineInformation = Mockito.mock(
+			SearchEngineInformation.class);
+
+		Mockito.when(
+			searchEngineInformation.getEmbeddingVectorDimensions()
+		).thenReturn(
+			new int[] {256}
+		);
+
+		return searchEngineInformation;
+	}
+
 	private CompanyIndexFactory _companyIndexFactory;
-	private CompanyIndexFactoryHelper _companyIndexFactoryHelper;
+	private CompanyIndexHelper _companyIndexHelper;
 	private final ElasticsearchConnectionFixture
 		_elasticsearchConnectionFixture;
 	private ElasticsearchConnectionManager _elasticsearchConnectionManager;

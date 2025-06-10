@@ -5,24 +5,26 @@
 
 package com.liferay.jethr0.event.github;
 
-import com.liferay.jethr0.event.EventHandlerContext;
 import com.liferay.jethr0.event.github.client.GitHubClient;
+import com.liferay.jethr0.event.github.comment.GitHubComment;
 import com.liferay.jethr0.event.github.issue.GitHubIssue;
 import com.liferay.jethr0.event.github.pullrequest.GitHubPullRequest;
 import com.liferay.jethr0.event.github.repository.GitHubRepository;
 import com.liferay.jethr0.event.github.user.GitHubUser;
 import com.liferay.jethr0.git.branch.GitBranchEntity;
-import com.liferay.jethr0.git.branch.repository.GitBranchEntityRepository;
+import com.liferay.jethr0.git.repository.GitBranchEntityRepository;
 import com.liferay.jethr0.job.JobEntity;
 import com.liferay.jethr0.job.PortalPullRequestJobEntity;
 import com.liferay.jethr0.job.PullRequestJobEntity;
 import com.liferay.jethr0.job.repository.JobEntityRepository;
+import com.liferay.jethr0.util.Jethr0ContextUtil;
 import com.liferay.jethr0.util.PropertiesUtil;
 import com.liferay.jethr0.util.StringUtil;
 
 import java.io.IOException;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Properties;
@@ -49,11 +51,7 @@ public abstract class BaseGitHubIssueEventHandler
 		GitHubUser receiverGitHubUser =
 			gitHubPullRequest.getReceiverGitHubUser();
 
-		if (!receiverGitHubUser.isLiferayUser()) {
-			return false;
-		}
-
-		return true;
+		return receiverGitHubUser.isLiferayUser();
 	}
 
 	public boolean isSenderLiferayGitHubUser() throws InvalidJSONException {
@@ -65,17 +63,11 @@ public abstract class BaseGitHubIssueEventHandler
 
 		GitHubUser senderGitHubUser = gitHubPullRequest.getSenderGitHubUser();
 
-		if (!senderGitHubUser.isLiferayUser()) {
-			return false;
-		}
-
-		return true;
+		return senderGitHubUser.isLiferayUser();
 	}
 
-	protected BaseGitHubIssueEventHandler(
-		EventHandlerContext eventHandlerContext, JSONObject messageJSONObject) {
-
-		super(eventHandlerContext, messageJSONObject);
+	protected BaseGitHubIssueEventHandler(JSONObject messageJSONObject) {
+		super(messageJSONObject);
 	}
 
 	protected boolean checkLiferayGitHubUser() throws InvalidJSONException {
@@ -94,7 +86,14 @@ public abstract class BaseGitHubIssueEventHandler
 
 		GitHubPullRequest gitHubPullRequest = getGitHubPullRequest();
 
-		gitHubPullRequest.comment(sb.toString());
+		GitHubComment gitHubComment = gitHubPullRequest.comment(sb.toString());
+
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				StringUtil.combine(
+					"Ignore non-Liferay users for ", gitHubComment.getHTMLURL(),
+					" at ", StringUtil.toString(new Date())));
+		}
 
 		return true;
 	}
@@ -102,7 +101,7 @@ public abstract class BaseGitHubIssueEventHandler
 	protected void closeGitHubPullRequest(String body)
 		throws InvalidJSONException {
 
-		GitHubClient gitHubClient = getGitHubClient();
+		GitHubClient gitHubClient = Jethr0ContextUtil.getGitHubClient();
 
 		GitBranchEntity upstreamGitBranchEntity = getUpstreamGitBranchEntity();
 
@@ -140,7 +139,7 @@ public abstract class BaseGitHubIssueEventHandler
 
 		String body = StringUtil.combine(
 			"Closing pull request because pulls for reference ",
-			upstreamGitBranchEntity.getBranchName(),
+			upstreamGitBranchEntity.getName(),
 			" should not be sent to repository ",
 			upstreamGitBranchEntity.getRepositoryName(), ".");
 
@@ -181,14 +180,15 @@ public abstract class BaseGitHubIssueEventHandler
 
 		GitBranchEntity upstreamGitBranchEntity = getUpstreamGitBranchEntity();
 
-		JobEntityRepository jobEntityRepository = getJobEntityRepository();
+		JobEntityRepository jobEntityRepository =
+			Jethr0ContextUtil.getJobEntityRepository();
 
 		GitHubIssue gitHubIssue = getGitHubIssue();
 
 		JobEntity jobEntity = jobEntityRepository.create(
 			null,
 			StringUtil.combine(
-				"[", upstreamGitBranchEntity.getBranchName(), "] - ci:test:",
+				"[", upstreamGitBranchEntity.getName(), "] - ci:test:",
 				testSuite, " ", gitHubIssue.getRepositoryName(), "/",
 				gitHubIssue.getReceiverUserName(), "#",
 				gitHubIssue.getNumber()),
@@ -232,9 +232,9 @@ public abstract class BaseGitHubIssueEventHandler
 
 		if (upstreamGitBranchEntity != null) {
 			pullRequestJobEntity.setUpstreamBranchName(
-				upstreamGitBranchEntity.getBranchName());
+				upstreamGitBranchEntity.getName());
 			pullRequestJobEntity.setUpstreamBranchSHA(
-				upstreamGitBranchEntity.getBranchSHA());
+				upstreamGitBranchEntity.getLatestSHA());
 		}
 
 		jobEntityRepository.update(pullRequestJobEntity);
@@ -296,7 +296,7 @@ public abstract class BaseGitHubIssueEventHandler
 				"Missing \"issue\" from message JSON");
 		}
 
-		GitHubFactory gitHubFactory = getGitHubFactory();
+		GitHubFactory gitHubFactory = Jethr0ContextUtil.getGitHubFactory();
 
 		return gitHubFactory.newGitHubIssue(issueJSONObject);
 	}
@@ -343,7 +343,7 @@ public abstract class BaseGitHubIssueEventHandler
 		}
 
 		GitBranchEntityRepository gitBranchEntityRepository =
-			getGitBranchEntityRepository();
+			Jethr0ContextUtil.getGitBranchEntityRepository();
 
 		GitHubPullRequest gitHubPullRequest = getGitHubPullRequest();
 
@@ -381,7 +381,7 @@ public abstract class BaseGitHubIssueEventHandler
 		}
 
 		GitBranchEntityRepository gitBranchEntityRepository =
-			getGitBranchEntityRepository();
+			Jethr0ContextUtil.getGitBranchEntityRepository();
 
 		GitHubPullRequest gitHubPullRequest = getGitHubPullRequest();
 
@@ -426,7 +426,7 @@ public abstract class BaseGitHubIssueEventHandler
 
 			if (Objects.equals(
 					gitHubCIEnabledBranchName,
-					upstreamGitBranchEntity.getBranchName())) {
+					upstreamGitBranchEntity.getName())) {
 
 				return true;
 			}

@@ -25,8 +25,8 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -36,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ClientExtensionAdminPortletKeys.CLIENT_EXTENSION_ADMIN,
+		"jakarta.portlet.name=" + ClientExtensionAdminPortletKeys.CLIENT_EXTENSION_ADMIN,
 		"mvc.command.name=/client_extension_admin/edit_client_extension_entry"
 	},
 	service = MVCActionCommand.class
@@ -100,7 +100,7 @@ public class EditClientExtensionEntryMVCActionCommand
 
 		_clientExtensionEntryService.addClientExtensionEntry(
 			cet.getExternalReferenceCode(), cet.getDescription(),
-			_localization.getLocalizationMap(cet.getName()),
+			_localization.getLocalizationMap(actionRequest, "name"),
 			ParamUtil.getString(actionRequest, "properties"),
 			cet.getSourceCodeURL(), cet.getType(), cet.getTypeSettings());
 	}
@@ -130,7 +130,7 @@ public class EditClientExtensionEntryMVCActionCommand
 		_clientExtensionEntryService.updateClientExtensionEntry(
 			clientExtensionEntry.getClientExtensionEntryId(),
 			cet.getDescription(),
-			_localization.getLocalizationMap(cet.getName()),
+			_localization.getLocalizationMap(actionRequest, "name"),
 			PropertiesUtil.toString(cet.getProperties()),
 			cet.getSourceCodeURL(), cet.getTypeSettings());
 	}

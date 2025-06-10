@@ -1,16 +1,18 @@
 {
 	"dependencies": {
-		"@clayui/core": "3.113.0",
-		"@clayui/drop-down": "3.113.0",
-		"@clayui/form": "3.113.0",
-		"react": "16.12.0"
+		"@clayui/core": "3.138.0",
+		"@clayui/drop-down": "3.138.0",
+		"@clayui/form": "3.137.0",
+		"@clayui/shared": "3.137.0",
+		"react": "18.2.0"
 	},
 	"main": "js/index.js",
 	"name": "@liferay/template-taglib",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format",
+		"test": "node-scripts test"
 	},
-	"version": "1.0.24"
+	"version": "2.0.1"
 }

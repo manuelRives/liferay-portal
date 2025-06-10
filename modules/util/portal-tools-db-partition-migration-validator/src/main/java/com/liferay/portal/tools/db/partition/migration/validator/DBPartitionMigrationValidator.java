@@ -20,10 +20,12 @@ import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.tools.db.partition.migration.validator.util.DatabaseUtil;
 import com.liferay.portal.tools.db.partition.migration.validator.util.ValidatorUtil;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -41,7 +43,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
@@ -51,27 +52,14 @@ import org.apache.commons.cli.ParseException;
 public class DBPartitionMigrationValidator {
 
 	public static void main(String[] args) {
-		if ((args.length != 0) &&
-			(args[0].equals("-h") || args[0].equals("-help") ||
-			 args[0].equals("--help"))) {
-
-			_printHelp();
-
-			return;
-		}
-
-		for (String arg : args) {
-			if (arg.equals("-e") || arg.equals("-export") ||
-				arg.equals("--export")) {
-
-				_export(ArrayUtil.remove(args, arg));
+		if (args.length != 0) {
+			if (args[0].equals("export")) {
+				_export(ArrayUtil.remove(args, args[0]));
 
 				_exit(_LIFERAY_COMMON_EXIT_CODE_OK);
 			}
-			else if (arg.equals("-v") || arg.equals("-validate") ||
-					 arg.equals("--validate")) {
-
-				_validate(ArrayUtil.remove(args, arg));
+			else if (args[0].equals("validate")) {
+				_validate(ArrayUtil.remove(args, args[0]));
 
 				_exit(_LIFERAY_COMMON_EXIT_CODE_OK);
 			}
@@ -104,34 +92,49 @@ public class DBPartitionMigrationValidator {
 			commandLine = commandLineParser.parse(options, args);
 		}
 		catch (ParseException parseException) {
-			System.err.println(parseException.getMessage());
+			if (!ArrayUtil.contains(args, "--help")) {
+				System.err.println(parseException.getMessage());
+			}
 
 			_printHelp();
 
 			_exit(_LIFERAY_COMMON_EXIT_CODE_HELP);
 		}
 
+		System.out.println(
+			"This tool is a beta feature. It is experimental and not " +
+				"supported.");
+
 		String jdbcURL = DatabaseUtil.replaceSchemaName(
 			commandLine.getOptionValue("jdbc-url"),
 			commandLine.getOptionValue("schema-name"));
 
 		try {
+			if (DatabaseUtil.isPostgreSQL(jdbcURL)) {
+				Class.forName("org.postgresql.Driver");
+			}
+			else {
+				Class.forName("com.mysql.cj.jdbc.Driver");
+			}
+
 			_connection = DriverManager.getConnection(
 				jdbcURL, commandLine.getOptionValue("user"),
 				commandLine.getOptionValue("password"));
 		}
-		catch (SQLException sqlException) {
+		catch (Exception exception) {
 			System.err.println(
 				"Unable to connect to database with the specified parameters:");
 
-			sqlException.printStackTrace();
+			exception.printStackTrace();
 
 			_exit(_LIFERAY_COMMON_EXIT_CODE_BAD);
 		}
 
 		try {
 			String exportFilePath = _write(
-				DatabaseUtil.exportLiferayDatabase(_connection),
+				DatabaseUtil.exportLiferayDatabase(
+					_connection,
+					Long.parseLong(commandLine.getOptionValue("company-id"))),
 				commandLine.getOptionValue("output-dir"));
 
 			System.out.println(
@@ -149,14 +152,17 @@ public class DBPartitionMigrationValidator {
 	private static Options _getExportOptions() {
 		Options options = new Options();
 
-		options.addOption("d", "output-dir", true, "Set the output directory.");
-		options.addRequiredOption("j", "jdbc-url", true, "Set the JDBC URL.");
 		options.addRequiredOption(
-			"p", "password", true, "Set the database user password.");
+			null, "company-id", true, "Set the company ID.");
 		options.addOption(
-			"s", "schema-name", true, "Set the database schema name.");
+			null, "output-dir", true, "Set the output directory.");
+		options.addRequiredOption(null, "jdbc-url", true, "Set the JDBC URL.");
 		options.addRequiredOption(
-			"u", "user", true, "Set the database user name.");
+			null, "password", true, "Set the database user password.");
+		options.addOption(
+			null, "schema-name", true, "Set the database schema name.");
+		options.addRequiredOption(
+			null, "user", true, "Set the database user name.");
 
 		return options;
 	}
@@ -164,16 +170,12 @@ public class DBPartitionMigrationValidator {
 	private static Options _getMainOptions() {
 		Options options = new Options();
 
-		options.addOption("h", "help", false, "Print help message.");
-
-		OptionGroup optionGroup = new OptionGroup();
-
-		optionGroup.addOption(
-			new Option("e", "export", false, "Export database."));
-		optionGroup.addOption(
-			new Option("v", "validate", false, "Validate two databases."));
-
-		options.addOptionGroup(optionGroup);
+		options.addOption(
+			new Option(null, "export", false, "Export validation file."));
+		options.addOption(
+			new Option(
+				null, "validate", false,
+				"Validate source and target validation files."));
 
 		return options;
 	}
@@ -182,9 +184,11 @@ public class DBPartitionMigrationValidator {
 		Options options = new Options();
 
 		options.addRequiredOption(
-			"s", "source-file", true, "Set the path to the source file.");
+			null, "source-file", true,
+			"Set the path to the source validation file.");
 		options.addRequiredOption(
-			"t", "target-file", true, "Set the path to the target file.");
+			null, "target-file", true,
+			"Set the path to the target validation file.");
 
 		return options;
 	}
@@ -192,14 +196,19 @@ public class DBPartitionMigrationValidator {
 	private static void _printHelp() {
 		HelpFormatter helpFormatter = new HelpFormatter();
 
-		PrintWriter printWriter = new PrintWriter(System.out);
+		ByteArrayOutputStream byteArrayOutputStream =
+			new ByteArrayOutputStream();
 
+		PrintWriter printWriter = new PrintWriter(byteArrayOutputStream);
+
+		helpFormatter.printWrapped(
+			printWriter, _HELP_WIDTH,
+			"Liferay Database Partition Migration Validator Tool. This tool " +
+				"is a beta feature. It is experimental and not supported.\n\n");
 		helpFormatter.printUsage(
 			printWriter, _HELP_WIDTH,
-			"./db_partition_migration_validator.sh <operation-mode> " +
-				"<operation-parameters>");
-		helpFormatter.printWrapped(
-			printWriter, _HELP_WIDTH, "\nOperation mode:");
+			"./db_partition_migration_validator.sh <command> [parameters]");
+		helpFormatter.printWrapped(printWriter, _HELP_WIDTH, "\nCommands:");
 		helpFormatter.printOptions(
 			printWriter, _HELP_WIDTH, _getMainOptions(), _HELP_LEFT_PAD,
 			_HELP_DESC_PAD);
@@ -216,7 +225,12 @@ public class DBPartitionMigrationValidator {
 
 		printWriter.flush();
 
-		printWriter.close();
+		String helpMessage = byteArrayOutputStream.toString();
+
+		helpMessage = StringUtil.replace(helpMessage, "--export", "export");
+		helpMessage = StringUtil.replace(helpMessage, "--validate", "validate");
+
+		System.out.println(helpMessage);
 	}
 
 	private static LiferayDatabase _read(String path) throws IOException {
@@ -245,12 +259,18 @@ public class DBPartitionMigrationValidator {
 			commandLine = commandLineParser.parse(options, args);
 		}
 		catch (ParseException parseException) {
-			System.err.println(parseException.getMessage());
+			if (!ArrayUtil.contains(args, "--help")) {
+				System.err.println(parseException.getMessage());
+			}
 
 			_printHelp();
 
 			_exit(_LIFERAY_COMMON_EXIT_CODE_HELP);
 		}
+
+		System.out.println(
+			"This tool is a beta feature. It is experimental and not " +
+				"supported.");
 
 		try {
 			_sourceLiferayDatabase = _read(
@@ -317,18 +337,17 @@ public class DBPartitionMigrationValidator {
 			}
 		}
 
+		DefaultPrettyPrinter defaultPrettyPrinter = new DefaultPrettyPrinter();
+
+		defaultPrettyPrinter.indentArraysWith(
+			DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
+
 		ObjectMapper objectMapper = new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				enable(SerializationFeature.INDENT_OUTPUT);
 				setDateFormat(new ISO8601DateFormat());
-				setDefaultPrettyPrinter(
-					new DefaultPrettyPrinter() {
-						{
-							indentArraysWith(
-								DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
-						}
-					});
+				setDefaultPrettyPrinter(defaultPrettyPrinter);
 			}
 		};
 

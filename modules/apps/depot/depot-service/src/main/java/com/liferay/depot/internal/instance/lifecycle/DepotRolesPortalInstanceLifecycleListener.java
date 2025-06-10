@@ -5,10 +5,12 @@
 
 package com.liferay.depot.internal.instance.lifecycle;
 
+import com.liferay.depot.constants.DepotRolesConstants;
 import com.liferay.depot.internal.util.DepotRoleUtil;
 import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener;
 import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Role;
@@ -34,6 +36,13 @@ public class DepotRolesPortalInstanceLifecycleListener
 		throws PortalException {
 
 		for (String name : DepotRoleUtil.DEPOT_ROLE_NAMES) {
+			if (name.equals(DepotRolesConstants.CMS_CONSUMER) &&
+				!FeatureFlagManagerUtil.isEnabled(
+					company.getCompanyId(), "LPD-17564")) {
+
+				continue;
+			}
+
 			Role role = _getOrCreateRole(company.getCompanyId(), name);
 
 			_resourceLocalService.addResources(
@@ -56,8 +65,9 @@ public class DepotRolesPortalInstanceLifecycleListener
 				User user = _userLocalService.getGuestUser(companyId);
 
 				return _roleLocalService.addRole(
-					user.getUserId(), null, 0, name, null,
-					DepotRoleUtil.getDescriptionMap(_language, name),
+					null, user.getUserId(), null, 0, name,
+					DepotRoleUtil.getTitleMap(companyId, _language, name),
+					DepotRoleUtil.getDescriptionMap(companyId, _language, name),
 					RoleConstants.TYPE_DEPOT, null, null);
 			}
 			finally {

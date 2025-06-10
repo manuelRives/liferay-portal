@@ -11,6 +11,7 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
@@ -276,14 +277,15 @@ public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
 			if (_parallel && (executorService != null)) {
 				List<Future<Void>> futures = new ArrayList<>(objects.size());
 
-				for (final Object object : objects) {
+				for (Object object : objects) {
 					futures.add(
 						executorService.submit(
-							() -> {
-								performAction(object);
+							new CompanyInheritableThreadLocalCallable<>(
+								() -> {
+									performAction(object);
 
-								return null;
-							}));
+									return null;
+								})));
 				}
 
 				for (Future<Void> future : futures) {

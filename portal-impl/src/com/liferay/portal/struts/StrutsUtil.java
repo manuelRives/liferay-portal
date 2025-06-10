@@ -10,28 +10,26 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
 import com.liferay.portal.struts.constants.ActionConstants;
 
-import java.io.IOException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class StrutsUtil {
 
-	public static final String EXCEPTION =
-		StrutsUtil.class.getName() + "_EXCEPTION";
-
 	public static final String TEXT_HTML_DIR = "/html";
 
 	public static void forward(
-			String uri, ServletContext servletContext,
 			HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse)
+			HttpServletResponse httpServletResponse,
+			ServletContext servletContext, String servletName,
+			Throwable throwable, String uri)
 		throws ServletException {
 
 		if (_log.isDebugEnabled()) {
@@ -53,6 +51,11 @@ public class StrutsUtil {
 				DirectRequestDispatcherFactoryUtil.getRequestDispatcher(
 					servletContext, path);
 
+			if (throwable != null) {
+				_setErrorPageAttributes(
+					httpServletRequest, servletName, throwable);
+			}
+
 			try {
 				requestDispatcher.forward(
 					httpServletRequest, httpServletResponse);
@@ -62,9 +65,22 @@ public class StrutsUtil {
 					_log.warn(ioException);
 				}
 			}
-			catch (ServletException servletException1) {
-				httpServletRequest.setAttribute(
-					EXCEPTION, servletException1.getRootCause());
+			catch (RuntimeException | ServletException exception) {
+				if (throwable == null) {
+					if (exception instanceof ServletException) {
+						ServletException servletException =
+							(ServletException)exception;
+
+						throwable = servletException.getRootCause();
+					}
+
+					if (throwable == null) {
+						throwable = exception;
+					}
+
+					_setErrorPageAttributes(
+						httpServletRequest, servletName, throwable);
+				}
 
 				String errorPath = TEXT_HTML_DIR + "/common/error.jsp";
 
@@ -81,14 +97,59 @@ public class StrutsUtil {
 						_log.warn(ioException);
 					}
 				}
-				catch (ServletException servletException2) {
-					throw servletException2;
+				catch (ServletException servletException) {
+					throw servletException;
+				}
+			}
+			finally {
+				if (throwable != null) {
+					_removeErrorPageAttributes(httpServletRequest, throwable);
 				}
 			}
 		}
 		else if (_log.isWarnEnabled()) {
 			_log.warn(uri + " is already committed");
 		}
+	}
+
+	private static void _removeErrorPageAttributes(
+		HttpServletRequest httpServletRequest, Throwable throwable) {
+
+		if (throwable == httpServletRequest.getAttribute(
+				RequestDispatcher.ERROR_EXCEPTION)) {
+
+			httpServletRequest.removeAttribute(
+				RequestDispatcher.ERROR_EXCEPTION);
+			httpServletRequest.removeAttribute(
+				RequestDispatcher.ERROR_EXCEPTION_TYPE);
+			httpServletRequest.removeAttribute(RequestDispatcher.ERROR_MESSAGE);
+			httpServletRequest.removeAttribute(
+				RequestDispatcher.ERROR_REQUEST_URI);
+			httpServletRequest.removeAttribute(
+				RequestDispatcher.ERROR_SERVLET_NAME);
+			httpServletRequest.removeAttribute(
+				RequestDispatcher.ERROR_STATUS_CODE);
+		}
+	}
+
+	private static void _setErrorPageAttributes(
+		HttpServletRequest httpServletRequest, String servletName,
+		Throwable throwable) {
+
+		httpServletRequest.setAttribute(
+			RequestDispatcher.ERROR_EXCEPTION, throwable);
+		httpServletRequest.setAttribute(
+			RequestDispatcher.ERROR_EXCEPTION_TYPE, throwable.getClass());
+		httpServletRequest.setAttribute(
+			RequestDispatcher.ERROR_MESSAGE, throwable.getMessage());
+		httpServletRequest.setAttribute(
+			RequestDispatcher.ERROR_REQUEST_URI,
+			httpServletRequest.getRequestURI());
+		httpServletRequest.setAttribute(
+			RequestDispatcher.ERROR_SERVLET_NAME, servletName);
+		httpServletRequest.setAttribute(
+			RequestDispatcher.ERROR_STATUS_CODE,
+			Integer.valueOf(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(StrutsUtil.class);

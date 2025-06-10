@@ -116,36 +116,61 @@ function RoutineInformation({routine}) {
 					fieldType="STRING"
 					fieldValue={routine.name}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Routine ID"
 					fieldType="STRING"
 					fieldValue={routine.id}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Routine Cron"
 					fieldType="STRING"
 					fieldValue={routine.cron}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Job Name"
 					fieldType="STRING"
 					fieldValue={routine.jobName}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Job Type"
 					fieldType="STRING"
 					fieldValue={routine.type.name}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Create Date"
 					fieldType="DATE"
 					fieldValue={routine.dateCreated}
 				/>
+
 				<Jethr0InformationField
 					fieldLabel="Modified Date"
 					fieldType="DATE"
 					fieldValue={routine.dateModified}
 				/>
+
+				{routine?.upstreamGitBranch && (
+					<Jethr0InformationField
+						fieldLabel="Upstream Branch"
+						fieldType="URL"
+						fieldURLValue={
+							'/#/upstream-branches/' +
+							routine.upstreamGitBranch.id
+						}
+						fieldValue={
+							routine.upstreamGitBranch.userName +
+							'/' +
+							routine.upstreamGitBranch.repositoryName +
+							'/' +
+							routine.upstreamGitBranch.name
+						}
+					/>
+				)}
+
 				{jobDefinition.jobDefinitionParameters &&
 					jobParameters?.map((jobParameter) => {
 						let parameter;
@@ -160,14 +185,16 @@ function RoutineInformation({routine}) {
 							}
 						}
 
-						return (
-							<Jethr0InformationField
-								fieldLabel={parameter.label}
-								fieldType={parameter.type.name}
-								fieldValue={jobParameter.value}
-								key={jobParameter.key}
-							/>
-						);
+						if (parameter) {
+							return (
+								<Jethr0InformationField
+									fieldLabel={parameter.label}
+									fieldType={parameter.type.name}
+									fieldValue={jobParameter.value}
+									key={jobParameter.key}
+								/>
+							);
+						}
 					})}
 			</ClayPanel.Body>
 		</ClayPanel>
@@ -187,7 +214,9 @@ function RoutinePage() {
 			<ClayLayout.Container>
 				<Jethr0Card>
 					<Jethr0NavigationBar active="Routines" />
+
 					<Jethr0Breadcrumbs breadcrumbs={breadcrumbs} />
+
 					<Jethr0ContainerFluid>
 						<ClayLayout.Row justify="between">
 							<Heading level={3} weight="lighter">
@@ -220,12 +249,15 @@ function RoutinePage() {
 		<ClayLayout.Container>
 			<Jethr0Card>
 				<Jethr0NavigationBar active="Routines" />
+
 				<Jethr0Breadcrumbs breadcrumbs={breadcrumbs} />
+
 				<Jethr0ContainerFluid>
 					<ClayLayout.Row justify="between">
 						<Heading level={3} weight="lighter">
 							{routineName}
 						</Heading>
+
 						<Jethr0ButtonsRow
 							buttons={[
 								{
@@ -245,7 +277,9 @@ function RoutinePage() {
 						/>
 					</ClayLayout.Row>
 				</Jethr0ContainerFluid>
+
 				<RoutineInformation routine={routine} />
+
 				<RoutineJobs routine={routine} />
 			</Jethr0Card>
 		</ClayLayout.Container>

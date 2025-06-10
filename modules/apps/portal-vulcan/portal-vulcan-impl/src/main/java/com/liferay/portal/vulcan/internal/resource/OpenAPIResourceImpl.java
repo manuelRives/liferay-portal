@@ -16,6 +16,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.SetUtil;
@@ -68,6 +69,13 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.net.URI;
 
 import java.time.LocalDateTime;
@@ -85,13 +93,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
@@ -563,11 +564,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	}
 
 	private DTOProperty _getDTOProperty(PropertyDefinition propertyDefinition) {
-		PropertyDefinition.PropertyType propertyType =
-			propertyDefinition.getPropertyType();
-
 		DTOProperty dtoProperty;
 
+		PropertyDefinition.PropertyType propertyType =
+			propertyDefinition.getPropertyType();
 		String type = null;
 
 		if ((propertyType ==
@@ -1097,7 +1097,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 					ArraySchema arraySchema = new ArraySchema();
 
 					arraySchema.setDescription(dtoProperty.getDescription());
-					arraySchema.setExtensions(dtoProperty.getExtensions());
+					arraySchema.setExtensions(
+						HashMapBuilder.putAll(
+							dtoProperty.getExtensions()
+						).build());
 					arraySchema.setName(dtoProperty.getName());
 					arraySchema.setType("array");
 
@@ -1130,8 +1133,12 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 				Schema<Object> schema = new Schema<>();
 
 				schema.setDescription(dtoProperty.getDescription());
-				schema.setExtensions(dtoProperty.getExtensions());
+				schema.setExtensions(
+					HashMapBuilder.putAll(
+						dtoProperty.getExtensions()
+					).build());
 				schema.setName(dtoProperty.getName());
+				schema.setReadOnly(dtoProperty.getReadOnly());
 
 				if (type.equals("Boolean")) {
 					schema.setType("boolean");
@@ -1249,7 +1256,9 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 							schema.setDescription(
 								childDTOProperty1.getDescription());
 							schema.setExtensions(
-								childDTOProperty1.getExtensions());
+								HashMapBuilder.putAll(
+									childDTOProperty1.getExtensions()
+								).build());
 							schema.setName(childDTOProperty1.getName());
 							schema.setType("object");
 

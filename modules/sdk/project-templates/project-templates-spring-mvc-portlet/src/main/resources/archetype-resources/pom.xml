@@ -11,6 +11,8 @@
 	<version>${version}</version>
 	<packaging>war</packaging>
 	<properties>
+		<java.compiler.source.version>1.8</java.compiler.source.version>
+		<java.compiler.target.version>1.8</java.compiler.target.version>
 #if (${liferayVersion.startsWith("7.0")})
 		<liferay.bom.version>7.0.10.17</liferay.bom.version>
 #elseif (${liferayVersion.startsWith("7.1")})
@@ -83,7 +85,7 @@
 			</exclusions>
 		</dependency>
 #end
-#if ((${liferayVersion.startsWith("7.4")} || ${liferayVersion.startsWith("20")}) and ${framework.equals("springportletmvc")})
+#if ((${liferayVersion.startsWith("20")} || ${liferayVersion.startsWith("7.4")}) and ${framework.equals("springportletmvc")})
 		<dependency>
 			<groupId>com.rometools</groupId>
 			<artifactId>rome</artifactId>
@@ -107,7 +109,7 @@
 			<groupId>javax.validation</groupId>
 			<artifactId>validation-api</artifactId>
 			<version>2.0.1.Final</version>
-#if (${liferayVersion.startsWith("7.2")} || ${liferayVersion.startsWith("7.3")} || (${liferayVersion.startsWith("7.4")} || ${liferayVersion.startsWith("20")}))
+#if (${liferayVersion.startsWith("20")} || ${liferayVersion.startsWith("7.2")} || ${liferayVersion.startsWith("7.3")} || ${liferayVersion.startsWith("7.4")})
 			<scope>provided</scope>
 #end
 		</dependency>
@@ -258,8 +260,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.1</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>${java.compiler.source.version}</source>
+					<target>${java.compiler.target.version}</target>
 				</configuration>
 			</plugin>
 			<plugin>

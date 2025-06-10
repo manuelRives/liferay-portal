@@ -1,13 +1,17 @@
 {
 	"dependencies": {
-		"frontend-js-web": "*"
+		"@clayui/button": "3.136.0",
+		"@clayui/modal": "3.137.0",
+		"frontend-js-components-web": "*",
+		"frontend-js-web": "*",
+		"react": "18.2.0"
 	},
 	"main": "js/index.js",
 	"name": "exportimport-web",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format"
 	},
-	"version": "5.0.84"
+	"version": "5.0.104"
 }

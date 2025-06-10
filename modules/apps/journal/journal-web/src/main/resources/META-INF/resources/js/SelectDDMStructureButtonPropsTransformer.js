@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openConfirmModal, openSelectionModal} from 'frontend-js-web';
+import {openConfirmModal, openSelectionModal} from 'frontend-js-components-web';
 
 export default function propsTransformer({
 	additionalProps: {description, selectDDMStructurePropsTransformerURL},
@@ -31,21 +31,24 @@ export default function propsTransformer({
 									ddmStructureId.value =
 										itemValue.ddmstructureid;
 
-									const ddmTemplateKey = document.getElementById(
-										`${portletNamespace}ddmTemplateKey`
-									);
+									const ddmTemplateKey =
+										document.getElementById(
+											`${portletNamespace}ddmTemplateKey`
+										);
 
 									ddmTemplateKey.value = '';
 
-									const ddmRendererTemplateKey = document.getElementById(
-										`${portletNamespace}ddmRendererTemplateKey`
-									);
+									const ddmRendererTemplateKey =
+										document.getElementById(
+											`${portletNamespace}ddmRendererTemplateKey`
+										);
 
 									ddmRendererTemplateKey.value = '';
 
-									const contentField = document.getElementById(
-										`${portletNamespace}contentField`
-									);
+									const contentField =
+										document.getElementById(
+											`${portletNamespace}contentField`
+										);
 
 									contentField.value = description;
 

@@ -50,15 +50,15 @@ import com.liferay.segments.web.internal.security.permission.resource.SegmentsEn
 import com.liferay.segments.web.internal.util.comparator.SegmentsEntryModifiedDateComparator;
 import com.liferay.segments.web.internal.util.comparator.SegmentsEntryNameComparator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eduardo García
@@ -512,17 +512,14 @@ public class SegmentsDisplayContext {
 
 		String orderByCol = _getOrderByCol();
 
-		OrderByComparator<SegmentsEntry> orderByComparator = null;
-
 		if (orderByCol.equals("modified-date")) {
-			orderByComparator = new SegmentsEntryModifiedDateComparator(
-				orderByAsc);
+			return SegmentsEntryModifiedDateComparator.getInstance(orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
-			orderByComparator = new SegmentsEntryNameComparator(orderByAsc);
+			return SegmentsEntryNameComparator.getInstance(orderByAsc);
 		}
 
-		return orderByComparator;
+		return null;
 	}
 
 	private PortletURL _getPortletURL() {
@@ -556,19 +553,14 @@ public class SegmentsDisplayContext {
 			orderByAsc = true;
 		}
 
-		Sort sort = null;
-
 		if (Objects.equals(_getOrderByCol(), "name")) {
-			sort = new Sort(
+			return new Sort(
 				Field.getSortableFieldName(
 					"localized_name_".concat(_themeDisplay.getLanguageId())),
 				Sort.STRING_TYPE, !orderByAsc);
 		}
-		else {
-			sort = new Sort(Field.MODIFIED_DATE, Sort.LONG_TYPE, !orderByAsc);
-		}
 
-		return sort;
+		return new Sort(Field.MODIFIED_DATE, Sort.LONG_TYPE, !orderByAsc);
 	}
 
 	private boolean _hasResults() throws PortalException {
@@ -580,11 +572,7 @@ public class SegmentsDisplayContext {
 	}
 
 	private boolean _isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

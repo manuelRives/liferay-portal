@@ -7,8 +7,8 @@ package com.liferay.portal.util.mail.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.mail.kernel.model.MailMessage;
-import com.liferay.mail.kernel.service.MailService;
 import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.portal.kernel.module.util.BundleUtil;
 import com.liferay.portal.kernel.test.ReloadURLClassLoader;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -18,6 +18,8 @@ import com.liferay.portal.test.mail.MailServiceTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.SynchronousMailTestRule;
 import com.liferay.portal.util.PropsUtil;
+
+import jakarta.mail.internet.InternetAddress;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -29,13 +31,15 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.mail.internet.InternetAddress;
-
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * @author Manuel de la Peña
@@ -178,12 +182,20 @@ public class MailEngineTest {
 				PropsKeys.DATA_LIMIT_MAIL_MESSAGE_MAX_PERIOD,
 				String.valueOf(maxMailMessagePeriod));
 
-			Class<?> clazz = MailService.class;
+			Bundle portalUtilTestBundle = FrameworkUtil.getBundle(
+				MailEngineTest.class);
 
-			ClassLoader classLoader = clazz.getClassLoader();
+			Bundle mailMessagingImplBundle = BundleUtil.getBundle(
+				portalUtilTestBundle.getBundleContext(),
+				"com.liferay.mail.messaging.impl");
+
+			BundleWiring bundleWiring = mailMessagingImplBundle.adapt(
+				BundleWiring.class);
+
+			ClassLoader classLoader = bundleWiring.getClassLoader();
 
 			Class<?> mailEngineClass = classLoader.loadClass(
-				"com.liferay.mail.internal.MailEngine");
+				"com.liferay.mail.messaging.internal.MailEngine");
 
 			Class<?> innerClass = mailEngineClass.getDeclaredClasses()[0];
 

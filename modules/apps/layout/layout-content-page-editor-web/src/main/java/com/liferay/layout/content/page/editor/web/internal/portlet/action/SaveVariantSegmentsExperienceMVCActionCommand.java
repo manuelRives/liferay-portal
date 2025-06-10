@@ -6,7 +6,6 @@
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
-import com.liferay.layout.helper.LayoutCopyHelper;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -15,9 +14,11 @@ import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.segments.model.SegmentsExperience;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/save_variant_segments_experience"
 	},
 	service = MVCActionCommand.class
@@ -61,8 +62,19 @@ public class SaveVariantSegmentsExperienceMVCActionCommand
 		long segmentsExperienceId = ParamUtil.getLong(
 			actionRequest, "segmentsExperienceId");
 
-		_layoutCopyHelper.copyLayoutContent(
-			new long[] {segmentsExperienceId}, draftLayout, layout);
+		SegmentsExperience sourceSegmentsExperience =
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				segmentsExperienceId);
+
+		SegmentsExperience targetSegmentsExperience =
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				layout.getGroupId(),
+				sourceSegmentsExperience.getSegmentsExperienceKey(),
+				layout.getPlid());
+
+		_layoutLocalService.copyLayoutContent(
+			sourceSegmentsExperience.getSegmentsExperienceId(), draftLayout,
+			targetSegmentsExperience.getSegmentsExperienceId(), layout);
 
 		hideDefaultSuccessMessage(actionRequest);
 
@@ -70,9 +82,9 @@ public class SaveVariantSegmentsExperienceMVCActionCommand
 	}
 
 	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
+	private LayoutLocalService _layoutLocalService;
 
 	@Reference
-	private LayoutLocalService _layoutLocalService;
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 }

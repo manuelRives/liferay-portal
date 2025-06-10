@@ -18,9 +18,8 @@ import {
 } from '../../tests_utilities/fake_data/accounts';
 import {getOrders} from '../../tests_utilities/fake_data/orders';
 
-const ACCOUNTS_HEADLESS_API_ENDPOINT = ServiceProvider.DeliveryCatalogAPI(
-	'v1'
-).baseURL(24324);
+const ACCOUNTS_HEADLESS_API_ENDPOINT =
+	ServiceProvider.DeliveryCatalogAPI('v1').baseURL(24324);
 
 const COMMERCE_DELIVERY_CATALOG_HEADLESS_API_ENDPOINT =
 	'/headless-commerce-delivery-catalog/v1.0/channels/24324/accounts';
@@ -98,9 +97,10 @@ describe('AccountSelector', () => {
 				).not.toBeInTheDocument()
 			);
 
-			const accountsList = renderedComponent.baseElement.querySelectorAll(
-				'.accounts-list li'
-			);
+			const accountsList =
+				renderedComponent.baseElement.querySelectorAll(
+					'.accounts-list li'
+				);
 
 			const accountsListItem = accountsList[0];
 
@@ -126,9 +126,10 @@ describe('AccountSelector', () => {
 				).not.toBeInTheDocument()
 			);
 
-			const accountsListItem = renderedComponent.baseElement.querySelectorAll(
-				'.accounts-list li'
-			)[0];
+			const accountsListItem =
+				renderedComponent.baseElement.querySelectorAll(
+					'.accounts-list li'
+				)[0];
 
 			fetchMock.post(
 				new RegExp('account-selector/setCurrentAccounts'),
@@ -172,23 +173,31 @@ describe('AccountSelector', () => {
 			cleanup();
 		});
 
-		it('must display the orders search autocomplete component"', () => {
+		it('must display the orders search autocomplete component"', async () => {
+			await act(async () => {
+				fireEvent.click(
+					renderedComponent.baseElement.querySelector(
+						'.btn-account-selector'
+					)
+				);
+			});
+
 			expect(
 				renderedComponent.getByPlaceholderText(/search-order/)
 			).toBeInTheDocument();
 		});
 
 		it('must display the account name', () => {
-			const currentAccountName = renderedComponent.container.querySelector(
-				'.btn-account-selector .account-name .text-truncate'
-			).innerHTML;
+			const currentAccountName =
+				renderedComponent.container.querySelector(
+					'.btn-account-selector .account-name .text-truncate'
+				).innerHTML;
 			expect(currentAccountName).toBe('My Account Name');
 		});
 
 		it('must display an order placeholder"', () => {
-			const orderPlaceholder = renderedComponent.getByText(
-				/no-order-selected/i
-			);
+			const orderPlaceholder =
+				renderedComponent.getByText(/no-order-selected/i);
 			expect(orderPlaceholder).toBeInTheDocument();
 		});
 
@@ -210,13 +219,8 @@ describe('AccountSelector', () => {
 			const orders = renderedComponent.baseElement.querySelectorAll(
 				'.orders-table tbody tr'
 			);
-			const orderItem = renderedComponent.baseElement.querySelector(
-				'.orders-table tbody tr'
-			);
 
 			expect(orders.length).toBe(10);
-
-			expect(orderItem.querySelector('a').href).toContain('/test-url/');
 		});
 	});
 

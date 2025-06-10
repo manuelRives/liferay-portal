@@ -5,10 +5,11 @@
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayForm, {ClayInput} from '@clayui/form';
-import {openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
 import React, {useState} from 'react';
 
 export default function ThemeCSSReplacementSelector({
+	helpText,
 	isReadOnly,
 	placeholder,
 	portletNamespace,
@@ -40,11 +41,13 @@ export default function ThemeCSSReplacementSelector({
 		});
 	};
 
+	const formTextId = `${portletNamespace}formText`;
+
 	return (
 		<>
 			<p className="text-secondary">
 				{Liferay.Language.get(
-					'use-this-client-extension-to-fully-replace-the-default-css-contained-in-the-theme'
+					"use-this-client-extension-to-replace-the-theme's-css"
 				)}
 			</p>
 
@@ -63,6 +66,7 @@ export default function ThemeCSSReplacementSelector({
 				<ClayInput.Group>
 					<ClayInput.GroupItem>
 						<ClayInput
+							aria-describedby={formTextId}
 							id={`${portletNamespace}themeCSSReplacementExtension`}
 							onClick={onClick}
 							placeholder={placeholder}
@@ -106,12 +110,21 @@ export default function ThemeCSSReplacementSelector({
 						)}
 					</ClayInput.GroupItem>
 				</ClayInput.Group>
+
+				{helpText && (
+					<ClayForm.FeedbackGroup>
+						<ClayForm.Text id={formTextId}>
+							{helpText}
+						</ClayForm.Text>
+					</ClayForm.FeedbackGroup>
+				)}
 			</ClayForm.Group>
 		</>
 	);
 }
 
 interface IProps {
+	helpText?: string;
 	isReadOnly: boolean;
 	placeholder: string;
 	portletNamespace: string;

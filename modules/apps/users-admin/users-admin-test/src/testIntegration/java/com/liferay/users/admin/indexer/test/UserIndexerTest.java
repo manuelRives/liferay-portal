@@ -42,8 +42,8 @@ import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.users.admin.test.util.search.GroupBlueprint;
@@ -61,7 +61,6 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
@@ -874,7 +873,7 @@ public class UserIndexerTest {
 	private String _getExpectedFullNameHighlight(
 		String firstName, String middleName, String lastName) {
 
-		if (Objects.equals(
+		if (StringUtil.startsWith(
 				_searchEngineInformation.getVendorString(), "Elasticsearch") &&
 			(_getElasticsearchVersion().compareTo(
 				Version.parseVersion("8.10.2")) >= 0)) {

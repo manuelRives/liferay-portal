@@ -7,7 +7,7 @@ import ClayButton from '@clayui/button';
 import ClayForm, {ClayInput, ClaySelectWithOption} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import classnames from 'classnames';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useContext, useEffect, useState} from 'react';
 
@@ -233,8 +233,8 @@ function EditOrganizationInfoPanel({
 
 					<ClayForm.Group
 						className={classnames({
-							'has-error': !!organizationData.errors
-								.addressCountryCode,
+							'has-error':
+								!!organizationData.errors.addressCountryCode,
 						})}
 					>
 						<label htmlFor={`${namespace}addressCountryCode`}>
@@ -266,8 +266,8 @@ function EditOrganizationInfoPanel({
 
 					<ClayForm.Group
 						className={classnames({
-							'has-error': !!organizationData.errors
-								.addressRegionCode,
+							'has-error':
+								!!organizationData.errors.addressRegionCode,
 						})}
 					>
 						<label htmlFor={`${namespace}addressRegionCode`}>

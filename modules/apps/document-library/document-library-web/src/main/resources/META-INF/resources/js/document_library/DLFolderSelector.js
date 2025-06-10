@@ -6,14 +6,8 @@
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import ClayForm, {ClayInput} from '@clayui/form';
-import {
-	fetch,
-	navigate,
-	objectToFormData,
-	openSelectionModal,
-	openToast,
-	sub,
-} from 'frontend-js-web';
+import {openSelectionModal, openToast} from 'frontend-js-components-web';
+import {fetch, navigate, objectToFormData, sub} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
 const TPL_ERROR_MESSAGES = `<span>{0}</span><ul class="mb-0 mt-2 pl-3">{1}</ul>`;
@@ -29,17 +23,13 @@ const DLFolderSelector = ({
 	sourceRepositoryId,
 }) => {
 	const [copyButtonDisabled, setCopyButtonDisabled] = useState(true);
-	const [
-		destinationParentFolderName,
-		setDestinationParentFolderName,
-	] = useState('');
-	const [destinationParentFolderId, setDestinationParentFolderId] = useState(
-		-1
-	);
+	const [destinationParentFolderName, setDestinationParentFolderName] =
+		useState('');
+	const [destinationParentFolderId, setDestinationParentFolderId] =
+		useState(-1);
 	const [destinationRepositoryId, setDestinationRepositoryId] = useState(-1);
-	const [destinationRepositoryName, setDestinationRepositoryName] = useState(
-		''
-	);
+	const [destinationRepositoryName, setDestinationRepositoryName] =
+		useState('');
 	const [placeholder, setPlaceholder] = useState('');
 
 	useEffect(() => {
@@ -95,11 +85,11 @@ const DLFolderSelector = ({
 				? sub(
 						Liferay.Language.get('x-items-could-not-be-copied'),
 						failedItems
-				  )
+					)
 				: sub(
 						Liferay.Language.get('x-item-could-not-be-copied'),
 						failedItems
-				  ),
+					),
 			errors,
 		]);
 	};
@@ -120,8 +110,10 @@ const DLFolderSelector = ({
 			[`${portletNamespace}dlObjectIds`]: dlObjectIds,
 			[`${portletNamespace}size`]: size,
 			[`${portletNamespace}sourceRepositoryId`]: sourceRepositoryId,
-			[`${portletNamespace}destinationParentFolderId`]: destinationParentFolderId,
-			[`${portletNamespace}destinationRepositoryId`]: destinationRepositoryId,
+			[`${portletNamespace}destinationParentFolderId`]:
+				destinationParentFolderId,
+			[`${portletNamespace}destinationRepositoryId`]:
+				destinationRepositoryId,
 		});
 
 		fetch(copyActionURL, {
@@ -136,10 +128,10 @@ const DLFolderSelector = ({
 							successItems > 1
 								? Liferay.Language.get(
 										'x-items-were-copied-successfully'
-								  )
+									)
 								: Liferay.Language.get(
 										'x-item-was-copied-successfully'
-								  ),
+									),
 							successItems
 						),
 					});

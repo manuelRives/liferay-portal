@@ -14,6 +14,7 @@ import InputMultipleFilesListing from '../../../../common/components/PRMForm/com
 import PRMFormik from '../../../../common/components/PRMFormik';
 import PRMFormikPageProps from '../../../../common/components/PRMFormik/interfaces/prmFormikPageProps';
 import ResumeCard from '../../../../common/components/ResumeCard';
+import useSetTouchedOnForms from '../../../../common/hooks/useSetTouchedOnForms';
 import MDFRequestDTO from '../../../../common/interfaces/dto/mdfRequestDTO';
 import LiferayFile from '../../../../common/interfaces/liferayFile';
 import MDFClaim from '../../../../common/interfaces/mdfClaim';
@@ -46,19 +47,36 @@ const MDFClaimPage = ({
 		...formikHelpers
 	} = useFormikContext<MDFClaim>();
 
+	const errors = formikHelpers.errors;
+
 	useActivitiesAmount(
 		values.activities,
 		useCallback(
-			(amountValue) =>
+			(amountValue) => {
 				setFieldValue(
 					'totalClaimAmount',
 					amountValue * mdfRequest.claimPercent
-				),
-			[mdfRequest.claimPercent, setFieldValue]
+				);
+				setFieldValue(
+					'convertedTotalClaimAmount',
+					(amountValue * mdfRequest.claimPercent) /
+						mdfRequest.currencyExchangeRate
+				);
+			},
+			[
+				mdfRequest.claimPercent,
+				mdfRequest.currencyExchangeRate,
+				setFieldValue,
+			]
 		)
 	);
 
 	const {companiesEntries, fieldEntries} = useDynamicFieldEntries();
+
+	const {isButtonClicked, setIsButtonClicked} = useSetTouchedOnForms(
+		useCallback(() => Boolean(values.id), [values.id]),
+		formikHelpers
+	);
 
 	const claimsFiltered = mdfRequest.mdfReqToMDFClms?.filter(
 		(mdfRequestToMdfClaim) => {
@@ -76,7 +94,6 @@ const MDFClaimPage = ({
 
 	const isDisplayableMDFActivityClaim = (activity: MDFClaimActivity) => {
 		const claimableActivityByStatus =
-			activity.activityStatus?.key !== Status.CANCELED.key &&
 			activity.activityStatus?.key !== Status.EXPIRED.key &&
 			!activity.claimed;
 
@@ -141,6 +158,18 @@ const MDFClaimPage = ({
 			);
 		}
 
+		const handleOnClick = () => {
+			setIsButtonClicked(true);
+			window.scrollTo({
+				behavior: (isValid ? 'instant' : 'smooth') as ScrollBehavior,
+				top: 0,
+			});
+		};
+
+		const isButtonDisabled =
+			((!isValid || isSubmitting || submitted) && isButtonClicked) ||
+			(Boolean(values.id) && !isValid);
+
 		return (
 			<PRMForm name="New" title="Reimbursement Claim">
 				<PRMForm.Section
@@ -158,9 +187,12 @@ const MDFClaimPage = ({
 								<ActivityClaimPanel
 									activity={activity}
 									activityIndex={index}
+									errors={errors}
 									hasPermissionEditClaimActivity={
 										hasPermissionShowForm
 									}
+									isButtonClicked={isButtonClicked}
+									isEdit={!!values.id}
 									key={`${activity.id}-${index}`}
 									overallCampaignDescription={
 										mdfRequest.overallCampaignDescription
@@ -169,6 +201,17 @@ const MDFClaimPage = ({
 								/>
 							)
 					)}
+
+					{errors?.activities &&
+						typeof errors.activities === 'string' &&
+						(isButtonClicked || Boolean(values.id)) && (
+							<ClayAlert
+								displayType="danger"
+								hideCloseIcon={true}
+							>
+								{errors.activities}
+							</ClayAlert>
+						)}
 				</PRMForm.Section>
 
 				<PRMForm.Section
@@ -186,7 +229,7 @@ const MDFClaimPage = ({
 								values.reimbursementInvoices
 									? values.reimbursementInvoices.concat(
 											liferayFiles as LiferayFile[]
-									  )
+										)
 									: liferayFiles
 							)
 						}
@@ -208,9 +251,13 @@ const MDFClaimPage = ({
 						description="The amount to be claimed for the Total of  selected expenses"
 						label="Total Claim Amount"
 						name="totalClaimAmount"
-						onAccept={(value: number) =>
-							setFieldValue('totalClaimAmount', value)
-						}
+						onAccept={(value: number) => {
+							setFieldValue('totalClaimAmount', value);
+							setFieldValue(
+								'convertedTotalClaimAmount',
+								value / mdfRequest.currencyExchangeRate
+							);
+						}}
 						required
 					/>
 				</PRMForm.Section>
@@ -242,7 +289,10 @@ const MDFClaimPage = ({
 
 						<ClayButton
 							className="inline-item inline-item-after"
-							disabled={!isValid || isSubmitting || submitted}
+							disabled={isButtonDisabled}
+							onClick={() => {
+								handleOnClick();
+							}}
 							type="submit"
 						>
 							Submit

@@ -8,8 +8,6 @@ package com.liferay.headless.delivery.internal.resource.v1_0;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.document.library.kernel.service.DLAppService;
-import com.liferay.dynamic.data.mapping.model.DDMStructure;
-import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.friendly.url.model.FriendlyURLEntryLocalization;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
@@ -28,32 +26,25 @@ import com.liferay.headless.delivery.dto.v1_0.SitePage;
 import com.liferay.headless.delivery.dto.v1_0.SitePageNavigationMenuSettings;
 import com.liferay.headless.delivery.dto.v1_0.TaxonomyCategoryBrief;
 import com.liferay.headless.delivery.dto.v1_0.TaxonomyCategoryReference;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.delivery.internal.odata.entity.v1_0.SitePageEntityModel;
 import com.liferay.headless.delivery.resource.v1_0.SitePageResource;
 import com.liferay.layout.admin.kernel.model.LayoutTypePortletConstants;
 import com.liferay.layout.constants.LayoutTypeSettingsConstants;
-import com.liferay.layout.helper.LayoutCopyHelper;
 import com.liferay.layout.importer.LayoutsImporter;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
-import com.liferay.layout.seo.model.LayoutSEOEntry;
+import com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTagProperty;
 import com.liferay.layout.seo.service.LayoutSEOEntryService;
+import com.liferay.layout.util.LayoutServiceContextHelper;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.events.ServicePreAction;
 import com.liferay.portal.events.ThemeServicePreAction;
-import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
-import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
@@ -69,7 +60,6 @@ import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutService;
@@ -87,7 +77,6 @@ import com.liferay.portal.kernel.theme.ThemeUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -97,6 +86,7 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
@@ -114,18 +104,16 @@ import com.liferay.segments.processor.SegmentsExperienceRequestProcessorRegistry
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.segments.service.SegmentsExperienceService;
 
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -142,7 +130,6 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/site-page.properties",
 	scope = ServiceScope.PROTOTYPE, service = SitePageResource.class
 )
-@CTAware
 public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 	@Override
@@ -232,10 +219,10 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 				searchContext.setAttribute(
 					Field.TYPE,
 					new String[] {
-						LayoutConstants.TYPE_COLLECTION,
 						LayoutConstants.TYPE_CONTENT,
 						LayoutConstants.TYPE_EMBEDDED,
 						LayoutConstants.TYPE_LINK_TO_LAYOUT,
+						LayoutConstants.TYPE_NODE,
 						LayoutConstants.TYPE_FULL_PAGE_APPLICATION,
 						LayoutConstants.TYPE_PANEL,
 						LayoutConstants.TYPE_PORTLET, LayoutConstants.TYPE_URL,
@@ -307,7 +294,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 			if (layout == null) {
 				if (_log.isWarnEnabled()) {
-					_log.warn("Could not find parent site page");
+					_log.warn("Unable to get parent layout");
 				}
 			}
 			else {
@@ -434,8 +421,9 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 		ServiceContext serviceContext = _createServiceContext(siteId, sitePage);
 
 		Layout layout = _layoutService.addLayout(
-			siteId, false, parentLayoutId, nameMap, titleMap, descriptionMap,
-			keywordsMap, robotsMap, LayoutConstants.TYPE_CONTENT,
+			null, siteId, false, parentLayoutId, nameMap, titleMap,
+			descriptionMap, keywordsMap, robotsMap,
+			LayoutConstants.TYPE_CONTENT,
 			typeSettingsUnicodeProperties.toString(), hidden, friendlyUrlMap, 0,
 			serviceContext);
 
@@ -450,8 +438,15 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			Settings settings = pageDefinition.getSettings();
 
 			if (settings != null) {
-				layout = _layoutsImporter.importLayoutSettings(
-					contextUser.getUserId(), layout, settings.toString());
+				ServiceContextThreadLocal.pushServiceContext(serviceContext);
+
+				try {
+					layout = _layoutsImporter.importLayoutSettings(
+						contextUser.getUserId(), layout, settings.toString());
+				}
+				finally {
+					ServiceContextThreadLocal.popServiceContext();
+				}
 			}
 		}
 
@@ -466,8 +461,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 		_updateModelResourcePermissions(
 			layout.getCompanyId(), siteId, layout.getPlid(), sitePage);
 
-		_updateSEOEntry(
-			layout.getCompanyId(), siteId, layout.getLayoutId(), sitePage);
+		_updateSEOEntry(siteId, layout.getLayoutId(), sitePage);
 
 		return layout;
 	}
@@ -491,7 +485,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			assetTagNames = sitePage.getKeywords();
 		}
 
-		return ServiceContextBuilder.create(
+		ServiceContext serviceContext = ServiceContextBuilder.create(
 			groupId, contextHttpServletRequest, null
 		).assetCategoryIds(
 			assetCategoryIds
@@ -503,6 +497,10 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 				sitePage.getCustomFields(),
 				contextAcceptLanguage.getPreferredLocale())
 		).build();
+
+		serviceContext.setUserId(contextUser.getUserId());
+
+		return serviceContext;
 	}
 
 	private Map<String, Map<String, String>> _getBasicActions(Layout layout) {
@@ -529,87 +527,6 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 				"getSiteSitePageRenderedPage", null, Layout.class.getName(),
 				layout.getGroupId())
 		).build();
-	}
-
-	private String _getDDMFormValues(PageSettings pageSettings) {
-		CustomMetaTag[] customMetaTags = pageSettings.getCustomMetaTags();
-
-		if (ArrayUtil.isEmpty(customMetaTags)) {
-			return null;
-		}
-
-		JSONObject ddmFormValuesJSONObject = JSONUtil.put(
-			"defaultLanguageId",
-			contextAcceptLanguage.getPreferredLanguageId());
-
-		JSONArray fieldValuesJSONArray = _jsonFactory.createJSONArray();
-
-		Set<String> availableLanguageIds = new HashSet<>();
-
-		for (CustomMetaTag customMetaTag : customMetaTags) {
-			JSONObject fieldValueJSONObject = JSONUtil.put(
-				"instanceId", StringUtil.randomString(8)
-			).put(
-				"name", "property"
-			).put(
-				"value", customMetaTag.getKey()
-			);
-
-			JSONObject nestedFieldValueJSONObject = JSONUtil.put(
-				"instanceId", StringUtil.randomString(8)
-			).put(
-				"name", "content"
-			);
-
-			Map<Locale, String> valuesMap = LocalizedMapUtil.getLocalizedMap(
-				contextAcceptLanguage.getPreferredLocale(),
-				customMetaTag.getValue(), customMetaTag.getValue_i18n());
-
-			JSONObject valueJSONObject = _jsonFactory.createJSONObject();
-
-			for (Map.Entry<Locale, String> entry : valuesMap.entrySet()) {
-				String key = LocaleUtil.toLanguageId(entry.getKey());
-
-				valueJSONObject.put(key, entry.getValue());
-
-				availableLanguageIds.add(key);
-			}
-
-			nestedFieldValueJSONObject.put("value", valueJSONObject);
-
-			JSONArray nestedFieldValuesJSONArray = JSONUtil.put(
-				nestedFieldValueJSONObject);
-
-			fieldValueJSONObject.put(
-				"nestedFieldValues", nestedFieldValuesJSONArray);
-
-			fieldValuesJSONArray.put(fieldValueJSONObject);
-		}
-
-		ddmFormValuesJSONObject.put("fieldValues", fieldValuesJSONArray);
-
-		JSONArray availableLanguageIdsJSONArray =
-			_jsonFactory.createJSONArray();
-
-		for (String availableLanguage : availableLanguageIds) {
-			availableLanguageIdsJSONArray.put(availableLanguage);
-		}
-
-		ddmFormValuesJSONObject.put(
-			"availableLanguageIds", availableLanguageIdsJSONArray);
-
-		return ddmFormValuesJSONObject.toString();
-	}
-
-	private long _getDDMStructurePrimaryKey(long companyId) throws Exception {
-		Company company = _companyLocalService.getCompany(companyId);
-
-		DDMStructure ddmStructure = _ddmStructureService.getStructure(
-			company.getGroupId(),
-			_portal.getClassNameId(LayoutSEOEntry.class.getName()),
-			"custom-meta-tags");
-
-		return ddmStructure.getPrimaryKey();
 	}
 
 	private Map<String, Map<String, String>> _getExperienceActions(
@@ -864,29 +781,31 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 				new long[] {segmentsExperience.getSegmentsExperienceId()});
 		}
 
-		contextHttpServletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					layout, contextUser)) {
 
-		layout.includeLayoutContent(
-			contextHttpServletRequest, contextHttpServletResponse);
+			layout.includeLayoutContent(
+				contextHttpServletRequest, contextHttpServletResponse);
 
-		StringBundler sb =
-			(StringBundler)contextHttpServletRequest.getAttribute(
-				WebKeys.LAYOUT_CONTENT);
+			StringBundler sb =
+				(StringBundler)contextHttpServletRequest.getAttribute(
+					WebKeys.LAYOUT_CONTENT);
 
-		LayoutSet layoutSet = layout.getLayoutSet();
+			LayoutSet layoutSet = layout.getLayoutSet();
 
-		Document document = Jsoup.parse(
-			ThemeUtil.include(
-				ServletContextPool.get(StringPool.BLANK),
-				contextHttpServletRequest, contextHttpServletResponse,
-				"portal_normal.ftl", layoutSet.getTheme(), false));
+			Document document = Jsoup.parse(
+				ThemeUtil.include(
+					ServletContextPool.get(StringPool.BLANK),
+					contextHttpServletRequest, contextHttpServletResponse,
+					"portal_normal.ftl", layoutSet.getTheme(), false));
 
-		Element bodyElement = document.body();
+			Element bodyElement = document.body();
 
-		bodyElement.html(sb.toString());
+			bodyElement.html(sb.toString());
 
-		return document.html();
+			return document.html();
+		}
 	}
 
 	private SitePage _toSitePage(
@@ -931,7 +850,8 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 	private Layout _updateDraftLayout(Layout layout) throws Exception {
 		Layout draftLayout = layout.fetchDraftLayout();
 
-		draftLayout = _layoutCopyHelper.copyLayoutContent(layout, draftLayout);
+		draftLayout = _layoutLocalService.copyLayoutContent(
+			layout, draftLayout);
 
 		draftLayout.setStatus(WorkflowConstants.STATUS_APPROVED);
 
@@ -984,8 +904,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			String.valueOf(plid), modelPermissions);
 	}
 
-	private void _updateSEOEntry(
-			long companyId, long groupId, long layoutId, SitePage sitePage)
+	private void _updateSEOEntry(long groupId, long layoutId, SitePage sitePage)
 		throws Exception {
 
 		PageSettings pageSettings = sitePage.getPageSettings();
@@ -1056,20 +975,29 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			groupId, contextHttpServletRequest, null
 		).build();
 
-		String ddmFormValues = _getDDMFormValues(pageSettings);
-
-		if (Validator.isNotNull(ddmFormValues)) {
-			long ddmStructurePrimaryKey = _getDDMStructurePrimaryKey(companyId);
-
-			serviceContext.setAttribute(
-				ddmStructurePrimaryKey + "ddmFormValues", ddmFormValues);
-		}
-
 		_layoutSEOEntryService.updateLayoutSEOEntry(
 			groupId, false, layoutId, canonicalURLEnabled, canonicalURLMap,
 			openGraphDescriptionEnabled, openGraphDescriptionMap,
 			openGraphImageAltMap, openGraphImageFileEntryId,
 			openGraphTitleEnabled, openGraphTitleMap, serviceContext);
+
+		CustomMetaTag[] customMetaTags = pageSettings.getCustomMetaTags();
+
+		if (ArrayUtil.isEmpty(customMetaTags)) {
+			return;
+		}
+
+		_layoutSEOEntryService.updateCustomMetaTags(
+			groupId, false, layoutId,
+			transformToList(
+				customMetaTags,
+				customMetaTag -> new LayoutSEOEntryCustomMetaTagProperty(
+					LocalizedMapUtil.getLocalizedMap(
+						contextAcceptLanguage.getPreferredLocale(),
+						customMetaTag.getValue(),
+						customMetaTag.getValue_i18n()),
+					customMetaTag.getKey())),
+			serviceContext);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -1079,12 +1007,6 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;
-
-	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private DDMStructureService _ddmStructureService;
 
 	@Reference
 	private DLAppService _dlAppService;
@@ -1099,12 +1021,6 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 	private GroupLocalService _groupLocalService;
 
 	@Reference
-	private JSONFactory _jsonFactory;
-
-	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
-
-	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
@@ -1116,6 +1032,9 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 	@Reference
 	private LayoutService _layoutService;
+
+	@Reference
+	private LayoutServiceContextHelper _layoutServiceContextHelper;
 
 	@Reference
 	private LayoutsImporter _layoutsImporter;

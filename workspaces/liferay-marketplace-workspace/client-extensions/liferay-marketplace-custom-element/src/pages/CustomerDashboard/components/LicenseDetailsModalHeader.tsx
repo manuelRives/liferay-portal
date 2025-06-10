@@ -20,9 +20,9 @@ const LicenseDetailsModalHeader: React.FC<LicenseDetailsModalHeaderProps> = ({
 }) => (
 	<div className="d-flex flex-row justify-content-between">
 		<div className="flex-row mb-1">
-			<h6 className="font-weight-bold text-primary text-uppercase">
+			<div className="font-weight-bold h6 text-primary text-uppercase">
 				Activation Key details
-			</h6>
+			</div>
 
 			<OrderDetailsHeader
 				className="d-flex flex-row justify-content-between mt-3"
@@ -33,7 +33,10 @@ const LicenseDetailsModalHeader: React.FC<LicenseDetailsModalHeaderProps> = ({
 			/>
 		</div>
 
-		<AccountEmailInfo userAccount={myUserAccount} />
+		<AccountEmailInfo
+			image={myUserAccount.logoURL}
+			name={myUserAccount.name}
+		/>
 	</div>
 );
 

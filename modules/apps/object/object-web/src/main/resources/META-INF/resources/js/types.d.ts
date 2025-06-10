@@ -183,6 +183,7 @@ interface ObjectActionParameters {
 	secret?: string;
 	system?: boolean;
 	url?: string;
+	usePreferredLanguageForGuests?: boolean;
 }
 
 interface ObjectDefinition {
@@ -197,10 +198,14 @@ interface ObjectDefinition {
 	defaultLanguageId: Liferay.Language.Locale;
 	enableCategorization: boolean;
 	enableComments: boolean;
+	enableFriendlyURLCustomization: boolean;
+	enableIndexSearch: boolean;
 	enableLocalization: boolean;
 	enableObjectEntryDraft: boolean;
 	enableObjectEntryHistory: boolean;
+	enableObjectEntrySchedule: boolean;
 	externalReferenceCode: string;
+	friendlyURLSeparator: string;
 	id: number;
 	label: LocalizedValue<string>;
 	modifiable?: boolean;
@@ -297,6 +302,7 @@ type ObjectFieldBusinessTypeName =
 	| 'Aggregation'
 	| 'Attachment'
 	| 'AutoIncrement'
+	| 'Boolean'
 	| 'Date'
 	| 'DateTime'
 	| 'Decimal'
@@ -310,8 +316,7 @@ type ObjectFieldBusinessTypeName =
 	| 'PrecisionDecimal'
 	| 'Relationship'
 	| 'RichText'
-	| 'Text'
-	| 'Workflow Status';
+	| 'Text';
 
 type ObjectFieldDateRangeFilterSettings = {
 	[key: string]: string;
@@ -463,9 +468,10 @@ interface ObjectValidation {
 
 interface ObjectValidationRuleSetting {
 	name:
+		| 'allowActiveStatusUpdate'
 		| 'compositeKeyObjectFieldExternalReferenceCode'
 		| 'outputObjectFieldExternalReferenceCode';
-	value: string;
+	value: string | boolean;
 }
 
 interface PickListItem {
@@ -502,16 +508,17 @@ type TFilterOperators = {
 	picklistOperators: LabelValueObject[];
 };
 
-interface ViewObjectDefinitionsModals {
+interface ShowObjectDefinitionsModals {
 	addObjectDefinition: boolean;
 	addObjectField: boolean;
 	addObjectFolder: boolean;
-	bindToRootObjectDefinition: boolean;
 	deleteObjectDefinition: boolean;
 	deleteObjectFolder: boolean;
 	editObjectFolder: boolean;
 	importModal: boolean;
 	moveObjectDefinition: boolean;
+	objectDefinitionOnRootModelDeletionNotAllowed: boolean;
 	objectFieldDeletionNotAllowed: boolean;
-	unbindFromRootObjectDefinition: boolean;
 }
+
+type SubmitError = string | null;

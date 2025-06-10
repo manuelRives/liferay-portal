@@ -31,6 +31,7 @@ import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.portlet.MockLiferayResourceRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayResourceResponse;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -40,7 +41,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.security.script.management.test.rule.ScriptManagementConfigurationTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
@@ -60,19 +61,20 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 /**
  * @author Feliphe Marinho
  */
-@FeatureFlags("LPD-11179")
 @RunWith(Arquillian.class)
 public class GetGroovyScriptUsesMVCResourceCommandTest {
 
 	@ClassRule
 	@Rule
-	public static final TestRule testRule = new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			ScriptManagementConfigurationTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -271,12 +273,13 @@ public class GetGroovyScriptUsesMVCResourceCommandTest {
 
 		ObjectDefinition objectDefinition =
 			_objectDefinitionLocalService.addCustomObjectDefinition(
-				userId, 0, false, false, false,
+				userId, 0, null, false, false, true, false, false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				ObjectDefinitionTestUtil.getRandomName(), null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				false, ObjectDefinitionConstants.SCOPE_COMPANY,
 				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+				Collections.emptyList(),
 				Arrays.asList(
 					new TextObjectFieldBuilder(
 					).labelMap(
@@ -325,26 +328,27 @@ public class GetGroovyScriptUsesMVCResourceCommandTest {
 		throws Exception {
 
 		_workflowDefinitionManager.deployWorkflowDefinition(
-			companyId, userId,
+			null, companyId, userId,
 			companyName + "PublishedGroovyWorkflowDefinition",
 			companyName + "PublishedGroovyWorkflowDefinition",
 			_getContentBytes("workflow-definition-2.json"));
 		_workflowDefinitionManager.deployWorkflowDefinition(
-			companyId, userId, companyName + "PublishedJavaWorkflowDefinition",
+			null, companyId, userId,
+			companyName + "PublishedJavaWorkflowDefinition",
 			companyName + "PublishedJavaWorkflowDefinition",
 			_getContentBytes("workflow-definition-3.json"));
 		_workflowDefinitionManager.deployWorkflowDefinition(
-			companyId, userId, companyName + "PublishedWorkflowDefinition",
-			StringUtil.randomId(),
+			null, companyId, userId,
+			companyName + "PublishedWorkflowDefinition", StringUtil.randomId(),
 			_getContentBytes("workflow-definition-1.json"));
 
 		_workflowDefinitionManager.saveWorkflowDefinition(
-			companyId, userId,
+			null, companyId, userId,
 			companyName + "UnpublishedGroovyWorkflowDefinition",
 			StringUtil.randomId(),
 			_getContentBytes("workflow-definition-2.json"));
 		_workflowDefinitionManager.saveWorkflowDefinition(
-			companyId, userId,
+			null, companyId, userId,
 			companyName + "UnpublishedJavaWorkflowDefinition",
 			StringUtil.randomId(),
 			_getContentBytes("workflow-definition-3.json"));

@@ -25,15 +25,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.UserScreenNameComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,7 +43,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 		"mvc.command.name=/admin/autocomplete_user"
 	},
 	service = MVCResourceCommand.class
@@ -90,7 +90,7 @@ public class AutocompleteUserMVCResourceCommand extends BaseMVCResourceCommand {
 			return _userLocalService.search(
 				themeDisplay.getCompanyId(), query,
 				WorkflowConstants.STATUS_APPROVED, new LinkedHashMap<>(), 0, 20,
-				new UserScreenNameComparator());
+				UserScreenNameComparator.getInstance(false));
 		}
 
 		User user = themeDisplay.getUser();
@@ -104,7 +104,7 @@ public class AutocompleteUserMVCResourceCommand extends BaseMVCResourceCommand {
 		return _userLocalService.searchBySocial(
 			themeDisplay.getCompanyId(), user.getGroupIds(),
 			user.getUserGroupIds(), query, 0, 20,
-			new UserScreenNameComparator());
+			UserScreenNameComparator.getInstance(false));
 	}
 
 	private JSONArray _getUsersJSONArray(

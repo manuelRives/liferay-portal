@@ -8,9 +8,13 @@ package com.liferay.saml.internal.servlet.filter.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.CompanyProviderClassTestRule;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
+import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelperUtil;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -45,10 +50,27 @@ public class SamlSameSiteLaxCookiesFilterTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new LiferayIntegrationTestRule() {
+			{
+				skipTestRule(CompanyProviderClassTestRule.INSTANCE);
+			}
+		};
 
 	@BeforeClass
-	public static void setUpClass() {
+	public static void setUpClass() throws Exception {
+		samlProviderConfigurationHelper =
+			SamlProviderConfigurationHelperUtil.
+				getSamlProviderConfigurationHelper();
+
+		_enabled = samlProviderConfigurationHelper.isEnabled();
+
+		samlProviderConfigurationHelper.updateProperties(
+			UnicodePropertiesBuilder.create(
+				true
+			).put(
+				"saml.enabled", "true"
+			).build());
+
 		_paramsMap = HashMapBuilder.put(
 			"RelayState", "TEST_RELAYSTATE"
 		).put(
@@ -71,6 +93,16 @@ public class SamlSameSiteLaxCookiesFilterTest {
 		_postBody = sb.toString();
 	}
 
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		samlProviderConfigurationHelper.updateProperties(
+			UnicodePropertiesBuilder.create(
+				true
+			).put(
+				"saml.enabled", String.valueOf(_enabled)
+			).build());
+	}
+
 	@Test
 	public void testACSSameSiteLaxCookiesSupport() throws Exception {
 		_execute(new URL("http://localhost:8080/c/portal/saml/acs"));
@@ -85,6 +117,9 @@ public class SamlSameSiteLaxCookiesFilterTest {
 	public void testSSOSameSiteLaxCookies() throws Exception {
 		_execute(new URL("http://localhost:8080/c/portal/saml/sso"));
 	}
+
+	protected static SamlProviderConfigurationHelper
+		samlProviderConfigurationHelper;
 
 	private void _execute(URL url) throws Exception {
 		CookieManager cookieManager = new CookieManager();
@@ -140,6 +175,7 @@ public class SamlSameSiteLaxCookiesFilterTest {
 			paramValues.isEmpty());
 	}
 
+	private static boolean _enabled;
 	private static Map<String, String> _paramsMap;
 	private static String _postBody;
 

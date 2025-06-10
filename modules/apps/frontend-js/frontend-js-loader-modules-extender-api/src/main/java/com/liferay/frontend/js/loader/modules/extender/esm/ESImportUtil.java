@@ -39,7 +39,8 @@ public class ESImportUtil {
 		String symbol = module.substring(0, fromIndex);
 
 		if (symbol.contains(StringPool.OPEN_CURLY_BRACE)) {
-			symbol = symbol.replaceAll("[{}]", StringPool.BLANK);
+			symbol = StringUtil.removeChars(
+				symbol, CharPool.OPEN_CURLY_BRACE, CharPool.CLOSE_CURLY_BRACE);
 
 			int asIndex = symbol.indexOf(" as ");
 
@@ -92,8 +93,14 @@ public class ESImportUtil {
 			).build();
 		}
 
+		String esModulePath = moduleName.substring(i + 1);
+
+		if (!esModulePath.endsWith(".js")) {
+			esModulePath += ".js";
+		}
+
 		return absolutePortalURLBuilder.forESModule(
-			moduleName.substring(0, i), moduleName.substring(i + 1)
+			moduleName.substring(0, i), esModulePath
 		).build();
 	}
 

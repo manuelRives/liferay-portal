@@ -6,7 +6,6 @@
 package com.liferay.source.formatter.check;
 
 import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.JSONObjectImpl;
 import com.liferay.portal.kernel.json.JSONException;
@@ -14,19 +13,21 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.tools.ToolsUtil;
 import com.liferay.source.formatter.BNDSettings;
 import com.liferay.source.formatter.SourceFormatterExcludes;
 import com.liferay.source.formatter.SourceFormatterMessage;
+import com.liferay.source.formatter.check.util.BNDSourceUtil;
 import com.liferay.source.formatter.check.util.JSPSourceUtil;
+import com.liferay.source.formatter.check.util.JavaSourceUtil;
 import com.liferay.source.formatter.check.util.SourceUtil;
 import com.liferay.source.formatter.parser.JavaClass;
 import com.liferay.source.formatter.parser.JavaClassParser;
 import com.liferay.source.formatter.parser.JavaTerm;
 import com.liferay.source.formatter.parser.JavaVariable;
+import com.liferay.source.formatter.processor.CSPSourceProcessor;
 import com.liferay.source.formatter.processor.JSPSourceProcessor;
 import com.liferay.source.formatter.processor.JavaSourceProcessor;
 import com.liferay.source.formatter.processor.SourceProcessor;
@@ -40,6 +41,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -95,7 +97,9 @@ public abstract class BaseSourceCheck implements SourceCheck {
 			return true;
 		}
 
-		if (_sourceProcessor instanceof JSPSourceProcessor) {
+		if (_sourceProcessor instanceof CSPSourceProcessor ||
+			_sourceProcessor instanceof JSPSourceProcessor) {
+
 			return JSPSourceUtil.isJavaSource(content, pos);
 		}
 
@@ -110,7 +114,9 @@ public abstract class BaseSourceCheck implements SourceCheck {
 			return true;
 		}
 
-		if (_sourceProcessor instanceof JSPSourceProcessor) {
+		if (_sourceProcessor instanceof CSPSourceProcessor ||
+			_sourceProcessor instanceof JSPSourceProcessor) {
+
 			return JSPSourceUtil.isJavaSource(content, pos, checkInsideTags);
 		}
 
@@ -315,6 +321,19 @@ public abstract class BaseSourceCheck implements SourceCheck {
 				return FileUtil.read(file);
 			}
 		}
+	}
+
+	protected synchronized Map<String, String> getBundleSymbolicNamesMap(
+		String absolutePath) {
+
+		if (_bundleSymbolicNamesMap != null) {
+			return _bundleSymbolicNamesMap;
+		}
+
+		_bundleSymbolicNamesMap = BNDSourceUtil.getBundleSymbolicNamesMap(
+			SourceUtil.getRootDirName(absolutePath));
+
+		return _bundleSymbolicNamesMap;
 	}
 
 	protected String getContent(String fileName, int level) throws IOException {
@@ -577,6 +596,34 @@ public abstract class BaseSourceCheck implements SourceCheck {
 		return null;
 	}
 
+	protected List<String> getPrimaryKeys(String tableContent) {
+		List<String> primaryKeys = new ArrayList<>();
+
+		for (String line : StringUtil.splitLines(tableContent)) {
+			String trimmedLine = StringUtil.trimLeading(line);
+
+			if (!trimmedLine.contains("primary key")) {
+				continue;
+			}
+
+			if (trimmedLine.startsWith("primary key")) {
+				String keys = trimmedLine.replaceFirst(
+					"primary key \\((.+)\\)", "$1");
+
+				for (String key : StringUtil.split(keys)) {
+					primaryKeys.add(key.trim());
+				}
+			}
+			else if (trimmedLine.matches("(\\w+) .+ primary key,?")) {
+				int x = trimmedLine.indexOf(" ");
+
+				primaryKeys.add(trimmedLine.substring(0, x));
+			}
+		}
+
+		return primaryKeys;
+	}
+
 	protected String getProjectName() {
 		if (_projectName != null) {
 			return _projectName;
@@ -796,6 +843,52 @@ public abstract class BaseSourceCheck implements SourceCheck {
 		return _subrepository;
 	}
 
+	protected boolean isUpgradeProcess(String absolutePath, String content) {
+		Pattern pattern = Pattern.compile(
+			" class " + JavaSourceUtil.getClassName(absolutePath) +
+				"\\s+extends\\s+([\\w.]+) ");
+
+		Matcher matcher = pattern.matcher(content);
+
+		if (!matcher.find()) {
+			return false;
+		}
+
+		String extendedClassName = matcher.group(1);
+
+		if (extendedClassName.equals("UpgradeProcess")) {
+			return true;
+		}
+
+		pattern = Pattern.compile("\nimport (.*\\." + extendedClassName + ");");
+
+		matcher = pattern.matcher(content);
+
+		if (matcher.find()) {
+			extendedClassName = matcher.group(1);
+		}
+
+		if (!extendedClassName.contains(StringPool.PERIOD)) {
+			extendedClassName =
+				JavaSourceUtil.getPackageName(content) + StringPool.PERIOD +
+					extendedClassName;
+		}
+
+		if (!extendedClassName.startsWith("com.liferay.")) {
+			return false;
+		}
+
+		File file = JavaSourceUtil.getJavaFile(
+			extendedClassName, SourceUtil.getRootDirName(absolutePath),
+			getBundleSymbolicNamesMap(absolutePath));
+
+		if (file == null) {
+			return false;
+		}
+
+		return isUpgradeProcess(file.getAbsolutePath(), FileUtil.read(file));
+	}
+
 	protected synchronized void populateModelInformations() throws IOException {
 		if (_modelInformationsMap != null) {
 			return;
@@ -804,6 +897,10 @@ public abstract class BaseSourceCheck implements SourceCheck {
 		_modelInformationsMap = new HashMap<>();
 
 		File portalDir = getPortalDir();
+
+		if (portalDir == null) {
+			return;
+		}
 
 		List<String> serviceXMLFileNames = SourceFormatterUtil.scanForFileNames(
 			portalDir.getCanonicalPath(), new String[] {"**/service.xml"});
@@ -821,16 +918,23 @@ public abstract class BaseSourceCheck implements SourceCheck {
 			serviceXMLFileName = StringUtil.replace(
 				serviceXMLFileName, CharPool.BACK_SLASH, CharPool.SLASH);
 
-			String packagePath = "";
+			String packagePath = serviceXMLElement.attributeValue(
+				"api-package-path");
+
+			if (packagePath == null) {
+				packagePath = serviceXMLElement.attributeValue("package-path");
+			}
+
+			if (packagePath == null) {
+				continue;
+			}
+
 			String tablesSQLFilePath = "";
 
 			if (serviceXMLFileName.contains("/portal-impl/")) {
-				packagePath = "portal-impl";
 				tablesSQLFilePath = portalDir + "/sql/portal-tables.sql";
 			}
 			else {
-				packagePath = serviceXMLElement.attributeValue("package-path");
-
 				int x = serviceXMLFileName.lastIndexOf("/");
 
 				tablesSQLFilePath =
@@ -842,53 +946,6 @@ public abstract class BaseSourceCheck implements SourceCheck {
 				packagePath,
 				new Object[] {serviceXMLElement, tablesSQLFilePath});
 		}
-	}
-
-	protected String stripQuotes(String s) {
-		return stripQuotes(s, CharPool.APOSTROPHE, CharPool.QUOTE);
-	}
-
-	protected String stripQuotes(String s, char... delimeters) {
-		List<Character> delimetersList = ListUtil.fromArray(delimeters);
-
-		char delimeter = CharPool.SPACE;
-		boolean insideQuotes = false;
-
-		StringBundler sb = new StringBundler();
-
-		for (int i = 0; i < s.length(); i++) {
-			char c = s.charAt(i);
-
-			if (insideQuotes) {
-				if (c == delimeter) {
-					int precedingBackSlashCount = 0;
-
-					for (int j = i - 1; j >= 0; j--) {
-						if (s.charAt(j) == CharPool.BACK_SLASH) {
-							precedingBackSlashCount += 1;
-						}
-						else {
-							break;
-						}
-					}
-
-					if ((precedingBackSlashCount == 0) ||
-						((precedingBackSlashCount % 2) == 0)) {
-
-						insideQuotes = false;
-					}
-				}
-			}
-			else if (delimetersList.contains(c)) {
-				delimeter = c;
-				insideQuotes = true;
-			}
-			else {
-				sb.append(c);
-			}
-		}
-
-		return sb.toString();
 	}
 
 	protected static final String RUN_OUTSIDE_PORTAL_EXCLUDES =
@@ -982,6 +1039,7 @@ public abstract class BaseSourceCheck implements SourceCheck {
 	private String _baseDirName;
 	private final Map<String, BNDSettings> _bndSettingsMap =
 		new ConcurrentHashMap<>();
+	private Map<String, String> _bundleSymbolicNamesMap;
 	private JSONObject _excludesJSONObject;
 	private final Map<String, List<String>> _excludesValuesMap =
 		new ConcurrentHashMap<>();

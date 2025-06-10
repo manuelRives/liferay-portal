@@ -65,7 +65,7 @@ export function ModalImportWarning({
 						}
 					)}
 
-					{Liferay.FeatureFlags['LPS-187142'] &&
+					{Liferay.FeatureFlags['LPD-34594'] &&
 						!!existingObjectDefinitions?.length && (
 							<>
 								<Table
@@ -75,27 +75,41 @@ export function ModalImportWarning({
 									striped={false}
 								>
 									<Head items={tableHeaderItems}>
-										{(column) => (
-											<Cell expanded key={column.id}>
-												{column.name}
-											</Cell>
-										)}
+										{
+
+											// @ts-ignore
+
+											(column) => (
+												<Cell expanded key={column.id}>
+													{column.name}
+												</Cell>
+											)
+										}
 									</Head>
 
 									<Body
 										defaultItems={existingObjectDefinitions}
 									>
-										{(objectDefinition) => (
-											<Row>
-												<Cell>
-													{stringUtils.getLocalizableLabel(
-														objectDefinition.defaultLanguageId,
-														objectDefinition.label,
-														objectDefinition.name
-													)}
-												</Cell>
-											</Row>
-										)}
+										{
+
+											// @ts-ignore
+
+											(objectDefinition) => (
+												<Row>
+													<Cell>
+														{stringUtils.getLocalizableLabel(
+															{
+																fallbackLabel:
+																	objectDefinition.name,
+																fallbackLanguageId:
+																	objectDefinition.defaultLanguageId,
+																labels: objectDefinition.label,
+															}
+														)}
+													</Cell>
+												</Row>
+											)
+										}
 									</Body>
 								</Table>
 
@@ -127,7 +141,8 @@ export function ModalImportWarning({
 
 						<ClayButton
 							className={classNames({
-								'lfr-object__modal-import-warning-loading-button': importLoading,
+								'lfr-object__modal-import-warning-loading-button':
+									importLoading,
 							})}
 							disabled={errorMessage !== '' || importLoading}
 							displayType="warning"

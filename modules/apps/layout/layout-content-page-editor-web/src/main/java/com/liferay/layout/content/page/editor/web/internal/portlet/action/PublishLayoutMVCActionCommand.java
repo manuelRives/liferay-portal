@@ -10,11 +10,12 @@ import com.liferay.layout.admin.kernel.model.LayoutTypePortletConstants;
 import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
-import com.liferay.layout.helper.LayoutCopyHelper;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutRevision;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.search.IndexStatusManagerThreadLocal;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutRevisionLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -32,10 +33,12 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 import com.liferay.sites.kernel.util.Sites;
 
-import java.util.Collections;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/publish_layout"
 	},
 	service = MVCActionCommand.class
@@ -95,6 +98,25 @@ public class PublishLayoutMVCActionCommand
 		MultiSessionMessages.add(actionRequest, "layoutPublished");
 	}
 
+	private void _cleanWidgetLayoutTypeSettings(
+		UnicodeProperties typeSettingsUnicodeProperties) {
+
+		typeSettingsUnicodeProperties.remove(
+			LayoutConstants.CUSTOMIZABLE_LAYOUT);
+		typeSettingsUnicodeProperties.remove(
+			LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID);
+
+		Set<Map.Entry<String, String>> entrySet =
+			typeSettingsUnicodeProperties.entrySet();
+
+		entrySet.removeIf(
+			entry -> {
+				String key = entry.getKey();
+
+				return key.startsWith("column-");
+			});
+	}
+
 	private void _publishLayout(
 			Layout draftLayout, Layout layout, ServiceContext serviceContext,
 			long userId)
@@ -115,7 +137,17 @@ public class PublishLayoutMVCActionCommand
 			UnicodeProperties originalTypeSettingsUnicodeProperties =
 				layout.getTypeSettingsProperties();
 
-			_layoutCopyHelper.copyLayoutContent(draftLayout, layout);
+			boolean indexReadOnly =
+				IndexStatusManagerThreadLocal.isIndexReadOnly();
+
+			IndexStatusManagerThreadLocal.setIndexReadOnly(true);
+
+			try {
+				_layoutLocalService.copyLayoutContent(draftLayout, layout);
+			}
+			finally {
+				IndexStatusManagerThreadLocal.setIndexReadOnly(indexReadOnly);
+			}
 
 			layout = _layoutLocalService.getLayout(layout.getPlid());
 
@@ -140,6 +172,8 @@ public class PublishLayoutMVCActionCommand
 			typeSettingsUnicodeProperties.put(
 				LayoutTypeSettingsConstants.KEY_PUBLISHED,
 				Boolean.TRUE.toString());
+
+			_cleanWidgetLayoutTypeSettings(typeSettingsUnicodeProperties);
 
 			draftLayout.setStatus(WorkflowConstants.STATUS_APPROVED);
 
@@ -197,6 +231,9 @@ public class PublishLayoutMVCActionCommand
 				}
 			}
 
+			_cleanWidgetLayoutTypeSettings(
+				updatedTypeSettingsUnicodeProperties);
+
 			layout.setType(draftLayout.getType());
 			layout.setLayoutPrototypeUuid(null);
 			layout.setStatus(WorkflowConstants.STATUS_APPROVED);
@@ -228,9 +265,6 @@ public class PublishLayoutMVCActionCommand
 			layoutRevision.getColorSchemeId(), layoutRevision.getCss(),
 			serviceContext);
 	}
-
-	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

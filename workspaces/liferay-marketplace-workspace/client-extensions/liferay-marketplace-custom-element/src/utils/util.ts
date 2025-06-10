@@ -5,10 +5,11 @@
 
 import accountPlaceholder from '../assets/images/account_placeholder.png';
 import appPlaceholder from '../assets/images/app_placeholder.png';
+import i18n from '../i18n';
 import {
 	createProductSpecification,
+	getProductSpecifications,
 	getSiteStructuredContentByKey,
-	getSpecifications,
 	updateProductSpecification,
 } from './api';
 
@@ -32,11 +33,34 @@ export function createSkuName(
 	}`;
 }
 
+export function getCloudOptionBody() {
+	return {
+		fieldType: 'radio',
+		key: 'cloud-license-usage-type',
+		name: {en_US: i18n.translate('cloud-license-usage-type')},
+	};
+}
+
+export function getCloudProductOptionBody(newOptionId: number) {
+	return {
+		facetable: false,
+		fieldType: 'radio',
+		key: 'cloud-license-usage-type',
+		name: {
+			en_US: i18n.translate('cloud-license-usage-type'),
+		},
+		optionId: newOptionId,
+		productOptionValues: [],
+		required: true,
+		skuContributor: true,
+	};
+}
+
 export function getDxpOptionBody() {
 	return {
 		fieldType: 'radio',
 		key: 'dxp-license-usage-type',
-		name: {en_US: 'DXP License Usage Type'},
+		name: {en_US: i18n.translate('dxp-license-usage-type')},
 	};
 }
 
@@ -46,7 +70,7 @@ export function getDxpProductOptionBody(newOptionId: number) {
 		fieldType: 'radio',
 		key: 'dxp-license-usage-type',
 		name: {
-			en_US: 'DXP License Usage Type',
+			en_US: i18n.translate('dxp-license-usage-type'),
 		},
 		optionId: newOptionId,
 		productOptionValues: [],
@@ -74,57 +98,12 @@ export function getOptionDeveloperBody() {
 	return {key: 'developer', name: {en_US: 'Developer'}, priority: 1};
 }
 
-export function getOptionNoBody() {
-	return {key: 'no', name: {en_US: 'No'}, priority: 0};
-}
-
-export function getOptionYesBody() {
-	return {key: 'yes', name: {en_US: 'Yes'}, priority: 1};
-}
 export function getOptionStandardBody() {
 	return {key: 'standard', name: {en_US: 'Standard'}, priority: 0};
 }
 
 export function getOptionTrialBody() {
 	return {key: 'trial', name: {en_US: 'Trial'}, priority: 2};
-}
-
-export function getTrialOptionBody() {
-	return {
-		fieldType: 'radio',
-		key: 'trial',
-		name: {en_US: 'Trial'},
-	};
-}
-
-export function getTrialProductOptionBody(newOptionId: number) {
-	return {
-		facetable: false,
-		fieldType: 'radio',
-		key: 'trial',
-		name: {
-			en_US: 'Trial',
-		},
-		optionId: newOptionId,
-		productOptionValues: [],
-		required: true,
-		skuContributor: true,
-	};
-}
-
-export function getInitials(userName: string) {
-	const names = userName.trim().split(' ');
-	const lastNameIndex = names.length - 1;
-
-	const initials = names.reduce((initials, currentName, index) => {
-		if (!index || index === lastNameIndex) {
-			initials = `${initials}${currentName.charAt(0).toUpperCase()}`;
-		}
-
-		return initials;
-	});
-
-	return initials;
 }
 
 export function getThumbnailByProductAttachment(
@@ -225,41 +204,31 @@ export function removeProtocolURL(url: string) {
 }
 
 export async function submitSpecification(
-	productId: number | string,
-	productSpecificationId: number,
-	key: string,
-	title: string,
-	value: string
-): Promise<number> {
-	const specifications = await getSpecifications();
+	productId: number,
+	productSpecifications: {specificationKey: string; value: string}[]
+) {
+	const dataSpecificationList = await getProductSpecifications({
+		appProductId: productId as number,
+	});
 
-	const specification = specifications.items.map(
-		({specificationKey}: {specificationKey: string}) =>
-			specificationKey === key
-	);
+	for (const productSpecification of productSpecifications) {
+		const dataSpecification = dataSpecificationList?.find(
+			(specification) =>
+				specification?.specificationKey ===
+				productSpecification.specificationKey
+		);
 
-	if (productSpecificationId) {
-		updateProductSpecification({
+		const fn = dataSpecification?.id
+			? updateProductSpecification
+			: createProductSpecification;
+
+		await fn({
 			body: {
-				specificationKey: key,
-				value: {en_US: value},
+				specificationKey: productSpecification.specificationKey,
+				value: {en_US: productSpecification.value},
 			},
-			id: productSpecificationId,
+			id: dataSpecification?.id || productId,
 		});
-
-		return -1;
-	}
-	else {
-		const {id} = await createProductSpecification({
-			body: {
-				specificationId: specification.id,
-				specificationKey: key,
-				value: {en_US: value},
-			},
-			id: productId,
-		});
-
-		return id;
 	}
 }
 
@@ -348,7 +317,7 @@ export async function submitBase64EncodedFile({
 
 export function safeJSONParse<T = any>(
 	value: string | null,
-	defaultValue: unknown = null
+	defaultValue: T
 ): T {
 	if (defaultValue && typeof value !== 'string') {
 		return defaultValue as T;
@@ -357,8 +326,8 @@ export function safeJSONParse<T = any>(
 	try {
 		return JSON.parse(value as string);
 	}
-	catch (error) {
-		return defaultValue as T;
+	catch {
+		return defaultValue;
 	}
 }
 
@@ -366,22 +335,6 @@ export function isCloudEnvironment() {
 	return window.location.protocol === 'https:';
 }
 
-/**
- *
- * @description due a breaking change on commerce product specification API
- * starting on > U112 the API expects to receive productId instead of appId
- * remove this helper after Marketplace UAT/PRD get upgraded to > U112
- */
-export function getTemporaryProductIdForSpefication({
-	appId,
-	appProductId,
-}: {
-	appId: number | string;
-	appProductId: number | string;
-}) {
-	if (isCloudEnvironment()) {
-		return appId;
-	}
-
-	return appProductId;
+export function waitTimeout(timer: number) {
+	return new Promise((resolve) => setTimeout(() => resolve(null), timer));
 }

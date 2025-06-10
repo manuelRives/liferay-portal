@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {openSelectionModal} from 'frontend-js-components-web';
 import {
 	createRenderURL,
 	fetch,
 	navigate,
 	objectToFormData,
-	openSelectionModal,
 } from 'frontend-js-web';
 
 export default function ({
@@ -33,17 +33,14 @@ export default function ({
 			onSelect: (selectedItem) => {
 				const data = {};
 
-				data[
-					portletNamespace + 'kaleoProcessLinkDDMStructureId'
-				] = classPK;
+				data[portletNamespace + 'kaleoProcessLinkDDMStructureId'] =
+					classPK;
 				data[portletNamespace + 'kaleoProcessLinkDDMTemplateId'] =
 					selectedItem.ddmtemplateid;
-				data[
-					portletNamespace + 'kaleoProcessLinkWorkflowDefinition'
-				] = workflowDefinition;
-				data[
-					portletNamespace + 'kaleoProcessLinkWorkflowTaskName'
-				] = workflowTaskName;
+				data[portletNamespace + 'kaleoProcessLinkWorkflowDefinition'] =
+					workflowDefinition;
+				data[portletNamespace + 'kaleoProcessLinkWorkflowTaskName'] =
+					workflowTaskName;
 
 				fetch(saveInPortletSessionURL, {
 					body: objectToFormData(data),

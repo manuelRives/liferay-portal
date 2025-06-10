@@ -11,10 +11,17 @@ import com.liferay.object.admin.rest.dto.v1_0.ObjectField;
 import com.liferay.object.admin.rest.dto.v1_0.ObjectFieldSetting;
 import com.liferay.object.admin.rest.dto.v1_0.util.ObjectFieldSettingUtil;
 import com.liferay.object.admin.rest.dto.v1_0.util.ObjectStateFlowUtil;
+import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectFieldSettingConstants;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectRelationship;
+import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldSettingLocalService;
+import com.liferay.object.service.ObjectRelationshipLocalService;
 import com.liferay.object.service.ObjectStateFlowLocalService;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
@@ -44,9 +51,28 @@ public class ObjectFieldDTOConverter
 			com.liferay.object.model.ObjectField objectField)
 		throws Exception {
 
-		if (objectField == null) {
+		if ((objectField == null) ||
+			(!FeatureFlagManagerUtil.isEnabled(
+				objectField.getCompanyId(), "LPD-17564") &&
+			 ArrayUtil.contains(
+				 new String[] {"displayDate", "expirationDate", "reviewDate"},
+				 objectField.getName()))) {
+
 			return null;
 		}
+
+		ObjectRelationship objectRelationship = null;
+
+		if (objectField.compareBusinessType(
+				ObjectFieldConstants.BUSINESS_TYPE_RELATIONSHIP)) {
+
+			objectRelationship =
+				_objectRelationshipLocalService.
+					fetchObjectRelationshipByObjectFieldId2(
+						objectField.getObjectFieldId());
+		}
+
+		ObjectRelationship finalObjectRelationship = objectRelationship;
 
 		return new ObjectField() {
 			{
@@ -57,11 +83,10 @@ public class ObjectFieldDTOConverter
 				setDBType(
 					() -> ObjectField.DBType.create(objectField.getDBType()));
 				setDefaultValue(
-					() ->
+					() -> String.valueOf(
 						com.liferay.object.field.setting.util.
-							ObjectFieldSettingUtil.getDefaultValueAsString(
-								null, objectField.getObjectFieldId(),
-								_objectFieldSettingLocalService, null));
+							ObjectFieldSettingUtil.getDefaultValue(
+								null, objectField, null)));
 				setExternalReferenceCode(objectField::getExternalReferenceCode);
 				setId(objectField::getObjectFieldId);
 				setIndexed(objectField::isIndexed);
@@ -86,12 +111,34 @@ public class ObjectFieldDTOConverter
 				setListTypeDefinitionId(objectField::getListTypeDefinitionId);
 				setLocalized(objectField::isLocalized);
 				setName(objectField::getName);
+				setObjectDefinitionExternalReferenceCode1(
+					() -> {
+						if (finalObjectRelationship == null) {
+							return null;
+						}
+
+						ObjectDefinition objectDefinition =
+							_objectDefinitionLocalService.fetchObjectDefinition(
+								finalObjectRelationship.
+									getObjectDefinitionId1());
+
+						return objectDefinition.getExternalReferenceCode();
+					});
 				setObjectFieldSettings(
 					() -> TransformUtil.transformToArray(
 						objectField.getObjectFieldSettings(),
 						objectFieldSetting -> _toObjectFieldSetting(
 							objectFieldSetting),
 						ObjectFieldSetting.class));
+				setObjectRelationshipExternalReferenceCode(
+					() -> {
+						if (finalObjectRelationship == null) {
+							return null;
+						}
+
+						return finalObjectRelationship.
+							getExternalReferenceCode();
+					});
 				setReadOnly(
 					() -> ObjectField.ReadOnly.create(
 						objectField.getReadOnly()));
@@ -148,7 +195,13 @@ public class ObjectFieldDTOConverter
 	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
 
 	@Reference
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	@Reference
 	private ObjectFieldSettingLocalService _objectFieldSettingLocalService;
+
+	@Reference
+	private ObjectRelationshipLocalService _objectRelationshipLocalService;
 
 	@Reference
 	private ObjectStateFlowLocalService _objectStateFlowLocalService;

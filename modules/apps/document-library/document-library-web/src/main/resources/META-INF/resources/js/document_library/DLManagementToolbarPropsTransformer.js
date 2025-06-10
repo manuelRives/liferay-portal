@@ -4,16 +4,13 @@
  */
 
 import {
-	addParams,
-	createPortletURL,
-	navigate,
 	openCategorySelectionModal,
 	openConfirmModal,
 	openSelectionModal,
 	openTagSelectionModal,
 	openToast,
-	sub,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {addParams, createPortletURL, navigate, sub} from 'frontend-js-web';
 
 import {collectDigitalSignature} from './digital-signature/DigitalSignatureUtil';
 
@@ -61,7 +58,7 @@ export default function propsTransformer({
 		form.setAttribute('method', 'post');
 
 		const actionInputElement = form.querySelector(
-			`#${portletNamespace}javax-portlet-action`
+			`#${portletNamespace}jakarta-portlet-action`
 		);
 
 		if (actionInputElement) {
@@ -169,9 +166,8 @@ export default function propsTransformer({
 
 		Liferay.componentReady(`${portletNamespace}EditTagsComponent`).then(
 			(editTagsComponent) => {
-				const bulkSelection = searchContainer.select?.get(
-					'bulkSelection'
-				);
+				const bulkSelection =
+					searchContainer.select?.get('bulkSelection');
 
 				const selectedFileEntries = searchContainer.select
 					.getAllSelectedElements()
@@ -381,10 +377,9 @@ export default function propsTransformer({
 			return;
 		}
 
-		const [
-			selectedModelClassName,
-			selectedFileEntries,
-		] = map.entries()?.next().value;
+		const [selectedModelClassName, selectedFileEntries] = map
+			.entries()
+			?.next().value;
 
 		const permissionsURL = permissionsURLs[selectedModelClassName];
 
@@ -394,9 +389,8 @@ export default function propsTransformer({
 			title: Liferay.Language.get('permissions'),
 			url: addParams(
 				{
-					[`_${url.searchParams.get(
-						'p_p_id'
-					)}_resourcePrimKey`]: selectedFileEntries.join(','),
+					[`_${url.searchParams.get('p_p_id')}_resourcePrimKey`]:
+						selectedFileEntries.join(','),
 				},
 				permissionsURL
 			),

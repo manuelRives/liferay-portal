@@ -46,8 +46,8 @@ public class SiteNavigationMenuLocalServiceImpl
 
 	@Override
 	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name, int type, boolean auto,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			String name, int type, boolean auto, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Site navigation menu
@@ -62,6 +62,7 @@ public class SiteNavigationMenuLocalServiceImpl
 			siteNavigationMenuPersistence.create(siteNavigationMenuId);
 
 		siteNavigationMenu.setUuid(serviceContext.getUuid());
+		siteNavigationMenu.setExternalReferenceCode(externalReferenceCode);
 		siteNavigationMenu.setGroupId(groupId);
 		siteNavigationMenu.setCompanyId(user.getCompanyId());
 		siteNavigationMenu.setUserId(userId);
@@ -80,6 +81,11 @@ public class SiteNavigationMenuLocalServiceImpl
 			siteNavigationMenu.getUserId(), SiteNavigationMenu.class.getName(),
 			siteNavigationMenu.getSiteNavigationMenuId(), false, true, true);
 
+		if (serviceContext.getModelPermissions() != null) {
+			_resourceLocalService.updateModelResources(
+				siteNavigationMenu, serviceContext);
+		}
+
 		_updateOldSiteNavigationMenuType(siteNavigationMenu, type);
 
 		return siteNavigationMenu;
@@ -87,23 +93,24 @@ public class SiteNavigationMenuLocalServiceImpl
 
 	@Override
 	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name, int type,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			String name, int type, ServiceContext serviceContext)
 		throws PortalException {
 
 		return addSiteNavigationMenu(
-			userId, groupId, name, type, false, serviceContext);
+			externalReferenceCode, userId, groupId, name, type, false,
+			serviceContext);
 	}
 
 	@Override
 	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			String name, ServiceContext serviceContext)
 		throws PortalException {
 
 		return addSiteNavigationMenu(
-			userId, groupId, name, SiteNavigationConstants.TYPE_DEFAULT,
-			serviceContext);
+			externalReferenceCode, userId, groupId, name,
+			SiteNavigationConstants.TYPE_DEFAULT, serviceContext);
 	}
 
 	@Override
@@ -148,6 +155,18 @@ public class SiteNavigationMenuLocalServiceImpl
 		}
 
 		return siteNavigationMenu;
+	}
+
+	@Override
+	public SiteNavigationMenu deleteSiteNavigationMenu(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		SiteNavigationMenu siteNavigationMenu =
+			siteNavigationMenuPersistence.findByERC_G(
+				externalReferenceCode, groupId);
+
+		return deleteSiteNavigationMenu(siteNavigationMenu);
 	}
 
 	@Override
@@ -276,6 +295,11 @@ public class SiteNavigationMenuLocalServiceImpl
 
 		SiteNavigationMenu siteNavigationMenu = getSiteNavigationMenu(
 			siteNavigationMenuId);
+
+		if (serviceContext.getModelPermissions() != null) {
+			_resourceLocalService.updateModelResources(
+				siteNavigationMenu, serviceContext);
+		}
 
 		if (Objects.equals(siteNavigationMenu.getName(), name)) {
 			return siteNavigationMenu;

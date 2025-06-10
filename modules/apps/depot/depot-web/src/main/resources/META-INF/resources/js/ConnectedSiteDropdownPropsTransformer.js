@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {navigate, openConfirmModal} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {navigate} from 'frontend-js-web';
 
 const ACTIONS = {
 	disconnect({url: disconnectSiteActionURL}) {
@@ -25,10 +26,10 @@ const ACTIONS = {
 		const message = shared
 			? Liferay.Language.get(
 					'after-disabling-structure-and-document-type-sharing,-any-site-content-that-uses-the-structures-or-document-types-will-be-invalid.-do-you-want-to-disable-structure-and-document-type-sharing'
-			  )
+				)
 			: Liferay.Language.get(
 					'you-will-not-be-able-to-disconnect-this-site-when-structure-and-document-type-sharing-is-enabled.-in-order-to-disconnect-this-site-from-this-asset-library,-you-must-disable-structure-and-document-type-sharing-first'
-			  );
+				);
 
 		openConfirmModal({
 			message,

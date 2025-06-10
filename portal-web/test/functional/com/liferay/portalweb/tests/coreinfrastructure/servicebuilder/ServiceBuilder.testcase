@@ -1,4 +1,4 @@
-@component-name = "portal-service-builder"
+@component-name = "portal-core-infra"
 definition {
 
 	property portal.release = "true";
@@ -50,6 +50,7 @@ definition {
 		property ci.retries.disabled = "true";
 		property databases.size = "1";
 		property external.database.enabled = "true";
+		property portal.upstream = "quarantine";
 		property test.assert.warning.exceptions = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -58,7 +59,13 @@ definition {
 		var projectDir = PropsUtil.get("project.dir");
 		var testServiceDir = "/modules/test/external-data-source-test-service";
 
-		FileUtil.copyDirectory("${projectDir}/modules/test/external-data-source-test-controller-test/src/testIntegration/resources/META-INF/services", "${projectDir}/${testServiceDir}/src/main/resources/META-INF");
+		FileUtil.copyDirectory("${projectDir}/modules/test/external-data-source-test-controller-test/src/testIntegration/resources/META-INF/services", "${projectDir}/${testServiceDir}/src/main/resources/META-INF/services");
+
+		var serviceFileExists = FileUtil.exists("${projectDir}/${testServiceDir}/src/main/resources/META-INF/services/com.liferay.portal.kernel.dao.jdbc.DataSourceProvider");
+
+		if (${serviceFileExists} == "false") {
+			fail("FAIL! The service file is not correctly copied.");
+		}
 
 		AntCommands.runCommand("build-test.xml", "build-service -Dgradle.file.path=${testServiceDir}");
 

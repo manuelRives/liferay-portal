@@ -52,11 +52,12 @@ export function Attachments({
 			children: fields.map(({id, label, name}) => {
 				return {
 					checked: attachmentObjectFieldIds.has(id as number),
-					label: stringUtils.getLocalizableLabel(
-						selectedObjectDefinitionItem?.defaultLanguageId as Locale,
-						label,
-						name
-					),
+					label: stringUtils.getLocalizableLabel({
+						fallbackLabel: name,
+						fallbackLanguageId:
+							selectedObjectDefinitionItem?.defaultLanguageId as Locale,
+						labels: label,
+					}),
 					value: id?.toString() as string,
 				};
 			}),
@@ -70,9 +71,10 @@ export function Attachments({
 	const getAttachmentFields = async function fetchObjectFields(
 		objectDefinitionExternalReferenceCode: string
 	) {
-		const items = await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
-			objectDefinitionExternalReferenceCode
-		);
+		const items =
+			await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
+				objectDefinitionExternalReferenceCode
+			);
 
 		const fields: ObjectField[] = items?.filter(
 			(field) => field.businessType === 'Attachment'
@@ -102,11 +104,11 @@ export function Attachments({
 				if (!system) {
 					newObjectDefinitionItems.push({
 						id,
-						label: stringUtils.getLocalizableLabel(
-							defaultLanguageId,
-							label,
-							name
-						),
+						label: stringUtils.getLocalizableLabel({
+							fallbackLabel: name,
+							fallbackLanguageId: defaultLanguageId,
+							labels: label,
+						}),
 						value: externalReferenceCode,
 					});
 				}
@@ -142,6 +144,7 @@ export function Attachments({
 					.map((field) => field.value) as string[],
 			});
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [attachmentsFields]);
 
@@ -169,15 +172,17 @@ export function Attachments({
 									externalReferenceCode as string
 								);
 
-								const selectedObjectDefinitionItem = objectDefinitionItems.find(
-									(objectDefinitionItem) =>
-										objectDefinitionItem.value ===
-										externalReferenceCode
-								);
+								const selectedObjectDefinitionItem =
+									objectDefinitionItems.find(
+										(objectDefinitionItem) =>
+											objectDefinitionItem.value ===
+											externalReferenceCode
+									);
 
 								setValues({
 									...values,
-									objectDefinitionExternalReferenceCode: externalReferenceCode as string,
+									objectDefinitionExternalReferenceCode:
+										externalReferenceCode as string,
 									objectDefinitionId:
 										selectedObjectDefinitionItem?.id,
 								});

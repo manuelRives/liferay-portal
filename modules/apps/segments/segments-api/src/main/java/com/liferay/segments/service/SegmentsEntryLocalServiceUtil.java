@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.segments.model.SegmentsEntry;
 
@@ -345,6 +346,12 @@ public class SegmentsEntryLocalServiceUtil {
 			groupId, source, start, end, orderByComparator);
 	}
 
+	public static List<SegmentsEntry> getSegmentsEntries(
+		long[] segmentsEntryIds, int start, int end) {
+
+		return getService().getSegmentsEntries(segmentsEntryIds, start, end);
+	}
+
 	public static List<SegmentsEntry> getSegmentsEntriesBySource(
 		String source, int start, int end,
 		OrderByComparator<SegmentsEntry> orderByComparator) {
@@ -475,13 +482,12 @@ public class SegmentsEntryLocalServiceUtil {
 	}
 
 	public static SegmentsEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SegmentsEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile SegmentsEntryLocalService _service;
+	private static final Snapshot<SegmentsEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			SegmentsEntryLocalServiceUtil.class,
+			SegmentsEntryLocalService.class);
 
 }

@@ -31,7 +31,6 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -66,6 +65,8 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.math.BigDecimal;
@@ -77,8 +78,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -662,6 +661,14 @@ public class CPDefinitionOptionRelLocalServiceImpl
 					cpInstanceOptionValueRel.getCPDefinitionOptionValueRelId());
 
 			cpDefinitionOptionValueRelKeys.add(
+				cpDefinitionOptionRel.getName(
+					cpDefinitionOptionRel.getDefaultLanguageId()));
+
+			cpDefinitionOptionValueRelKeys.add(
+				cpDefinitionOptionValueRel.getName(
+					cpDefinitionOptionRel.getDefaultLanguageId()));
+
+			cpDefinitionOptionValueRelKeys.add(
 				cpDefinitionOptionValueRel.getKey());
 		}
 
@@ -713,6 +720,18 @@ public class CPDefinitionOptionRelLocalServiceImpl
 
 		return cpDefinitionOptionRelPersistence.countByC_SC(
 			cpDefinitionId, skuContributor);
+	}
+
+	@Override
+	public List<CPDefinitionOptionRel> getCPOptionCPDefinitionOptionRels(
+		long cpOptionId) {
+
+		return cpDefinitionOptionRelPersistence.findByCPOptionId(cpOptionId);
+	}
+
+	@Override
+	public int getCPOptionCPDefinitionOptionRelsCount(long cpOptionId) {
+		return cpDefinitionOptionRelPersistence.countByCPOptionId(cpOptionId);
 	}
 
 	@Override
@@ -1125,13 +1144,8 @@ public class CPDefinitionOptionRelLocalServiceImpl
 		CPOptionConfiguration cpOptionConfiguration =
 			_getCPOptionConfiguration();
 
-		String[] allowedCommerceOptionTypes = ArrayUtil.filter(
-			cpOptionConfiguration.allowedCommerceOptionTypes(),
-			commerceOptionType ->
-				!Objects.equals(
-					CPConstants.PRODUCT_OPTION_SELECT_DATE_KEY,
-					commerceOptionType) ||
-				FeatureFlagManagerUtil.isEnabled("LPD-10887"));
+		String[] allowedCommerceOptionTypes =
+			cpOptionConfiguration.allowedCommerceOptionTypes();
 
 		if (skuContributor) {
 			allowedCommerceOptionTypes =

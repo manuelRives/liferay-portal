@@ -21,8 +21,8 @@ import com.liferay.gradle.plugins.workspace.configurator.ClientExtensionProjectC
 import com.liferay.gradle.plugins.workspace.internal.client.extension.ClientExtension;
 import com.liferay.gradle.plugins.workspace.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.workspace.internal.util.JsonNodeUtil;
-import com.liferay.gradle.plugins.workspace.internal.util.ResourceUtil;
 import com.liferay.gradle.plugins.workspace.internal.util.StringUtil;
+import com.liferay.release.util.ResourceUtil;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -74,6 +74,9 @@ import org.gradle.api.tasks.TaskOutputs;
 public class CreateClientExtensionConfigTask extends DefaultTask {
 
 	public CreateClientExtensionConfigTask() {
+		_buildDir =
+			ClientExtensionProjectConfigurator.getClientExtensionBuildDir(
+				_project);
 		_clientExtensionConfigFile = _addTaskOutputFile(
 			_project.getName() + ".client-extension-config.json");
 
@@ -126,6 +129,8 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 				pluginPackageProperties.put(
 					"Liferay-Client-Extension-Batch", "batch/");
 
+				_setLiferayVirtualInstanceId(pluginPackageProperties);
+
 				batchType = "batch";
 			}
 			else if (Objects.equals(type, "globalJS")) {
@@ -137,9 +142,16 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 					"Liferay-Client-Extension-Site-Initializer",
 					"site-initializer/");
 
+				_setLiferayVirtualInstanceId(pluginPackageProperties);
+
 				batchType = StringUtil.getDockerSafeName(type);
 
 				_createSiteInitializerJsonFile(clientExtension);
+
+				if (_virtualInstanceId != null) {
+					pluginPackageProperties.put(
+						"Liferay-Virtual-Instance-Id", _virtualInstanceId);
+				}
 			}
 			else if (Objects.equals(type, "themeCSS")) {
 				_inlineFrontendTokenDefinitionJSON(clientExtension);
@@ -154,7 +166,7 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 					"Liferay-Client-Extension-Frontend", "static/");
 			}
 
-			jsonMap.putAll(clientExtension.toJSONMap());
+			jsonMap.putAll(clientExtension.toJSONMap(_virtualInstanceId));
 		}
 
 		Map<String, String> substitutionMap = new HashMap<>();
@@ -184,13 +196,18 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 
 		substitutionMap.put("__PROJECT_ID__", projectId);
 
-		pluginPackageProperties.put(Constants.BUNDLE_SYMBOLICNAME, projectId);
+		pluginPackageProperties.put(
+			Constants.BUNDLE_SYMBOLICNAME,
+			StringUtil.suffixIfNotBlank(projectId, _virtualInstanceId));
+
+		pluginPackageProperties.put(
+			"name",
+			StringUtil.suffixIfNotBlank(
+				_project.getName(), _virtualInstanceId));
 
 		if (!pluginPackageProperties.containsKey("module-group-id")) {
 			pluginPackageProperties.put("module-group-id", "liferay");
 		}
-
-		pluginPackageProperties.put("name", _project.getName());
 
 		_writeToOutputFile(
 			ResourceUtil.readString(
@@ -269,6 +286,10 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 		_type = type;
 	}
 
+	public void setVirtualInstanceId(String virtualInstanceId) {
+		_virtualInstanceId = virtualInstanceId;
+	}
+
 	private void _addRequiredDeploymentContexts(
 		Properties pluginPackageProperties, File lcpJsonFile) {
 
@@ -281,7 +302,10 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 				for (JsonNode dependencyJsonNode :
 						jsonNode.get("dependencies")) {
 
-					dependencies.add(dependencyJsonNode.textValue());
+					dependencies.add(
+						StringUtil.suffixIfNotBlank(
+							dependencyJsonNode.textValue(),
+							_virtualInstanceId));
 				}
 
 				pluginPackageProperties.put(
@@ -301,9 +325,7 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 		DirectoryProperty buildDirectoryProperty =
 			projectLayout.getBuildDirectory();
 
-		Path buildFilePath = Paths.get(
-			ClientExtensionProjectConfigurator.CLIENT_EXTENSION_BUILD_DIR,
-			path);
+		Path buildFilePath = Paths.get(_buildDir, path);
 
 		Provider<RegularFile> buildFileProvider = buildDirectoryProperty.file(
 			buildFilePath.toString());
@@ -375,8 +397,7 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 
 	private void _expandWildcards(Map<String, Object> typeSettings) {
 		File clientExtensionBuildDir = new File(
-			_project.getBuildDir(),
-			ClientExtensionProjectConfigurator.CLIENT_EXTENSION_BUILD_DIR);
+			_project.getBuildDir(), _buildDir);
 
 		File staticDir = new File(clientExtensionBuildDir, "static");
 
@@ -389,18 +410,24 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 		for (Map.Entry<String, Object> entry : typeSettings.entrySet()) {
 			Object currentValue = entry.getValue();
 
-			if ((currentValue instanceof String) &&
-				_isWildcardValue((String)currentValue)) {
+			String key = StringUtil.toLowerCase(entry.getKey());
 
-				entry.setValue(
-					_getMatchingPaths(staticDirPath, (String)currentValue));
+			if (currentValue instanceof String) {
+				String currentValueString = (String)currentValue;
+
+				if (key.contains("url") &&
+					_isWildcardValue(currentValueString)) {
+
+					entry.setValue(
+						_getMatchingPaths(staticDirPath, (String)currentValue));
+				}
 			}
 
 			if (currentValue instanceof List) {
 				List<String> values = new ArrayList<>();
 
 				for (String value : (List<String>)currentValue) {
-					if (_isWildcardValue(value)) {
+					if (key.contains("url") && _isWildcardValue(value)) {
 						values.addAll(_getMatchingPaths(staticDirPath, value));
 					}
 					else {
@@ -486,9 +513,7 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 
 				logger.info(
 					"See {}/{}/LCP.json for the merged file",
-					projectDirPath.relativize(buildDir.toPath()),
-					ClientExtensionProjectConfigurator.
-						CLIENT_EXTENSION_BUILD_DIR);
+					projectDirPath.relativize(buildDir.toPath()), _buildDir);
 			}
 
 			return content;
@@ -605,7 +630,7 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 	}
 
 	private boolean _isWildcardValue(String value) {
-		if (value.contains(StringUtil.STAR)) {
+		if (value.contains(StringUtil.STAR) && !StringUtil.isUrl(value)) {
 			return true;
 		}
 
@@ -657,6 +682,10 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 
 		JsonNode configurationJsonNode = rootJsonNode.findValue(
 			"configuration");
+
+		if (configurationJsonNode == null) {
+			return;
+		}
 
 		JsonNode classNameJsonNode = configurationJsonNode.findValue(
 			"className");
@@ -746,8 +775,7 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 		Path relativeTargetFilePath = projectDirPath.relativize(file.toPath());
 
 		Path cxBuildDirPath = Paths.get(
-			String.valueOf(_project.getBuildDir()),
-			ClientExtensionProjectConfigurator.CLIENT_EXTENSION_BUILD_DIR);
+			String.valueOf(_project.getBuildDir()), _buildDir);
 
 		Path resolvedTargetPath = cxBuildDirPath.resolve(
 			relativeTargetFilePath);
@@ -777,6 +805,15 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 				throw new GradleException(
 					String.format("Unable to read file %s", file));
 			}
+		}
+	}
+
+	private void _setLiferayVirtualInstanceId(
+		Properties pluginPackageProperties) {
+
+		if ((pluginPackageProperties != null) && (_virtualInstanceId != null)) {
+			pluginPackageProperties.put(
+				"Liferay-Virtual-Instance-Id", _virtualInstanceId);
 		}
 	}
 
@@ -914,6 +951,7 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 			};
 
 	private final Base64.Encoder _base64Encoder = Base64.getEncoder();
+	private final String _buildDir;
 	private final Object _clientExtensionConfigFile;
 	private final Set<ClientExtension> _clientExtensions = new HashSet<>();
 	private Object _dockerFile;
@@ -923,5 +961,6 @@ public class CreateClientExtensionConfigTask extends DefaultTask {
 	private final Project _project = getProject();
 	private Object _siteInitializerJsonFile;
 	private String _type = "frontend";
+	private String _virtualInstanceId;
 
 }

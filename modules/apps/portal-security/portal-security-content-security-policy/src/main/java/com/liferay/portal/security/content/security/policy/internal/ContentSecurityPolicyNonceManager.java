@@ -14,8 +14,8 @@ import com.liferay.portal.security.content.security.policy.internal.configuratio
 import com.liferay.portal.security.content.security.policy.internal.configuration.ContentSecurityPolicyConfigurationUtil;
 import com.liferay.portal.util.PropsValues;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -36,10 +36,14 @@ public class ContentSecurityPolicyNonceManager {
 	}
 
 	public String getNonce(HttpServletRequest httpServletRequest) {
-		String nonce = GetterUtil.getString(_threadLocal.get());
+		String nonce = _threadLocal.get();
 
 		if (nonce != null) {
 			return nonce;
+		}
+
+		if (httpServletRequest == null) {
+			return StringPool.BLANK;
 		}
 
 		return GetterUtil.getString(httpServletRequest.getAttribute(_NONCE));

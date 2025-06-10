@@ -8,13 +8,13 @@ package com.liferay.headless.admin.content.client.serdes.v1_0;
 import com.liferay.headless.admin.content.client.dto.v1_0.PageRuleCondition;
 import com.liferay.headless.admin.content.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -46,16 +46,16 @@ public class PageRuleConditionSerDes {
 
 		sb.append("{");
 
-		if (pageRuleCondition.getCondition() != null) {
+		if (pageRuleCondition.getField() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"condition\": ");
+			sb.append("\"field\": ");
 
 			sb.append("\"");
 
-			sb.append(_escape(pageRuleCondition.getCondition()));
+			sb.append(_escape(pageRuleCondition.getField()));
 
 			sb.append("\"");
 		}
@@ -74,6 +74,16 @@ public class PageRuleConditionSerDes {
 			sb.append("\"");
 		}
 
+		if (pageRuleCondition.getOptions() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"options\": ");
+
+			sb.append(pageRuleCondition.getOptions());
+		}
+
 		if (pageRuleCondition.getType() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -84,20 +94,6 @@ public class PageRuleConditionSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(pageRuleCondition.getType()));
-
-			sb.append("\"");
-		}
-
-		if (pageRuleCondition.getValue() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"value\": ");
-
-			sb.append("\"");
-
-			sb.append(_escape(pageRuleCondition.getValue()));
 
 			sb.append("\"");
 		}
@@ -123,12 +119,11 @@ public class PageRuleConditionSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
-		if (pageRuleCondition.getCondition() == null) {
-			map.put("condition", null);
+		if (pageRuleCondition.getField() == null) {
+			map.put("field", null);
 		}
 		else {
-			map.put(
-				"condition", String.valueOf(pageRuleCondition.getCondition()));
+			map.put("field", String.valueOf(pageRuleCondition.getField()));
 		}
 
 		if (pageRuleCondition.getId() == null) {
@@ -138,18 +133,18 @@ public class PageRuleConditionSerDes {
 			map.put("id", String.valueOf(pageRuleCondition.getId()));
 		}
 
+		if (pageRuleCondition.getOptions() == null) {
+			map.put("options", null);
+		}
+		else {
+			map.put("options", String.valueOf(pageRuleCondition.getOptions()));
+		}
+
 		if (pageRuleCondition.getType() == null) {
 			map.put("type", null);
 		}
 		else {
 			map.put("type", String.valueOf(pageRuleCondition.getType()));
-		}
-
-		if (pageRuleCondition.getValue() == null) {
-			map.put("value", null);
-		}
-		else {
-			map.put("value", String.valueOf(pageRuleCondition.getValue()));
 		}
 
 		return map;
@@ -169,14 +164,31 @@ public class PageRuleConditionSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "field")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "options")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			PageRuleCondition pageRuleCondition, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "condition")) {
+			if (Objects.equals(jsonParserFieldName, "field")) {
 				if (jsonParserFieldValue != null) {
-					pageRuleCondition.setCondition(
-						(String)jsonParserFieldValue);
+					pageRuleCondition.setField((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
@@ -184,14 +196,15 @@ public class PageRuleConditionSerDes {
 					pageRuleCondition.setId((String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "options")) {
+				if (jsonParserFieldValue != null) {
+					pageRuleCondition.setOptions(
+						OptionsSerDes.toDTO((String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "type")) {
 				if (jsonParserFieldValue != null) {
 					pageRuleCondition.setType((String)jsonParserFieldValue);
-				}
-			}
-			else if (Objects.equals(jsonParserFieldName, "value")) {
-				if (jsonParserFieldValue != null) {
-					pageRuleCondition.setValue((String)jsonParserFieldValue);
 				}
 			}
 		}
@@ -226,36 +239,7 @@ public class PageRuleConditionSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -265,6 +249,42 @@ public class PageRuleConditionSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

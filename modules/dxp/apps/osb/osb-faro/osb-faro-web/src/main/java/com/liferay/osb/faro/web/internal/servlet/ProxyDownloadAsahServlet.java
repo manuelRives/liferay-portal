@@ -5,12 +5,17 @@
 
 package com.liferay.osb.faro.web.internal.servlet;
 
+import com.liferay.osb.faro.engine.client.constants.OSBAsahHeaderConstants;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,10 +25,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -58,9 +59,10 @@ public class ProxyDownloadAsahServlet extends BaseAsahServlet {
 			URLConnection urlConnection = url.openConnection();
 
 			urlConnection.setRequestProperty(
-				ASAH_PROJECT_ID_HEADER, getProjectId());
+				OSBAsahHeaderConstants.FARO_BACKEND_SECURITY_SIGNATURE,
+				getSecuritySignature(uri));
 			urlConnection.setRequestProperty(
-				ASAH_SECURITY_SIGNATURE_HEADER, getSecuritySignature(uri));
+				OSBAsahHeaderConstants.PROJECT_ID, getProjectId());
 
 			urlConnection.connect();
 
@@ -102,9 +104,10 @@ public class ProxyDownloadAsahServlet extends BaseAsahServlet {
 				HttpHeaders.CONTENT_TYPE,
 				httpServletRequest.getHeader(HttpHeaders.CONTENT_TYPE));
 			urlConnection.setRequestProperty(
-				ASAH_PROJECT_ID_HEADER, getProjectId());
+				OSBAsahHeaderConstants.FARO_BACKEND_SECURITY_SIGNATURE,
+				getSecuritySignature(uri));
 			urlConnection.setRequestProperty(
-				ASAH_SECURITY_SIGNATURE_HEADER, getSecuritySignature(uri));
+				OSBAsahHeaderConstants.PROJECT_ID, getProjectId());
 
 			try (OutputStream outputStream = urlConnection.getOutputStream();
 				InputStream inputStream = httpServletRequest.getInputStream()) {

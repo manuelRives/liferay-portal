@@ -28,11 +28,13 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.RepositoryLocalService;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.FileItem;
@@ -42,13 +44,13 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -58,9 +60,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/copy_dl_objects"
 	},
 	service = MVCActionCommand.class
@@ -188,13 +190,13 @@ public class CopyDLObjectsMVCActionCommand extends BaseMVCActionCommand {
 		long sourceRepositoryId = ParamUtil.getLong(
 			actionRequest, "sourceRepositoryId");
 
-		Group group = _groupLocalService.getGroup(destinationRepositoryId);
+		Group group = _getRepositoryGroup(destinationRepositoryId);
 
 		long[] groupIds =
 			_siteConnectedGroupGroupProvider.
 				getCurrentAndAncestorSiteAndDepotGroupIds(group.getGroupId());
 
-		Group sourceGroup = _groupLocalService.getGroup(sourceRepositoryId);
+		Group sourceGroup = _getRepositoryGroup(sourceRepositoryId);
 
 		_checkDestinationGroup(group, groupIds, sourceGroup.getGroupId());
 
@@ -267,7 +269,7 @@ public class CopyDLObjectsMVCActionCommand extends BaseMVCActionCommand {
 
 		long[] groupIds =
 			_siteConnectedGroupGroupProvider.
-				getCurrentAndAncestorSiteAndDepotGroupIds(groupId, true);
+				getCurrentAndAncestorSiteAndDepotGroupIds(groupId, false, true);
 
 		if (ArrayUtil.isEmpty(groupIds)) {
 			return DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT;
@@ -299,7 +301,7 @@ public class CopyDLObjectsMVCActionCommand extends BaseMVCActionCommand {
 
 		long[] groupIds =
 			_siteConnectedGroupGroupProvider.
-				getCurrentAndAncestorSiteAndDepotGroupIds(groupId, true);
+				getCurrentAndAncestorSiteAndDepotGroupIds(groupId, false, true);
 
 		if (ArrayUtil.isEmpty(groupIds) ||
 			!ArrayUtil.contains(groupIds, folder.getGroupId())) {
@@ -318,6 +320,19 @@ public class CopyDLObjectsMVCActionCommand extends BaseMVCActionCommand {
 			actionRequest, "dlObjectIds");
 
 		return dlObjectIds.length - errorMessages.size();
+	}
+
+	private Group _getRepositoryGroup(long repositoryId) throws Exception {
+		Group group = _groupLocalService.fetchGroup(repositoryId);
+
+		if (group != null) {
+			return group;
+		}
+
+		Repository repository = _repositoryLocalService.getRepository(
+			repositoryId);
+
+		return _groupLocalService.getGroup(repository.getGroupId());
 	}
 
 	private String _getUploadExceptionErrorMessage(
@@ -384,6 +399,9 @@ public class CopyDLObjectsMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private RepositoryLocalService _repositoryLocalService;
 
 	@Reference
 	private SiteConnectedGroupGroupProvider _siteConnectedGroupGroupProvider;

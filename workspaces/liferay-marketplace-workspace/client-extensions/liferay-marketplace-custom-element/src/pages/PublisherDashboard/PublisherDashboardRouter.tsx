@@ -4,23 +4,36 @@
  */
 
 import {useEffect} from 'react';
-import {HashRouter, Route, Routes} from 'react-router-dom';
+import {HashRouter, Outlet, Route, Routes} from 'react-router-dom';
 
+import NewAppContextProvider from '../../context/NewAppContext';
+import SolutionContextProvider from '../../context/SolutionContext';
+import withProviders from '../../hoc/withProviders';
 import {useAccount} from '../../hooks/data/useAccounts';
 import {useCatalogs} from '../../hooks/data/useCatalogs';
 import {useSupplierAccounts} from '../../hooks/data/useSupplierAccounts';
 import {Liferay} from '../../liferay/liferay';
-import CommerceSelectAccountImpl from '../../services/rest/CommerceSelectAccount';
-import SolutionsDetails from '../CustomerDashboard/pages/Solutions/ReviewAndSubmitSolutions/SolutionsDetails';
+import CommerceSelectAccount from '../../services/rest/CommerceSelectAccount';
 import PublishedDashboardOutlet from './PublisherDashboardOutlet';
 import Accounts from './pages/Accounts/Accounts';
 import Apps from './pages/Apps';
 import App from './pages/Apps/App';
+import {AppContextProvider} from './pages/Apps/AppCreationFlow/AppContext/AppManageState';
 import {AppCreationFlow} from './pages/Apps/AppCreationFlow/AppCreationFlow';
-import Members from './pages/Members';
-import Projects from './pages/Projects';
+import PublishAppOutlet from './pages/NewAppFlow/PublishAppOutlet';
+import {Build, Profile as AppProfile} from './pages/NewAppFlow/pages';
+import Licensing from './pages/NewAppFlow/pages/Licensing';
+import LicensePrices from './pages/NewAppFlow/pages/Licensing/LicensePrices';
+import Pricing from './pages/NewAppFlow/pages/Pricing';
+import Storefront from './pages/NewAppFlow/pages/Storefront';
+import SubmitApp from './pages/NewAppFlow/pages/Submit';
+import Support from './pages/NewAppFlow/pages/Support';
+import Version from './pages/NewAppFlow/pages/Version';
+import NewAppBuildOutlet from './pages/NewVersionFlow/NewAppBuildOutlet';
+import SubmitNewBuild from './pages/NewVersionFlow/pages/SubmitNewBuild';
 import Solutions from './pages/Solutions';
-import PublishSolutionForm from './pages/Solutions/NewSolutionFlow/PublishSolutionForm';
+import SolutionsDetails from './pages/Solutions/Solution';
+import PublishSolutionOutlet from './pages/Solutions/SolutionForm/PublishSolutionOutlet';
 import {
 	CompanyProfile,
 	ContactUs,
@@ -29,20 +42,21 @@ import {
 	Header,
 	Profile,
 	Submit,
-} from './pages/Solutions/NewSolutionFlow/pages';
+} from './pages/Solutions/SolutionForm/pages';
 
 const PublisherDashboardRouter = () => {
 	const {accountId} = Liferay.CommerceContext.account || {};
-	const {data: catalogs = []} = useCatalogs();
-	const accountsSearch = useSupplierAccounts();
 	const {data, isValidating} = useAccount();
+	const {data: catalogs = [], isLoading} = useCatalogs();
+	const accountsSearch = useSupplierAccounts();
 
 	useEffect(() => {
 		const checkAccount = async (accountId: number) => {
-			await CommerceSelectAccountImpl.selectAccount(accountId);
+			await CommerceSelectAccount.selectAccount(accountId);
 
 			Liferay.CommerceContext.account = {
 				accountId,
+				accountName: data?.name ?? null,
 			};
 
 			window.location.reload();
@@ -53,29 +67,60 @@ const PublisherDashboardRouter = () => {
 		if (!isValidating && data?.type !== 'supplier' && newAccountId) {
 			checkAccount(newAccountId);
 		}
-	}, [isValidating, data?.type, accountsSearch.items]);
+	}, [isValidating, data?.type, accountsSearch.items, data?.name]);
 
-	const catalogId = catalogs.find(
-		(catalog) => catalog.accountId === accountId
-	)?.id;
+	const catalog = catalogs.find((catalog) => catalog.accountId === accountId);
+
+	const catalogId = catalog?.id;
+
+	if (isLoading) {
+		return null;
+	}
 
 	return (
 		<HashRouter>
 			<Routes>
+				<Route path="newapp">
+					<Route
+						element={
+							<NewAppContextProvider catalog={catalog as Catalog}>
+								<Outlet />
+							</NewAppContextProvider>
+						}
+						path=":productId?"
+					>
+						<Route element={<PublishAppOutlet />} path="publisher">
+							<Route element={<AppProfile />} path="profile" />
+							<Route element={<Build />} path="build" />
+							<Route element={<Create />} index />
+							<Route element={<Licensing />} path="licensing" />
+							<Route element={<Pricing />} path="pricing" />
+							<Route element={<Storefront />} path="storefront" />
+							<Route element={<Version />} path="version" />
+							<Route element={<SubmitApp />} path="submit" />
+
+							<Route
+								element={<LicensePrices />}
+								path="licensing-prices"
+							/>
+
+							<Route element={<Support />} path="support" />
+						</Route>
+						<Route element={<NewAppBuildOutlet />} path="newbuild">
+							<Route element={<Build />} index />
+							<Route element={<SubmitNewBuild />} path="submit" />
+						</Route>
+					</Route>
+				</Route>
+
 				<Route
-					element={<AppCreationFlow catalogId={String(catalogId)} />}
+					element={
+						<AppContextProvider>
+							<AppCreationFlow catalogId={String(catalogId)} />
+						</AppContextProvider>
+					}
 					path="app/create"
 				/>
-
-				<Route element={<PublishSolutionForm />} path="solution">
-					<Route element={<Create />} path="publisher" />
-					<Route element={<Header />} path="header" />
-					<Route element={<Details />} path="details" />
-					<Route element={<Profile />} path="profile" />
-					<Route element={<ContactUs />} path="contact" />
-					<Route element={<CompanyProfile />} path="company" />
-					<Route element={<Submit />} path="submit" />
-				</Route>
 
 				<Route
 					element={
@@ -87,14 +132,63 @@ const PublisherDashboardRouter = () => {
 				>
 					<Route path="/">
 						<Route element={<Apps />} index />
-						<Route element={<App />} path="app/:appId" />
+
+						<Route
+							element={
+								<NewAppContextProvider
+									catalog={catalog as Catalog}
+								>
+									<App />
+								</NewAppContextProvider>
+							}
+							path="app/:productId"
+						/>
 					</Route>
+
 					<Route element={<Accounts />} path="accounts" />
-					<Route element={<Members />} path="members" />
-					<Route element={<Projects />} path="projects" />
-					<Route element={<Solutions />} path="solutions" />
-					<Route path="solution/:appId">
-						<Route element={<SolutionsDetails />} index />
+
+					<Route path="solutions">
+						<Route element={<Solutions />} index />
+					</Route>
+				</Route>
+
+				<Route path="solutions">
+					<Route
+						element={
+							<SolutionContextProvider
+								catalogId={catalogId as number}
+							>
+								<Outlet />
+							</SolutionContextProvider>
+						}
+						path=":productId?"
+					>
+						<Route
+							element={
+								<PublishedDashboardOutlet
+									accountsSearch={accountsSearch}
+									catalogId={catalogId}
+								/>
+							}
+						>
+							<Route element={<SolutionsDetails />} index />
+						</Route>
+
+						<Route
+							element={<PublishSolutionOutlet />}
+							path="publisher"
+						>
+							<Route element={<Create />} path="" />
+							<Route
+								element={<CompanyProfile />}
+								path="company"
+							/>
+							<Route element={<ContactUs />} path="contact" />
+							<Route element={<Details />} path="details" />
+							<Route element={<Header />} path="header" />
+							<Route element={<Profile />} path="profile" />
+							<Route element={<Submit />} path="submit" />
+						</Route>
 					</Route>
 				</Route>
 			</Routes>
@@ -102,4 +196,4 @@ const PublisherDashboardRouter = () => {
 	);
 };
 
-export default PublisherDashboardRouter;
+export default withProviders(PublisherDashboardRouter);

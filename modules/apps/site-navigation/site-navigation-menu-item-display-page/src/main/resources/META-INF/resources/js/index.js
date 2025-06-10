@@ -9,8 +9,11 @@ import ClayForm, {ClayCheckbox, ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import ClayLabel from '@clayui/label';
 import classNames from 'classnames';
-import {TranslationAdminSelector} from 'frontend-js-components-web';
-import {fetch, objectToFormData, openSelectionModal} from 'frontend-js-web';
+import {
+	TranslationAdminSelector,
+	openSelectionModal,
+} from 'frontend-js-components-web';
+import {fetch, objectToFormData} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useState} from 'react';
 
@@ -44,12 +47,8 @@ function DisplayPageItemContextualSidebar({
 	);
 	const [customNameInvalid, setCustomNameInvalid] = useState(false);
 
-	const {
-		eventName,
-		getItemDetailsURL,
-		itemSelectorURL,
-		modalTitle,
-	} = chooseItemProps;
+	const {eventName, getItemDetailsURL, itemSelectorURL, modalTitle} =
+		chooseItemProps;
 
 	useEffect(() => {
 		const onFormSubmit = (event) => {
@@ -77,17 +76,17 @@ function DisplayPageItemContextualSidebar({
 
 					let value;
 
-					if (typeof selectedItem.value === 'string') {
+					if (typeof selectedItems.value === 'string') {
 						try {
-							value = JSON.parse(selectedItem.value);
+							value = JSON.parse(selectedItems.value);
 						}
 						catch (error) {}
 					}
 					else if (
-						selectedItem.value &&
-						typeof selectedItem.value === 'object'
+						selectedItems.value &&
+						typeof selectedItems.value === 'object'
 					) {
-						value = selectedItem.value;
+						value = selectedItems.value;
 					}
 
 					if (value) {

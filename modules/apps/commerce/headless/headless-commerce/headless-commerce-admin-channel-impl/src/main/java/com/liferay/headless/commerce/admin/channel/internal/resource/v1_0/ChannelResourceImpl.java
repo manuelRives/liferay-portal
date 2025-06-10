@@ -6,6 +6,11 @@
 package com.liferay.headless.commerce.admin.channel.internal.resource.v1_0;
 
 import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryService;
+import com.liferay.commerce.currency.exception.NoSuchCurrencyException;
+import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.product.exception.NoSuchChannelException;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.model.CommerceChannelRel;
@@ -15,7 +20,10 @@ import com.liferay.headless.commerce.admin.channel.dto.v1_0.AccountAddressChanne
 import com.liferay.headless.commerce.admin.channel.dto.v1_0.Channel;
 import com.liferay.headless.commerce.admin.channel.internal.odata.entity.v1_0.ChannelEntityModel;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ChannelResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
+import com.liferay.headless.commerce.core.util.CommerceCurrencyUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
@@ -28,9 +36,9 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Collections;
+import jakarta.ws.rs.core.MultivaluedMap;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.Collections;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,7 +65,7 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 		throws Exception {
 
 		CommerceChannel commerceChannel =
-			_commerceChannelService.fetchByExternalReferenceCode(
+			_commerceChannelService.fetchCommerceChannelByExternalReferenceCode(
 				externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceChannel == null) {
@@ -100,7 +108,7 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 		throws Exception {
 
 		CommerceChannel commerceChannel =
-			_commerceChannelService.fetchByExternalReferenceCode(
+			_commerceChannelService.fetchCommerceChannelByExternalReferenceCode(
 				externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceChannel == null) {
@@ -142,21 +150,35 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 		CommerceChannel commerceChannel =
 			_commerceChannelService.getCommerceChannel(channelId);
 
+		CommerceCurrency commerceCurrency =
+			_commerceCurrencyLocalService.getCommerceCurrency(
+				contextCompany.getCompanyId(),
+				commerceChannel.getCommerceCurrencyCode());
+
+		try {
+			commerceCurrency = CommerceCurrencyUtil.getCommerceCurrency(
+				contextCompany.getCompanyId(), channel.getCurrencyCode(),
+				channel.getCurrencyExternalReferenceCode(),
+				GetterUtil.getLong(channel.getCurrencyId()));
+		}
+		catch (NoSuchCurrencyException noSuchCurrencyException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchCurrencyException);
+			}
+		}
+
 		return _toChannel(
 			_commerceChannelService.updateCommerceChannel(
 				channelId,
-				GetterUtil.getLong(
-					channel.getAccountId(),
-					commerceChannel.getAccountEntryId()),
+				_getAccountEntryId(
+					channel, commerceChannel.getAccountEntryId()),
 				commerceChannel.getSiteGroupId(),
 				GetterUtil.getString(
 					channel.getName(), commerceChannel.getName()),
 				GetterUtil.getString(
 					channel.getType(), commerceChannel.getType()),
 				commerceChannel.getTypeSettingsUnicodeProperties(),
-				GetterUtil.getString(
-					channel.getCurrencyCode(),
-					commerceChannel.getCommerceCurrencyCode()),
+				commerceCurrency.getCode(),
 				commerceChannel.getPriceDisplayType(),
 				commerceChannel.isDiscountsTargetNetPrice()));
 	}
@@ -167,7 +189,7 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 		throws Exception {
 
 		CommerceChannel commerceChannel =
-			_commerceChannelService.fetchByExternalReferenceCode(
+			_commerceChannelService.fetchCommerceChannelByExternalReferenceCode(
 				externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceChannel == null) {
@@ -176,35 +198,54 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 					externalReferenceCode);
 		}
 
+		CommerceCurrency commerceCurrency =
+			_commerceCurrencyLocalService.getCommerceCurrency(
+				contextCompany.getCompanyId(),
+				commerceChannel.getCommerceCurrencyCode());
+
+		try {
+			commerceCurrency = CommerceCurrencyUtil.getCommerceCurrency(
+				contextCompany.getCompanyId(), channel.getCurrencyCode(),
+				channel.getCurrencyExternalReferenceCode(),
+				GetterUtil.getLong(channel.getCurrencyId()));
+		}
+		catch (NoSuchCurrencyException noSuchCurrencyException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchCurrencyException);
+			}
+		}
+
 		return _toChannel(
 			_commerceChannelService.updateCommerceChannel(
 				commerceChannel.getCommerceChannelId(),
-				GetterUtil.getLong(
-					channel.getAccountId(),
-					commerceChannel.getAccountEntryId()),
+				_getAccountEntryId(
+					channel, commerceChannel.getAccountEntryId()),
 				commerceChannel.getSiteGroupId(),
 				GetterUtil.getString(
 					channel.getName(), commerceChannel.getName()),
 				GetterUtil.getString(
 					channel.getType(), commerceChannel.getType()),
 				commerceChannel.getTypeSettingsUnicodeProperties(),
-				GetterUtil.getString(
-					channel.getCurrencyCode(),
-					commerceChannel.getCommerceCurrencyCode()),
+				commerceCurrency.getCode(),
 				commerceChannel.getPriceDisplayType(),
 				commerceChannel.isDiscountsTargetNetPrice()));
 	}
 
 	@Override
 	public Channel postChannel(Channel channel) throws Exception {
+		CommerceCurrency commerceCurrency =
+			CommerceCurrencyUtil.getCommerceCurrency(
+				contextCompany.getCompanyId(), channel.getCurrencyCode(),
+				channel.getCurrencyExternalReferenceCode(),
+				GetterUtil.getLong(channel.getCurrencyId()));
+
 		return _toChannel(
 			_commerceChannelService.addCommerceChannel(
 				channel.getExternalReferenceCode(),
-				GetterUtil.get(
-					channel.getAccountId(),
-					AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT),
+				_getAccountEntryId(
+					channel, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT),
 				GetterUtil.get(channel.getSiteGroupId(), 0), channel.getName(),
-				channel.getType(), null, channel.getCurrencyCode(),
+				channel.getType(), null, commerceCurrency.getCode(),
 				_serviceContextHelper.getServiceContext(contextUser)));
 	}
 
@@ -219,14 +260,19 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 			return postChannel(channel);
 		}
 
+		CommerceCurrency commerceCurrency =
+			CommerceCurrencyUtil.getCommerceCurrency(
+				contextCompany.getCompanyId(), channel.getCurrencyCode(),
+				channel.getCurrencyExternalReferenceCode(),
+				GetterUtil.getLong(channel.getCurrencyId()));
+
 		return _toChannel(
 			_commerceChannelService.updateCommerceChannel(
 				channelId,
-				GetterUtil.get(
-					channel.getAccountId(),
-					AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT),
+				_getAccountEntryId(
+					channel, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT),
 				channel.getSiteGroupId(), channel.getName(), channel.getType(),
-				null, channel.getCurrencyCode(), null, false));
+				null, commerceCurrency.getCode(), null, false));
 	}
 
 	@Override
@@ -234,15 +280,41 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 			String externalReferenceCode, Channel channel)
 		throws Exception {
 
+		CommerceCurrency commerceCurrency =
+			CommerceCurrencyUtil.getCommerceCurrency(
+				contextCompany.getCompanyId(), channel.getCurrencyCode(),
+				channel.getCurrencyExternalReferenceCode(),
+				GetterUtil.getLong(channel.getCurrencyId()));
+
 		return _toChannel(
 			_commerceChannelService.addOrUpdateCommerceChannel(
 				externalReferenceCode,
-				GetterUtil.getLong(
-					channel.getAccountId(),
-					AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT),
-				channel.getSiteGroupId(), channel.getName(), channel.getType(),
-				null, channel.getCurrencyCode(),
+				_getAccountEntryId(
+					channel, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT),
+				GetterUtil.getLong(channel.getSiteGroupId()), channel.getName(),
+				channel.getType(), null, commerceCurrency.getCode(),
 				_serviceContextHelper.getServiceContext()));
+	}
+
+	private long _getAccountEntryId(Channel channel, long defaultAccountEntryId)
+		throws Exception {
+
+		long accountEntryId = GetterUtil.getLong(channel.getAccountId());
+
+		if (accountEntryId > 0) {
+			return accountEntryId;
+		}
+
+		AccountEntry accountEntry =
+			_accountEntryService.fetchAccountEntryByExternalReferenceCode(
+				GetterUtil.getString(channel.getAccountExternalReferenceCode()),
+				contextCompany.getCompanyId());
+
+		if (accountEntry != null) {
+			return accountEntry.getAccountEntryId();
+		}
+
+		return defaultAccountEntryId;
 	}
 
 	private Channel _toChannel(CommerceChannel commerceChannel)
@@ -257,7 +329,13 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 				commerceChannelId, contextAcceptLanguage.getPreferredLocale()));
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		ChannelResourceImpl.class);
+
 	private static final EntityModel _entityModel = new ChannelEntityModel();
+
+	@Reference
+	private AccountEntryService _accountEntryService;
 
 	@Reference(
 		target = "(component.name=com.liferay.headless.commerce.admin.channel.internal.dto.v1_0.converter.ChannelDTOConverter)"
@@ -269,6 +347,9 @@ public class ChannelResourceImpl extends BaseChannelResourceImpl {
 
 	@Reference
 	private CommerceChannelService _commerceChannelService;
+
+	@Reference
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

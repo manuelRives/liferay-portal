@@ -8,8 +8,6 @@
 <%@ include file="/init.jsp" %>
 
 <%
-String backURL = ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL()));
-
 ObjectEntryDisplayContext objectEntryDisplayContext = (ObjectEntryDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 ObjectDefinition objectDefinition2 = objectEntryDisplayContext.getObjectDefinition2();
@@ -17,7 +15,7 @@ ObjectEntry objectEntry = objectEntryDisplayContext.getObjectEntry();
 ObjectRelationship objectRelationship = objectEntryDisplayContext.getObjectRelationship();
 
 portletDisplay.setShowBackIcon(true);
-portletDisplay.setURLBack(backURL);
+portletDisplay.setURLBack(objectEntryDisplayContext.getBackURL());
 %>
 
 <portlet:actionURL name="/object_entries/edit_object_entry_related_model" var="editObjectEntryRelatedModelActionURL" />
@@ -53,6 +51,18 @@ portletDisplay.setURLBack(backURL);
 	</c:choose>
 </aui:form>
 
+<c:if test="<%= SessionErrors.contains(renderRequest, PrincipalException.MustHavePermission.class.getName()) %>">
+	<aui:script>
+		Liferay.Util.openToast({
+			autoClose: 5000,
+			message:
+				'<liferay-ui:message key="you-do-not-have-the-required-permissions" />',
+			title: '<liferay-ui:message key="error" />:',
+			type: 'danger',
+		});
+	</aui:script>
+</c:if>
+
 <c:if test="<%= !objectEntryDisplayContext.isGuestUser() %>">
 	<aui:script sandbox="<%= true %>">
 		const eventHandlers = [];
@@ -65,9 +75,10 @@ portletDisplay.setURLBack(backURL);
 					onSelect: (selectedItem) => {
 						const objectEntry = JSON.parse(selectedItem.value);
 
-						const objectRelationshipPrimaryKey2Input = document.getElementById(
-							'<portlet:namespace />objectRelationshipPrimaryKey2'
-						);
+						const objectRelationshipPrimaryKey2Input =
+							document.getElementById(
+								'<portlet:namespace />objectRelationshipPrimaryKey2'
+							);
 
 						objectRelationshipPrimaryKey2Input.value = objectEntry.classPK;
 
@@ -79,8 +90,7 @@ portletDisplay.setURLBack(backURL);
 					},
 					selectEventName: '<portlet:namespace />selectRelatedModalEntry',
 					title: '<liferay-ui:message key="select" />',
-					url:
-						'<%= objectEntryDisplayContext.getRelatedObjectEntryItemSelectorURL(objectRelationship) %>',
+					url: '<%= objectEntryDisplayContext.getRelatedObjectEntryItemSelectorURL(objectRelationship) %>',
 				});
 			}
 		);

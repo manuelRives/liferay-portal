@@ -170,18 +170,15 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 
 						AArray.removeItem(deleteDepotGroupIds, itemValue.classPK);
 
-						document.<portlet:namespace />fm.<portlet:namespace />addDepotGroupIds.value = addDepotGroupIds.join(
-							','
-						);
-						document.<portlet:namespace />fm.<portlet:namespace />deleteDepotGroupIds.value = deleteDepotGroupIds.join(
-							','
-						);
+						document.<portlet:namespace />fm.<portlet:namespace />addDepotGroupIds.value =
+							addDepotGroupIds.join(',');
+						document.<portlet:namespace />fm.<portlet:namespace />deleteDepotGroupIds.value =
+							deleteDepotGroupIds.join(',');
 					}
 				},
 				selectEventName:
 					'<%= depotAdminMembershipsDisplayContext.getItemSelectorEventName() %>',
-				title:
-					'<liferay-ui:message arguments="asset-library" key="select-x" />',
+				title: '<liferay-ui:message arguments="asset-library" key="select-x" />',
 				url: '<%= depotAdminMembershipsDisplayContext.getItemSelectorURL() %>',
 			});
 		});
@@ -212,12 +209,10 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 
 				deleteDepotGroupIds.push(rowId);
 
-				document.<portlet:namespace />fm.<portlet:namespace />addDepotGroupIds.value = addDepotGroupIds.join(
-					','
-				);
-				document.<portlet:namespace />fm.<portlet:namespace />deleteDepotGroupIds.value = deleteDepotGroupIds.join(
-					','
-				);
+				document.<portlet:namespace />fm.<portlet:namespace />addDepotGroupIds.value =
+					addDepotGroupIds.join(',');
+				document.<portlet:namespace />fm.<portlet:namespace />deleteDepotGroupIds.value =
+					deleteDepotGroupIds.join(',');
 			},
 			'.modify-link'
 		);
@@ -232,4 +227,39 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 
 		Liferay.on('destroyPortlet', onDestroyPortlet);
 	</aui:script>
+</c:if>
+
+<c:if test="<%= !depotAdminMembershipsDisplayContext.isInheritedDepotGroupsEmpty() %>">
+	<div class="sheet-tertiary-title"><liferay-ui:message key="inherited-asset-libraries" /></div>
+
+	<liferay-ui:search-container
+		cssClass="lfr-search-container-inherited-depot"
+		curParam="inheritedDepotCur"
+		headerNames="name"
+		iteratorURL="<%= currentURLObj %>"
+		total="<%= depotAdminMembershipsDisplayContext.getInheritedDepotGroupsCount() %>"
+	>
+		<liferay-ui:search-container-results
+			calculateStartAndEnd="<%= true %>"
+			results="<%= depotAdminMembershipsDisplayContext.getInheritedDepotGroups() %>"
+		/>
+
+		<liferay-ui:search-container-row
+			className="com.liferay.portal.kernel.model.Group"
+			escapedModel="<%= true %>"
+			keyProperty="groupId"
+			modelVar="inheritedDepot"
+			rowIdProperty="friendlyURL"
+		>
+			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand"
+				name="name"
+				value="<%= HtmlUtil.escape(inheritedDepot.getName(locale)) %>"
+			/>
+		</liferay-ui:search-container-row>
+
+		<liferay-ui:search-iterator
+			markupView="lexicon"
+		/>
+	</liferay-ui:search-container>
 </c:if>

@@ -9,7 +9,8 @@ import userEvent from '@testing-library/user-event';
 import {FormProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import Numeric from '../../../src/main/resources/META-INF/resources/Numeric/Numeric';
+import Numeric from '../../../src/main/resources/META-INF/resources/js/Numeric/Numeric';
+import {maxLengthExceeded} from '../../../src/main/resources/META-INF/resources/js/Numeric/numericUtil';
 
 const globalLanguageDirection = Liferay.Language.direction;
 
@@ -28,6 +29,22 @@ describe('Field Numeric', () => {
 		const {container} = render(<Numeric />);
 
 		expect(container).toMatchSnapshot();
+	});
+
+	it('does not render html autocomplete attribute', () => {
+		render(<Numeric />);
+
+		expect(
+			document.querySelector('.form-control').hasAttribute('autocomplete')
+		).toBe(false);
+	});
+
+	it('renders the html autocomplete attribute', () => {
+		render(<Numeric htmlAutocompleteAttribute="name" />);
+
+		expect(
+			document.querySelector('.form-control').getAttribute('autocomplete')
+		).toBe('name');
 	});
 
 	it('has a name', () => {
@@ -562,6 +579,29 @@ describe('Field Numeric', () => {
 			expect(onChange).toHaveBeenLastCalledWith({
 				target: {value: '0,083'},
 			});
+		});
+	});
+
+	describe('maxLengthExceeded function', () => {
+
+		/**
+		 * LPD-39819
+		 */
+
+		it('returns true if the input has surpassed the max length of the mask', () => {
+
+			// input smaller or with the same size as the mask should return false
+
+			expect(maxLengthExceeded('10', '90')).toBe(false);
+			expect(maxLengthExceeded('1', '90')).toBe(false);
+
+			// input longer than the size of the mask should return true
+
+			expect(maxLengthExceeded('100', '90')).toBe(true);
+
+			// when inputMaskFormat is undefined it should return false
+
+			expect(maxLengthExceeded('10', undefined)).toBe(false);
 		});
 	});
 });

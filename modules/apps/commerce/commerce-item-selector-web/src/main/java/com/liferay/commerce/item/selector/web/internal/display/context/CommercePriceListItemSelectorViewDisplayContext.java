@@ -22,9 +22,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -112,13 +112,15 @@ public class CommercePriceListItemSelectorViewDisplayContext
 		}
 
 		if (orderByCol.equals("create-date")) {
-			return new CommercePriceListCreateDateComparator(orderByAsc);
+			return CommercePriceListCreateDateComparator.getInstance(
+				orderByAsc);
 		}
 		else if (orderByCol.equals("display-date")) {
-			return new CommercePriceListDisplayDateComparator(orderByAsc);
+			return CommercePriceListDisplayDateComparator.getInstance(
+				orderByAsc);
 		}
 		else if (orderByCol.equals("priority")) {
-			return new CommercePriceListPriorityComparator(orderByAsc);
+			return CommercePriceListPriorityComparator.getInstance(orderByAsc);
 		}
 
 		return null;

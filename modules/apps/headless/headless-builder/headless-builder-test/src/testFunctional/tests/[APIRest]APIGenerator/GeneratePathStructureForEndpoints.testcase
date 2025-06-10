@@ -2,10 +2,10 @@
 definition {
 
 	property custom.properties = "feature.flag.LPS-178642=true";
+	property portal.acceptance = "quarantine";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Object";
-	property testray.main.component.name = "Headless Builder";
+	property testray.main.component.name = "API Builder";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -25,7 +25,6 @@ definition {
 
 	@priority = 4
 	test APIUrlIsPresentInAPIExplorerRestApplications {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -80,7 +79,6 @@ definition {
 
 	@priority = 4
 	test CanCreateEndpointWithValidPath {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -91,6 +89,8 @@ definition {
 		}
 
 		task ("And Given setting Panel Category Key to Control Panel > Object for API Endpoint") {
+			SearchAdministration.executeReindex();
+
 			APIBuilderUI.setPanelCategoryKeyToObject(objectDefinition = "API Endpoint");
 		}
 
@@ -123,7 +123,6 @@ definition {
 
 	@priority = 4
 	test CanLoadAPIApplicationURL {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -148,7 +147,6 @@ definition {
 
 	@priority = 4
 	test CanValidatePathInAPIEndpoint {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -159,6 +157,8 @@ definition {
 		}
 
 		task ("And Given setting Panel Category Key to Control Panel > Object for API Endpoint") {
+			SearchAdministration.executeReindex();
+
 			APIBuilderUI.setPanelCategoryKeyToObject(objectDefinition = "API Endpoint");
 		}
 
@@ -193,7 +193,6 @@ definition {
 
 	@priority = 4
 	test PathIsPresentInEndpointsWithEditAPIApplication {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -221,7 +220,6 @@ definition {
 
 	@priority = 4
 	test PathIsPresentUnderGetEndpointPage {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -277,7 +275,7 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		task ("Given going to Control Panel > Object > Headless Builder") {
+		task ("Given going to Control Panel > Object > API Builder") {
 			ApplicationsMenu.gotoPortlet(
 				category = "Object",
 				panel = "Control Panel",

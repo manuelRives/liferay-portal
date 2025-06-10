@@ -3,22 +3,28 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {
+	ObjectDefinition,
+	ObjectDefinitionAPI,
+	ObjectField,
+	ObjectFolder,
+	ObjectFolderAPI,
+} from '@liferay/object-admin-rest-client-js';
+
 import {getRandomInt} from '../utils/getRandomInt';
 import {ApiHelpers} from './ApiHelpers';
 
-type TObjectAction = {
-	active?: boolean;
-	id?: number;
-	label: {
-		[key: string]: string;
-	};
-	name: string;
-	objectActionExecutorKey: string;
-	objectActionTriggerKey: string;
-	parameters: {
-		[key: string]: number;
-	};
-};
+export interface CreateObjectField {
+	attachmentSource?: string;
+	formulaFieldOutput?: 'Decimal' | 'Integer';
+	listTypeDefinitionName?: string;
+	mandatory?: boolean;
+	objectDefinitionLabel?: string;
+
+	objectDefinitionNodes: unknown;
+	objectFieldBusinessType: string;
+	objectFieldLabel: string;
+}
 
 export class ObjectAdminApiHelper {
 	readonly apiHelpers: ApiHelpers;
@@ -29,70 +35,57 @@ export class ObjectAdminApiHelper {
 		this.basePath = 'object-admin/v1.0';
 	}
 
-	async deleteObjectAction(objectActionId: number) {
-		return this.apiHelpers.delete(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-actions/${objectActionId}`
+	async getAllObjectDefinitions() {
+		return this.apiHelpers.get(
+			`${this.apiHelpers.baseUrl}${this.basePath}/object-definitions`
 		);
 	}
 
-	async deleteObjectDefinition(objectDefinitionId: number) {
-		return this.apiHelpers.delete(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-definitions/${objectDefinitionId}`
+	async getAllObjectDefinitionsFields(objectDefinitionId: number) {
+		return this.apiHelpers.get(
+			`${this.apiHelpers.baseUrl}${this.basePath}/object-definitions/${objectDefinitionId}/object-fields`
 		);
 	}
 
-	async deleteObjectFolder(objectFolderId: number) {
-		return this.apiHelpers.delete(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-folders/${objectFolderId}`
-		);
-	}
-
-	async deleteObjectRelationship(objectRelationshipId: number) {
-		return this.apiHelpers.delete(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-relationships/${objectRelationshipId}`
-		);
-	}
-
-	async postObjectDefinition(data: DataObject) {
+	async postObjectDefinitionObjectFieldBatch(
+		objectDefinitionId: number,
+		objectFields: Partial<ObjectField>[]
+	): Promise<ObjectField> {
 		return this.apiHelpers.post(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-definitions`,
-			{data}
+			`${this.apiHelpers.baseUrl}${this.basePath}/object-definitions/${objectDefinitionId}/object-fields/batch`,
+			{data: objectFields}
 		);
 	}
 
-	async postObjectDefinitionByExternalRefernceCodeObjectAction(
-		externalReferenceCode: string,
-		objectAction?: TObjectAction
-	): Promise<TObjectAction> {
-		return this.apiHelpers.post(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-definitions/by-external-reference-code/${externalReferenceCode}/object-actions`,
-			{data: objectAction}
-		);
-	}
-
-	async postObjectRelationship(
-		objectRelationship: Partial<ObjectRelationship>
-	) {
-		return this.apiHelpers.post(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-definitions/by-external-reference-code/${objectRelationship.objectDefinitionExternalReferenceCode1}/object-relationships`,
-			{data: objectRelationship}
-		);
-	}
-
-	async postRandomObjectDefinition(
-		objectFolderExternalReferenceCode?: string
-	) {
+	async postRandomObjectDefinition({
+		className,
+		objectFields,
+		objectFolderExternalReferenceCode,
+		panelCategoryKey,
+		scope = 'company',
+		status,
+		titleObjectFieldName,
+	}: {
+		className?: string;
+		objectFields?: Partial<ObjectField>[];
+		objectFolderExternalReferenceCode?: string;
+		panelCategoryKey?: string;
+		scope?: 'site' | 'company';
+		status: {code: number};
+		titleObjectFieldName?: string;
+	}) {
 		const objectDefinitionExternalReferenceCode =
 			'ObjectDefinition' + getRandomInt();
 
-		const requestBody = {
+		const requestBody: ObjectDefinition = {
 			active: true,
+			className,
 			externalReferenceCode: objectDefinitionExternalReferenceCode,
 			label: {
 				en_US: objectDefinitionExternalReferenceCode,
 			},
 			name: objectDefinitionExternalReferenceCode,
-			objectFields: [
+			objectFields: objectFields ?? [
 				{
 					DBType: 'String',
 					businessType: 'Text',
@@ -102,6 +95,7 @@ export class ObjectAdminApiHelper {
 					indexedLanguageId: '',
 					label: {en_US: 'textField'},
 					listTypeDefinitionId: 0,
+					localized: false,
 					name: 'textField',
 					required: false,
 					system: false,
@@ -109,11 +103,13 @@ export class ObjectAdminApiHelper {
 				},
 			],
 			objectFolderExternalReferenceCode,
+			panelCategoryKey: panelCategoryKey ?? '',
 			pluralLabel: {
 				en_US: objectDefinitionExternalReferenceCode,
 			},
-			scope: 'company',
-			status: {code: 0},
+			scope,
+			status,
+			titleObjectFieldName: titleObjectFieldName ?? 'id',
 		};
 
 		if (objectFolderExternalReferenceCode) {
@@ -121,27 +117,29 @@ export class ObjectAdminApiHelper {
 				objectFolderExternalReferenceCode;
 		}
 
-		return this.apiHelpers.post(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-definitions`,
-			{data: requestBody}
-		);
+		const objectDefinitionAPIClient =
+			await this.apiHelpers.buildRestClient(ObjectDefinitionAPI);
+
+		return (
+			await objectDefinitionAPIClient.postObjectDefinition(requestBody)
+		).body;
 	}
 
 	async postRandomObjectFolder(): Promise<ObjectFolder> {
 		const objectFolderExternalReferenceCode =
 			'objectFolder' + getRandomInt();
 
-		return this.apiHelpers.post(
-			`${this.apiHelpers.baseUrl}${this.basePath}/object-folders`,
-			{
-				data: {
-					externalReferenceCode: objectFolderExternalReferenceCode,
-					label: {
-						en_US: objectFolderExternalReferenceCode,
-					},
-					name: objectFolderExternalReferenceCode,
+		const objectFolderAPIClient =
+			await this.apiHelpers.buildRestClient(ObjectFolderAPI);
+
+		return (
+			await objectFolderAPIClient.postObjectFolder({
+				externalReferenceCode: objectFolderExternalReferenceCode,
+				label: {
+					en_US: objectFolderExternalReferenceCode,
 				},
-			}
-		);
+				name: objectFolderExternalReferenceCode,
+			})
+		).body;
 	}
 }

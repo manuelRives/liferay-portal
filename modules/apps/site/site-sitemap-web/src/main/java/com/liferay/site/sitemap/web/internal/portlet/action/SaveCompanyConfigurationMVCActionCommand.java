@@ -20,9 +20,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.configuration.manager.SitemapConfigurationManager;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"mvc.command.name=/site_sitemap/save_company_configuration"
 	},
 	service = MVCActionCommand.class
@@ -61,9 +61,6 @@ public class SaveCompanyConfigurationMVCActionCommand
 
 		_sitemapConfigurationManager.saveSitemapCompanyConfiguration(
 			themeDisplay.getCompanyId(),
-			ParamUtil.getBoolean(actionRequest, "includeCategories"),
-			ParamUtil.getBoolean(actionRequest, "includePages"),
-			ParamUtil.getBoolean(actionRequest, "includeWebContent"),
 			ArrayUtil.filter(
 				ArrayUtil.unique(
 					ParamUtil.getLongValues(
@@ -76,7 +73,11 @@ public class SaveCompanyConfigurationMVCActionCommand
 					}
 
 					return true;
-				}));
+				}),
+			ParamUtil.getBoolean(actionRequest, "includeCategories"),
+			ParamUtil.getBoolean(actionRequest, "includePages"),
+			ParamUtil.getBoolean(actionRequest, "includeWebContent"),
+			ParamUtil.getBoolean(actionRequest, "xmlSitemapIndexEnabled"));
 
 		SessionMessages.add(
 			actionRequest, "requestProcessed",

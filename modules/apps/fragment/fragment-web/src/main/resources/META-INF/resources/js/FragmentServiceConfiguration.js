@@ -6,7 +6,8 @@
 import ClayButton from '@clayui/button';
 import ClayForm, {ClayCheckbox} from '@clayui/form';
 import ClayModal, {useModal} from '@clayui/modal';
-import {fetch, objectToFormData, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, objectToFormData} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 const FEEDBACK_MESSAGES = {
@@ -31,19 +32,16 @@ export default function FragmentServiceConfiguration({
 	propagateContributedFragmentChanges,
 	propagateContributedFragmentEntriesChangesURL,
 }) {
-	const [
-		disablePropagateChangesButton,
-		setDisablePropagateChangesButton,
-	] = useState(alreadyPropagateContributedFragmentChanges);
+	const [disablePropagateChangesButton, setDisablePropagateChangesButton] =
+		useState(alreadyPropagateContributedFragmentChanges);
 
 	const [
 		propagateContributedFragmentChangesChecked,
 		setPropagateContributedFragmentChangesChecked,
 	] = useState(propagateContributedFragmentChanges);
 
-	const [propagateChangesChecked, setPropagateChangesChecked] = useState(
-		propagateChanges
-	);
+	const [propagateChangesChecked, setPropagateChangesChecked] =
+		useState(propagateChanges);
 
 	const [feedbackMessage, setFeedbackMessage] = useState(
 		disablePropagateChangesButton ? FEEDBACK_MESSAGES.success : null
@@ -61,7 +59,8 @@ export default function FragmentServiceConfiguration({
 		fetch(propagateContributedFragmentEntriesChangesURL, {
 			body: objectToFormData({
 				[`${namespace}propagateChanges`]: propagateChangesChecked,
-				[`${namespace}propagateContributedFragmentChanges`]: propagateContributedFragmentChangesChecked,
+				[`${namespace}propagateContributedFragmentChanges`]:
+					propagateContributedFragmentChangesChecked,
 			}),
 			method: 'POST',
 		})

@@ -15,7 +15,11 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.vulcan.pagination.Page;
+import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
 import java.util.ArrayList;
@@ -62,6 +66,10 @@ public interface SystemObjectDefinitionManager {
 
 	public Map<Locale, String> getLabelMap();
 
+	public default Table getLocalizationTable() {
+		return null;
+	}
+
 	public Class<?> getModelClass();
 
 	public String getModelClassName();
@@ -73,6 +81,14 @@ public interface SystemObjectDefinitionManager {
 	}
 
 	public List<ObjectField> getObjectFields();
+
+	public default Page<?> getPage(
+			User user, String search, Filter filter, Pagination pagination,
+			Sort[] sorts)
+		throws Exception {
+
+		return null;
+	}
 
 	public Map<Locale, String> getPluralLabelMap();
 
@@ -139,6 +155,11 @@ public interface SystemObjectDefinitionManager {
 		Map<String, Object> extendedProperties =
 			(Map<String, Object>)payloadJSONObject.get("extendedProperties");
 
+		if (oldValues) {
+			extendedProperties = (Map<String, Object>)payloadJSONObject.get(
+				"originalExtendedProperties");
+		}
+
 		if (extendedProperties != null) {
 			variables.putAll(extendedProperties);
 		}
@@ -149,6 +170,10 @@ public interface SystemObjectDefinitionManager {
 	}
 
 	public int getVersion();
+
+	public default boolean isEnableLocalization() {
+		return false;
+	}
 
 	public void updateBaseModel(
 			long primaryKey, User user, Map<String, Object> values)

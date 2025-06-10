@@ -11,11 +11,10 @@ type ScreenReaderAnnouncerContextType = {
 	sendMessage: (message: string) => void;
 };
 
-const ScreenReaderAnnouncerContext = React.createContext<
-	ScreenReaderAnnouncerContextType
->({
-	sendMessage: () => {},
-});
+const ScreenReaderAnnouncerContext =
+	React.createContext<ScreenReaderAnnouncerContextType>({
+		sendMessage: () => {},
+	});
 
 function ScreenReaderAnnouncerContextProvider({
 	children,
@@ -24,7 +23,7 @@ function ScreenReaderAnnouncerContextProvider({
 }) {
 	const screenReaderAnnouncerRef = useRef<ScreenReaderAnnouncerContextType>();
 
-	const sendMessage = useCallback((message) => {
+	const sendMessage = useCallback((message: any) => {
 		const ref = screenReaderAnnouncerRef;
 
 		if (ref.current) {

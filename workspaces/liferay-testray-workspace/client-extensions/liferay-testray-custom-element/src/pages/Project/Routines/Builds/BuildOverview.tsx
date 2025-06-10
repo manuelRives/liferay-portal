@@ -4,10 +4,13 @@
  */
 
 import ClayChart from '@clayui/charts';
+import ClayIcon from '@clayui/icon';
+import ClayPanel from '@clayui/panel';
 import classNames from 'classnames';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import Loading from '~/components/Loading';
 import {useCaseResultsChart} from '~/hooks/useCaseResultsChart';
+import {safeJSONParse} from '~/util';
 
 import JiraLink from '../../../../components/JiraLink';
 import Container from '../../../../components/Layout/Container';
@@ -16,7 +19,7 @@ import {useTotalTestCases} from '../../../../hooks/data/useCaseResultGroupBy';
 import useIssuesFound from '../../../../hooks/data/useIssuesFound';
 import i18n from '../../../../i18n';
 import {TestrayBuild, TestrayTask} from '../../../../services/rest';
-import dayjs from '../../../../util/date';
+import {formatUTCDate} from '../../../../util/date';
 import {getDonutLegend} from '../../../../util/graph';
 import BuildAlertBar from './BuildAlertBar';
 
@@ -33,6 +36,11 @@ const BuildOverview: React.FC<BuildOverviewProps> = ({testrayBuild}) => {
 
 	const issues = useIssuesFound({buildId: testrayBuild.id});
 
+	const playwrightReports = useMemo(
+		() => safeJSONParse(testrayBuild.playwrightReports, []) as Object,
+		[testrayBuild.playwrightReports]
+	);
+
 	const ref = useRef<any>();
 
 	const [columnChartLoad, setColumnChartLoad] = useState(false);
@@ -41,7 +49,6 @@ const BuildOverview: React.FC<BuildOverviewProps> = ({testrayBuild}) => {
 
 	useEffect(() => {
 		setColumnChartLoad(false);
-
 		setTimeout(() => {
 			setColumnChartLoad(true);
 		}, 100);
@@ -49,7 +56,10 @@ const BuildOverview: React.FC<BuildOverviewProps> = ({testrayBuild}) => {
 
 	return (
 		<>
-			<BuildAlertBar testrayTask={testrayTask} />
+			<BuildAlertBar
+				testrayBuild={testrayBuild}
+				testrayTask={testrayTask}
+			/>
 
 			<Container collapsable title={i18n.translate('details')}>
 				<QATable
@@ -60,17 +70,32 @@ const BuildOverview: React.FC<BuildOverviewProps> = ({testrayBuild}) => {
 						},
 						{
 							title: i18n.translate('description'),
-							value: testrayBuild.description,
+
+							value: (
+								<div
+									dangerouslySetInnerHTML={{
+										__html: testrayBuild?.description,
+									}}
+								/>
+							),
 						},
 						{
 							title: i18n.translate('git-hash'),
-							value: testrayBuild.gitHash,
+							value:
+								testrayBuild?.gitHash === 'null' || ''
+									? '-'
+									: testrayBuild?.gitHash,
 						},
 						{
-							title: i18n.translate('create-date'),
-							value: dayjs(testrayBuild.dateCreated).format(
-								'lll'
-							),
+							title: i18n.translate('cpu-use-time'),
+							value:
+								testrayBuild?.cpuUseTime === 'null' || ''
+									? '-'
+									: testrayBuild?.cpuUseTime,
+						},
+						{
+							title: i18n.translate('execution-date'),
+							value: formatUTCDate(testrayBuild.dueDate),
 						},
 						{
 							title: i18n.translate('created-by'),
@@ -82,6 +107,48 @@ const BuildOverview: React.FC<BuildOverviewProps> = ({testrayBuild}) => {
 						},
 					]}
 				/>
+
+				<>
+					<ClayPanel
+						collapsable
+						displayTitle={
+							<div className="tr-small-heading">
+								{i18n.translate('playwright-reports')}
+							</div>
+						}
+						displayType="default"
+						showCollapseIcon
+					>
+						<ClayPanel.Body>
+							<div className="d-flex flex-wrap mb-1">
+								{Object.entries(playwrightReports)
+									.sort(([_url1, name1], [_url2, name2]) =>
+										name1.localeCompare(name2)
+									)
+									.map(([url, name], index) => (
+										<a
+											className="case-results-attachments-box mr-2 mt-2"
+											href={url}
+											key={index}
+											rel="noopener noreferrer"
+											target="_blank"
+										>
+											{name.substring(
+												0,
+												name.lastIndexOf('/')
+											)}
+
+											<ClayIcon
+												className="ml-1"
+												fontSize={12}
+												symbol="shortcut"
+											/>
+										</a>
+									))}
+							</div>
+						</ClayPanel.Body>
+					</ClayPanel>
+				</>
 
 				<div className="d-flex mt-4">
 					<dl>
@@ -101,10 +168,10 @@ const BuildOverview: React.FC<BuildOverviewProps> = ({testrayBuild}) => {
 					</dl>
 
 					<dl className="ml-3">
-						<dd>{i18n.sub('x-minutes', '0')}</dd>
+						<dd>{issues?.length}</dd>
 
 						<dd className="tr-small-heading">
-							{i18n.sub('time-x-total-issues', '0')}
+							{i18n.translate('total-issues')}
 						</dd>
 					</dl>
 				</div>
@@ -177,6 +244,31 @@ const BuildOverview: React.FC<BuildOverviewProps> = ({testrayBuild}) => {
 							{columnChartLoad && !loading && (
 								<ClayChart
 									axis={{
+										x: {
+											categories:
+												!!chart.testrayRunNumber
+													.length &&
+												chart.testrayRunNumber,
+											label: {
+												position: 'outer-center',
+												text: i18n
+													.translate(`${entity}`)
+													.toUpperCase(),
+											},
+											tick: {
+												show: chart.testrayRunNumber
+													.length
+													? true
+													: false,
+												text: {
+													show: chart.testrayRunNumber
+														.length
+														? true
+														: false,
+												},
+											},
+											type: 'category',
+										},
 										y: {
 											label: {
 												position: 'outer-middle',

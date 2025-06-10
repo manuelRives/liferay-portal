@@ -30,6 +30,11 @@ public class ThemeCSSCETImpl extends BaseCETImpl implements ThemeCSSCET {
 	}
 
 	@Override
+	public String getClayRTLURL() {
+		return getString("clayRTLURL");
+	}
+
+	@Override
 	public String getClayURL() {
 		return getString("clayURL");
 	}
@@ -45,8 +50,18 @@ public class ThemeCSSCETImpl extends BaseCETImpl implements ThemeCSSCET {
 	}
 
 	@Override
+	public String getMainRTLURL() {
+		return getString("mainRTLURL");
+	}
+
+	@Override
 	public String getMainURL() {
 		return getString("mainURL");
+	}
+
+	@Override
+	public String getScope() {
+		return getString("scope");
 	}
 
 	@Override

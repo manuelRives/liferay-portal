@@ -51,11 +51,11 @@ export function FreeMarkerTemplateEditor({
 
 		return availableObjectDefinitions.map(
 			({defaultLanguageId, id, label, name}) => ({
-				label: stringUtils.getLocalizableLabel(
-					defaultLanguageId,
-					label,
-					name
-				),
+				label: stringUtils.getLocalizableLabel({
+					fallbackLabel: name,
+					fallbackLanguageId: defaultLanguageId,
+					labels: label,
+				}),
 				value: id,
 			})
 		) as LabelValueObject<number>[];
@@ -78,6 +78,7 @@ export function FreeMarkerTemplateEditor({
 			CustomSidebarContent={
 				<SingleSelect
 					disabled={values.system}
+					id="freeMarkerEntity"
 					items={objectDefinitionItems ?? []}
 					label={Liferay.Language.get('entity')}
 					onSelectionChange={(value) => {

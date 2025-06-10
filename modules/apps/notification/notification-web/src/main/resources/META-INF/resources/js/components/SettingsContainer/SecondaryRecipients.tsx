@@ -17,7 +17,11 @@ import {
 } from 'frontend-js-components-web';
 import React, {useEffect, useState} from 'react';
 
-import {getCheckedChildren} from './rolesUtils';
+import {
+	getCheckedChildren,
+	handleMultiSelectRoleItemsChange,
+	uncheckMultiSelectItemChildrens,
+} from './rolesUtil';
 
 interface SecondaryRecipientsProps {
 	emailNotificationRoles: MultiSelectItem[];
@@ -25,6 +29,14 @@ interface SecondaryRecipientsProps {
 	recipientOptions: LabelValueObject[];
 	setValues: (values: Partial<NotificationTemplate>) => void;
 	values: NotificationTemplate;
+}
+
+export function resetRecipientTypeValue(newRecipientTypeValue: string) {
+	if (newRecipientTypeValue === 'email') {
+		return '';
+	}
+
+	return [];
 }
 
 export function SecondaryRecipient({
@@ -38,20 +50,49 @@ export function SecondaryRecipient({
 	const [ccRolesList, setCCRolesList] = useState<MultiSelectItem[]>([]);
 	const [recipient] = values.recipients as EmailRecipients[];
 
-	const handleMultiSelectItemsChange = (items: MultiSelectItem[]) => {
-		const newRecipients: EmailNotificationRecipients[] = [];
+	const handleRecipientRoleChange = (
+		items: MultiSelectItem[],
+		recipientKey: 'cc' | 'bcc',
+		setRoleList: (value: MultiSelectItem[]) => void
+	) => {
+		const newRecipients = handleMultiSelectRoleItemsChange(items);
 
-		if (items.length) {
-			const [itemsGroup] = items as MultiSelectItem[];
+		setValues({
+			...values,
+			recipients: [
+				{
+					...(values.recipients[0] as EmailRecipients),
+					[recipientKey]: newRecipients,
+				},
+			],
+		});
 
-			itemsGroup.children.forEach((child) => {
-				if (child.checked) {
-					newRecipients.push({['roleName']: child.value});
-				}
-			});
+		setRoleList(items);
+	};
+
+	const handleRecipientTypeChange = (
+		newRecipientTypeValue: string,
+		recipientKey: 'cc' | 'bcc',
+		roleList: MultiSelectItem[],
+		recipientTypeKey: 'ccType' | 'bccType',
+		setRoleList: (value: MultiSelectItem[]) => void
+	) => {
+		if (newRecipientTypeValue === 'email') {
+			const newRoleList = uncheckMultiSelectItemChildrens(roleList);
+			setRoleList(newRoleList);
 		}
-
-		return newRecipients;
+		setValues({
+			...values,
+			recipients: [
+				{
+					...recipient,
+					[recipientKey]: resetRecipientTypeValue(
+						newRecipientTypeValue
+					),
+					[recipientTypeKey]: newRecipientTypeValue as string,
+				},
+			],
+		});
 	};
 
 	useEffect(() => {
@@ -66,18 +107,20 @@ export function SecondaryRecipient({
 			(!!ccRolesList.length || !!emailNotificationRoles.length)
 		) {
 			const baseRoleList = ccRolesList.length
-				? ccRolesList[0]
-				: emailNotificationRoles[0];
+				? ccRolesList
+				: emailNotificationRoles;
 
-			setCCRolesList([
-				{
-					...baseRoleList,
-					children: getCheckedChildren(
-						recipient.cc,
-						baseRoleList.children
-					),
-				},
-			]);
+			setCCRolesList(
+				baseRoleList.map((baseRoleElement) => {
+					return {
+						...baseRoleElement,
+						children: getCheckedChildren(
+							recipient.cc as EmailNotificationRecipients[],
+							baseRoleElement.children
+						),
+					};
+				})
+			);
 
 			return;
 		}
@@ -97,18 +140,20 @@ export function SecondaryRecipient({
 			(!!bccRolesList.length || !!emailNotificationRoles.length)
 		) {
 			const baseRoleList = bccRolesList.length
-				? bccRolesList[0]
-				: emailNotificationRoles[0];
+				? bccRolesList
+				: emailNotificationRoles;
 
-			setBCCRolesList([
-				{
-					...baseRoleList,
-					children: getCheckedChildren(
-						recipient.bcc,
-						baseRoleList.children
-					),
-				},
-			]);
+			setBCCRolesList(
+				baseRoleList.map((baseRoleElement) => {
+					return {
+						...baseRoleElement,
+						children: getCheckedChildren(
+							recipient.bcc as EmailNotificationRecipients[],
+							baseRoleElement.children
+						),
+					};
+				})
+			);
 
 			return;
 		}
@@ -127,19 +172,17 @@ export function SecondaryRecipient({
 						<div className="col-lg-6">
 							<SingleSelect<LabelValueObject>
 								disabled={values.system}
+								id="secondaryRecipientTypeCC"
 								items={recipientOptions}
 								label={Liferay.Language.get('type')}
 								onSelectionChange={(value) => {
-									setValues({
-										...values,
-										recipients: [
-											{
-												...recipient,
-												cc: [],
-												ccType: value as string,
-											},
-										],
-									});
+									handleRecipientTypeChange(
+										value as string,
+										'cc',
+										ccRolesList,
+										'ccType',
+										setCCRolesList
+									);
 								}}
 								selectedKey={recipient.ccType}
 							/>
@@ -152,8 +195,9 @@ export function SecondaryRecipient({
 									feedbackMessage={Liferay.Language.get(
 										'you-can-use-a-comma-to-enter-multiple-users'
 									)}
+									id="secondaryRecipientsCC"
 									label={Liferay.Language.get('recipients')}
-									name="cc"
+									name="secondaryRecipientsCC"
 									onChange={({target}) =>
 										setValues({
 											...values,
@@ -169,9 +213,10 @@ export function SecondaryRecipient({
 										'type-email-address'
 									)}
 									value={
-										(values
-											.recipients[0] as EmailRecipients)
-											.cc as string
+										(
+											values
+												.recipients[0] as EmailRecipients
+										).cc as string
 									}
 								/>
 							)}
@@ -180,6 +225,7 @@ export function SecondaryRecipient({
 								<div className="lfr__notification-template-email-notification-settings-multiple-select">
 									<MultipleSelect
 										disabled={values.system}
+										id="secondaryRecipientRolesCC"
 										label={Liferay.Language.get('role')}
 										options={ccRolesList}
 										placeholder={Liferay.Language.get(
@@ -191,19 +237,11 @@ export function SecondaryRecipient({
 										)}
 										selectAllOption
 										setOptions={(items) => {
-											const newRecipients = handleMultiSelectItemsChange(
-												items
+											handleRecipientRoleChange(
+												items,
+												'cc',
+												setCCRolesList
 											);
-											setValues({
-												...values,
-												recipients: [
-													{
-														...values.recipients[0],
-														cc: newRecipients,
-													},
-												],
-											});
-											setCCRolesList(items);
 										}}
 									/>
 
@@ -240,19 +278,17 @@ export function SecondaryRecipient({
 						<div className="col-lg-6">
 							<SingleSelect<LabelValueObject>
 								disabled={values.system}
+								id="secondaryRecipientTypeBCC"
 								items={recipientOptions}
 								label={Liferay.Language.get('type')}
 								onSelectionChange={(value) => {
-									setValues({
-										...values,
-										recipients: [
-											{
-												...recipient,
-												bcc: [],
-												bccType: value as string,
-											},
-										],
-									});
+									handleRecipientTypeChange(
+										value as string,
+										'bcc',
+										bccRolesList,
+										'bccType',
+										setBCCRolesList
+									);
 								}}
 								selectedKey={recipient.bccType}
 							/>
@@ -265,8 +301,9 @@ export function SecondaryRecipient({
 									feedbackMessage={Liferay.Language.get(
 										'you-can-use-a-comma-to-enter-multiple-users'
 									)}
+									id="secondaryRecipientsBCC"
 									label={Liferay.Language.get('recipients')}
-									name="bcc"
+									name="secondaryRecipientsBCC"
 									onChange={({target}) =>
 										setValues({
 											...values,
@@ -282,9 +319,10 @@ export function SecondaryRecipient({
 										'type-email-address'
 									)}
 									value={
-										(values
-											.recipients[0] as EmailRecipients)
-											.bcc as string
+										(
+											values
+												.recipients[0] as EmailRecipients
+										).bcc as string
 									}
 								/>
 							)}
@@ -293,6 +331,7 @@ export function SecondaryRecipient({
 								<div className="lfr__notification-template-email-notification-settings-multiple-select">
 									<MultipleSelect
 										disabled={values.system}
+										id="secondaryRecipientRolesBCC"
 										label={Liferay.Language.get('role')}
 										options={bccRolesList}
 										placeholder={Liferay.Language.get(
@@ -304,19 +343,11 @@ export function SecondaryRecipient({
 										)}
 										selectAllOption
 										setOptions={(items) => {
-											const newRecipients = handleMultiSelectItemsChange(
-												items
+											handleRecipientRoleChange(
+												items,
+												'bcc',
+												setBCCRolesList
 											);
-											setValues({
-												...values,
-												recipients: [
-													{
-														...values.recipients[0],
-														bcc: newRecipients,
-													},
-												],
-											});
-											setBCCRolesList(items);
 										}}
 									/>
 

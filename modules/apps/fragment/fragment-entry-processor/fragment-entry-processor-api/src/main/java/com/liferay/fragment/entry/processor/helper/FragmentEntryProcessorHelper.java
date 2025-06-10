@@ -42,9 +42,18 @@ public interface FragmentEntryProcessorHelper {
 
 	public long getFileEntryId(WebImage webImage);
 
+	public InfoItemFieldMapped getInfoItemFieldMapped(
+		JSONObject editableValueJSONObject,
+		FragmentEntryProcessorContext fragmentEntryProcessorContext);
+
 	public Object getMappedInfoItemFieldValue(
 		JSONObject editableValueJSONObject, String fieldName,
-		InfoItemFieldValues infoItemFieldValues, Locale locale);
+		FragmentEntryProcessorContext fragmentEntryProcessorContext,
+		InfoItemFieldValues infoItemFieldValues);
+
+	public boolean hasViewPermission(
+		JSONObject editableValueJSONObject,
+		FragmentEntryProcessorContext fragmentEntryProcessorContext);
 
 	public boolean isMapped(JSONObject jsonObject);
 

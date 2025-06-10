@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-// @ts-ignore
-
 import {Locator, Page} from '@playwright/test';
 
+import {DataTablePage} from '../account-admin-web/DataTablePage';
 import {ApplicationsMenuPage} from '../product-navigation-applications-menu/ApplicationsMenuPage';
 import {searchTableRowByValue} from './UsersAndOrganizationsPage';
 
@@ -21,6 +20,7 @@ export class ServiceAccountsPage {
 		value: string,
 		strictEqual?: boolean
 	) => Promise<{column: Locator; row: Locator}>;
+	readonly usersTable: DataTablePage;
 
 	constructor(page: Page) {
 		this.applicationsMenuPage = new ApplicationsMenuPage(page);
@@ -66,6 +66,14 @@ export class ServiceAccountsPage {
 				strictEqual
 			);
 		};
+		this.usersTable = new DataTablePage(
+			page,
+			page
+				.locator(
+					'#portlet_com_liferay_users_admin_web_portlet_ServiceAccountsPortlet'
+				)
+				.first()
+		);
 	}
 
 	async goto() {

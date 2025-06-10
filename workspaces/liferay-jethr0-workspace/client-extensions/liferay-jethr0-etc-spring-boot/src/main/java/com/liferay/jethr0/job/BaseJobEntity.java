@@ -7,11 +7,12 @@ package com.liferay.jethr0.job;
 
 import com.liferay.jethr0.bui1d.BuildEntity;
 import com.liferay.jethr0.entity.BaseEntity;
-import com.liferay.jethr0.git.branch.GitBranchEntity;
+import com.liferay.jethr0.git.commit.GitCommitEntity;
 import com.liferay.jethr0.jenkins.cohort.JenkinsCohortEntity;
 import com.liferay.jethr0.routine.RoutineEntity;
 import com.liferay.jethr0.task.TaskEntity;
 import com.liferay.jethr0.testsuite.TestSuiteEntity;
+import com.liferay.jethr0.util.Jethr0ContextUtil;
 import com.liferay.jethr0.util.StringUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 
@@ -51,16 +52,6 @@ public abstract class BaseJobEntity extends BaseEntity implements JobEntity {
 	}
 
 	@Override
-	public void addGitBranchEntities(Set<GitBranchEntity> gitBranchEntities) {
-		addRelatedEntities(gitBranchEntities);
-	}
-
-	@Override
-	public void addGitBranchEntity(GitBranchEntity gitBranchEntity) {
-		addRelatedEntity(gitBranchEntity);
-	}
-
-	@Override
 	public void addJenkinsCohortEntities(
 		Set<JenkinsCohortEntity> jenkinsCohortEntities) {
 
@@ -95,13 +86,30 @@ public abstract class BaseJobEntity extends BaseEntity implements JobEntity {
 	}
 
 	@Override
+	public boolean getBlessed() {
+		return _blessed;
+	}
+
+	@Override
 	public Set<BuildEntity> getBuildEntities() {
 		return getRelatedEntities(BuildEntity.class);
 	}
 
 	@Override
-	public Set<GitBranchEntity> getGitBranchEntities() {
-		return getRelatedEntities(GitBranchEntity.class);
+	public URL getEntityURL() {
+		return StringUtil.toURL(
+			StringUtil.combine(
+				Jethr0ContextUtil.getLiferayPortalURL(), "/#/jobs/", getId()));
+	}
+
+	@Override
+	public GitCommitEntity getGitCommitEntity() {
+		return _gitCommitEntity;
+	}
+
+	@Override
+	public long getGitCommitEntityId() {
+		return _gitCommitEntityId;
 	}
 
 	@Override
@@ -147,11 +155,15 @@ public abstract class BaseJobEntity extends BaseEntity implements JobEntity {
 		JobEntity.Type type = getType();
 
 		jsonObject.put(
+			"blessed", getBlessed()
+		).put(
 			"name", getName()
 		).put(
 			"parameters", String.valueOf(_getParametersJSONArray())
 		).put(
 			"priority", getPriority()
+		).put(
+			"r_gitCommitToJobs_c_gitCommitId", getGitCommitEntityId()
 		).put(
 			"r_routineToJobs_c_routineId", getRoutineEntityId()
 		).put(
@@ -231,18 +243,6 @@ public abstract class BaseJobEntity extends BaseEntity implements JobEntity {
 	}
 
 	@Override
-	public void removeGitBranchEntities(
-		Set<GitBranchEntity> gitBranchEntities) {
-
-		removeRelatedEntities(gitBranchEntities);
-	}
-
-	@Override
-	public void removeGitBranchEntity(GitBranchEntity gitBranchEntity) {
-		removeRelatedEntity(gitBranchEntity);
-	}
-
-	@Override
 	public void removeJenkinsCohortEntities(
 		Set<JenkinsCohortEntity> jenkinsCohortEntities) {
 
@@ -279,6 +279,23 @@ public abstract class BaseJobEntity extends BaseEntity implements JobEntity {
 	}
 
 	@Override
+	public void setBlessed(boolean blessed) {
+		_blessed = blessed;
+	}
+
+	@Override
+	public void setGitCommitEntity(GitCommitEntity gitCommitEntity) {
+		_gitCommitEntity = gitCommitEntity;
+
+		if (_gitCommitEntity != null) {
+			_gitCommitEntityId = _gitCommitEntity.getId();
+		}
+		else {
+			_gitCommitEntityId = 0;
+		}
+	}
+
+	@Override
 	public void setJenkinsBranchURL(URL jenkinsBranchURL) {
 		setParameterValue("jenkinsBranchURL", String.valueOf(jenkinsBranchURL));
 	}
@@ -287,6 +304,9 @@ public abstract class BaseJobEntity extends BaseEntity implements JobEntity {
 	public void setJSONObject(JSONObject jsonObject) {
 		super.setJSONObject(jsonObject);
 
+		_blessed = jsonObject.optBoolean("blessed");
+		_gitCommitEntityId = jsonObject.optLong(
+			"r_gitCommitToJobs_c_gitCommitId");
 		_name = jsonObject.getString("name");
 		_parameters = new HashMap<>();
 		_priority = jsonObject.optInt("priority");
@@ -549,6 +569,9 @@ public abstract class BaseJobEntity extends BaseEntity implements JobEntity {
 		"https://github.com/(?<userName>[^/]+)/(?<repositoryName>[^/]+)/tree/" +
 			"(?<branchName>[^/]+)");
 
+	private boolean _blessed;
+	private GitCommitEntity _gitCommitEntity;
+	private long _gitCommitEntityId;
 	private String _name;
 	private Map<String, String> _parameters;
 	private int _priority;

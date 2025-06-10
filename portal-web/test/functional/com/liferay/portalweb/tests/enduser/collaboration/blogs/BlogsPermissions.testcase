@@ -4,7 +4,6 @@ definition {
 	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Roles";
 	property testray.main.component.name = "Blogs";
 
 	setUp {
@@ -120,7 +119,7 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		JSONRole.addRegularRole(roleTitle = "Test Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Test Regrole Name");
 
 		JSONRole.assignRoleToUser(
 			roleTitle = "Test Regrole Name",
@@ -572,7 +571,7 @@ definition {
 
 		task ("Remove permissions for guest and ensure comments cannot be added anymore.") {
 			User.loginUserPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com");
 
 			Navigator.gotoPage(pageName = "Blogs Page");
@@ -1242,7 +1241,6 @@ definition {
 	@priority = 3
 	test CannotEditOwnComment {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
-		property testray.component.names = "Comment";
 
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
@@ -1611,7 +1609,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.gotoPage(pageName = "Blogs Page");

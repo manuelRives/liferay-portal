@@ -8,14 +8,19 @@ package com.liferay.portal.kernel.upgrade;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.PortletConstants;
 import com.liferay.portal.kernel.model.PortletPreferenceValue;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.simple.Element;
+
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,9 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
 
 /**
  * @author Jorge Ferrer
@@ -237,6 +239,98 @@ public abstract class BasePortletPreferencesUpgradeProcess
 			String portletId, String xml)
 		throws Exception;
 
+	private void _deletePortletPreferences(
+			long portletPreferencesId, boolean deletePortletPreferenceValue)
+		throws Exception {
+
+		runSQL(
+			"delete from PortletPreferences where portletPreferencesId = " +
+				portletPreferencesId);
+
+		if (deletePortletPreferenceValue) {
+			runSQL(
+				"delete from PortletPreferenceValue where " +
+					"portletPreferencesId = " + portletPreferencesId);
+		}
+	}
+
+	private long _getCompanyId(int ownerType, long ownerId, long plid)
+		throws Exception {
+
+		long[] companyIds = PortalInstancePool.getCompanyIds();
+
+		if (companyIds.length == 1) {
+			return companyIds[0];
+		}
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				_getCompanyIdSelectSQL(ownerType, ownerId, plid))) {
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getLong("companyId");
+				}
+			}
+		}
+
+		return 0;
+	}
+
+	private String _getCompanyIdSelectSQL(
+		int ownerType, long ownerId, long plid) {
+
+		String foreignColumnName = null;
+		String foreignTableName = null;
+
+		if (ownerType == PortletKeys.PREFS_OWNER_TYPE_ARCHIVED) {
+			foreignColumnName = "portletItemId";
+			foreignTableName = "PortletItem";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_COMPANY) {
+			foreignColumnName = "companyId";
+			foreignTableName = "Company";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_GROUP) {
+			foreignColumnName = "groupId";
+			foreignTableName = "Group_";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
+			foreignColumnName = "plid";
+			foreignTableName = "Layout";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_ORGANIZATION) {
+			foreignColumnName = "organizationId";
+			foreignTableName = "Organization_";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_USER) {
+			foreignColumnName = "userId";
+			foreignTableName = "User_";
+		}
+		else {
+			throw new IllegalArgumentException(
+				"Invalid owner type: " + ownerType);
+		}
+
+		StringBundler sb = new StringBundler(8);
+
+		sb.append("select companyId from ");
+		sb.append(foreignTableName);
+		sb.append(" where ");
+		sb.append(foreignTableName);
+		sb.append(".");
+		sb.append(foreignColumnName);
+		sb.append(" = ");
+
+		if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
+			sb.append(plid);
+		}
+		else {
+			sb.append(ownerId);
+		}
+
+		return sb.toString();
+	}
+
 	private Map<String, PreferenceValues> _getPreferenceValuesMap(
 			PreparedStatement selectPreparedStatement)
 		throws Exception {
@@ -332,29 +426,33 @@ public abstract class BasePortletPreferencesUpgradeProcess
 					portletId, preferences
 				};
 			},
-			values -> _updatePortletPreferences(values),
-			"Unable to update PortletPreferences");
+			values -> _updatePortletPreferences(values), null);
 	}
 
 	private void _updatePortletPreferences(Object[] values) throws Exception {
 		long portletPreferencesId = (Long)values[0];
 		long companyId = (Long)values[1];
+		int ownerType = (Integer)values[2];
+		long plid = (Long)values[3];
+		long ownerId = (Long)values[4];
 
 		if (companyId <= 0) {
-			runSQL(
-				"delete from PortletPreferences where portletPreferencesId = " +
-					portletPreferencesId);
+			companyId = _getCompanyId(ownerType, ownerId, plid);
 
-			return;
+			if (companyId <= 0) {
+				_deletePortletPreferences(portletPreferencesId, false);
+
+				return;
+			}
+
+			_updatePortletPreferencesCompanyId(
+				companyId, portletPreferencesId, false);
 		}
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"update PortletPreferences set preferences = ? where " +
 					"portletPreferencesId = ?")) {
 
-			int ownerType = (Integer)values[2];
-			long plid = (Long)values[3];
-			long ownerId = (Long)values[4];
 			String portletId = (String)values[5];
 			String preferences = (String)values[6];
 
@@ -363,6 +461,35 @@ public abstract class BasePortletPreferencesUpgradeProcess
 
 			if (!preferences.equals(newPreferences)) {
 				preparedStatement.setString(1, newPreferences);
+				preparedStatement.setLong(2, portletPreferencesId);
+
+				preparedStatement.executeUpdate();
+			}
+		}
+	}
+
+	private void _updatePortletPreferencesCompanyId(
+			long companyId, long portletPreferencesId,
+			boolean updatePortletPreferenceValue)
+		throws Exception {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"update PortletPreferences set companyId = ? where " +
+					"portletPreferencesId = ?")) {
+
+			preparedStatement.setLong(1, companyId);
+			preparedStatement.setLong(2, portletPreferencesId);
+
+			preparedStatement.executeUpdate();
+		}
+
+		if (updatePortletPreferenceValue) {
+			try (PreparedStatement preparedStatement =
+					connection.prepareStatement(
+						"update PortletPreferenceValue set companyId = ? " +
+							"where portletPreferencesId = ?")) {
+
+				preparedStatement.setLong(1, companyId);
 				preparedStatement.setLong(2, portletPreferencesId);
 
 				preparedStatement.executeUpdate();
@@ -401,8 +528,7 @@ public abstract class BasePortletPreferencesUpgradeProcess
 					portletId, ctCollectionId
 				};
 			},
-			values -> _updatePortletPreferenceValues(values),
-			"Unable to update PortletPreferences and PortletPreferenceValue");
+			values -> _updatePortletPreferenceValues(values), null);
 	}
 
 	private void _updatePortletPreferenceValues(Object[] values)
@@ -410,22 +536,23 @@ public abstract class BasePortletPreferencesUpgradeProcess
 
 		long portletPreferencesId = (Long)values[0];
 		long companyId = (Long)values[1];
-
-		if (companyId <= 0) {
-			runSQL(
-				"delete from PortletPreferences where portletPreferencesId = " +
-					portletPreferencesId);
-
-			runSQL(
-				"delete from PortletPreferenceValue where " +
-					"portletPreferencesId = " + portletPreferencesId);
-
-			return;
-		}
-
 		int ownerType = (Integer)values[2];
 		long plid = (Long)values[3];
 		long ownerId = (Long)values[4];
+
+		if (companyId <= 0) {
+			companyId = _getCompanyId(ownerType, ownerId, plid);
+
+			if (companyId <= 0) {
+				_deletePortletPreferences(portletPreferencesId, true);
+
+				return;
+			}
+
+			_updatePortletPreferencesCompanyId(
+				companyId, portletPreferencesId, true);
+		}
+
 		String portletId = (String)values[5];
 		long ctCollectionId = (Long)values[6];
 
@@ -593,7 +720,9 @@ public abstract class BasePortletPreferencesUpgradeProcess
 						String largeValue = null;
 						String smallValue = null;
 
-						if (value.length() > smallValueMaxLength) {
+						if ((value != null) &&
+							(value.length() > smallValueMaxLength)) {
+
 							largeValue = value;
 						}
 						else {
@@ -616,7 +745,9 @@ public abstract class BasePortletPreferencesUpgradeProcess
 					String largeValue = null;
 					String smallValue = null;
 
-					if (value.length() > smallValueMaxLength) {
+					if ((value != null) &&
+						(value.length() > smallValueMaxLength)) {
+
 						largeValue = value;
 					}
 					else {

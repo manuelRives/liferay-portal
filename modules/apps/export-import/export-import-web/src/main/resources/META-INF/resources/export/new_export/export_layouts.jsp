@@ -141,7 +141,7 @@ renderResponse.setTitle(!configuredExport ? LanguageUtil.get(request, "new-custo
 						exportImportConfigurationId="<%= exportImportConfigurationId %>"
 					/>
 
-					<c:if test="<%= !group.isDepot() && !group.isCompany() && !group.isLayoutPrototype() %>">
+					<c:if test="<%= GroupCapabilityUtil.isSupportsPages(group) && !group.isCompany() && !group.isLayoutPrototype() %>">
 						<liferay-staging:select-pages
 							action="<%= Constants.EXPORT %>"
 							disableInputs="<%= configuredExport %>"
@@ -239,7 +239,8 @@ renderResponse.setTitle(!configuredExport ? LanguageUtil.get(request, "new-custo
 				}
 				%>
 
-				var blacklistCharJSONArray = <%= blacklistCharJSONArray.toJSONString() %>;
+				var blacklistCharJSONArray =
+					<%= blacklistCharJSONArray.toJSONString() %>;
 
 				for (var i = 0; i < blacklistCharJSONArray.length; i++) {
 					if (val.indexOf(blacklistCharJSONArray[i]) !== -1) {

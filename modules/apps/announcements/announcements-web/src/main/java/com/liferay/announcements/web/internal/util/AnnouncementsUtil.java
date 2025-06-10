@@ -5,7 +5,12 @@
 
 package com.liferay.announcements.web.internal.util;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONException;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Role;
@@ -31,6 +36,7 @@ import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -40,7 +46,6 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.security.permission.UserBagFactoryUtil;
 import com.liferay.portal.service.permission.UserGroupPermissionUtil;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
@@ -63,7 +68,8 @@ public class AnnouncementsUtil {
 			LinkedHashMapBuilder.<Long, long[]>put(
 				0L, new long[] {0}
 			).put(
-				_USER_CLASS_NAME_ID, new long[] {userId}
+				PortalUtil.getClassNameId(User.class.getName()),
+				new long[] {userId}
 			).build();
 
 		// Organization announcements
@@ -73,7 +79,9 @@ public class AnnouncementsUtil {
 		long[] organizationIds = userBag.getUserOrgIds();
 
 		if (organizationIds.length > 0) {
-			scopes.put(_ORGANIZATION_CLASS_NAME_ID, organizationIds);
+			scopes.put(
+				PortalUtil.getClassNameId(Organization.class.getName()),
+				organizationIds);
 		}
 
 		// Site announcements
@@ -81,7 +89,8 @@ public class AnnouncementsUtil {
 		long[] groupIds = userBag.getUserGroupIds();
 
 		if (groupIds.length > 0) {
-			scopes.put(_GROUP_CLASS_NAME_ID, groupIds);
+			scopes.put(
+				PortalUtil.getClassNameId(Group.class.getName()), groupIds);
 		}
 
 		// User group announcements
@@ -90,10 +99,10 @@ public class AnnouncementsUtil {
 			UserGroupLocalServiceUtil.getUserUserGroups(userId);
 
 		if (!userGroups.isEmpty()) {
-			long[] userGroupIds = ListUtil.toLongArray(
-				userGroups, UserGroup.USER_GROUP_ID_ACCESSOR);
-
-			scopes.put(_USER_GROUP_CLASS_NAME_ID, userGroupIds);
+			scopes.put(
+				PortalUtil.getClassNameId(UserGroup.class.getName()),
+				ListUtil.toLongArray(
+					userGroups, UserGroup.USER_GROUP_ID_ACCESSOR));
 		}
 
 		// Role announcements
@@ -142,7 +151,9 @@ public class AnnouncementsUtil {
 		}
 
 		if (!roleIds.isEmpty()) {
-			scopes.put(_ROLE_CLASS_NAME_ID, ArrayUtil.toLongArray(roleIds));
+			scopes.put(
+				PortalUtil.getClassNameId(Role.class.getName()),
+				ArrayUtil.toLongArray(roleIds));
 		}
 
 		return scopes;
@@ -151,83 +162,75 @@ public class AnnouncementsUtil {
 	public static List<Group> getGroups(ThemeDisplay themeDisplay)
 		throws PortalException {
 
-		List<Group> filteredGroups = new ArrayList<>();
+		return TransformUtil.transform(
+			GroupLocalServiceUtil.getUserGroups(themeDisplay.getUserId(), true),
+			group -> {
+				if (((group.isOrganization() && group.isSite()) ||
+					 group.isRegularSite()) &&
+					GroupPermissionUtil.contains(
+						themeDisplay.getPermissionChecker(), group.getGroupId(),
+						ActionKeys.MANAGE_ANNOUNCEMENTS)) {
 
-		List<Group> groups = GroupLocalServiceUtil.getUserGroups(
-			themeDisplay.getUserId(), true);
+					return group;
+				}
 
-		for (Group group : groups) {
-			if (((group.isOrganization() && group.isSite()) ||
-				 group.isRegularSite()) &&
-				GroupPermissionUtil.contains(
-					themeDisplay.getPermissionChecker(), group.getGroupId(),
-					ActionKeys.MANAGE_ANNOUNCEMENTS)) {
-
-				filteredGroups.add(group);
-			}
-		}
-
-		return filteredGroups;
+				return null;
+			});
 	}
 
 	public static List<Organization> getOrganizations(ThemeDisplay themeDisplay)
 		throws PortalException {
 
-		List<Organization> filteredOrganizations = new ArrayList<>();
-
 		List<Organization> organizations =
 			OrganizationLocalServiceUtil.getUserOrganizations(
 				themeDisplay.getUserId());
 
-		for (Organization organization : organizations) {
-			if (OrganizationPermissionUtil.contains(
-					themeDisplay.getPermissionChecker(),
-					organization.getOrganizationId(),
-					ActionKeys.MANAGE_ANNOUNCEMENTS)) {
+		return TransformUtil.transform(
+			organizations,
+			organization -> {
+				if (OrganizationPermissionUtil.contains(
+						themeDisplay.getPermissionChecker(),
+						organization.getOrganizationId(),
+						ActionKeys.MANAGE_ANNOUNCEMENTS)) {
 
-				filteredOrganizations.add(organization);
-			}
-		}
+					return organization;
+				}
 
-		return filteredOrganizations;
+				return null;
+			});
 	}
 
 	public static List<Role> getRoles(ThemeDisplay themeDisplay)
 		throws PortalException {
 
-		List<Role> filteredRoles = new ArrayList<>();
+		return TransformUtil.transform(
+			RoleLocalServiceUtil.getRoles(themeDisplay.getCompanyId()),
+			role -> {
+				if (hasManageAnnouncementsPermission(
+						role, themeDisplay.getPermissionChecker())) {
 
-		List<Role> roles = RoleLocalServiceUtil.getRoles(
-			themeDisplay.getCompanyId());
+					return role;
+				}
 
-		for (Role role : roles) {
-			if (hasManageAnnouncementsPermission(
-					role, themeDisplay.getPermissionChecker())) {
-
-				filteredRoles.add(role);
-			}
-		}
-
-		return filteredRoles;
+				return null;
+			});
 	}
 
 	public static List<UserGroup> getUserGroups(ThemeDisplay themeDisplay) {
-		List<UserGroup> filteredUserGroups = new ArrayList<>();
+		return TransformUtil.transform(
+			UserGroupLocalServiceUtil.getUserGroups(
+				themeDisplay.getCompanyId()),
+			userGroup -> {
+				if (UserGroupPermissionUtil.contains(
+						themeDisplay.getPermissionChecker(),
+						userGroup.getUserGroupId(),
+						ActionKeys.MANAGE_ANNOUNCEMENTS)) {
 
-		List<UserGroup> userGroups = UserGroupLocalServiceUtil.getUserGroups(
-			themeDisplay.getCompanyId());
+					return userGroup;
+				}
 
-		for (UserGroup userGroup : userGroups) {
-			if (UserGroupPermissionUtil.contains(
-					themeDisplay.getPermissionChecker(),
-					userGroup.getUserGroupId(),
-					ActionKeys.MANAGE_ANNOUNCEMENTS)) {
-
-				filteredUserGroups.add(userGroup);
-			}
-		}
-
-		return filteredUserGroups;
+				return null;
+			});
 	}
 
 	public static boolean hasManageAnnouncementsPermission(
@@ -257,23 +260,21 @@ public class AnnouncementsUtil {
 		return false;
 	}
 
-	private static final long _GROUP_CLASS_NAME_ID = PortalUtil.getClassNameId(
-		Group.class.getName());
+	public static String toJSON(List<String> content) {
+		JSONArray jsonArray = JSONFactoryUtil.createJSONArray(
+			TransformUtil.transform(content, HtmlUtil::escape));
 
-	private static final long _ORGANIZATION_CLASS_NAME_ID =
-		PortalUtil.getClassNameId(Organization.class.getName());
+		return jsonArray.toString();
+	}
+
+	public static List<String> toStringList(String json) throws JSONException {
+		return TransformUtil.transform(
+			JSONUtil.toStringList(JSONFactoryUtil.createJSONArray(json)),
+			HtmlUtil::unescape);
+	}
 
 	private static final boolean _PERMISSIONS_CHECK_GUEST_ENABLED =
 		GetterUtil.getBoolean(
 			PropsUtil.get(PropsKeys.PERMISSIONS_CHECK_GUEST_ENABLED));
-
-	private static final long _ROLE_CLASS_NAME_ID = PortalUtil.getClassNameId(
-		Role.class.getName());
-
-	private static final long _USER_CLASS_NAME_ID = PortalUtil.getClassNameId(
-		User.class.getName());
-
-	private static final long _USER_GROUP_CLASS_NAME_ID =
-		PortalUtil.getClassNameId(UserGroup.class.getName());
 
 }

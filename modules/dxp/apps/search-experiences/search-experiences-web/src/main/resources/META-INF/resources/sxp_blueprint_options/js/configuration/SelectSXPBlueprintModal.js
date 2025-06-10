@@ -10,7 +10,6 @@ import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClayModal from '@clayui/modal';
 import {ClayPaginationBarWithBasicItems} from '@clayui/pagination-bar';
 import ClayTable from '@clayui/table';
-import moment from 'moment';
 import React, {useEffect, useState} from 'react';
 
 import ManagementToolbar from './ManagementToolbar';
@@ -19,9 +18,13 @@ const DELTAS = [10, 20, 30, 50];
 const TRUNCATE_LENGTH = 200;
 
 function formatDate(value) {
-	return moment(moment(value, 'YYYYMMDDHHmmss'))
-		.locale(Liferay.ThemeDisplay.getBCP47LanguageId() || 'en-US')
-		.format('lll');
+	return new Intl.DateTimeFormat(Liferay.ThemeDisplay.getBCP47LanguageId(), {
+		day: 'numeric',
+		hour: 'numeric',
+		minute: 'numeric',
+		month: 'short',
+		year: 'numeric',
+	}).format(new Date(value));
 }
 
 function truncateString(value) {
@@ -131,7 +134,7 @@ const SelectSXPBlueprintModal = ({
 						alt: Liferay.Language.get('unable-to-load-content'),
 						title: Liferay.Language.get('unable-to-load-content'),
 					}}
-					imgSrc="/o/admin-theme/images/states/empty_state.gif"
+					imgSrc="/o/admin-theme/images/states/empty_state.svg"
 					title={Liferay.Language.get('unable-to-load-content')}
 				/>
 			);
@@ -208,10 +211,10 @@ const SelectSXPBlueprintModal = ({
 											selectedExternalReferenceCode
 												? Liferay.Language.get(
 														'selected'
-												  )
+													)
 												: Liferay.Language.get(
 														'select'
-												  )}
+													)}
 										</ClayButton>
 									</ClayTable.Cell>
 								</ClayTable.Row>
@@ -245,7 +248,7 @@ const SelectSXPBlueprintModal = ({
 					alt: Liferay.Language.get('no-results-found'),
 					title: Liferay.Language.get('no-results-found'),
 				}}
-				imgSrc="/o/admin-theme/images/states/empty_state.gif"
+				imgSrc="/o/admin-theme/images/states/empty_state.svg"
 				title={Liferay.Language.get('no-results-found')}
 			/>
 		);

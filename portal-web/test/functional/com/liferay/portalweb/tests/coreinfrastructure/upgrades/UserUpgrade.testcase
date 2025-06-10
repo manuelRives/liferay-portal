@@ -1,7 +1,8 @@
-@component-name = "portal-upgrades"
+@component-name = "portal-commerce"
 definition {
 
-	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+	property custom.properties = "passwords.encryption.algorithm.legacy=PBKDF2WithHmacSHA1/160/128000";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property test.liferay.virtual.instance = "false";
@@ -128,7 +129,7 @@ definition {
 	@priority = 5
 	test ResetTestUserPasswordAfterUpgrade621015 {
 		property data.archive.type = "data-archive-portal";
-		property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql";
 		property portal.version = "6.2.10.15";
 		property setup.wizard.enabled = "true";
 
@@ -139,7 +140,7 @@ definition {
 	@priority = 5
 	test ResetTestUserPasswordAfterUpgrade621021 {
 		property data.archive.type = "data-archive-portal";
-		property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql";
 		property portal.version = "6.2.10.21";
 		property setup.wizard.enabled = "true";
 

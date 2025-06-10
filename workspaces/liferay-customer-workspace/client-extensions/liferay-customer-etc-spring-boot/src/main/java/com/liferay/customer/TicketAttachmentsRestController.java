@@ -5,9 +5,17 @@
 
 package com.liferay.customer;
 
-import com.liferay.customer.google.service.GoogleCloudStorageWebService;
-import com.liferay.customer.object.model.TicketAttachment;
-import com.liferay.customer.object.service.TicketAttachmentWebService;
+import com.liferay.client.extension.util.spring.boot3.BaseRestController;
+import com.liferay.client.extension.util.spring.boot3.client.LiferayOAuth2AccessTokenManager;
+import com.liferay.customer.model.TicketAttachment;
+import com.liferay.customer.service.GoogleCloudStorageService;
+import com.liferay.customer.service.NotificationQueueEntryService;
+import com.liferay.customer.service.TicketAttachmentService;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StackTraceUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,8 +45,8 @@ public class TicketAttachmentsRestController extends BaseRestController {
 
 		try {
 			TicketAttachment ticketAttachment =
-				_ticketAttachmentWebService.fetchTicketAttachment(
-					jwt, ticketAttachmentId);
+				_ticketAttachmentService.fetchTicketAttachment(
+					"Bearer " + jwt.getTokenValue(), ticketAttachmentId);
 
 			if (ticketAttachment == null) {
 				return new ResponseEntity<>(
@@ -46,20 +55,65 @@ public class TicketAttachmentsRestController extends BaseRestController {
 					HttpStatus.NOT_FOUND);
 			}
 
-			_ticketAttachmentWebService.deleteTicketAttachment(
-				jwt, ticketAttachmentId);
+			_ticketAttachmentService.updateTicketAttachmentState(
+				"Bearer " + jwt.getTokenValue(), ticketAttachmentId,
+				WorkflowConstants.STATUS_IN_TRASH);
 
-			_googleCloudStorageWebService.deleteObject(
-				ticketAttachment.getGCSBucketName(),
-				ticketAttachment.getGCSObjectName());
+			try {
+				_googleCloudStorageService.deleteObject(
+					ticketAttachment.getGCSBucketName(),
+					ticketAttachment.getGCSObjectName());
+
+				_ticketAttachmentService.deleteTicketAttachment(
+					"Bearer " + jwt.getTokenValue(), ticketAttachmentId);
+			}
+			catch (Exception exception) {
+				_log.error(exception, exception);
+
+				return new ResponseEntity<>(HttpStatus.ACCEPTED);
+			}
 
 			return new ResponseEntity<>(HttpStatus.OK);
 		}
 		catch (Exception exception) {
-			_log.error(exception);
+			_log.error(exception, exception);
 
 			return new ResponseEntity(
 				exception.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@Scheduled(cron = "0 0 * * * *")
+	public void scheduledDeleteTicketAttachment() throws Exception {
+		List<TicketAttachment> ticketAttachments =
+			_ticketAttachmentService.searchTicketAttachments(
+				_liferayOAuth2AccessTokenManager.getAuthorization(
+					"liferay-customer-etc-spring-boot-oahs"),
+				"state eq " + WorkflowConstants.STATUS_IN_TRASH);
+
+		for (TicketAttachment ticketAttachment : ticketAttachments) {
+			try {
+				_googleCloudStorageService.deleteObject(
+					ticketAttachment.getGCSBucketName(),
+					ticketAttachment.getGCSObjectName());
+
+				_ticketAttachmentService.deleteTicketAttachment(
+					_liferayOAuth2AccessTokenManager.getAuthorization(
+						"liferay-customer-etc-spring-boot-oahs"),
+					ticketAttachment.getTicketAttachmentId());
+			}
+			catch (Exception exception) {
+				_log.error(exception, exception);
+
+				_notificationQueueEntryService.addNotificationQueueEntry(
+					"solutions@liferay.com", "Customer Portal",
+					"is-support@liferay.com",
+					"Customer Portal Error Notification",
+					StringBundler.concat(
+						"<p>There was an error deleting a large file from ",
+						"Google Cloud Storage.</p>",
+						StackTraceUtil.getStackTrace(exception)));
+			}
 		}
 	}
 
@@ -67,9 +121,15 @@ public class TicketAttachmentsRestController extends BaseRestController {
 		TicketAttachmentsRestController.class);
 
 	@Autowired
-	private GoogleCloudStorageWebService _googleCloudStorageWebService;
+	private GoogleCloudStorageService _googleCloudStorageService;
 
 	@Autowired
-	private TicketAttachmentWebService _ticketAttachmentWebService;
+	private LiferayOAuth2AccessTokenManager _liferayOAuth2AccessTokenManager;
+
+	@Autowired
+	private NotificationQueueEntryService _notificationQueueEntryService;
+
+	@Autowired
+	private TicketAttachmentService _ticketAttachmentService;
 
 }

@@ -28,7 +28,7 @@ import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.search.spi.model.permission.SearchPermissionFilterContributor;
+import com.liferay.portal.search.spi.model.permission.contributor.SearchPermissionFilterContributor;
 
 import java.util.List;
 
@@ -98,14 +98,8 @@ public class CTCollectionSearchPermissionFilterContributor
 			ctCollectionIds,
 			ctCollectionId -> {
 				try {
-					if (_ctCollectionModelResourcePermission.contains(
-							permissionChecker, ctCollectionId,
-							ActionKeys.VIEW)) {
-
-						return true;
-					}
-
-					return false;
+					return _ctCollectionModelResourcePermission.contains(
+						permissionChecker, ctCollectionId, ActionKeys.VIEW);
 				}
 				catch (PortalException portalException) {
 					if (_log.isDebugEnabled()) {

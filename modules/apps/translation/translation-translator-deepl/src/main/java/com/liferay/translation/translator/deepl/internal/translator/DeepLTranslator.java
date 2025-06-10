@@ -27,13 +27,13 @@ import com.liferay.translation.translator.Translator;
 import com.liferay.translation.translator.TranslatorPacket;
 import com.liferay.translation.translator.deepl.internal.configuration.DeepLTranslatorConfiguration;
 
+import jakarta.ws.rs.core.Response;
+
 import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -73,14 +73,14 @@ public class DeepLTranslator extends BaseTranslator {
 		List<String> supportedLanguageCodes = _getSupportedLanguageCodes(
 			deepLTranslatorConfiguration);
 
-		String targetLanguageCode = getLanguageCode(
-			translatorPacket.getTargetLanguageId());
+		String targetLanguageCode = StringUtil.toUpperCase(
+			getLanguageCode(translatorPacket.getTargetLanguageId()));
 
 		if (!supportedLanguageCodes.contains(targetLanguageCode)) {
 			throw new TranslatorException(
 				StringBundler.concat(
 					"Target language code ", targetLanguageCode,
-					" is not among the supported langauge codes: ",
+					" is not among the supported language codes: ",
 					StringUtil.merge(
 						supportedLanguageCodes, StringPool.COMMA_AND_SPACE)));
 		}
@@ -88,7 +88,8 @@ public class DeepLTranslator extends BaseTranslator {
 		Map<String, String> translatedFieldsMap = _translate(
 			deepLTranslatorConfiguration, translatorPacket.getFieldsMap(),
 			translatorPacket.getHTMLMap(),
-			getLanguageCode(translatorPacket.getSourceLanguageId()),
+			StringUtil.toUpperCase(
+				getLanguageCode(translatorPacket.getSourceLanguageId())),
 			targetLanguageCode);
 
 		return new TranslatorPacket() {

@@ -5,6 +5,7 @@
 
 package com.liferay.headless.commerce.admin.order.resource.v1_0.test;
 
+import com.liferay.account.configuration.AccountEntryAddressSubtypeConfiguration;
 import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryLocalService;
@@ -24,7 +25,13 @@ import com.liferay.commerce.service.CommerceOrderItemLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.test.util.context.TestCommerceContext;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.ShippingAddress;
+import com.liferay.list.type.model.ListTypeDefinition;
+import com.liferay.list.type.model.ListTypeEntry;
+import com.liferay.list.type.service.ListTypeDefinitionLocalService;
+import com.liferay.list.type.service.ListTypeEntryLocalService;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
+import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Region;
@@ -33,17 +40,29 @@ import com.liferay.portal.kernel.service.AddressLocalService;
 import com.liferay.portal.kernel.service.CountryLocalService;
 import com.liferay.portal.kernel.service.RegionLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
+import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.math.BigDecimal;
 
+import java.util.Collections;
+
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,21 +74,28 @@ import org.junit.runner.RunWith;
 public class ShippingAddressResourceTest
 	extends BaseShippingAddressResourceTestCase {
 
+	@ClassRule
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
+
 	@Before
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 
-		User user = UserTestUtil.addUser(testCompany);
+		_user = UserTestUtil.addUser(testCompany);
 
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(
 				testCompany.getCompanyId(), testGroup.getGroupId(),
-				user.getUserId());
+				_user.getUserId());
 
 		AccountEntry accountEntry = _accountEntryLocalService.addAccountEntry(
-			user.getUserId(), 0, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), null,
+			StringPool.BLANK, _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
 			RandomTestUtil.randomString() + "@liferay.com", null, null,
 			"business", 1, serviceContext);
 
@@ -84,18 +110,18 @@ public class ShippingAddressResourceTest
 			serviceContext);
 
 		Address address = _addressLocalService.addAddress(
-			RandomTestUtil.randomString(), user.getUserId(),
+			RandomTestUtil.randomString(), _user.getUserId(),
 			AccountEntry.class.getName(), accountEntry.getAccountEntryId(),
+			_country.getCountryId(), 0, _region.getRegionId(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
+			RandomTestUtil.randomString(), true, RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), _region.getRegionId(),
-			_country.getCountryId(), 0, false, true,
-			RandomTestUtil.randomString(), serviceContext);
+			serviceContext);
 
 		CommerceCurrency commerceCurrency =
 			_commerceCurrencyLocalService.addCommerceCurrency(
-				user.getUserId(), RandomTestUtil.randomString(),
+				null, _user.getUserId(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomString(), BigDecimal.ONE,
 				RandomTestUtil.randomLocaleStringMap(), 2, 2, "HALF_EVEN",
@@ -109,45 +135,46 @@ public class ShippingAddressResourceTest
 				CommerceChannelConstants.CHANNEL_TYPE_SITE, null,
 				commerceCurrency.getCode(), serviceContext);
 
-		CommerceOrder commerceOrder =
-			_commerceOrderLocalService.addCommerceOrder(
-				user.getUserId(), commerceChannel.getGroupId(),
-				address.getAddressId(), accountEntry.getAccountEntryId(),
-				commerceCurrency.getCommerceCurrencyId(),
-				CommerceOrderConstants.TYPE_PK_FULFILLMENT, 0,
-				address.getAddressId(), RandomTestUtil.randomString(), 1, 1,
-				2022, 0, 0, CommerceOrderConstants.ORDER_STATUS_OPEN,
-				CommercePaymentMethodConstants.TYPE_OFFLINE,
-				RandomTestUtil.randomString(), BigDecimal.ONE,
-				RandomTestUtil.randomString(), BigDecimal.ONE, BigDecimal.ONE,
-				BigDecimal.ONE, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.TEN,
-				serviceContext);
+		_commerceOrder = _commerceOrderLocalService.addCommerceOrder(
+			_user.getUserId(), commerceChannel.getGroupId(),
+			address.getAddressId(), accountEntry.getAccountEntryId(),
+			commerceCurrency.getCode(),
+			CommerceOrderConstants.TYPE_PK_FULFILLMENT, 0,
+			address.getAddressId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), 1, 1, 2022, 0, 0,
+			CommerceOrderConstants.ORDER_STATUS_OPEN,
+			CommercePaymentMethodConstants.TYPE_OFFLINE,
+			RandomTestUtil.randomString(), BigDecimal.ONE,
+			RandomTestUtil.randomString(), BigDecimal.ONE, BigDecimal.ONE,
+			BigDecimal.ONE, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.TEN,
+			serviceContext);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceWithRandomSku(
 			testGroup.getGroupId(), BigDecimal.TEN);
 
 		CommerceOrderItem commerceOrderItem =
 			_commerceOrderItemLocalService.addCommerceOrderItem(
-				user.getUserId(), commerceOrder.getCommerceOrderId(),
+				_user.getUserId(), _commerceOrder.getCommerceOrderId(),
 				cpInstance.getCPInstanceId(), null, BigDecimal.ONE, 0,
 				BigDecimal.ONE, StringPool.BLANK,
 				new TestCommerceContext(
-					accountEntry, commerceCurrency, commerceChannel, user,
-					testGroup, commerceOrder),
+					accountEntry, commerceCurrency, commerceChannel, _user,
+					testGroup, _commerceOrder),
 				serviceContext);
 
 		_commerceOrderItemLocalService.updateCommerceOrderItemInfo(
 			commerceOrderItem.getCommerceOrderItemId(), address.getAddressId(),
-			commerceOrderItem.getDeliveryGroup(),
+			commerceOrderItem.getDeliveryGroupName(),
 			commerceOrderItem.getPrintedNote());
 
-		commerceOrder = _commerceOrderLocalService.getCommerceOrder(
-			commerceOrder.getCommerceOrderId());
+		_commerceOrder = _commerceOrderLocalService.getCommerceOrder(
+			_commerceOrder.getCommerceOrderId());
 
-		commerceOrder.setOrderStatus(
+		_commerceOrder.setOrderStatus(
 			CommerceOrderConstants.ORDER_STATUS_COMPLETED);
 
-		_commerceOrderLocalService.updateCommerceOrder(commerceOrder);
+		_commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+			_commerceOrder);
 	}
 
 	@Ignore
@@ -196,27 +223,64 @@ public class ShippingAddressResourceTest
 		super.testGraphQLGetOrderItemShippingAddress();
 	}
 
-	@Ignore
 	@Override
 	@Test
 	public void testPatchOrderByExternalReferenceCodeShippingAddress()
 		throws Exception {
 
-		super.testPatchOrderByExternalReferenceCodeShippingAddress();
+		ShippingAddress randomPatchShippingAddress =
+			randomPatchShippingAddress();
+
+		shippingAddressResource.
+			patchOrderByExternalReferenceCodeShippingAddress(
+				_commerceOrder.getExternalReferenceCode(),
+				randomPatchShippingAddress);
+
+		ShippingAddress expectedPatchShippingAddress =
+			randomPatchShippingAddress.clone();
+
+		BeanPropertiesUtil.copyProperties(
+			expectedPatchShippingAddress, randomPatchShippingAddress);
+
+		ShippingAddress getShippingAddress =
+			shippingAddressResource.
+				getOrderByExternalReferenceCodeShippingAddress(
+					_commerceOrder.getExternalReferenceCode());
+
+		assertEquals(expectedPatchShippingAddress, getShippingAddress);
+		assertValid(getShippingAddress);
 	}
 
-	@Ignore
 	@Override
 	@Test
 	public void testPatchOrderIdShippingAddress() throws Exception {
-		super.testPatchOrderIdShippingAddress();
+		ShippingAddress randomPatchShippingAddress =
+			randomPatchShippingAddress();
+
+		shippingAddressResource.patchOrderIdShippingAddress(
+			_commerceOrder.getCommerceOrderId(), randomPatchShippingAddress);
+
+		ShippingAddress expectedPatchShippingAddress =
+			randomPatchShippingAddress.clone();
+
+		BeanPropertiesUtil.copyProperties(
+			expectedPatchShippingAddress, randomPatchShippingAddress);
+
+		ShippingAddress getShippingAddress =
+			shippingAddressResource.getOrderIdShippingAddress(
+				_commerceOrder.getCommerceOrderId());
+
+		assertEquals(expectedPatchShippingAddress, getShippingAddress);
+		assertValid(getShippingAddress);
+
+		_testPatchOrderIdShippingAddressWithSubtype();
 	}
 
 	@Override
 	protected String[] getAdditionalAssertFieldNames() {
 		return new String[] {
-			"city", "description", "name", "phoneNumber", "street1", "street2",
-			"street3", "zip"
+			"city", "countryISOCode", "description", "name", "phoneNumber",
+			"street1", "street2", "street3", "subtype", "zip"
 		};
 	}
 
@@ -240,9 +304,53 @@ public class ShippingAddressResourceTest
 				street1 = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				street2 = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				street3 = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				subtype = StringPool.BLANK;
 				zip = StringUtil.toLowerCase(RandomTestUtil.randomString());
 			}
 		};
+	}
+
+	private void _testPatchOrderIdShippingAddressWithSubtype()
+		throws Exception {
+
+		ShippingAddress shippingAddress = randomShippingAddress();
+
+		ListTypeDefinition listTypeDefinition =
+			_listTypeDefinitionLocalService.addListTypeDefinition(
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				false);
+
+		ListTypeEntry listTypeEntry =
+			_listTypeEntryLocalService.addListTypeEntry(
+				null, TestPropsValues.getUserId(),
+				listTypeDefinition.getListTypeDefinitionId(),
+				RandomTestUtil.randomString(),
+				Collections.singletonMap(
+					LocaleUtil.US, RandomTestUtil.randomString()),
+				listTypeDefinition.isSystem());
+
+		shippingAddress.setSubtype(listTypeEntry.getKey());
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AccountEntryAddressSubtypeConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"billingAndShippingAddressSubtypeListType" +
+								"DefinitionExternalReferenceCode",
+							listTypeDefinition.getExternalReferenceCode()
+						).build())) {
+
+			shippingAddressResource.patchOrderIdShippingAddress(
+				_commerceOrder.getCommerceOrderId(), shippingAddress);
+
+			shippingAddress = shippingAddressResource.getOrderIdShippingAddress(
+				_commerceOrder.getCommerceOrderId());
+
+			Assert.assertEquals(
+				listTypeEntry.getKey(), shippingAddress.getSubtype());
+		}
 	}
 
 	@Inject
@@ -257,6 +365,9 @@ public class ShippingAddressResourceTest
 	@Inject
 	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
 
+	@DeleteAfterTestRun
+	private CommerceOrder _commerceOrder;
+
 	@Inject
 	private CommerceOrderItemLocalService _commerceOrderItemLocalService;
 
@@ -268,9 +379,18 @@ public class ShippingAddressResourceTest
 	@Inject
 	private CountryLocalService _countryLocalService;
 
+	@Inject
+	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
+
+	@Inject
+	private ListTypeEntryLocalService _listTypeEntryLocalService;
+
 	private Region _region;
 
 	@Inject
 	private RegionLocalService _regionLocalService;
+
+	@DeleteAfterTestRun
+	private User _user;
 
 }

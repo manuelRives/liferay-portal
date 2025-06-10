@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openModal} from 'frontend-js-web';
+import {openModal} from 'frontend-js-components-web';
 
 export function OpenTermsOfUseModalPropsTransformer({
 	additionalProps: {
@@ -35,16 +35,15 @@ export function OpenTermsOfUseModalPropsTransformer({
 
 							const formName = `#${portletNamespace}${commerceVirtualOrderItemId}-${commerceVirtualOrderItemFileEntryId}Fm`;
 
-							const form = window.document.querySelector(
-								formName
-							);
+							const form =
+								window.document.querySelector(formName);
 
 							submitForm(form);
 						},
 					},
 				],
 				containerProps: {
-					className: 'modal-height-xl',
+					className: 'commerce-modal modal-height-xl',
 				},
 				id: dialogId,
 				iframeBodyCssClass: '',

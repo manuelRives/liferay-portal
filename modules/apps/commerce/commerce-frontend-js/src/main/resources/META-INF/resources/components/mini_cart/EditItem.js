@@ -5,7 +5,7 @@
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayForm from '@clayui/form';
-import {useLiferayState} from '@liferay/frontend-js-state-web';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import classnames from 'classnames';
 import {fetch, sub} from 'frontend-js-web';
 import React, {
@@ -58,9 +58,8 @@ function EditItem() {
 	const [options, setOptions] = useState([]);
 	const [quantity, setQuantity] = useState(1);
 	const [quantitySelectorErrors, setQuantitySelectorErrors] = useState(false);
-	const [skuOptionsAtomState, setSkuOptionsAtomState] = useLiferayState(
-		skuOptionsAtom
-	);
+	const [skuOptionsAtomState, setSkuOptionsAtomState] =
+		useLiferayState(skuOptionsAtom);
 	const [skuUnitOfMeasure, setSkuUnitOfMeasure] = useState(null);
 
 	const {miniCartErrors} = skuOptionsAtomState;
@@ -140,6 +139,7 @@ function EditItem() {
 		({
 			accountId,
 			channelId,
+			currencyCode,
 			options,
 			productId,
 			quantity,
@@ -150,6 +150,7 @@ function EditItem() {
 					channelId,
 					productId,
 					accountId,
+					currencyCode,
 					quantity,
 					unitOfMeasureKey,
 					options
@@ -181,18 +182,16 @@ function EditItem() {
 			updating: false,
 		});
 
-		if (Liferay.FeatureFlags['COMMERCE-9599']) {
-			const dataSetId = editedItem.dataSetId;
+		const dataSetId = editedItem.dataSetId;
 
-			if (dataSetId) {
-				if (refreshDataSet) {
-					Liferay.fire(FDS_UPDATE_DISPLAY, {
-						id: dataSetId,
-					});
-				}
-
-				closeCart();
+		if (dataSetId) {
+			if (refreshDataSet) {
+				Liferay.fire(FDS_UPDATE_DISPLAY, {
+					id: dataSetId,
+				});
 			}
+
+			closeCart();
 		}
 	};
 
@@ -215,7 +214,7 @@ function EditItem() {
 				? {
 						...cartItem,
 						...formattedCartItem,
-				  }
+					}
 				: cartItem
 		);
 
@@ -299,8 +298,7 @@ function EditItem() {
 				</div>
 
 				<div className="flex-grow-1 flex-shrink-1 overflow-auto p-4">
-					{Liferay.FeatureFlags['COMMERCE-9599'] &&
-					options?.items?.length > 0 ? (
+					{options?.items?.length > 0 ? (
 						<>
 							<div className="panel panel-unstyled">
 								<div className="panel-header">
@@ -370,6 +368,13 @@ function EditItem() {
 											postChannelProductSkuBySkuOption({
 												accountId: cartState.accountId,
 												channelId: channel.id,
+												currencyCode:
+													Liferay.CommerceContext
+														? Liferay
+																.CommerceContext
+																.currency
+																.currencyCode
+														: '',
 												options:
 													cpInstance?.skuOptions ||
 													[],
@@ -414,6 +419,7 @@ function EditItem() {
 									)}
 									productId={cpInstance.productId}
 									resetQuantity={false}
+									useQuantity={true}
 									value={cpInstance.skuUnitOfMeasure?.key}
 								/>
 							</div>
@@ -483,6 +489,9 @@ const Options = ({
 		}
 		else if (productOption.fieldType === FIELD_TYPE.date) {
 			Component = ProductOptionDate;
+		}
+		else if (productOption.fieldType === FIELD_TYPE.document_library) {
+			return;
 		}
 		else if (productOption.fieldType === FIELD_TYPE.numeric) {
 			Component = ProductOptionNumeric;
@@ -572,11 +581,7 @@ const PriceRows = ({price}) => {
 						priceName={Liferay.Language.get('price-as-configured')}
 					>
 						<span className="text-7">
-							{hasDiscountPercentage
-								? price.finalPriceFormatted
-								: hasPromoPrice
-								? price.promoPriceFormatted
-								: price.priceFormatted}
+							{price.finalPriceFormatted}
 						</span>
 					</PriceRow>
 				</div>

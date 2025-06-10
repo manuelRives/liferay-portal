@@ -8,7 +8,7 @@ import {
 	ItemFinder,
 	commerceEvents,
 } from 'commerce-frontend-js';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 export default function ({
 	commerceOrderTypeId,
@@ -16,9 +16,8 @@ export default function ({
 	orderTypeExternalReferenceCode,
 	rootPortletId,
 }) {
-	const CommerceOrderTypeChannelsResource = CommerceServiceProvider.AdminOrderAPI(
-		'v1'
-	);
+	const CommerceOrderTypeChannelsResource =
+		CommerceServiceProvider.AdminOrderAPI('v1');
 
 	function selectItem(channel) {
 		const channelData = {

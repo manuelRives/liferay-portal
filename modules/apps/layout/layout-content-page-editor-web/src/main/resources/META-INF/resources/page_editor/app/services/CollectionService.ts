@@ -34,7 +34,7 @@ export default {
 		displayAllItems: CollectionLayoutDataItem['config']['displayAllItems'];
 		displayAllPages: CollectionLayoutDataItem['config']['displayAllPages'];
 		externalReferenceCode?: string | null;
-		languageId: string;
+		languageId: Liferay.Language.Locale;
 		listItemStyle:
 			| CollectionLayoutDataItem['config']['listItemStyle']
 			| null;
@@ -111,8 +111,12 @@ export default {
 		);
 	},
 
-	getCollectionMappingFields(body: {itemSubtype: string; itemType: string}) {
-		return serviceFetch<{mappingFields: MappingFieldFieldSet}>(
+	getCollectionMappingFields(body: {
+		fieldName: string | undefined;
+		itemSubtype: string;
+		itemType: string;
+	}) {
+		return serviceFetch<{mappingFields: MappingFieldFieldSet[]}>(
 			config.getCollectionMappingFieldsURL,
 			{body}
 		);

@@ -57,13 +57,17 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.RepositoryEntryLocalServiceUtil;
 import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.util.TransientValue;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpSession;
 
 import java.io.InputStream;
 
@@ -125,12 +129,11 @@ public class CMISRepository extends BaseCmisRepository {
 		CMISRepositoryConfiguration cmisRepositoryConfiguration,
 		CMISRepositoryHandler cmisRepositoryHandler,
 		CMISSearchQueryBuilder cmisSearchQueryBuilder,
-		CMISSessionCache cmisSessionCache, LockManager lockManager) {
+		LockManager lockManager) {
 
 		_cmisRepositoryConfiguration = cmisRepositoryConfiguration;
 		_cmisRepositoryHandler = cmisRepositoryHandler;
 		_cmisSearchQueryBuilder = cmisSearchQueryBuilder;
-		_cmisSessionCache = cmisSessionCache;
 		_lockManager = lockManager;
 	}
 
@@ -197,8 +200,8 @@ public class CMISRepository extends BaseCmisRepository {
 
 	@Override
 	public FileShortcut addFileShortcut(
-		long userId, long folderId, long toFileEntryId,
-		ServiceContext serviceContext) {
+		String externalReferenceCode, long userId, long folderId,
+		long toFileEntryId, ServiceContext serviceContext) {
 
 		throw new UnsupportedOperationException();
 	}
@@ -821,9 +824,9 @@ public class CMISRepository extends BaseCmisRepository {
 
 			Document document = (Document)session.getObject(objectId);
 
-			List<Document> documentVersions = document.getAllVersions();
+			List<Document> documents = document.getAllVersions();
 
-			document = documentVersions.get(0);
+			document = documents.get(0);
 
 			return document.getId();
 		}
@@ -871,16 +874,39 @@ public class CMISRepository extends BaseCmisRepository {
 			"CMIS object is unfileable for id " + objectId);
 	}
 
+	@Override
+	public List<FileShortcut> getRepositoryFileShortcuts(long groupId)
+		throws PortalException {
+
+		return new ArrayList<>();
+	}
+
 	public Session getSession() throws PortalException {
-		Session session = _cmisSessionCache.get(_sessionKey);
+		Session session = null;
+
+		HttpSession httpSession = PortalSessionThreadLocal.getHttpSession();
+
+		if (httpSession != null) {
+			TransientValue<Session> transientValue =
+				(TransientValue<Session>)httpSession.getAttribute(_sessionKey);
+
+			if (transientValue != null) {
+				Object value = transientValue.getValue();
+
+				if (value instanceof Session) {
+					session = (Session)value;
+				}
+				else {
+					httpSession.removeAttribute(_sessionKey);
+				}
+			}
+		}
 
 		if (session == null) {
 			SessionImpl sessionImpl =
 				(SessionImpl)_cmisRepositoryHandler.getSession();
 
 			session = sessionImpl.getSession();
-
-			_cmisSessionCache.put(_sessionKey, session);
 		}
 
 		if (_cmisRepositoryDetector == null) {
@@ -1156,17 +1182,17 @@ public class CMISRepository extends BaseCmisRepository {
 
 			Document oldVersion = null;
 
-			List<Document> documentVersions = document.getAllVersions();
+			List<Document> documents = document.getAllVersions();
 
-			for (Document currentVersion : documentVersions) {
-				String currentVersionLabel = currentVersion.getVersionLabel();
+			for (Document currentDocument : documents) {
+				String currentVersionLabel = currentDocument.getVersionLabel();
 
 				if (Validator.isNull(currentVersionLabel)) {
 					currentVersionLabel = DLFileEntryConstants.VERSION_DEFAULT;
 				}
 
 				if (currentVersionLabel.equals(version)) {
-					oldVersion = currentVersion;
+					oldVersion = currentDocument;
 
 					break;
 				}
@@ -1317,10 +1343,9 @@ public class CMISRepository extends BaseCmisRepository {
 
 			AllowableActions allowableActions = document.getAllowableActions();
 
-			Set<Action> allowableActionsSet =
-				allowableActions.getAllowableActions();
+			Set<Action> actions = allowableActions.getAllowableActions();
 
-			if (allowableActionsSet.contains(Action.CAN_CHECK_OUT)) {
+			if (actions.contains(Action.CAN_CHECK_OUT)) {
 				checkOutDocumentObjectId = document.checkOut();
 
 				document = (Document)session.getObject(
@@ -1343,7 +1368,7 @@ public class CMISRepository extends BaseCmisRepository {
 					inputStream);
 			}
 
-			_checkUpdatable(allowableActionsSet, properties, contentStream);
+			_checkUpdatable(actions, properties, contentStream);
 
 			if (checkOutDocumentObjectId != null) {
 				boolean majorVersion = false;
@@ -1406,8 +1431,7 @@ public class CMISRepository extends BaseCmisRepository {
 
 			AllowableActions allowableActions = document.getAllowableActions();
 
-			Set<Action> allowableActionsSet =
-				allowableActions.getAllowableActions();
+			Set<Action> actions = allowableActions.getAllowableActions();
 
 			ContentStream contentStream = null;
 
@@ -1420,7 +1444,7 @@ public class CMISRepository extends BaseCmisRepository {
 					inputStream);
 			}
 
-			_checkUpdatable(allowableActionsSet, properties, contentStream);
+			_checkUpdatable(actions, properties, contentStream);
 
 			if (properties != null) {
 				document = (Document)document.updateProperties(properties);
@@ -1766,19 +1790,19 @@ public class CMISRepository extends BaseCmisRepository {
 	}
 
 	private void _checkUpdatable(
-			Set<Action> allowableActionsSet, Map<String, Object> properties,
+			Set<Action> actions, Map<String, Object> properties,
 			ContentStream contentStream)
 		throws PrincipalException {
 
 		if ((properties != null) &&
-			!allowableActionsSet.contains(Action.CAN_UPDATE_PROPERTIES)) {
+			!actions.contains(Action.CAN_UPDATE_PROPERTIES)) {
 
 			throw new PrincipalException.MustHavePermission(
 				0, Action.CAN_UPDATE_PROPERTIES.toString());
 		}
 
 		if ((contentStream != null) &&
-			!allowableActionsSet.contains(Action.CAN_SET_CONTENT_STREAM)) {
+			!actions.contains(Action.CAN_SET_CONTENT_STREAM)) {
 
 			throw new PrincipalException.MustHavePermission(
 				0, Action.CAN_SET_CONTENT_STREAM.toString());
@@ -1792,12 +1816,12 @@ public class CMISRepository extends BaseCmisRepository {
 			return;
 		}
 
-		List<Document> documentVersions = document.getAllVersions();
+		List<Document> documents = document.getAllVersions();
 
-		List<String> mappedIds = new ArrayList<>(documentVersions.size() + 1);
+		List<String> mappedIds = new ArrayList<>(documents.size() + 1);
 
-		for (Document version : documentVersions) {
-			mappedIds.add(version.getId());
+		for (Document currentDocument : documents) {
+			mappedIds.add(currentDocument.getId());
 		}
 
 		mappedIds.add(document.getId());
@@ -2031,18 +2055,18 @@ public class CMISRepository extends BaseCmisRepository {
 
 		Iterator<QueryResult> iterator = queryResults.iterator();
 
-		if (iterator.hasNext()) {
-			QueryResult queryResult = iterator.next();
-
-			PropertyData<String> propertyData = queryResult.getPropertyById(
-				PropertyIds.OBJECT_ID);
-
-			List<String> values = propertyData.getValues();
-
-			return values.get(0);
+		if (!iterator.hasNext()) {
+			return null;
 		}
 
-		return null;
+		QueryResult queryResult = iterator.next();
+
+		PropertyData<String> propertyData = queryResult.getPropertyById(
+			PropertyIds.OBJECT_ID);
+
+		List<String> values = propertyData.getValues();
+
+		return values.get(0);
 	}
 
 	private boolean _isActionAllowable(String objectId, Action action)
@@ -2054,14 +2078,9 @@ public class CMISRepository extends BaseCmisRepository {
 
 		AllowableActions allowableActions = document.getAllowableActions();
 
-		Set<Action> allowableActionsSet =
-			allowableActions.getAllowableActions();
+		Set<Action> actions = allowableActions.getAllowableActions();
 
-		if (allowableActionsSet.contains(action)) {
-			return true;
-		}
-
-		return false;
+		return actions.contains(action);
 	}
 
 	private boolean _isAllVersionsSearchableSupported(Session session) {
@@ -2378,7 +2397,6 @@ public class CMISRepository extends BaseCmisRepository {
 	private CMISRepositoryDetector _cmisRepositoryDetector;
 	private final CMISRepositoryHandler _cmisRepositoryHandler;
 	private final CMISSearchQueryBuilder _cmisSearchQueryBuilder;
-	private final CMISSessionCache _cmisSessionCache;
 	private final LockManager _lockManager;
 	private String _sessionKey;
 

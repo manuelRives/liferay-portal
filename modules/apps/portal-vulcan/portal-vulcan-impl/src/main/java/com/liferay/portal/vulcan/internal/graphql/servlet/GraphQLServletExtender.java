@@ -26,6 +26,7 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
@@ -33,6 +34,7 @@ import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
+import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
@@ -170,6 +172,20 @@ import graphql.schema.TypeResolver;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
+
+import jakarta.xml.bind.DatatypeConverter;
+
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
@@ -197,22 +213,9 @@ import java.util.SortedMap;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -1315,7 +1318,7 @@ public class GraphQLServletExtender {
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
 			filterString);
 
-		if (!ArrayUtil.isEmpty(configurations)) {
+		if (ArrayUtil.isNotEmpty(configurations)) {
 			Dictionary<String, Object> dictionary =
 				configurations[0].getProperties();
 
@@ -1891,6 +1894,10 @@ public class GraphQLServletExtender {
 		else if (String.class.equals(clazz)) {
 			return Scalars.GraphQLString;
 		}
+		else if (clazz.isArray()) {
+			return new GraphQLList(
+				_toGraphQLType(clazz.getComponentType(), graphQLTypes, input));
+		}
 
 		String key = (input ? "Input" : "") + clazz.getSimpleName();
 
@@ -2175,10 +2182,15 @@ public class GraphQLServletExtender {
 			GraphQLFieldDefinition graphQLFieldDefinition =
 				dataFetchingEnvironment.getFieldDefinition();
 
+			GraphQLFieldDefinition fieldGraphQLFieldDefinition = _addField(
+				graphQLFieldDefinition.getType(), fieldName);
+
 			DataFetcher<?> dataFetcher = graphQLCodeRegistry.getDataFetcher(
-				(GraphQLFieldsContainer)graphQLNamedTypes.get(
-					GraphQLConstants.NAMESPACE_QUERY),
-				_addField(graphQLFieldDefinition.getType(), fieldName));
+				FieldCoordinates.coordinates(
+					(GraphQLFieldsContainer)graphQLNamedTypes.get(
+						GraphQLConstants.NAMESPACE_QUERY),
+					fieldGraphQLFieldDefinition),
+				fieldGraphQLFieldDefinition);
 
 			DataFetchingEnvironmentImpl.Builder dataFetchingEnvironmentBuilder =
 				DataFetchingEnvironmentImpl.newDataFetchingEnvironment(
@@ -2359,46 +2371,33 @@ public class GraphQLServletExtender {
 		public List<GraphQLError> processErrors(
 			List<GraphQLError> graphQLErrors) {
 
-			List<GraphQLError> processedErrors = new ArrayList<>();
+			return TransformUtil.transform(
+				graphQLErrors,
+				graphQLError -> {
+					if (_isNotFoundException(graphQLError) &&
+						!_isRequiredField(graphQLError)) {
 
-			for (GraphQLError graphQLError : graphQLErrors) {
-				if (_isNotFoundException(graphQLError) &&
-					!_isRequiredField(graphQLError)) {
+						return null;
+					}
 
-					continue;
-				}
+					if (_isForbiddenException(graphQLError)) {
+						return _getExtendedGraphQLError(
+							graphQLError, Response.Status.FORBIDDEN);
+					}
+					else if (_isNotFoundException(graphQLError)) {
+						return _getExtendedGraphQLError(
+							graphQLError, Response.Status.NOT_FOUND);
+					}
+					else if (_isClientErrorException(graphQLError) ||
+							 _isStatusException(graphQLError)) {
 
-				String message = graphQLError.getMessage();
+						return _getExtendedGraphQLError(
+							graphQLError, Response.Status.BAD_REQUEST);
+					}
 
-				if (message.contains("SecurityException")) {
-					processedErrors.add(
-						_getExtendedGraphQLError(
-							graphQLError, Response.Status.UNAUTHORIZED));
-				}
-				else if (_isForbiddenException(graphQLError)) {
-					processedErrors.add(
-						_getExtendedGraphQLError(
-							graphQLError, Response.Status.FORBIDDEN));
-				}
-				else if (_isNotFoundException(graphQLError)) {
-					processedErrors.add(
-						_getExtendedGraphQLError(
-							graphQLError, Response.Status.NOT_FOUND));
-				}
-				else if (!_isClientErrorException(graphQLError)) {
-					processedErrors.add(
-						_getExtendedGraphQLError(
-							graphQLError,
-							Response.Status.INTERNAL_SERVER_ERROR));
-				}
-				else {
-					processedErrors.add(
-						_getExtendedGraphQLError(
-							graphQLError, Response.Status.BAD_REQUEST));
-				}
-			}
-
-			return processedErrors;
+					return _getExtendedGraphQLError(
+						graphQLError, Response.Status.INTERNAL_SERVER_ERROR);
+				});
 		}
 
 		private GraphQLError _getExtendedGraphQLError(
@@ -2419,6 +2418,18 @@ public class GraphQLServletExtender {
 					).build()
 				).build()
 			).build();
+		}
+
+		private Throwable _getThrowable(
+			ExceptionWhileDataFetching exceptionWhileDataFetching) {
+
+			Throwable throwable = exceptionWhileDataFetching.getException();
+
+			if (throwable instanceof InvocationTargetException) {
+				return throwable.getCause();
+			}
+
+			return throwable;
 		}
 
 		private boolean _isClientErrorException(GraphQLError graphQLError) {
@@ -2450,13 +2461,11 @@ public class GraphQLServletExtender {
 				return false;
 			}
 
-			ExceptionWhileDataFetching exceptionWhileDataFetching =
-				(ExceptionWhileDataFetching)graphQLError;
+			Throwable throwable = _getThrowable(
+				(ExceptionWhileDataFetching)graphQLError);
 
-			Throwable throwable = exceptionWhileDataFetching.getException();
-
-			if ((throwable != null) &&
-				(throwable.getCause() instanceof ForbiddenException)) {
+			if (throwable instanceof ForbiddenException ||
+				throwable instanceof SecurityException) {
 
 				return true;
 			}
@@ -2469,14 +2478,12 @@ public class GraphQLServletExtender {
 				return false;
 			}
 
-			ExceptionWhileDataFetching exceptionWhileDataFetching =
-				(ExceptionWhileDataFetching)graphQLError;
+			Throwable throwable = _getThrowable(
+				(ExceptionWhileDataFetching)graphQLError);
 
-			Throwable throwable = exceptionWhileDataFetching.getException();
-
-			if ((throwable != null) &&
-				(throwable.getCause() instanceof NotFoundException ||
-				 throwable.getCause() instanceof NoSuchModelException)) {
+			if (throwable instanceof NoSuchModelException ||
+				throwable instanceof NotFoundException ||
+				throwable instanceof PrincipalException.MustHavePermission) {
 
 				return true;
 			}
@@ -2501,6 +2508,17 @@ public class GraphQLServletExtender {
 
 			return StringUtil.containsIgnoreCase(
 				(String)path.get(path.size() - 1), "parent");
+		}
+
+		private boolean _isStatusException(GraphQLError graphQLError) {
+			if (!(graphQLError instanceof ExceptionWhileDataFetching)) {
+				return false;
+			}
+
+			return StringUtil.endsWith(
+				ClassUtil.getClassName(
+					_getThrowable((ExceptionWhileDataFetching)graphQLError)),
+				"StatusException");
 		}
 
 		private final Set<String> _graphQLNamespaces;
@@ -2544,15 +2562,19 @@ public class GraphQLServletExtender {
 
 			GraphQLFieldDefinition graphQLFieldDefinition =
 				dataFetchingEnvironment.getFieldDefinition();
-
 			String fieldName = _getFieldName(
 				dataFetchingEnvironment, graphQLSchema);
 
+			GraphQLFieldDefinition fieldGraphQLFieldDefinition = _addField(
+				graphQLFieldDefinition.getType(), fieldName,
+				graphQLFieldDefinition.getArgument("id"));
+
 			DataFetcher<?> dataFetcher = graphQLCodeRegistry.getDataFetcher(
-				(GraphQLFieldsContainer)dataFetchingEnvironment.getParentType(),
-				_addField(
-					graphQLFieldDefinition.getType(), fieldName,
-					graphQLFieldDefinition.getArgument("id")));
+				FieldCoordinates.coordinates(
+					(GraphQLFieldsContainer)
+						dataFetchingEnvironment.getParentType(),
+					fieldGraphQLFieldDefinition),
+				fieldGraphQLFieldDefinition);
 
 			DataFetchingEnvironmentImpl.Builder dataFetchingEnvironmentBuilder =
 				DataFetchingEnvironmentImpl.newDataFetchingEnvironment(
@@ -2611,6 +2633,15 @@ public class GraphQLServletExtender {
 		implements DataFetcherExceptionHandler {
 
 		@Override
+		public CompletableFuture<DataFetcherExceptionHandlerResult>
+			handleException(
+				DataFetcherExceptionHandlerParameters
+					dataFetcherExceptionHandlerParameters) {
+
+			return CompletableFuture.completedFuture(
+				onException(dataFetcherExceptionHandlerParameters));
+		}
+
 		public DataFetcherExceptionHandlerResult onException(
 			DataFetcherExceptionHandlerParameters
 				dataFetcherExceptionHandlerParameters) {

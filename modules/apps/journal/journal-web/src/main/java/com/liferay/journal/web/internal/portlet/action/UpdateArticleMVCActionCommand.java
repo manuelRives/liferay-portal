@@ -5,36 +5,26 @@
 
 package com.liferay.journal.web.internal.portlet.action;
 
-import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.portlet.AssetDisplayPageEntryFormProcessor;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
-import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
-import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.Fields;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesToFieldsConverter;
-import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.constants.JournalPortletKeys;
-import com.liferay.journal.exception.ArticleContentSizeException;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.service.JournalArticleService;
 import com.liferay.journal.util.JournalConverter;
 import com.liferay.journal.util.JournalHelper;
 import com.liferay.journal.web.internal.asset.model.JournalArticleAssetRenderer;
+import com.liferay.journal.web.internal.util.JournalArticleUtil;
 import com.liferay.layout.model.LayoutClassedModelUsage;
 import com.liferay.layout.service.LayoutClassedModelUsageLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
@@ -42,14 +32,13 @@ import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.upload.LiferayFileItemException;
-import com.liferay.portal.kernel.upload.UploadException;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -58,19 +47,21 @@ import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Localization;
-import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PropsValues;
 
-import java.io.File;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -78,13 +69,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -94,7 +78,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+		"jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 		"mvc.command.name=/journal/add_article",
 		"mvc.command.name=/journal/update_article"
 	},
@@ -107,295 +91,41 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		UploadException uploadException =
-			(UploadException)actionRequest.getAttribute(
-				WebKeys.UPLOAD_EXCEPTION);
-
-		if (uploadException != null) {
-			Throwable throwable = uploadException.getCause();
-
-			if (uploadException.isExceededLiferayFileItemSizeLimit()) {
-				throw new LiferayFileItemException(throwable);
-			}
-
-			if (uploadException.isExceededFileSizeLimit() ||
-				uploadException.isExceededUploadRequestSizeLimit()) {
-
-				throw new ArticleContentSizeException(throwable);
-			}
-
-			throw new PortalException(throwable);
-		}
+		String actionName = ParamUtil.getString(
+			actionRequest, ActionRequest.ACTION_NAME);
 
 		UploadPortletRequest uploadPortletRequest =
 			_portal.getUploadPortletRequest(actionRequest);
 
-		if (_log.isDebugEnabled()) {
-			_log.debug(
-				"Updating article " +
-					MapUtil.toString(uploadPortletRequest.getParameterMap()));
-		}
-
-		String actionName = ParamUtil.getString(
-			actionRequest, ActionRequest.ACTION_NAME);
-
 		long groupId = ParamUtil.getLong(uploadPortletRequest, "groupId");
 
-		long folderId = ParamUtil.getLong(uploadPortletRequest, "folderId");
-
-		long newFolderId = ParamUtil.getLong(
-			uploadPortletRequest, "newFolderId");
-
-		if (newFolderId > 0) {
-			folderId = newFolderId;
-		}
-
-		String articleId = ParamUtil.getString(
-			uploadPortletRequest, "articleId");
-
-		Map<Locale, String> titleMap = _localization.getLocalizationMap(
-			actionRequest, "titleMapAsXML");
-
-		long ddmStructureId = ParamUtil.getLong(
-			uploadPortletRequest, "ddmStructureId");
-
-		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
-			ddmStructureId);
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			JournalArticle.class.getName(), uploadPortletRequest);
-
-		DDMFormValues ddmFormValues = _ddmFormValuesFactory.create(
-			actionRequest, ddmStructure.getDDMForm());
-
-		Fields fields = _ddmFormValuesToFieldsConverter.convert(
-			ddmStructure, ddmFormValues);
-
-		String content = _journalConverter.getContent(
-			ddmStructure, fields, groupId);
-
-		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
-			actionRequest, "descriptionMapAsXML");
-		Map<Locale, String> friendlyURLMap = _localization.getLocalizationMap(
-			actionRequest, "friendlyURL");
-
-		String ddmTemplateKey = ParamUtil.getString(
-			uploadPortletRequest, "ddmTemplateKey");
-		int displayPageType = ParamUtil.getInteger(
-			uploadPortletRequest, "displayPageType");
-
-		String layoutUuid = ParamUtil.getString(
-			uploadPortletRequest, "layoutUuid");
-
-		JournalArticle latestArticle = _journalArticleService.fetchArticle(
-			groupId, articleId);
-
-		if ((displayPageType == AssetDisplayPageConstants.TYPE_DEFAULT) ||
-			(displayPageType == AssetDisplayPageConstants.TYPE_SPECIFIC)) {
-
-			Layout targetLayout = _journalHelper.getArticleLayout(
-				layoutUuid, groupId);
-
-			if ((displayPageType == AssetDisplayPageConstants.TYPE_SPECIFIC) &&
-				(targetLayout == null) && (latestArticle != null) &&
-				Validator.isNotNull(latestArticle.getLayoutUuid())) {
-
-				Layout latestTargetLayout = _journalHelper.getArticleLayout(
-					latestArticle.getLayoutUuid(), groupId);
-
-				if (latestTargetLayout == null) {
-					layoutUuid = latestArticle.getLayoutUuid();
-				}
-			}
-			else if ((displayPageType ==
-						AssetDisplayPageConstants.TYPE_DEFAULT) ||
-					 (targetLayout == null)) {
-
-				layoutUuid = null;
-			}
-		}
-		else {
-			layoutUuid = null;
-		}
-
-		int displayDateMonth = ParamUtil.getInteger(
-			uploadPortletRequest, "displayDateMonth");
-		int displayDateDay = ParamUtil.getInteger(
-			uploadPortletRequest, "displayDateDay");
-		int displayDateYear = ParamUtil.getInteger(
-			uploadPortletRequest, "displayDateYear");
-		int displayDateHour = ParamUtil.getInteger(
-			uploadPortletRequest, "displayDateHour");
-		int displayDateMinute = ParamUtil.getInteger(
-			uploadPortletRequest, "displayDateMinute");
-		int displayDateAmPm = ParamUtil.getInteger(
-			uploadPortletRequest, "displayDateAmPm");
-
-		if (displayDateAmPm == Calendar.PM) {
-			displayDateHour += 12;
-		}
-
-		int expirationDateMonth = ParamUtil.getInteger(
-			uploadPortletRequest, "expirationDateMonth");
-		int expirationDateDay = ParamUtil.getInteger(
-			uploadPortletRequest, "expirationDateDay");
-		int expirationDateYear = ParamUtil.getInteger(
-			uploadPortletRequest, "expirationDateYear");
-		int expirationDateHour = ParamUtil.getInteger(
-			uploadPortletRequest, "expirationDateHour");
-		int expirationDateMinute = ParamUtil.getInteger(
-			uploadPortletRequest, "expirationDateMinute");
-		int expirationDateAmPm = ParamUtil.getInteger(
-			uploadPortletRequest, "expirationDateAmPm");
-
-		boolean neverExpire = ParamUtil.getBoolean(
-			uploadPortletRequest, "neverExpire", displayDateYear == 0);
-
-		if (!PropsValues.SCHEDULER_ENABLED) {
-			neverExpire = true;
-		}
-
-		if (expirationDateAmPm == Calendar.PM) {
-			expirationDateHour += 12;
-		}
-
-		int reviewDateMonth = ParamUtil.getInteger(
-			uploadPortletRequest, "reviewDateMonth");
-		int reviewDateDay = ParamUtil.getInteger(
-			uploadPortletRequest, "reviewDateDay");
-		int reviewDateYear = ParamUtil.getInteger(
-			uploadPortletRequest, "reviewDateYear");
-		int reviewDateHour = ParamUtil.getInteger(
-			uploadPortletRequest, "reviewDateHour");
-		int reviewDateMinute = ParamUtil.getInteger(
-			uploadPortletRequest, "reviewDateMinute");
-		int reviewDateAmPm = ParamUtil.getInteger(
-			uploadPortletRequest, "reviewDateAmPm");
-
-		boolean neverReview = ParamUtil.getBoolean(
-			uploadPortletRequest, "neverReview", displayDateYear == 0);
-
-		if (!PropsValues.SCHEDULER_ENABLED) {
-			neverReview = true;
-		}
-
-		if (reviewDateAmPm == Calendar.PM) {
-			reviewDateHour += 12;
-		}
-
-		boolean indexable = ParamUtil.getBoolean(
-			uploadPortletRequest, "indexable");
-
-		int smallImageSource = ParamUtil.getInteger(
-			uploadPortletRequest, "smallImageSource",
-			JournalArticleConstants.SMALL_IMAGE_SOURCE_NONE);
-
-		boolean smallImage = false;
-
-		if (smallImageSource !=
-				JournalArticleConstants.SMALL_IMAGE_SOURCE_NONE) {
-
-			smallImage = true;
-		}
-
-		long smallImageId = 0;
-		String smallImageURL = StringPool.BLANK;
-		File smallFile = null;
-
-		if (smallImageSource ==
-				JournalArticleConstants.
-					SMALL_IMAGE_SOURCE_DOCUMENTS_AND_MEDIA) {
-
-			smallImageId = ParamUtil.getLong(
-				uploadPortletRequest, "smallImageId");
-		}
-		else if (smallImageSource ==
-					JournalArticleConstants.SMALL_IMAGE_SOURCE_URL) {
-
-			smallImageURL = ParamUtil.getString(
-				uploadPortletRequest, "smallImageURL");
-		}
-		else if (smallImageSource ==
-					JournalArticleConstants.SMALL_IMAGE_SOURCE_USER_COMPUTER) {
-
-			smallFile = uploadPortletRequest.getFile("smallFile");
-
-			if (((smallFile == null) || (smallFile.length() == 0)) &&
-				(latestArticle != null)) {
-
-				smallImageId = latestArticle.getSmallImageId();
-			}
-		}
-
-		String articleURL = ParamUtil.getString(
-			uploadPortletRequest, "articleURL");
-
-		serviceContext.setAttribute(
-			"updateAutoTags",
-			ParamUtil.getBoolean(actionRequest, "updateAutoTags"));
-
-		JournalArticle article = null;
 		String oldUrlTitle = StringPool.BLANK;
 
-		if (actionName.equals("/journal/add_article")) {
+		String tempOldUrlTitle = StringPool.BLANK;
 
-			// Add article
+		if (!actionName.equals("/journal/add_article")) {
+			JournalArticle article = _journalArticleService.getArticle(
+				groupId, ParamUtil.getString(uploadPortletRequest, "articleId"),
+				ParamUtil.getDouble(uploadPortletRequest, "version"));
 
-			long classNameId = ParamUtil.getLong(
-				uploadPortletRequest, "classNameId");
-			long classPK = ParamUtil.getLong(uploadPortletRequest, "classPK");
-			boolean autoArticleId = ParamUtil.getBoolean(
-				uploadPortletRequest, "autoArticleId");
-
-			article = _journalArticleService.addArticle(
-				null, groupId, folderId, classNameId, classPK, articleId,
-				autoArticleId, titleMap, descriptionMap, friendlyURLMap,
-				content, ddmStructureId, ddmTemplateKey, layoutUuid,
-				displayDateMonth, displayDateDay, displayDateYear,
-				displayDateHour, displayDateMinute, expirationDateMonth,
-				expirationDateDay, expirationDateYear, expirationDateHour,
-				expirationDateMinute, neverExpire, reviewDateMonth,
-				reviewDateDay, reviewDateYear, reviewDateHour, reviewDateMinute,
-				neverReview, indexable, smallImage, smallImageId,
-				smallImageSource, smallImageURL, smallFile, null, articleURL,
-				serviceContext);
+			tempOldUrlTitle = article.getUrlTitle();
 		}
-		else {
 
-			// Update article
+		JournalArticle article = JournalArticleUtil.addOrUpdateArticle(
+			actionName, _assetDisplayPageEntryFormProcessor,
+			_ddmFormValuesFactory, _ddmFormValuesToFieldsConverter,
+			_ddmStructureLocalService, _journalArticleService,
+			_journalConverter, _journalHelper, _localization, _portal,
+			actionRequest);
 
-			double version = ParamUtil.getDouble(
-				uploadPortletRequest, "version");
-
-			article = _journalArticleService.getArticle(
-				groupId, articleId, version);
-
-			String tempOldUrlTitle = article.getUrlTitle();
-
-			if (actionName.equals("/journal/update_article")) {
-				article = _journalArticleService.updateArticle(
-					groupId, folderId, articleId, version, titleMap,
-					descriptionMap, friendlyURLMap, content, ddmTemplateKey,
-					layoutUuid, displayDateMonth, displayDateDay,
-					displayDateYear, displayDateHour, displayDateMinute,
-					expirationDateMonth, expirationDateDay, expirationDateYear,
-					expirationDateHour, expirationDateMinute, neverExpire,
-					reviewDateMonth, reviewDateDay, reviewDateYear,
-					reviewDateHour, reviewDateMinute, neverReview, indexable,
-					smallImage, smallImageId, smallImageSource, smallImageURL,
-					smallFile, null, articleURL, serviceContext);
-			}
-
-			if (!tempOldUrlTitle.equals(article.getUrlTitle())) {
-				oldUrlTitle = tempOldUrlTitle;
-			}
+		if (!tempOldUrlTitle.equals(article.getUrlTitle())) {
+			oldUrlTitle = tempOldUrlTitle;
 		}
 
 		// Journal content
 
 		String portletResource = ParamUtil.getString(
 			actionRequest, "portletResource");
-
 		long refererPlid = ParamUtil.getLong(actionRequest, "refererPlid");
 
 		if (Validator.isNotNull(portletResource) && (refererPlid > 0)) {
@@ -408,21 +138,31 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 					portletResource);
 
 			if (portletPreferences != null) {
-				portletPreferences.setValue(
-					"groupId", String.valueOf(article.getGroupId()));
-				portletPreferences.setValue(
-					"articleId", article.getArticleId());
+				Group group = _groupLocalService.fetchGroup(
+					article.getGroupId());
 
-				if (assetEntry != null) {
+				if (group != null) {
 					portletPreferences.setValue(
-						"assetEntryId",
-						String.valueOf(assetEntry.getEntryId()));
+						"groupExternalReferenceCode",
+						group.getExternalReferenceCode());
 				}
+
+				portletPreferences.setValue(
+					"articleExternalReferenceCode",
+					article.getExternalReferenceCode());
 
 				portletPreferences.store();
 			}
 
 			if (assetEntry != null) {
+				ServiceContext serviceContext =
+					ServiceContextFactory.getInstance(
+						JournalArticle.class.getName(), uploadPortletRequest);
+
+				serviceContext.setAttribute(
+					"updateAutoTags",
+					ParamUtil.getBoolean(actionRequest, "updateAutoTags"));
+
 				_updateLayoutClassedModelUsage(
 					groupId,
 					_portal.getClassNameId(JournalArticle.class.getName()),
@@ -432,10 +172,6 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 		}
 
 		// Asset display page
-
-		_assetDisplayPageEntryFormProcessor.process(
-			JournalArticle.class.getName(), article.getResourcePrimKey(),
-			actionRequest);
 
 		int workflowAction = ParamUtil.getInteger(
 			actionRequest, "workflowAction", WorkflowConstants.ACTION_PUBLISH);
@@ -454,59 +190,61 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 					actionRequest, portletResource + "requestProcessed");
 			}
 
-			if (FeatureFlagManagerUtil.isEnabled("LPD-15596")) {
-				if (article.isPending()) {
-					ThemeDisplay themeDisplay =
-						(ThemeDisplay)actionRequest.getAttribute(
-							WebKeys.THEME_DISPLAY);
+			if (article.isPending()) {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)actionRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
 
-					User user = themeDisplay.getUser();
+				User user = themeDisplay.getUser();
 
-					Date displayDate = _portal.getDate(
-						displayDateMonth, displayDateDay, displayDateYear,
-						displayDateHour, displayDateMinute, user.getTimeZone(),
-						null);
+				Date displayDate = _portal.getDate(
+					ParamUtil.getInteger(
+						uploadPortletRequest, "displayDateMonth"),
+					ParamUtil.getInteger(
+						uploadPortletRequest, "displayDateDay"),
+					ParamUtil.getInteger(
+						uploadPortletRequest, "displayDateYear"),
+					ParamUtil.getInteger(
+						uploadPortletRequest, "displayDateHour"),
+					ParamUtil.getInteger(
+						uploadPortletRequest, "displayDateMinute"),
+					user.getTimeZone(), null);
 
-					if (displayDate != null) {
-						MultiSessionMessages.add(
-							actionRequest, "articlePendingScheduled",
-							article.getId());
-					}
-					else {
-						MultiSessionMessages.add(
-							actionRequest, "articlePending", article.getId());
-					}
-				}
-				else if (article.isScheduled()) {
+				if (displayDate != null) {
 					MultiSessionMessages.add(
-						actionRequest, "articleScheduled", article.getId());
+						actionRequest, "articlePendingScheduled",
+						article.getId());
 				}
 				else {
-					if (actionName.equals("/journal/add_article")) {
-						MultiSessionMessages.add(
-							actionRequest, "articleCreated", article.getId());
-					}
-					else {
-						MultiSessionMessages.add(
-							actionRequest, "articleUpdated", article.getId());
-					}
+					MultiSessionMessages.add(
+						actionRequest, "articlePending", article.getId());
+				}
+			}
+			else if (article.isScheduled()) {
+				MultiSessionMessages.add(
+					actionRequest, "articleScheduled", article.getId());
+			}
+			else {
+				if (actionName.equals("/journal/add_article")) {
+					MultiSessionMessages.add(
+						actionRequest, "articleCreated", article.getId());
+				}
+				else {
+					MultiSessionMessages.add(
+						actionRequest, "articleUpdated", article.getId());
 				}
 			}
 		}
-
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-15596")) {
-			if (actionName.equals("/journal/add_article")) {
-				MultiSessionMessages.add(
-					actionRequest, "articleCreated", article.getId());
-			}
-			else {
-				MultiSessionMessages.add(
-					actionRequest, "articleUpdated", article.getId());
-			}
+		else {
+			MultiSessionMessages.add(
+				actionRequest, "articleSavedAsDraft", article.getId());
 		}
 
 		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
 			actionRequest);
+
+		Map<Locale, String> friendlyURLMap = _localization.getLocalizationMap(
+			actionRequest, "friendlyURL");
 
 		Map<String, String> friendlyURLWarningMessages =
 			_getFriendlyURLWarningMessages(
@@ -715,9 +453,7 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	private String _getSaveAndContinueRedirect(
-			ActionRequest actionRequest, JournalArticle article,
-			String redirect)
-		throws Exception {
+		ActionRequest actionRequest, JournalArticle article, String redirect) {
 
 		return PortletURLBuilder.create(
 			PortletURLFactoryUtil.create(
@@ -837,8 +573,8 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 
 		LayoutClassedModelUsage layoutClassedModelUsage =
 			_layoutClassedModelUsageLocalService.fetchLayoutClassedModelUsage(
-				classNameId, classPK, StringPool.BLANK, portletResource,
-				_portal.getClassNameId(Portlet.class), plid);
+				groupId, classNameId, classPK, StringPool.BLANK,
+				portletResource, _portal.getClassNameId(Portlet.class), plid);
 
 		if (layoutClassedModelUsage != null) {
 			return;
@@ -848,9 +584,6 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 			groupId, classNameId, classPK, StringPool.BLANK, portletResource,
 			_portal.getClassNameId(Portlet.class), plid, serviceContext);
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		UpdateArticleMVCActionCommand.class);
 
 	@Reference
 	private AssetDisplayPageEntryFormProcessor
@@ -870,6 +603,9 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private FriendlyURLNormalizer _friendlyURLNormalizer;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;

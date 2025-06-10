@@ -48,6 +48,8 @@ definition {
 
 		LexiconEntry.gotoAdd();
 
+		IFrame.selectCategoryFrame();
+
 		PortletEntry.inputName(name = ${categoryName});
 
 		IFrame.selectTopFrame();
@@ -245,6 +247,15 @@ definition {
 		Click(
 			key_text = "Select",
 			locator1 = "Modal#MODAL_FOOTER_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro viewBlogsNoVocabularyField(vocabularyName = null) {
+		Blogs.expandPanel(panel = "Categorization");
+
+		AssertElementNotPresent(
+			key_vocabularyName = ${vocabularyName},
+			locator1 = "AssetCategorization#CATEGORIES_FIELD");
 	}
 
 	@summary = "Default summary"

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -238,13 +239,6 @@ public class CommerceChannelLocalServiceUtil {
 		com.liferay.portal.kernel.dao.orm.Projection projection) {
 
 		return getService().dynamicQueryCount(dynamicQuery, projection);
-	}
-
-	public static CommerceChannel fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
 	}
 
 	public static CommerceChannel fetchCommerceChannel(long commerceChannelId) {
@@ -512,13 +506,12 @@ public class CommerceChannelLocalServiceUtil {
 	}
 
 	public static CommerceChannelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceChannelLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceChannelLocalService _service;
+	private static final Snapshot<CommerceChannelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceChannelLocalServiceUtil.class,
+			CommerceChannelLocalService.class);
 
 }

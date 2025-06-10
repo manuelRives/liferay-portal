@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.redirect.model.RedirectNotFoundEntry;
 
@@ -90,6 +91,12 @@ public class RedirectNotFoundEntryLocalServiceUtil {
 		return getService().deletePersistedModel(persistedModel);
 	}
 
+	public static void deleteRedirectNotFoundEntries(long groupId)
+		throws PortalException {
+
+		getService().deleteRedirectNotFoundEntries(groupId);
+	}
+
 	/**
 	 * Deletes the redirect not found entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -118,9 +125,11 @@ public class RedirectNotFoundEntryLocalServiceUtil {
 	 *
 	 * @param redirectNotFoundEntry the redirect not found entry
 	 * @return the redirect not found entry that was removed
+	 * @throws PortalException
 	 */
 	public static RedirectNotFoundEntry deleteRedirectNotFoundEntry(
-		RedirectNotFoundEntry redirectNotFoundEntry) {
+			RedirectNotFoundEntry redirectNotFoundEntry)
+		throws PortalException {
 
 		return getService().deleteRedirectNotFoundEntry(redirectNotFoundEntry);
 	}
@@ -361,13 +370,12 @@ public class RedirectNotFoundEntryLocalServiceUtil {
 	}
 
 	public static RedirectNotFoundEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(RedirectNotFoundEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile RedirectNotFoundEntryLocalService _service;
+	private static final Snapshot<RedirectNotFoundEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			RedirectNotFoundEntryLocalServiceUtil.class,
+			RedirectNotFoundEntryLocalService.class);
 
 }

@@ -41,7 +41,7 @@ CalendarResource calendarResource = (CalendarResource)request.getAttribute(Calen
 		total="<%= CalendarServiceUtil.searchCount(themeDisplay.getCompanyId(), new long[] {calendarResource.getGroupId()}, new long[] {calendarResource.getCalendarResourceId()}, null, false) %>"
 	>
 		<liferay-ui:search-container-results
-			results="<%= CalendarServiceUtil.search(themeDisplay.getCompanyId(), new long[] {calendarResource.getGroupId()}, new long[] {calendarResource.getCalendarResourceId()}, null, false, QueryUtil.ALL_POS, QueryUtil.ALL_POS, new CalendarNameComparator(true)) %>"
+			results="<%= CalendarServiceUtil.search(themeDisplay.getCompanyId(), new long[] {calendarResource.getGroupId()}, new long[] {calendarResource.getCalendarResourceId()}, null, false, QueryUtil.ALL_POS, QueryUtil.ALL_POS, CalendarNameComparator.getInstance(true)) %>"
 		/>
 
 		<liferay-ui:search-container-row
@@ -63,7 +63,13 @@ CalendarResource calendarResource = (CalendarResource)request.getAttribute(Calen
 				align="center"
 				name="color"
 			>
-				<span class="calendar-portlet-color-box" style="background-color: <%= ColorUtil.toHexString(calendar.getColor()) %>;">&nbsp;</span>
+				<aui:style type="text/css">
+					.calendar-portlet-color-box {
+						background-color: <%= ColorUtil.toHexString(calendar.getColor()) %>;
+					}
+				</aui:style>
+
+				<span class="calendar-portlet-color-box">&nbsp;</span>
 			</liferay-ui:search-container-column-text>
 
 			<liferay-ui:search-container-column-text
@@ -117,13 +123,11 @@ CalendarResource calendarResource = (CalendarResource)request.getAttribute(Calen
 		'<portlet:namespace />importCalendar',
 		(url) => {
 			function hideMessage(messageElement) {
-				messageElement.style.display = 'none';
 				messageElement.hidden = true;
 				messageElement.classList.add('hide');
 			}
 
 			function showMessage(messageElement) {
-				messageElement.style.display = 'block';
 				messageElement.hidden = false;
 				messageElement.classList.remove('hide');
 			}
@@ -153,13 +157,15 @@ CalendarResource calendarResource = (CalendarResource)request.getAttribute(Calen
 										}
 										catch (e) {}
 
-										const portletErrorMessage = document.getElementById(
-											'<portlet:namespace />portletErrorMessage'
-										);
+										const portletErrorMessage =
+											document.getElementById(
+												'<portlet:namespace />portletErrorMessage'
+											);
 
-										const portletSuccessMessage = document.getElementById(
-											'<portlet:namespace />portletSuccessMessage'
-										);
+										const portletSuccessMessage =
+											document.getElementById(
+												'<portlet:namespace />portletSuccessMessage'
+											);
 
 										const error =
 											responseData && responseData.error;
@@ -216,9 +222,10 @@ CalendarResource calendarResource = (CalendarResource)request.getAttribute(Calen
 								const portletErrorMessage = document.getElementById(
 									'<portlet:namespace />portletErrorMessage'
 								);
-								const portletSuccessMessage = document.getElementById(
-									'<portlet:namespace />portletSuccessMessage'
-								);
+								const portletSuccessMessage =
+									document.getElementById(
+										'<portlet:namespace />portletSuccessMessage'
+									);
 
 								hideMessage(portletErrorMessage);
 

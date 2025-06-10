@@ -29,24 +29,24 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 
+import jakarta.annotation.security.RolesAllowed;
+
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-import javax.annotation.security.RolesAllowed;
-
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -90,21 +90,7 @@ public class IndividualController extends BaseFaroController {
 			}
 		}
 
-		return get(groupId, id, null);
-	}
-
-	@GET
-	@Path("/{id}")
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public IndividualDisplay get(
-			@PathParam("groupId") long groupId, @PathParam("id") String id,
-			@QueryParam("channelId") String channelId)
-		throws Exception {
-
-		return new IndividualDisplay(
-			contactsEngineClient.getIndividual(
-				faroProjectLocalService.getFaroProjectByGroupId(groupId), id,
-				channelId));
+		return getIndividualDisplay(groupId, id, null);
 	}
 
 	@GET
@@ -182,6 +168,20 @@ public class IndividualController extends BaseFaroController {
 	@Override
 	public int[] getEntityTypes() {
 		return _ENTITY_TYPES.clone();
+	}
+
+	@GET
+	@Path("/{id}")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public IndividualDisplay getIndividualDisplay(
+			@PathParam("groupId") long groupId, @PathParam("id") String id,
+			@QueryParam("channelId") String channelId)
+		throws Exception {
+
+		return new IndividualDisplay(
+			contactsEngineClient.getIndividual(
+				faroProjectLocalService.getFaroProjectByGroupId(groupId), id,
+				channelId));
 	}
 
 	@Override

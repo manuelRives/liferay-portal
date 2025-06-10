@@ -14,13 +14,13 @@ import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.taglib.security.PermissionsURLTag;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-import javax.portlet.WindowState;
-import javax.portlet.WindowStateException;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.WindowStateException;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Samuel Trong Tran
@@ -69,10 +69,9 @@ public class PublicationsPortletURLUtil {
 		throws Exception {
 
 		return StringBundler.concat(
-			"javascript:Liferay.Util.openWindow({dialog: {destroyOnHide: ",
-			"true,}, dialogIframe: {bodyCssClass: 'dialog-with-footer'}, ",
-			"title:'", language.get(httpServletRequest, "permissions"),
-			"', uri:'",
+			"javascript:Liferay.Util.openModal({containerProps: {}, ",
+			"iframeBodyCssClass: 'dialog-with-footer', title:'",
+			language.get(httpServletRequest, "permissions"), "', url:'",
 			PermissionsURLTag.doTag(
 				StringPool.BLANK, CTCollection.class.getName(),
 				HtmlUtil.escape(ctCollection.getName()), null,

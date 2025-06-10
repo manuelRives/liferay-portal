@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.login.AuthLoginGroupSettingsUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypeController;
@@ -33,18 +34,20 @@ import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.TransferHeadersHelperUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -68,14 +71,28 @@ public class DisplayPageLayoutTypeController
 			return null;
 		}
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
 		String friendlyURL = _portal.getCurrentURL(httpServletRequest);
 
-		if (friendlyURL.contains(StringPool.QUESTION)) {
+		if (!Validator.isBlank(themeDisplay.getPathMain()) &&
+			friendlyURL.startsWith(themeDisplay.getPathMain())) {
+
+			return null;
+		}
+
+		if (friendlyURL.contains(Portal.FRIENDLY_URL_SEPARATOR)) {
+			friendlyURL = friendlyURL.substring(
+				0, friendlyURL.indexOf(Portal.FRIENDLY_URL_SEPARATOR));
+		}
+		else if (friendlyURL.contains(StringPool.QUESTION)) {
 			friendlyURL = friendlyURL.substring(
 				0, friendlyURL.lastIndexOf(StringPool.QUESTION));
 		}
 
-		return friendlyURL;
+		return HtmlUtil.escape(friendlyURL);
 	}
 
 	@Override
@@ -182,7 +199,20 @@ public class DisplayPageLayoutTypeController
 				httpServletResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
 			}
 			else if (!hasViewPermission) {
-				throw new NoSuchLayoutException();
+				if (themeDisplay.isSignedIn()) {
+					httpServletResponse.setStatus(
+						HttpServletResponse.SC_FORBIDDEN);
+				}
+				else if (AuthLoginGroupSettingsUtil.isPromptEnabled(
+							layout.getGroupId())) {
+
+					redirect = HttpComponentsUtil.setParameter(
+						themeDisplay.getURLSignIn(), "redirect",
+						themeDisplay.getURLCurrent());
+				}
+				else {
+					throw new NoSuchLayoutException();
+				}
 			}
 
 			if (Validator.isNotNull(redirect)) {
@@ -301,15 +331,15 @@ public class DisplayPageLayoutTypeController
 			return layoutPageTemplateEntry;
 		}
 
-		if (layout.isDraftLayout()) {
-			Layout publishedLayout = _layoutLocalService.fetchLayout(
-				layout.getClassPK());
-
-			return _layoutPageTemplateEntryLocalService.
-				fetchLayoutPageTemplateEntryByPlid(publishedLayout.getPlid());
+		if (!layout.isDraftLayout()) {
+			return null;
 		}
 
-		return null;
+		Layout publishedLayout = _layoutLocalService.fetchLayout(
+			layout.getClassPK());
+
+		return _layoutPageTemplateEntryLocalService.
+			fetchLayoutPageTemplateEntryByPlid(publishedLayout.getPlid());
 	}
 
 	private boolean _hasUpdatePermissions(

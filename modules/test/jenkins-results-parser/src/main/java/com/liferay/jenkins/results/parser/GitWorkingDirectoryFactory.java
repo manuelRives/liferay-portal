@@ -29,6 +29,7 @@ public class GitWorkingDirectoryFactory {
 
 		if (gitRepositoryDir == null) {
 			if (gitRepositoryName.equals("liferay-portal") &&
+				!upstreamBranchName.startsWith("faro-v") &&
 				!upstreamBranchName.equals("master")) {
 
 				gitRepositoryName += "-ee";
@@ -113,6 +114,8 @@ public class GitWorkingDirectoryFactory {
 			return gitWorkingDirectory;
 		}
 		catch (IOException ioException) {
+			ioException.printStackTrace();
+
 			throw new RuntimeException(
 				JenkinsResultsParserUtil.combine(
 					"Unable to create Git working directory for directory ",

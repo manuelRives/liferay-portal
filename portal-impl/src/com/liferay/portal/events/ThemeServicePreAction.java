@@ -12,15 +12,14 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ColorScheme;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Theme;
-import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.ThemeLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ColorSchemeFactoryUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.ThemeFactoryUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author Edward Han
@@ -66,16 +65,6 @@ public class ThemeServicePreAction extends Action {
 		if (layout != null) {
 			theme = layout.getTheme();
 			colorScheme = layout.getColorScheme();
-
-			if (layout.getMasterLayoutPlid() > 0) {
-				Layout masterLayout = LayoutLocalServiceUtil.fetchLayout(
-					layout.getMasterLayoutPlid());
-
-				if (masterLayout != null) {
-					theme = masterLayout.getTheme();
-					colorScheme = masterLayout.getColorScheme();
-				}
-			}
 		}
 		else {
 			String themeId = ThemeFactoryUtil.getDefaultRegularThemeId(

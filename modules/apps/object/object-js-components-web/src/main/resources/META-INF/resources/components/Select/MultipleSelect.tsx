@@ -74,23 +74,22 @@ export function MultipleSelect({
 	useEffect(() => {
 		if (selectAllOption) {
 			let firstRender = false;
+			let allSelected = true;
 
-			let notAllSelected: MultiSelectItemChild | undefined;
-
-			(options as MultiSelectItem[]).forEach(({children}) => {
+			options.forEach(({children}) => {
 				children.forEach((child) => {
 					if (child.checked === undefined) {
 						firstRender = true;
 					}
 
 					if (child.checked === false) {
-						notAllSelected = child;
+						allSelected = false;
 					}
 				});
 			});
 
-			if (!firstRender && !notAllSelected) {
-				setSelectAllChecked(true);
+			if (!firstRender) {
+				setSelectAllChecked(allSelected);
 			}
 		}
 	}, [options, selectAllOption]);
@@ -125,14 +124,12 @@ export function MultipleSelect({
 		>
 			<ClayAutocomplete onBlur={onBlur}>
 				<ClayMultiSelect<MultiSelectItem>
+					id={id}
 					items={multiSelectItems as MultiSelectItem[]}
 					loadingState={4}
 					onChange={setQuery}
 					onFocus={() => setDropdownActive((active) => !active)}
 					onItemsChange={(items: MultiSelectItem[]) => {
-						if (!items.length && setSelectAllChecked) {
-							setSelectAllChecked(false);
-						}
 						const newDropDownOptions = options?.map((option) => {
 							const newChildren = option.children.map((child) => {
 								const checkedItem = items.find(
@@ -205,54 +202,67 @@ export function MultipleSelect({
 					)}
 
 					<ClayDropDown.ItemList items={filteredOptions}>
-						{(itemGroup: MultiSelectItem) => (
-							<ClayDropDown.Group
-								header={itemGroup.label}
-								items={itemGroup.children}
-								key={itemGroup.value}
-							>
-								{(item) => (
-									<ClayDropDown.Item key={item.value}>
-										<ClayCheckbox
-											checked={item.checked as boolean}
-											label={item.label as string}
-											onChange={({target: {checked}}) => {
-												const newOptions = options.map(
-													(option) => {
-														return {
-															children: option.children.map(
-																(child) => {
-																	if (
-																		child.value ===
-																		item.value
-																	) {
-																		return {
-																			...child,
-																			checked,
-																		};
-																	}
+						{
 
-																	return child;
-																}
-															),
-															label: option.label,
-															value: option.value,
-														};
-													}
-												);
-												setOptions(newOptions);
+							// @ts-ignore
 
-												if (!checked) {
-													setSelectAllChecked(
-														checked
-													);
+							(itemGroup: MultiSelectItem) => (
+								<ClayDropDown.Group
+									header={itemGroup.label}
+									items={itemGroup.children}
+									key={itemGroup.value}
+								>
+									{(item) => (
+										<ClayDropDown.Item key={item.value}>
+											<ClayCheckbox
+												checked={
+													item.checked as boolean
 												}
-											}}
-										/>
-									</ClayDropDown.Item>
-								)}
-							</ClayDropDown.Group>
-						)}
+												label={item.label as string}
+												onChange={({
+													target: {checked},
+												}) => {
+													const newOptions =
+														options.map(
+															(option) => {
+																return {
+																	children:
+																		option.children.map(
+																			(
+																				child
+																			) => {
+																				if (
+																					child.value ===
+																					item.value
+																				) {
+																					return {
+																						...child,
+																						checked,
+																					};
+																				}
+
+																				return child;
+																			}
+																		),
+																	label: option.label,
+																	value: option.value,
+																};
+															}
+														);
+													setOptions(newOptions);
+
+													if (!checked) {
+														setSelectAllChecked(
+															checked
+														);
+													}
+												}}
+											/>
+										</ClayDropDown.Item>
+									)}
+								</ClayDropDown.Group>
+							)
+						}
 					</ClayDropDown.ItemList>
 				</ClayAutocomplete.DropDown>
 			</ClayAutocomplete>

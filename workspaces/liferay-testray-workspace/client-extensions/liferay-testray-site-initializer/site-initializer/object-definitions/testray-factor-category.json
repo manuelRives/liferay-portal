@@ -1,4 +1,5 @@
 {
+	"enableIndexSearch": false,
 	"label": {
 		"en_US": "Testray Factor Category"
 	},
@@ -16,6 +17,7 @@
 			"type": "String"
 		}
 	],
+	"objectFolderExternalReferenceCode": "TESTRAY",
 	"pluralLabel": {
 		"en_US": "Testray Factor Categories"
 	},

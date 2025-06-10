@@ -1,11 +1,11 @@
 {
 	"dependencies": {
-		"@clayui/label": "3.111.0",
-		"@clayui/link": "3.111.0",
-		"@clayui/modal": "3.113.0",
-		"@clayui/tooltip": "3.113.0",
+		"@clayui/label": "3.128.0",
+		"@clayui/link": "3.128.0",
+		"@clayui/modal": "3.137.0",
+		"@clayui/tooltip": "3.137.0",
 		"@liferay/portal-workflow-instance-tracker-web": "*",
-		"react": "16.12.0"
+		"react": "18.2.0"
 	},
 	"jest": {
 		"collectCoverageFrom": [
@@ -16,10 +16,10 @@
 	"main": "js/index.js",
 	"name": "@liferay/portal-workflow-taglib",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix",
-		"test": "liferay-npm-scripts test"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format",
+		"test": "node-scripts test"
 	},
-	"version": "2.0.21"
+	"version": "3.0.1"
 }

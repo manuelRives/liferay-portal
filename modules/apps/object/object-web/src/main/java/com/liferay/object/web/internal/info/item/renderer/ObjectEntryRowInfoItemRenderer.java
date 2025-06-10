@@ -10,6 +10,7 @@ import com.liferay.info.item.renderer.InfoItemRenderer;
 import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectWebKeys;
+import com.liferay.object.info.item.util.ObjectEntryInfoItemUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
@@ -30,6 +31,11 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 
 import java.text.DateFormat;
@@ -45,11 +51,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Jorge Ferrer
@@ -105,6 +106,7 @@ public class ObjectEntryRowInfoItemRenderer
 				ObjectWebKeys.OBJECT_ENTRY_VALUES,
 				_getValues(
 					objectEntry.getExternalReferenceCode(),
+					objectEntry.getGroupId(),
 					(ThemeDisplay)httpServletRequest.getAttribute(
 						WebKeys.THEME_DISPLAY)));
 
@@ -120,7 +122,8 @@ public class ObjectEntryRowInfoItemRenderer
 	}
 
 	private Map<String, Serializable> _getValues(
-			String externalReferenceCode, ThemeDisplay themeDisplay)
+			String externalReferenceCode, long groupId,
+			ThemeDisplay themeDisplay)
 		throws Exception {
 
 		com.liferay.object.rest.dto.v1_0.ObjectEntry objectEntry;
@@ -132,9 +135,8 @@ public class ObjectEntryRowInfoItemRenderer
 					false, null, null, null, null, themeDisplay.getLocale(),
 					null, themeDisplay.getUser()),
 				externalReferenceCode, _objectDefinition,
-				ObjectEntryUtil.getScopeKey(
-					themeDisplay.getScopeGroupId(), _objectDefinition,
-					_objectScopeProviderRegistry));
+				ObjectEntryInfoItemUtil.getScopeKey(
+					groupId, _objectDefinition, _objectScopeProviderRegistry));
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {

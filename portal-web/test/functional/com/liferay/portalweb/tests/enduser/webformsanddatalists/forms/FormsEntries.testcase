@@ -1,4 +1,4 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
@@ -161,11 +161,11 @@ definition {
 				assetType = "Form Record",
 				user = "user1 user1");
 
-			LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+			LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 			Workflow.confirmWorkflowAction();
 
-			LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+			LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 			Workflow.confirmWorkflowAction();
 

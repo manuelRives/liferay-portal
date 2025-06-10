@@ -6,6 +6,9 @@
 package com.liferay.server.admin.web.internal.portlet.action;
 
 import com.liferay.captcha.util.CaptchaUtil;
+import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.model.CTCollectionModel;
+import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.document.library.kernel.document.conversion.DocumentConversion;
 import com.liferay.document.library.kernel.model.DLProcessorConstants;
@@ -29,7 +32,6 @@ import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.cache.SingleVMPool;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
-import com.liferay.portal.kernel.change.tracking.sql.CTSQLModeThreadLocal;
 import com.liferay.portal.kernel.cluster.ClusterExecutorUtil;
 import com.liferay.portal.kernel.cluster.ClusterMasterExecutorUtil;
 import com.liferay.portal.kernel.cluster.ClusterRequest;
@@ -38,6 +40,7 @@ import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncPrintWriter;
@@ -99,8 +102,8 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.ThreadUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.log4j.Log4JUtil;
 import com.liferay.portal.security.membershippolicy.RoleMembershipPolicyFactoryUtil;
 import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
@@ -111,6 +114,13 @@ import com.liferay.portal.util.ShutdownUtil;
 import com.liferay.server.admin.web.internal.constants.ImageMagickResourceLimitConstants;
 import com.liferay.server.admin.web.internal.scripting.util.ServerScriptingUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.WindowState;
+
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Collections;
@@ -120,13 +130,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletSession;
-import javax.portlet.WindowState;
 
 import org.apache.logging.log4j.Level;
 
@@ -140,8 +143,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
-		"javax.portlet.name=" + PortletKeys.SERVER_ADMIN,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + PortletKeys.SERVER_ADMIN,
 		"mvc.command.name=/server_admin/edit_server"
 	},
 	service = MVCActionCommand.class
@@ -162,13 +165,23 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
+		String redirect = ParamUtil.getString(actionRequest, "redirect");
+
 		PermissionChecker permissionChecker =
 			themeDisplay.getPermissionChecker();
 
-		if (!permissionChecker.isOmniadmin() &&
-			(!permissionChecker.isCompanyAdmin() ||
-			 !cmd.equals("updateMail"))) {
+		PortletPreferences portletPreferences = _prefsProps.getPreferences(
+			ParamUtil.getLong(actionRequest, "preferencesCompanyId"));
 
+		if (permissionChecker.isCompanyAdmin() && cmd.equals("updateMail")) {
+			_updateMail(actionRequest, portletPreferences);
+
+			sendRedirect(actionRequest, actionResponse, redirect);
+
+			return;
+		}
+
+		if (!permissionChecker.isOmniadmin()) {
 			SessionErrors.add(
 				actionRequest,
 				PrincipalException.MustBeOmniadmin.class.getName());
@@ -177,11 +190,6 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 
 			return;
 		}
-
-		PortletPreferences portletPreferences = _prefsProps.getPreferences(
-			ParamUtil.getLong(actionRequest, "preferencesCompanyId"));
-
-		String redirect = ParamUtil.getString(actionRequest, "redirect");
 
 		if (!cmd.equals("addLogLevel") &&
 			!cmd.equals("dlGenerateAudioPreviews") &&
@@ -471,10 +479,38 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 
 		CacheRegistryUtil.setActive(true);
 
-		try (LoggingTimer loggingTimer = new LoggingTimer();
-			SafeCloseable safeCloseable =
-				CTSQLModeThreadLocal.setCTSQLModeWithSafeCloseable(
-					CTSQLModeThreadLocal.CTSQLMode.CT_ALL)) {
+		try (LoggingTimer loggingTimer = new LoggingTimer()) {
+			_companyLocalService.forEachCompanyId(
+				companyId -> {
+					List<Long> ctCollectionIds = ListUtil.toList(
+						_ctCollectionLocalService.getCTCollections(
+							companyId,
+							new int[] {
+								WorkflowConstants.STATUS_DRAFT,
+								WorkflowConstants.STATUS_SCHEDULED
+							},
+							QueryUtil.ALL_POS, QueryUtil.ALL_POS, null),
+						CTCollectionModel::getCtCollectionId);
+
+					ctCollectionIds.add(
+						CTConstants.CT_COLLECTION_ID_PRODUCTION);
+
+					for (long ctCollectionId : ctCollectionIds) {
+						_cleanUpOrphanedPortletPreferences(ctCollectionId);
+					}
+				});
+		}
+		finally {
+			CacheRegistryUtil.setActive(active);
+		}
+	}
+
+	private void _cleanUpOrphanedPortletPreferences(long ctCollectionId)
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollectionId)) {
 
 			ActionableDynamicQuery actionableDynamicQuery =
 				_portletPreferencesLocalService.getActionableDynamicQuery();
@@ -498,9 +534,6 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 					portletPreferences) -> _performAction(portletPreferences));
 
 			actionableDynamicQuery.performActions();
-		}
-		finally {
-			CacheRegistryUtil.setActive(active);
 		}
 	}
 
@@ -625,7 +658,9 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			Layout layout = _layoutLocalService.getLayout(
 				portletPreferences.getPlid());
 
-			if (layout.isTypeContent() || layout.isTypeControlPanel()) {
+			if (layout.isTypeAssetDisplay() || layout.isTypeContent() ||
+				layout.isTypeControlPanel()) {
+
 				return;
 			}
 
@@ -671,7 +706,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
 			new UnsyncByteArrayOutputStream();
 
-		UnsyncPrintWriter unsyncPrintWriter = UnsyncPrintWriterPool.borrow(
+		UnsyncPrintWriter unsyncPrintWriter = new UnsyncPrintWriter(
 			unsyncByteArrayOutputStream);
 
 		portletObjects.put("out", unsyncPrintWriter);
@@ -920,6 +955,9 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private CompanyLocalService _companyLocalService;
+
+	@Reference
+	private CTCollectionLocalService _ctCollectionLocalService;
 
 	@Reference(target = "(type=" + DLProcessorConstants.PDF_PROCESSOR + ")")
 	private DLProcessor _dlProcessor;

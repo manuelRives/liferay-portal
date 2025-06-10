@@ -14,10 +14,10 @@ import com.liferay.commerce.product.service.CPOptionLocalService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOption;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOptionValue;
 import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.constants.DTOConverterConstants;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
@@ -51,6 +51,9 @@ public class ProductOptionDTOConverter
 			_cpDefinitionOptionRelService.getCPDefinitionOptionRel(
 				(Long)dtoConverterContext.getId());
 
+		CPOption cpOption = _cpOptionLocalService.fetchCPOption(
+			cpDefinitionOptionRel.getCPOptionId());
+
 		return new ProductOption() {
 			{
 				setCustomFields(
@@ -70,11 +73,16 @@ public class ProductOptionDTOConverter
 				setName(
 					() -> LanguageUtils.getLanguageIdMap(
 						cpDefinitionOptionRel.getNameMap()));
+				setOptionExternalReferenceCode(
+					() -> {
+						if (cpOption == null) {
+							return null;
+						}
+
+						return cpOption.getExternalReferenceCode();
+					});
 				setOptionId(
 					() -> {
-						CPOption cpOption = _cpOptionLocalService.fetchCPOption(
-							cpDefinitionOptionRel.getCPOptionId());
-
 						if (cpOption == null) {
 							return null;
 						}

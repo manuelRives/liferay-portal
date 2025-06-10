@@ -3,18 +3,21 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {ObjectFolder} from '@liferay/object-admin-rest-client-js';
 import {Locator, Page} from '@playwright/test';
 
 import {PORTLET_URLS} from '../../utils/portletUrls';
 import {ApplicationsMenuPage} from '../product-navigation-applications-menu/ApplicationsMenuPage';
 
 export class ViewObjectDefinitionsPage {
+	readonly actionsButton: Locator;
 	readonly addObjectFolderButton: Locator;
 	readonly applicationsMenuPage: ApplicationsMenuPage;
 	readonly createObjectDefinitionButton: Locator;
 	readonly createObjectFolderButton: Locator;
 	readonly confirmObjectFolderNameInput: Locator;
 	readonly defaultObjectFolder: Locator;
+	readonly deleteObjectDefinitionOption: Locator;
 	readonly deleteObjectFolderButton: Locator;
 	readonly frontendDataSetEntries: Locator;
 	readonly objectFolderActions: Locator;
@@ -27,20 +30,23 @@ export class ViewObjectDefinitionsPage {
 	readonly viewInModelBuilderButton: Locator;
 
 	constructor(page: Page) {
+		this.actionsButton = page.getByRole('button', {name: 'Actions'});
 		this.addObjectFolderButton = page.getByLabel('Add Object Folder');
 		this.applicationsMenuPage = new ApplicationsMenuPage(page);
 		this.confirmObjectFolderNameInput = page.locator(
 			'input[placeholder="Confirm Folder Name"]'
 		);
-		this.createObjectDefinitionButton = page.getByTestId(
-			'fdsCreationActionButton'
-		);
+		this.createObjectDefinitionButton =
+			page.getByLabel('Create New Object');
 		this.createObjectFolderButton = page.getByRole('button', {
 			name: 'Create Folder',
 		});
 		this.defaultObjectFolder = page
 			.getByRole('listitem')
 			.filter({hasText: 'Default'});
+		this.deleteObjectDefinitionOption = page.getByRole('menuitem', {
+			name: 'Delete',
+		});
 		this.deleteObjectFolderButton = page.getByRole('button', {
 			name: 'Delete',
 		});
@@ -67,11 +73,28 @@ export class ViewObjectDefinitionsPage {
 		);
 	}
 
-	async clickDefaultObjectFolder() {
-		await this.defaultObjectFolder.click();
+	async changeObjectActivateStatus(objectDefinitionName: string) {
+		await this.clickEditObjectDefinitionLink(objectDefinitionName);
+
+		await this.page.getByRole('switch', {name: 'Activate Object'}).click();
+
+		await this.page.getByRole('button', {name: 'Save'}).click();
 	}
 
-	async createObjectFolder(objectFolderLabel: string) {
+	async clickEditObjectDefinitionLink(objectDefinitionLabel: string) {
+		await this.page
+			.getByRole('link', {exact: true, name: objectDefinitionLabel})
+			.click();
+	}
+
+	async clickObjectDefinitionActionButton(objectDefinitionLabel: string) {
+		await this.page
+			.getByRole('row', {name: objectDefinitionLabel})
+			.getByRole('button')
+			.click();
+	}
+
+	async createObjectFolder(objectFolderLabel: string): Promise<ObjectFolder> {
 		await this.addObjectFolderButton.click();
 		await this.objectFolderLabelInput.click();
 		await this.objectFolderLabelInput.fill(objectFolderLabel);
@@ -90,6 +113,12 @@ export class ViewObjectDefinitionsPage {
 		await this.deleteObjectFolderButton.click();
 	}
 
+	getObjectFolderCardHeaderERC = (objectFolderERC: string) => {
+		return this.objectFolderCardHeader
+			.getByRole('strong')
+			.filter({hasText: objectFolderERC});
+	};
+
 	getObjectFolderCardHeaderLabel = (objectFolderLabel: string) => {
 		return this.objectFolderCardHeader
 			.locator('span')
@@ -104,18 +133,10 @@ export class ViewObjectDefinitionsPage {
 		);
 	}
 
-	async openObjectFolderActions() {
-		await this.objectFolderActions.click();
-	}
-
 	async openObjectFolder(objectFolderLabel: string) {
 		await this.page
 			.getByRole('listitem')
 			.filter({hasText: objectFolderLabel})
 			.click();
-	}
-
-	async viewInModelBuilder() {
-		this.viewInModelBuilderButton.click();
 	}
 }

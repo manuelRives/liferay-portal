@@ -5,7 +5,8 @@
 
 import {Locator, Page} from '@playwright/test';
 
-import {waitForSuccessAlert} from '../../utils/waitForSuccessAlert';
+import {clickAndExpectToBeHidden} from '../../utils/clickAndExpectToBeHidden';
+import {waitForAlert} from '../../utils/waitForAlert';
 import {InstanceSettingsPage} from '../configuration-admin-web/InstanceSettingsPage';
 
 export class FriendlyUrlInstanceSettingsPage {
@@ -26,16 +27,25 @@ export class FriendlyUrlInstanceSettingsPage {
 		);
 	}
 
-	async modifySeparator(testId: string, value: string) {
-		await this.page.getByTestId(testId).click();
-		await this.page.getByTestId(testId).fill(value);
+	async modifySeparator(label: string, value: string) {
+		const separatorInput = this.page.getByLabel(label);
+		await separatorInput.click();
+		await separatorInput.fill(value);
+
 		await this.saveButton.click();
-		await waitForSuccessAlert(this.page);
+		await waitForAlert(this.page);
 	}
 
-	async resetSeparator(testId: string) {
-		await this.page.getByTestId(testId).click();
-		await this.page.getByRole('button', {name: 'Save'}).click();
-		await waitForSuccessAlert(this.page);
+	async resetSeparator(label: string) {
+		const separatorResetButton = this.page
+			.locator('.input-group', {has: this.page.getByLabel(label)})
+			.getByLabel('Reset to Default Value');
+		await clickAndExpectToBeHidden({
+			target: separatorResetButton,
+			trigger: separatorResetButton,
+		});
+
+		await this.saveButton.click();
+		await waitForAlert(this.page);
 	}
 }

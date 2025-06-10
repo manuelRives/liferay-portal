@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -54,16 +55,18 @@ public class CPSpecificationOptionLocalServiceUtil {
 	}
 
 	public static CPSpecificationOption addCPSpecificationOption(
-			long userId, long cpOptionCategoryId,
+			String externalReferenceCode, long userId, long cpOptionCategoryId,
+			long[] listTypeDefinitionIds,
 			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, boolean facetable,
-			String key, double priority,
+			String key, double priority, boolean visible,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPSpecificationOption(
-			userId, cpOptionCategoryId, titleMap, descriptionMap, facetable,
-			key, priority, serviceContext);
+			externalReferenceCode, userId, cpOptionCategoryId,
+			listTypeDefinitionIds, titleMap, descriptionMap, facetable, key,
+			priority, visible, serviceContext);
 	}
 
 	/**
@@ -239,6 +242,14 @@ public class CPSpecificationOptionLocalServiceUtil {
 		return getService().fetchCPSpecificationOption(companyId, key);
 	}
 
+	public static CPSpecificationOption
+		fetchCPSpecificationOptionByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().fetchCPSpecificationOptionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the cp specification option with the matching UUID and company.
 	 *
@@ -279,6 +290,15 @@ public class CPSpecificationOptionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCPSpecificationOption(companyId, key);
+	}
+
+	public static CPSpecificationOption
+			getCPSpecificationOptionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCPSpecificationOptionByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -359,12 +379,13 @@ public class CPSpecificationOptionLocalServiceUtil {
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<CPSpecificationOption> searchCPSpecificationOptions(
-				long companyId, Boolean facetable, String keywords, int start,
-				int end, com.liferay.portal.kernel.search.Sort sort)
+				long companyId, Boolean facetable, Boolean visible,
+				String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 			throws PortalException {
 
 		return getService().searchCPSpecificationOptions(
-			companyId, facetable, keywords, start, end, sort);
+			companyId, facetable, visible, keywords, start, end, sort);
 	}
 
 	public static CPSpecificationOption updateCPOptionCategoryId(
@@ -392,26 +413,27 @@ public class CPSpecificationOptionLocalServiceUtil {
 	}
 
 	public static CPSpecificationOption updateCPSpecificationOption(
-			long cpSpecificationOptionId, long cpOptionCategoryId,
+			String externalReferenceCode, long cpSpecificationOptionId,
+			long cpOptionCategoryId, long[] listTypeDefinitionIds,
 			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, boolean facetable,
-			String key, double priority,
+			String key, double priority, boolean visible,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPSpecificationOption(
-			cpSpecificationOptionId, cpOptionCategoryId, titleMap,
-			descriptionMap, facetable, key, priority, serviceContext);
+			externalReferenceCode, cpSpecificationOptionId, cpOptionCategoryId,
+			listTypeDefinitionIds, titleMap, descriptionMap, facetable, key,
+			priority, visible, serviceContext);
 	}
 
 	public static CPSpecificationOptionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPSpecificationOptionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CPSpecificationOptionLocalService _service;
+	private static final Snapshot<CPSpecificationOptionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPSpecificationOptionLocalServiceUtil.class,
+			CPSpecificationOptionLocalService.class);
 
 }

@@ -133,16 +133,30 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 										<div class="card-body">
 											<div class="card-row">
 												<div class="autofit-col autofit-col-expand">
-													<aui:a cssClass="card-title text-truncate" href="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>" title="<%= HtmlUtil.escapeAttribute(latestFileVersion.getTitle()) %>">
-														<%= latestFileVersion.getTitle() %>
-													</aui:a>
+													<div class="d-flex">
+														<clay:link
+															cssClass="card-title text-truncate"
+															href="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"
+															label="<%= latestFileVersion.getTitle() %>"
+															title="<%= latestFileVersion.getTitle() %>"
+														/>
+
+														<c:if test="<%= !dlViewEntriesDisplayContext.hasGuestViewPermission(fileEntry) %>">
+															<clay:icon
+																aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																cssClass="c-ml-2 c-mt-1 flex-shrink-0 lfr-portal-tooltip text-4 text-secondary"
+																data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																symbol="password-policies"
+															/>
+														</c:if>
+													</div>
 
 													<div class="card-subtitle text-truncate">
 														<%= LanguageUtil.format(request, "modified-x-ago-by-x", new String[] {LanguageUtil.getTimeDescription(locale, System.currentTimeMillis() - fileEntry.getModifiedDate().getTime(), true), HtmlUtil.escape(latestFileVersion.getUserName())}, false) %>
 													</div>
 
 													<div class="card-detail">
-														<c:if test='<%= FeatureFlagManagerUtil.isEnabled(latestFileVersion.getCompanyId(), "LPD-10701") && !latestFileVersion.isApproved() && dlViewEntriesDisplayContext.hasApprovedVersion(latestFileVersion.getFileEntryId()) %>'>
+														<c:if test="<%= !latestFileVersion.isApproved() && dlViewEntriesDisplayContext.hasApprovedVersion(latestFileVersion.getFileEntryId()) %>">
 															<liferay-portal-workflow:status
 																showStatusLabel="<%= false %>"
 																status="<%= WorkflowConstants.STATUS_APPROVED %>"
@@ -154,7 +168,7 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 															status="<%= latestFileVersion.getStatus() %>"
 														/>
 
-														<c:if test='<%= FeatureFlagManagerUtil.isEnabled(latestFileVersion.getCompanyId(), "LPD-10701") && latestFileVersion.isScheduled() %>'>
+														<c:if test="<%= latestFileVersion.isScheduled() %>">
 
 															<%
 															String displayDateString = StringPool.BLANK;
@@ -181,7 +195,7 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 															<c:when test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
 																<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "locked-document") %>">
 																	<clay:icon
-																		aria-label="<%= LanguageUtil.get(request, "locked-document") %>"
+																		aria-label='<%= LanguageUtil.get(request, "locked-document") %>'
 																		cssClass="inline-item inline-item-after state-icon"
 																		symbol="lock"
 																	/>
@@ -235,16 +249,28 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 
 												<div class="autofit-col autofit-col-expand pl-1">
 													<div class="table-title">
-														<clay:link
-															href="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"
-															label="<%= HtmlUtil.unescape(latestFileVersion.getTitle()) %>"
-															translated="<%= false %>"
-														/>
+														<div class="d-flex">
+															<clay:link
+																cssClass="text-truncate"
+																href="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"
+																label="<%= latestFileVersion.getTitle() %>"
+																translated="<%= false %>"
+															/>
+
+															<c:if test="<%= !dlViewEntriesDisplayContext.hasGuestViewPermission(fileEntry) %>">
+																<clay:icon
+																	aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																	cssClass="c-ml-2 c-mt-1 flex-shrink-0 lfr-portal-tooltip text-4 text-secondary"
+																	data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																	symbol="password-policies"
+																/>
+															</c:if>
+														</div>
 
 														<c:if test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
 															<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "locked-document") %>">
 																<clay:icon
-																	aria-label="<%= LanguageUtil.get(request, "locked-document") %>"
+																	aria-label='<%= LanguageUtil.get(request, "locked-document") %>'
 																	cssClass="inline-item inline-item-after state-icon"
 																	symbol="lock"
 																/>
@@ -313,7 +339,7 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 											cssClass="table-cell-expand-smallest"
 											name="status"
 										>
-											<c:if test='<%= FeatureFlagManagerUtil.isEnabled(latestFileVersion.getCompanyId(), "LPD-10701") && !latestFileVersion.isApproved() && dlViewEntriesDisplayContext.hasApprovedVersion(latestFileVersion.getFileEntryId()) %>'>
+											<c:if test="<%= !latestFileVersion.isApproved() && dlViewEntriesDisplayContext.hasApprovedVersion(latestFileVersion.getFileEntryId()) %>">
 												<liferay-portal-workflow:status
 													showStatusLabel="<%= false %>"
 													status="<%= WorkflowConstants.STATUS_APPROVED %>"
@@ -325,7 +351,7 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 												status="<%= latestFileVersion.getStatus() %>"
 											/>
 
-											<c:if test='<%= FeatureFlagManagerUtil.isEnabled(latestFileVersion.getCompanyId(), "LPD-10701") && latestFileVersion.isScheduled() %>'>
+											<c:if test="<%= latestFileVersion.isScheduled() %>">
 
 												<%
 												String displayDateString = StringPool.BLANK;

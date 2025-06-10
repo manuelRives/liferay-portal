@@ -15,9 +15,8 @@ import AccountCreationModal from './AccountCreationModal';
 import EmptyListView from './EmptyListView';
 import ListView from './ListView';
 
-const DeliveryCatalogAPIServiceProvider = ServiceProvider.DeliveryCatalogAPI(
-	'v1'
-);
+const DeliveryCatalogAPIServiceProvider =
+	ServiceProvider.DeliveryCatalogAPI('v1');
 
 export default function AccountsListView({
 	accountEntryAllowedTypes,
@@ -62,7 +61,7 @@ export default function AccountsListView({
 					</span>
 				</span>
 
-				{currentAccount && (
+				{!!currentAccount.id && (
 					<ClayButtonWithIcon
 						displayType="unstyled"
 						onClick={() => setCurrentView(VIEWS.ORDERS_LIST)}

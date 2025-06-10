@@ -118,7 +118,7 @@
 			<finder-column name="kaleoNodeId" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="KaleoDefinition" remote-service="true">
+	<entity external-reference-code="company" local-service="true" name="KaleoDefinition" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -188,7 +188,7 @@
 			<finder-column name="active" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="KaleoDefinitionVersion" remote-service="false">
+	<entity local-service="true" name="KaleoDefinitionVersion" remote-service="true">
 
 		<!-- PK fields -->
 

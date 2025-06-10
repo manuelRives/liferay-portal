@@ -4,13 +4,14 @@
  */
 
 import {ClayIconSpriteContext} from '@clayui/icon';
+import {ClayModalProvider} from '@clayui/modal';
 import React, {ReactNode} from 'react';
 import {SWRConfig} from 'swr';
 
 import MarketplaceContextProvider from './context/MarketplaceContext';
 import {getIconSpriteMap} from './liferay/constants';
-import {AppContextProvider} from './manage-app-state/AppManageState';
 import SWRCacheProvider from './services/SWRCacheProvider';
+import fetcher from './services/fetcher';
 
 type ProviderProps = {
 	children: ReactNode;
@@ -18,21 +19,20 @@ type ProviderProps = {
 };
 
 const Providers: React.FC<ProviderProps> = ({children, properties}) => (
-	<SWRConfig
-		value={{
-			provider: SWRCacheProvider,
-			revalidateIfStale: true,
-			revalidateOnFocus: false,
-		}}
-	>
-		<MarketplaceContextProvider properties={properties}>
-			<AppContextProvider>
-				<ClayIconSpriteContext.Provider value={getIconSpriteMap()}>
-					{children}
-				</ClayIconSpriteContext.Provider>
-			</AppContextProvider>
-		</MarketplaceContextProvider>
-	</SWRConfig>
+	<ClayIconSpriteContext.Provider value={getIconSpriteMap()}>
+		<SWRConfig
+			value={{
+				fetcher,
+				provider: SWRCacheProvider,
+				revalidateIfStale: true,
+				revalidateOnFocus: false,
+			}}
+		>
+			<MarketplaceContextProvider properties={properties}>
+				<ClayModalProvider>{children}</ClayModalProvider>
+			</MarketplaceContextProvider>
+		</SWRConfig>
+	</ClayIconSpriteContext.Provider>
 );
 
 export default Providers;

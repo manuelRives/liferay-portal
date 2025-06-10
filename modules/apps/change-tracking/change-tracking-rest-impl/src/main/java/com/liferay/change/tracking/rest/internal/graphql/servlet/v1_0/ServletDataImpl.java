@@ -18,10 +18,10 @@ import com.liferay.change.tracking.rest.resource.v1_0.CTRemoteResource;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -92,10 +92,30 @@ public class ServletDataImpl implements ServletData {
 			new HashMap<String, ObjectValuePair<Class<?>, String>>() {
 				{
 					put(
-						"mutation#createCTCollectionsPageExportBatch",
+						"mutation#deleteCTCollection",
 						new ObjectValuePair<>(
 							CTCollectionResourceImpl.class,
-							"postCTCollectionsPageExportBatch"));
+							"deleteCTCollection"));
+					put(
+						"mutation#deleteCTCollectionBatch",
+						new ObjectValuePair<>(
+							CTCollectionResourceImpl.class,
+							"deleteCTCollectionBatch"));
+					put(
+						"mutation#deleteCTCollectionByExternalReferenceCode",
+						new ObjectValuePair<>(
+							CTCollectionResourceImpl.class,
+							"deleteCTCollectionByExternalReferenceCode"));
+					put(
+						"mutation#patchCTCollection",
+						new ObjectValuePair<>(
+							CTCollectionResourceImpl.class,
+							"patchCTCollection"));
+					put(
+						"mutation#patchCTCollectionByExternalReferenceCode",
+						new ObjectValuePair<>(
+							CTCollectionResourceImpl.class,
+							"patchCTCollectionByExternalReferenceCode"));
 					put(
 						"mutation#createCTCollection",
 						new ObjectValuePair<>(
@@ -107,16 +127,6 @@ public class ServletDataImpl implements ServletData {
 							CTCollectionResourceImpl.class,
 							"postCTCollectionBatch"));
 					put(
-						"mutation#deleteCTCollectionByExternalReferenceCode",
-						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class,
-							"deleteCTCollectionByExternalReferenceCode"));
-					put(
-						"mutation#patchCTCollectionByExternalReferenceCode",
-						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class,
-							"patchCTCollectionByExternalReferenceCode"));
-					put(
 						"mutation#createCTCollectionByExternalReferenceCodePublish",
 						new ObjectValuePair<>(
 							CTCollectionResourceImpl.class,
@@ -126,30 +136,6 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							CTCollectionResourceImpl.class,
 							"postCTCollectionByExternalReferenceCodeSchedulePublish"));
-					put(
-						"mutation#deleteCTCollection",
-						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class,
-							"deleteCTCollection"));
-					put(
-						"mutation#deleteCTCollectionBatch",
-						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class,
-							"deleteCTCollectionBatch"));
-					put(
-						"mutation#patchCTCollection",
-						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class,
-							"patchCTCollection"));
-					put(
-						"mutation#updateCTCollection",
-						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class, "putCTCollection"));
-					put(
-						"mutation#updateCTCollectionBatch",
-						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class,
-							"putCTCollectionBatch"));
 					put(
 						"mutation#createCTCollectionCheckout",
 						new ObjectValuePair<>(
@@ -166,28 +152,38 @@ public class ServletDataImpl implements ServletData {
 							CTCollectionResourceImpl.class,
 							"postCTCollectionSchedulePublish"));
 					put(
-						"mutation#createCTProcessesPageExportBatch",
+						"mutation#createCTCollectionsPageExportBatch",
+						new ObjectValuePair<>(
+							CTCollectionResourceImpl.class,
+							"postCTCollectionsPageExportBatch"));
+					put(
+						"mutation#updateCTCollection",
+						new ObjectValuePair<>(
+							CTCollectionResourceImpl.class, "putCTCollection"));
+					put(
+						"mutation#updateCTCollectionBatch",
+						new ObjectValuePair<>(
+							CTCollectionResourceImpl.class,
+							"putCTCollectionBatch"));
+					put(
+						"mutation#deleteCTProcess",
+						new ObjectValuePair<>(
+							CTProcessResourceImpl.class, "deleteCTProcess"));
+					put(
+						"mutation#deleteCTProcessBatch",
 						new ObjectValuePair<>(
 							CTProcessResourceImpl.class,
-							"postCTProcessesPageExportBatch"));
+							"deleteCTProcessBatch"));
 					put(
 						"mutation#createCTProcessRevert",
 						new ObjectValuePair<>(
 							CTProcessResourceImpl.class,
 							"postCTProcessRevert"));
 					put(
-						"mutation#createCTRemotesPageExportBatch",
+						"mutation#createCTProcessesPageExportBatch",
 						new ObjectValuePair<>(
-							CTRemoteResourceImpl.class,
-							"postCTRemotesPageExportBatch"));
-					put(
-						"mutation#createCTRemote",
-						new ObjectValuePair<>(
-							CTRemoteResourceImpl.class, "postCTRemote"));
-					put(
-						"mutation#createCTRemoteBatch",
-						new ObjectValuePair<>(
-							CTRemoteResourceImpl.class, "postCTRemoteBatch"));
+							CTProcessResourceImpl.class,
+							"postCTProcessesPageExportBatch"));
 					put(
 						"mutation#deleteCTRemote",
 						new ObjectValuePair<>(
@@ -201,6 +197,19 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							CTRemoteResourceImpl.class, "patchCTRemote"));
 					put(
+						"mutation#createCTRemote",
+						new ObjectValuePair<>(
+							CTRemoteResourceImpl.class, "postCTRemote"));
+					put(
+						"mutation#createCTRemoteBatch",
+						new ObjectValuePair<>(
+							CTRemoteResourceImpl.class, "postCTRemoteBatch"));
+					put(
+						"mutation#createCTRemotesPageExportBatch",
+						new ObjectValuePair<>(
+							CTRemoteResourceImpl.class,
+							"postCTRemotesPageExportBatch"));
+					put(
 						"mutation#updateCTRemote",
 						new ObjectValuePair<>(
 							CTRemoteResourceImpl.class, "putCTRemote"));
@@ -210,10 +219,9 @@ public class ServletDataImpl implements ServletData {
 							CTRemoteResourceImpl.class, "putCTRemoteBatch"));
 
 					put(
-						"query#cTCollections",
+						"query#cTCollection",
 						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class,
-							"getCTCollectionsPage"));
+							CTCollectionResourceImpl.class, "getCTCollection"));
 					put(
 						"query#cTCollectionByExternalReferenceCode",
 						new ObjectValuePair<>(
@@ -230,39 +238,45 @@ public class ServletDataImpl implements ServletData {
 							CTCollectionResourceImpl.class,
 							"getCTCollectionShareLink"));
 					put(
-						"query#cTCollectionsHistory",
+						"query#cTCollections",
 						new ObjectValuePair<>(
 							CTCollectionResourceImpl.class,
-							"getCTCollectionsHistoryPage"));
+							"getCTCollectionsPage"));
 					put(
-						"query#cTCollection",
+						"query#cTEntriesHistory",
 						new ObjectValuePair<>(
-							CTCollectionResourceImpl.class, "getCTCollection"));
+							CTEntryResourceImpl.class,
+							"getCTEntriesHistoryPage"));
+					put(
+						"query#cTEntry",
+						new ObjectValuePair<>(
+							CTEntryResourceImpl.class, "getCTEntry"));
 					put(
 						"query#ctCollectionCTEntries",
 						new ObjectValuePair<>(
 							CTEntryResourceImpl.class,
 							"getCtCollectionCTEntriesPage"));
 					put(
-						"query#cTEntry",
+						"query#ctCollectionCTEntryByModelClassNameByModelClassPkModelClassPK",
 						new ObjectValuePair<>(
-							CTEntryResourceImpl.class, "getCTEntry"));
-					put(
-						"query#cTProcesses",
-						new ObjectValuePair<>(
-							CTProcessResourceImpl.class, "getCTProcessesPage"));
+							CTEntryResourceImpl.class,
+							"getCtCollectionCTEntryByModelClassNameByModelClassPkModelClassPK"));
 					put(
 						"query#cTProcess",
 						new ObjectValuePair<>(
 							CTProcessResourceImpl.class, "getCTProcess"));
 					put(
-						"query#cTRemotes",
+						"query#cTProcesses",
 						new ObjectValuePair<>(
-							CTRemoteResourceImpl.class, "getCTRemotesPage"));
+							CTProcessResourceImpl.class, "getCTProcessesPage"));
 					put(
 						"query#cTRemote",
 						new ObjectValuePair<>(
 							CTRemoteResourceImpl.class, "getCTRemote"));
+					put(
+						"query#cTRemotes",
+						new ObjectValuePair<>(
+							CTRemoteResourceImpl.class, "getCTRemotesPage"));
 
 					put(
 						"query#CTCollection.shareLink",
@@ -283,6 +297,11 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							CTEntryResourceImpl.class,
 							"getCtCollectionCTEntriesPage"));
+					put(
+						"query#CTCollection.ctCollectionCTEntryByModelClassNameByModelClassPkModelClassPK",
+						new ObjectValuePair<>(
+							CTEntryResourceImpl.class,
+							"getCtCollectionCTEntryByModelClassNameByModelClassPkModelClassPK"));
 				}
 			};
 

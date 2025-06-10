@@ -8,25 +8,27 @@ package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
+import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelService;
 import com.liferay.commerce.product.service.CPDefinitionOptionValueRelService;
 import com.liferay.commerce.product.service.CPDefinitionService;
+import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOption;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOptionValue;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductOptionUtil;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductOptionValueUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.ProductOptionResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
@@ -34,10 +36,13 @@ import com.liferay.portal.vulcan.fields.NestedFieldId;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.ws.rs.core.Response;
+
+import java.io.Serializable;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -169,14 +174,12 @@ public class ProductOptionResourceImpl extends BaseProductOptionResourceImpl {
 			cpDefinitionOptionRel.getGroupId());
 
 		serviceContext.setExpandoBridgeAttributes(
-			CustomFieldsUtil.toMap(
-				CPDefinitionOptionRel.class.getName(),
-				contextCompany.getCompanyId(), productOption.getCustomFields(),
-				contextAcceptLanguage.getPreferredLocale()));
+			_getExpandoBridgeAttributes(productOption));
 
 		_cpDefinitionOptionRelService.updateCPDefinitionOptionRel(
 			cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
-			productOption.getOptionId(), LanguageUtils.getLocalizedMap(nameMap),
+			_getOptionId(cpDefinitionOptionRel.getCPOptionId(), productOption),
+			LanguageUtils.getLocalizedMap(nameMap),
 			LanguageUtils.getLocalizedMap(descriptionMap),
 			GetterUtil.get(
 				productOption.getFieldType(),
@@ -213,7 +216,8 @@ public class ProductOptionResourceImpl extends BaseProductOptionResourceImpl {
 		if (productOptionValues != null) {
 			for (ProductOptionValue productOptionValue : productOptionValues) {
 				ProductOptionValueUtil.addOrUpdateCPDefinitionOptionValueRel(
-					_cpDefinitionOptionValueRelService, productOptionValue,
+					_cpDefinitionOptionValueRelService, _cpInstanceService,
+					productOptionValue,
 					cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
 					_serviceContextHelper.getServiceContext(
 						cpDefinitionOptionRel.getGroupId()));
@@ -273,11 +277,7 @@ public class ProductOptionResourceImpl extends BaseProductOptionResourceImpl {
 					cpDefinition.getGroupId());
 
 			serviceContext.setExpandoBridgeAttributes(
-				CustomFieldsUtil.toMap(
-					CPDefinitionOptionRel.class.getName(),
-					contextCompany.getCompanyId(),
-					productOption.getCustomFields(),
-					contextAcceptLanguage.getPreferredLocale()));
+				_getExpandoBridgeAttributes(productOption));
 
 			CPDefinitionOptionRel cpDefinitionOptionRel =
 				ProductOptionUtil.addOrUpdateCPDefinitionOptionRel(
@@ -297,7 +297,7 @@ public class ProductOptionResourceImpl extends BaseProductOptionResourceImpl {
 					ProductOptionValueUtil.
 						addOrUpdateCPDefinitionOptionValueRel(
 							_cpDefinitionOptionValueRelService,
-							productOptionValue,
+							_cpInstanceService, productOptionValue,
 							cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
 							serviceContext);
 				}
@@ -310,6 +310,43 @@ public class ProductOptionResourceImpl extends BaseProductOptionResourceImpl {
 				QueryUtil.ALL_POS),
 			cpDefinitionOptionRel -> _toProductOption(
 				cpDefinitionOptionRel.getCPDefinitionOptionRelId()));
+	}
+
+	private Map<String, Serializable> _getExpandoBridgeAttributes(
+		ProductOption productOption) {
+
+		Map<String, Serializable> expandoBridgeAttributes =
+			CustomFieldsUtil.toMap(
+				CPDefinitionOptionRel.class.getName(),
+				contextCompany.getCompanyId(), productOption.getCustomFields(),
+				contextAcceptLanguage.getPreferredLocale());
+
+		if (expandoBridgeAttributes == null) {
+			expandoBridgeAttributes = new HashMap<>();
+		}
+
+		return expandoBridgeAttributes;
+	}
+
+	private long _getOptionId(long defaultOptionId, ProductOption productOption)
+		throws Exception {
+
+		long optionId = productOption.getOptionId();
+
+		if (optionId > 0) {
+			return optionId;
+		}
+
+		CPOption cpOption =
+			_cpOptionService.fetchCPOptionByExternalReferenceCode(
+				productOption.getOptionExternalReferenceCode(),
+				contextCompany.getCompanyId());
+
+		if (cpOption != null) {
+			return cpOption.getCPOptionId();
+		}
+
+		return defaultOptionId;
 	}
 
 	private ProductOption _toProductOption(Long cpDefinitionOptionRelId)
@@ -330,6 +367,9 @@ public class ProductOptionResourceImpl extends BaseProductOptionResourceImpl {
 
 	@Reference
 	private CPDefinitionService _cpDefinitionService;
+
+	@Reference
+	private CPInstanceService _cpInstanceService;
 
 	@Reference
 	private CPOptionService _cpOptionService;

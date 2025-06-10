@@ -5,7 +5,6 @@
 
 package com.liferay.jethr0.event.github;
 
-import com.liferay.jethr0.event.EventHandlerContext;
 import com.liferay.jethr0.event.github.comment.GitHubComment;
 import com.liferay.jethr0.event.github.commit.GitHubCommit;
 import com.liferay.jethr0.event.github.pullrequest.GitHubPullRequest;
@@ -17,6 +16,7 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -46,13 +46,18 @@ public abstract class BaseTestGitHubCommentEventHandler
 
 		invokeJobEntity(pullRequestJobEntity);
 
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				StringUtil.combine(
+					"Invoked a job ", pullRequestJobEntity.getEntityURL(),
+					" at ", StringUtil.toString(new Date())));
+		}
+
 		return pullRequestJobEntity.toString();
 	}
 
-	protected BaseTestGitHubCommentEventHandler(
-		EventHandlerContext eventHandlerContext, JSONObject messageJSONObject) {
-
-		super(eventHandlerContext, messageJSONObject);
+	protected BaseTestGitHubCommentEventHandler(JSONObject messageJSONObject) {
+		super(messageJSONObject);
 	}
 
 	protected PullRequestJobEntity createPullRequestJobEntity(String testSuite)

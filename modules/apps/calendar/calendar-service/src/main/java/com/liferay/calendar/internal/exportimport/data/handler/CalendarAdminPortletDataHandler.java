@@ -34,9 +34,9 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -47,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  */
 @Component(
-	property = "javax.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
+	property = "jakarta.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
 	service = PortletDataHandler.class
 )
 public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
@@ -88,7 +88,7 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 				NAMESPACE, "calendar-resources", true, false, null,
 				CalendarResource.class.getName()),
 			new PortletDataHandlerBoolean(
-				NAMESPACE, "calendar-bookings", true, false, null,
+				NAMESPACE, "events", true, false, null,
 				CalendarBooking.class.getName()),
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "calendar-notification-templates", true, false,
@@ -141,9 +141,7 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 			calendarResourceActionableDynamicQuery.performActions();
 		}
 
-		if (portletDataContext.getBooleanParameter(
-				NAMESPACE, "calendar-bookings")) {
-
+		if (portletDataContext.getBooleanParameter(NAMESPACE, "events")) {
 			ActionableDynamicQuery calendarBookingActionableDynamicQuery =
 				calendarBookingLocalService.getExportActionableDynamicQuery(
 					portletDataContext);
@@ -228,9 +226,7 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 			}
 		}
 
-		if (portletDataContext.getBooleanParameter(
-				NAMESPACE, "calendar-bookings")) {
-
+		if (portletDataContext.getBooleanParameter(NAMESPACE, "events")) {
 			Element calendarBookingsElement =
 				portletDataContext.getImportDataGroupElement(
 					CalendarBooking.class);

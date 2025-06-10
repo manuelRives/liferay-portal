@@ -642,9 +642,9 @@ public class QuartzSchedulerEngineTest {
 
 		@Override
 		public Set<JobKey> getJobKeys(GroupMatcher<JobKey> groupMatcher) {
-			String groupName = groupMatcher.getCompareToValue();
-
 			Set<JobKey> jobKeys = new HashSet<>();
+
+			String groupName = groupMatcher.getCompareToValue();
 
 			for (JobKey jobKey : _jobs.keySet()) {
 				if (Objects.equals(jobKey.getGroup(), groupName)) {
@@ -735,11 +735,7 @@ public class QuartzSchedulerEngineTest {
 
 		@Override
 		public boolean isShutdown() {
-			if (!_ready) {
-				return true;
-			}
-
-			return false;
+			return !_ready;
 		}
 
 		@Override

@@ -137,7 +137,7 @@ public class TopLevelBuildTestrayCaseResult extends BuildTestrayCaseResult {
 	public void recordTestrayCaseResult(Job job) {
 		TestrayBuild testrayBuild = getTestrayBuild();
 
-		TestrayRun testrayRun = new TestrayRun(
+		TestrayRun testrayRun = TestrayFactory.newTestrayRun(
 			testrayBuild, "top-level-build", job.getJobPropertiesFiles());
 
 		long start = JenkinsResultsParserUtil.getCurrentTimeMillis();
@@ -207,6 +207,9 @@ public class TopLevelBuildTestrayCaseResult extends BuildTestrayCaseResult {
 					testrayCaseResult.getComponentName());
 				testcasePropertiesMap.put(
 					"testray.team.name", testrayCaseResult.getTeamName());
+				testcasePropertiesMap.put(
+					"testray.testcase.duration",
+					String.valueOf(testrayCaseResult.getDuration()));
 
 				String testrayCaseName = testrayCaseResult.getName();
 

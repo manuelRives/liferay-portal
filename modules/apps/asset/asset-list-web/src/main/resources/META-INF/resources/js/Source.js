@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {openSelectionModal} from 'frontend-js-components-web';
 import {
 	addParams,
 	delegate,
-	openSelectionModal,
 	sub,
 	toggleDisabled,
 	toggleSelectBox,
@@ -215,9 +215,8 @@ export default function ({classTypes, namespace}) {
 		);
 
 		if (ddmStructureFieldMessageContainer) {
-			ddmStructureFieldMessageContainer.innerHTML = Liferay.Util.escape(
-				message
-			);
+			ddmStructureFieldMessageContainer.innerHTML =
+				Liferay.Util.escape(message);
 		}
 	};
 
@@ -264,13 +263,11 @@ export default function ({classTypes, namespace}) {
 				}
 			);
 
-			mapDDMStructures[
-				`${className}_${classTypeId}_column1`
-			] = columnBuffer1;
+			mapDDMStructures[`${className}_${classTypeId}_column1`] =
+				columnBuffer1;
 
-			mapDDMStructures[
-				`${className}_${classTypeId}_column2`
-			] = columnBuffer2;
+			mapDDMStructures[`${className}_${classTypeId}_column2`] =
+				columnBuffer2;
 		});
 
 		const onChangeSubtypeSelector = () => {
@@ -350,7 +347,10 @@ export default function ({classTypes, namespace}) {
 	Liferay.after('inputmoveboxes:moveItem', ({fromBox, toBox}) => {
 		const id = `${namespace}currentClassNameIds`;
 
-		if (fromBox.attr('id') === id || toBox.attr('id') === id) {
+		if (
+			fromBox.getAttribute('id') === id ||
+			toBox.getAttribute('id') === id
+		) {
 			toggleSubclasses();
 
 			if (!document.getElementById(id).options.length) {

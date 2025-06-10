@@ -56,7 +56,7 @@ const updateUsedCategoryPortlet = ({category, item, used}) => {
 				categories: category.categories.map((category) =>
 					updateUsedCategoryPortlet({category, item, used})
 				),
-		  }
+			}
 		: category;
 };
 
@@ -78,6 +78,7 @@ export function updateUsedWidget({item, used = true, widgets}) {
 const normalizeWidget = (widget) => {
 	return {
 		data: {
+			deprecated: widget.deprecated,
 			instanceable: widget.instanceable,
 			portletId: widget.portletId,
 			portletItemId: widget.portletItemId || null,
@@ -102,9 +103,8 @@ const normalizeCollections = (collection) => {
 	};
 
 	if (collection.categories?.length) {
-		normalizedElement.collections = collection.categories.map(
-			normalizeCollections
-		);
+		normalizedElement.collections =
+			collection.categories.map(normalizeCollections);
 	}
 
 	return normalizedElement;
@@ -189,7 +189,7 @@ const AddPanel = ({
 							id: 'content',
 							label: Liferay.Language.get('content'),
 						},
-				  ]
+					]
 				: []),
 		],
 		[contents, hasAddContentPermission, widgets]

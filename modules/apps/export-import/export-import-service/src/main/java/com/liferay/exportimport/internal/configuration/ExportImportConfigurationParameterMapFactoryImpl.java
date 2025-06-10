@@ -26,11 +26,11 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -547,25 +547,22 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 			return;
 		}
 
-		String[] parameterStagedModelTypes = parameterMap.get(
-			"stagedModelTypes");
-
-		List<String> parameterStagedModelTypesList = ListUtil.fromArray(
-			parameterStagedModelTypes);
+		List<String> parameterStagedModelTypes = ListUtil.fromArray(
+			parameterMap.get("stagedModelTypes"));
 
 		for (StagedModelType stagedModelType : stagedModelTypes) {
 			String stagedModelTypeString = stagedModelType.toString();
 
-			if (!parameterStagedModelTypesList.contains(
-					stagedModelTypeString)) {
-
-				parameterStagedModelTypesList.add(stagedModelTypeString);
+			if (parameterStagedModelTypes.contains(stagedModelTypeString)) {
+				continue;
 			}
+
+			parameterStagedModelTypes.add(stagedModelTypeString);
 		}
 
 		parameterMap.put(
 			"stagedModelTypes",
-			parameterStagedModelTypesList.toArray(new String[0]));
+			parameterStagedModelTypes.toArray(new String[0]));
 	}
 
 	/**

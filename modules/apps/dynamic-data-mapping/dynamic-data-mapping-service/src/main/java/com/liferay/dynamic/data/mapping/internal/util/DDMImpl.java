@@ -77,6 +77,10 @@ import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.UnicodeFormatter;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.text.DateFormat;
@@ -91,10 +95,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -380,6 +380,8 @@ public class DDMImpl implements DDM {
 			ServiceContext serviceContext)
 		throws PortalException {
 
+		Fields fields = new Fields();
+
 		DDMStructure ddmStructure = _getDDMStructure(
 			ddmStructureId, ddmTemplateId);
 
@@ -397,8 +399,6 @@ public class DDMImpl implements DDM {
 
 			translating = false;
 		}
-
-		Fields fields = new Fields();
 
 		for (String fieldName : fieldNames) {
 			boolean localizable = GetterUtil.getBoolean(
@@ -500,7 +500,7 @@ public class DDMImpl implements DDM {
 		OrderByComparator<DDMStructure> orderByComparator = null;
 
 		if (orderByCol.equals("id")) {
-			orderByComparator = new StructureIdComparator(orderByAsc);
+			orderByComparator = StructureIdComparator.getInstance(orderByAsc);
 		}
 		else if (orderByCol.equals("modified-date")) {
 			orderByComparator = new StructureModifiedDateComparator(orderByAsc);
@@ -522,7 +522,7 @@ public class DDMImpl implements DDM {
 		OrderByComparator<DDMTemplate> orderByComparator = null;
 
 		if (orderByCol.equals("id")) {
-			orderByComparator = new TemplateIdComparator(orderByAsc);
+			orderByComparator = TemplateIdComparator.getInstance(orderByAsc);
 		}
 		else if (orderByCol.equals("modified-date")) {
 			orderByComparator = new TemplateModifiedDateComparator(orderByAsc);
@@ -957,14 +957,14 @@ public class DDMImpl implements DDM {
 		String fieldNamespace, String fieldName,
 		ServiceContext serviceContext) {
 
+		List<String> fieldNames = new ArrayList<>();
+
 		String[] fieldsDisplayValues = StringUtil.split(
 			(String)serviceContext.getAttribute(
 				fieldNamespace + FIELDS_DISPLAY_NAME));
 
 		List<String> privateFieldNames = ListUtil.fromArray(
 			FIELDS_DISPLAY_NAME);
-
-		List<String> fieldNames = new ArrayList<>();
 
 		if ((fieldsDisplayValues.length == 0) ||
 			privateFieldNames.contains(fieldName)) {

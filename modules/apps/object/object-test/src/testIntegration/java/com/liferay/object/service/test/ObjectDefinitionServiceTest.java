@@ -259,26 +259,6 @@ public class ObjectDefinitionServiceTest {
 	}
 
 	@Test
-	public void testUpdateRootObjectDefinitionId() throws Exception {
-		ObjectDefinition objectDefinition = _addCustomObjectDefinition(
-			_adminUser);
-
-		AssertUtils.assertFailure(
-			PrincipalException.MustHavePermission.class,
-			StringBundler.concat(
-				"User ", _user1.getUserId(),
-				" must have UPDATE permission for ",
-				"com.liferay.object.model.ObjectDefinition ",
-				objectDefinition.getObjectDefinitionId()),
-			() -> _testUpdateRootObjectDefinitionId(objectDefinition, _user1));
-
-		_testUpdateRootObjectDefinitionId(
-			_addCustomObjectDefinition(_adminUser), _adminUser);
-		_testUpdateRootObjectDefinitionId(
-			_addCustomObjectDefinition(_user1), _user1);
-	}
-
-	@Test
 	public void testUpdateSystemObjectDefinition() throws Exception {
 		ObjectDefinition objectDefinition = _addSystemObjectDefinition(
 			0, _adminUser);
@@ -346,12 +326,14 @@ public class ObjectDefinitionServiceTest {
 			user.getUserId(), objectDefinition.getObjectDefinitionId());*/
 
 		return _objectDefinitionLocalService.addCustomObjectDefinition(
-			user.getUserId(), 0, false, false, false,
+			user.getUserId(), 0, null, false, false, true, false, false, false,
+			null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			ObjectDefinitionTestUtil.getRandomName(), null, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			true, ObjectDefinitionConstants.SCOPE_COMPANY,
 			ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+			Collections.emptyList(),
 			Arrays.asList(
 				ObjectFieldUtil.createObjectField(
 					ObjectFieldConstants.BUSINESS_TYPE_TEXT,
@@ -367,11 +349,12 @@ public class ObjectDefinitionServiceTest {
 
 		return _objectDefinitionService.addSystemObjectDefinition(
 			RandomTestUtil.randomString(), user.getUserId(), objectFolderId,
-			false,
+			null, false, false, true, false, false, false, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			"Test", null, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			false, ObjectDefinitionConstants.SCOPE_COMPANY,
+			Collections.emptyList(),
 			Arrays.asList(
 				ObjectFieldUtil.createObjectField(
 					ObjectFieldConstants.BUSINESS_TYPE_TEXT,
@@ -396,7 +379,8 @@ public class ObjectDefinitionServiceTest {
 
 			objectDefinition =
 				_objectDefinitionService.addCustomObjectDefinition(
-					objectFolderId, false, false, false,
+					objectFolderId, null, false, false, true, false, false,
+					false, null,
 					LocalizedMapUtil.getLocalizedMap(
 						RandomTestUtil.randomString()),
 					ObjectDefinitionTestUtil.getRandomName(), null, null,
@@ -404,6 +388,7 @@ public class ObjectDefinitionServiceTest {
 						RandomTestUtil.randomString()),
 					true, ObjectDefinitionConstants.SCOPE_COMPANY,
 					ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+					Collections.emptyList(),
 					Collections.singletonList(
 						ObjectFieldUtil.createObjectField(
 							ObjectFieldConstants.BUSINESS_TYPE_TEXT,
@@ -432,7 +417,8 @@ public class ObjectDefinitionServiceTest {
 			_setUser(user);
 
 			objectDefinition = _objectDefinitionService.addObjectDefinition(
-				RandomTestUtil.randomString(), objectFolderId, true, false);
+				RandomTestUtil.randomString(), objectFolderId, true,
+				ObjectDefinitionConstants.SCOPE_COMPANY, false);
 		}
 		finally {
 			if (objectDefinition != null) {
@@ -528,38 +514,15 @@ public class ObjectDefinitionServiceTest {
 			objectDefinition =
 				_objectDefinitionService.updateCustomObjectDefinition(
 					null, objectDefinition.getObjectDefinitionId(), 0, 0,
-					objectFolderId, 0, false, objectDefinition.isActive(), true,
-					false, false, false, false,
+					objectFolderId, 0, false, objectDefinition.isActive(), null,
+					true, false, false, true, false, false, false, false, null,
 					LocalizedMapUtil.getLocalizedMap("Able"), "Able", null,
 					null, false, LocalizedMapUtil.getLocalizedMap("Ables"),
-					objectDefinition.getScope(), objectDefinition.getStatus());
+					objectDefinition.getScope(), objectDefinition.getStatus(),
+					Collections.emptyList());
 		}
 		finally {
 			if (objectDefinition != null) {
-				_objectDefinitionLocalService.deleteObjectDefinition(
-					objectDefinition);
-			}
-		}
-	}
-
-	private void _testUpdateRootObjectDefinitionId(
-			ObjectDefinition objectDefinition, User user)
-		throws Exception {
-
-		try {
-			_setUser(user);
-
-			objectDefinition =
-				_objectDefinitionService.updateRootObjectDefinitionId(
-					objectDefinition.getObjectDefinitionId(),
-					objectDefinition.getObjectDefinitionId());
-		}
-		finally {
-			if (objectDefinition != null) {
-				objectDefinition =
-					_objectDefinitionService.updateRootObjectDefinitionId(
-						objectDefinition.getObjectDefinitionId(), 0);
-
 				_objectDefinitionLocalService.deleteObjectDefinition(
 					objectDefinition);
 			}
@@ -577,7 +540,8 @@ public class ObjectDefinitionServiceTest {
 				_objectDefinitionService.updateSystemObjectDefinition(
 					RandomTestUtil.randomString(),
 					objectDefinition.getObjectDefinitionId(), objectFolderId,
-					objectDefinition.getTitleObjectFieldId());
+					objectDefinition.getTitleObjectFieldId(),
+					Collections.emptyList());
 		}
 		finally {
 			if (objectDefinition != null) {

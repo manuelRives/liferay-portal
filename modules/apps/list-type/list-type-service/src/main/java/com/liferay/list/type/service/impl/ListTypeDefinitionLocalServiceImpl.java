@@ -168,6 +168,19 @@ public class ListTypeDefinitionLocalServiceImpl
 		return listTypeDefinition;
 	}
 
+	@Override
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
+		throws PortalException {
+
+		for (ListTypeDefinition listTypeDefinition :
+				listTypeDefinitionPersistence.findByC_U(companyId, oldUserId)) {
+
+			listTypeDefinition.setUserId(newUserId);
+
+			listTypeDefinitionPersistence.update(listTypeDefinition);
+		}
+	}
+
 	private ListTypeDefinition _addListTypeDefinition(
 			ListTypeDefinition listTypeDefinition, String externalReferenceCode,
 			long userId, Map<Locale, String> nameMap, boolean system)
@@ -223,11 +236,19 @@ public class ListTypeDefinitionLocalServiceImpl
 							listTypeEntry.getCompanyId(), listTypeDefinitionId);
 			}
 
+			if ((existingListTypeEntry == null) &&
+				Validator.isNotNull(listTypeEntry.getKey())) {
+
+				existingListTypeEntry =
+					_listTypeEntryLocalService.fetchListTypeEntry(
+						listTypeDefinitionId, listTypeEntry.getKey());
+			}
+
 			if (existingListTypeEntry == null) {
 				_listTypeEntryLocalService.addListTypeEntry(
 					listTypeEntry.getExternalReferenceCode(), userId,
 					listTypeDefinitionId, listTypeEntry.getKey(),
-					listTypeEntry.getNameMap());
+					listTypeEntry.getNameMap(), listTypeEntry.isSystem());
 
 				continue;
 			}

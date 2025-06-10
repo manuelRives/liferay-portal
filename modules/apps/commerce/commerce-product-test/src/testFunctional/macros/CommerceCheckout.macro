@@ -85,12 +85,17 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro gotoCheckoutViaMiniCart() {
+	macro gotoCheckoutViaMiniCart(asGuest = null) {
 		ScrollBy(value1 = "0, 1000");
 
 		CommerceNavigator.gotoMiniCart();
 
-		Button.click(button = "Submit");
+		if (${asGuest} == "true") {
+			Button.click(button = "Proceed as Guest");
+		}
+		else {
+			Button.click(button = "Submit");
+		}
 
 		WaitForPageLoad();
 	}
@@ -504,8 +509,8 @@ definition {
 			}
 			else {
 				AssertTextEquals(
-					key_paymentMethod = ${deliveryTerm},
-					locator1 = "CommerceAccelerators#CHECKOUT_SUMMARY_PAYMENT_METHOD",
+					key_deliveryTerm = ${deliveryTerm},
+					locator1 = "CommerceAccelerators#CHECKOUT_SUMMARY_DELIVERY_TERM",
 					value1 = ${deliveryTerm});
 			}
 		}

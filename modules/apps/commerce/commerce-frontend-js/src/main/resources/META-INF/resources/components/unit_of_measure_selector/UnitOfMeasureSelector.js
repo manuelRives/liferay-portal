@@ -4,7 +4,7 @@
  */
 
 import {ClaySelectWithOption} from '@clayui/form';
-import {useLiferayState} from '@liferay/frontend-js-state-web';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import classnames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
@@ -18,6 +18,8 @@ import {
 } from '../../utilities/eventsDefinitions';
 import {getMinQuantity} from '../../utilities/quantities';
 import Asterisk from '../product_options/Asterisk';
+
+import './unit_of_measure_selector.scss';
 
 function UnitOfMeasureSelector({
 	accountId,
@@ -34,6 +36,7 @@ function UnitOfMeasureSelector({
 	productId,
 	resetQuantity,
 	size,
+	useQuantity,
 	value,
 }) {
 	const [inputProperties, setInputProperties] = useState({
@@ -46,17 +49,19 @@ function UnitOfMeasureSelector({
 	const [skuId, setSkuId] = useState(cpInstanceId);
 	const [skuOptionsAtomState] = useLiferayState(skuOptionsAtom);
 
-	const DeliveryCatalogAPIServiceProvider = ServiceProvider.DeliveryCatalogAPI(
-		'v1'
-	);
+	const DeliveryCatalogAPIServiceProvider =
+		ServiceProvider.DeliveryCatalogAPI('v1');
 
 	const postChannelProductSkuBySkuOption = useCallback(
-		(skuUnitOfMeasureKey) => {
+		(quantity = 1, skuUnitOfMeasureKey) => {
 			DeliveryCatalogAPIServiceProvider.postChannelProductSkuBySkuOption(
 				channelId,
 				productId,
 				accountId,
-				inputProperties.quantity,
+				Liferay.CommerceContext
+					? Liferay.CommerceContext.currency.currencyCode
+					: '',
+				quantity,
 				skuUnitOfMeasureKey,
 				options || skuOptionsAtomState.skuOptions
 			).then((cpInstance) => {
@@ -75,6 +80,7 @@ function UnitOfMeasureSelector({
 				);
 			});
 		},
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[accountId, channelId, options, productId, skuOptionsAtomState]
 	);
@@ -85,7 +91,10 @@ function UnitOfMeasureSelector({
 				channelId,
 				productId,
 				cpInstanceId,
-				accountId
+				accountId,
+				Liferay.CommerceContext
+					? Liferay.CommerceContext.currency.currencyCode
+					: ''
 			).then((cpInstance) => {
 				const skuUnitOfMeasures = cpInstance.skuUnitOfMeasures || [];
 
@@ -102,24 +111,32 @@ function UnitOfMeasureSelector({
 					}
 				}
 
+				const quantity = getMinQuantity(
+					productConfiguration?.minOrderQuantity,
+					skuUnitOfMeasure?.incrementalOrderQuantity || 1,
+					skuUnitOfMeasure?.precision || 0
+				);
+
 				setInputProperties((inputProperties) => ({
 					...inputProperties,
 					fireEvent: true,
-					quantity: getMinQuantity(
-						productConfiguration?.minOrderQuantity,
-						skuUnitOfMeasure?.incrementalOrderQuantity || 1,
-						skuUnitOfMeasure?.precision || 0
-					),
+					quantity,
 					resetQuantity,
 					unitOfMeasures: skuUnitOfMeasures,
 					value: skuUnitOfMeasure?.key || '',
 				}));
 
 				if (skuUnitOfMeasure?.key) {
-					postChannelProductSkuBySkuOption(skuUnitOfMeasure?.key);
+					postChannelProductSkuBySkuOption(
+						(useQuantity
+							? quantity
+							: skuUnitOfMeasure?.incrementalOrderQuantity) || 1,
+						skuUnitOfMeasure?.key
+					);
 				}
 			});
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [accountId, channelId, cpInstanceId, resetQuantity, productId]);
 
@@ -196,6 +213,7 @@ function UnitOfMeasureSelector({
 		if (inputProperties.fireEvent) {
 			fireSelectorChangedEvent();
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [inputProperties.fireEvent]);
 
@@ -235,7 +253,25 @@ function UnitOfMeasureSelector({
 							value: target.value,
 						}));
 
-						postChannelProductSkuBySkuOption(target.value);
+						const selectedUnitOfMeasure =
+							inputProperties.unitOfMeasures.find(
+								(unitOfMeasure) => {
+									return unitOfMeasure.key === target.value;
+								}
+							);
+
+						postChannelProductSkuBySkuOption(
+							(useQuantity
+								? getMinQuantity(
+										productConfiguration?.minOrderQuantity,
+										selectedUnitOfMeasure?.incrementalOrderQuantity ||
+											1,
+										selectedUnitOfMeasure?.precision || 0
+									)
+								: selectedUnitOfMeasure?.incrementalOrderQuantity) ||
+								1,
+							target.value
+						);
 					}}
 					options={inputProperties.unitOfMeasures.map(
 						(unitOfMeasure) => ({
@@ -255,6 +291,7 @@ UnitOfMeasureSelector.defaultProps = {
 	loadFinalPrice: false,
 	resetQuantity: true,
 	size: 'lg',
+	useQuantity: false,
 };
 
 UnitOfMeasureSelector.propTypes = {
@@ -276,6 +313,7 @@ UnitOfMeasureSelector.propTypes = {
 	productId: PropTypes.number.isRequired,
 	resetQuantity: PropTypes.bool,
 	size: PropTypes.oneOf(['lg', 'md', 'sm']),
+	useQuantity: PropTypes.bool,
 	value: PropTypes.string,
 };
 

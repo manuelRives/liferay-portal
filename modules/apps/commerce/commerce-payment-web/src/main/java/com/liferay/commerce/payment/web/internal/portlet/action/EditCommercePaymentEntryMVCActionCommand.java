@@ -27,10 +27,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.math.BigDecimal;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.math.BigDecimal;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_PAYMENT,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_PAYMENT,
 		"mvc.command.name=/commerce_payment/edit_commerce_payment_entry"
 	},
 	service = MVCActionCommand.class
@@ -126,6 +126,8 @@ public class EditCommercePaymentEntryMVCActionCommand
 				PortletProvider.Action.EDIT)
 		).setMVCRenderCommandName(
 			"/commerce_payment/edit_commerce_payment_entry"
+		).setBackURL(
+			ParamUtil.getString(actionRequest, "backURL")
 		).setParameter(
 			"commercePaymentEntryId", commercePaymentEntryId
 		).buildString();
@@ -139,7 +141,8 @@ public class EditCommercePaymentEntryMVCActionCommand
 			actionRequest, "commercePaymentEntryId");
 
 		BigDecimal amount = _commercePriceFormatter.parse(
-			actionRequest, "amount");
+			actionRequest, false, CommercePaymentEntry.class.getName(),
+			"amount");
 
 		String reasonKey = ParamUtil.getString(actionRequest, "reasonKey");
 
@@ -158,6 +161,7 @@ public class EditCommercePaymentEntryMVCActionCommand
 				curCommercePaymentEntry.getErrorMessages(),
 				curCommercePaymentEntry.getLanguageId(),
 				curCommercePaymentEntry.getNote(),
+				curCommercePaymentEntry.getPayload(),
 				curCommercePaymentEntry.getPaymentIntegrationKey(),
 				curCommercePaymentEntry.getPaymentIntegrationType(),
 				curCommercePaymentEntry.getPaymentStatus(), reasonKey,
@@ -174,6 +178,7 @@ public class EditCommercePaymentEntryMVCActionCommand
 			StringPool.BLANK, StringPool.BLANK,
 			ParamUtil.getString(actionRequest, "currencyCode"),
 			ParamUtil.getString(actionRequest, "languageId"), StringPool.BLANK,
+			ParamUtil.getString(actionRequest, "payload"),
 			ParamUtil.getString(actionRequest, "paymentIntegrationKey"),
 			ParamUtil.getInteger(actionRequest, "paymentIntegrationType"),
 			reasonKey, ParamUtil.getString(actionRequest, "transactionCode"),

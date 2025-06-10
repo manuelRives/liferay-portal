@@ -154,11 +154,11 @@ String randomNamespace = StringUtil.randomId() + StringPool.UNDERLINE;
 
 				<div class="sidebar-header">
 					<div class="sidebar-section">
-						<h4 class="component-title">
+						<div class="component-title">
 							<span class="text-truncate-inline">
 								<span class="text-truncate"><%= HtmlUtil.escape(kaleoDefinitionVersion.getTitle(locale)) %></span>
 							</span>
-						</h4>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -255,7 +255,7 @@ String randomNamespace = StringUtil.randomId() + StringPool.UNDERLINE;
 															<liferay-ui:message arguments="<%= importFileMark %>" key="write-your-definition-or-x" translateArguments="<%= false %>" />
 														</c:if>
 
-														<input id="<portlet:namespace />upload" style="display: none;" type="file" />
+														<input class="d-none" id="<portlet:namespace />upload" type="file" />
 
 														<div class="lfr-template-editor-wrapper" id="<portlet:namespace />editorWrapper"></div>
 													</div>
@@ -308,7 +308,8 @@ String randomNamespace = StringUtil.randomId() + StringPool.UNDERLINE;
 								window['<portlet:namespace />updateContent'] = function () {
 									var content = document.getElementById('<portlet:namespace />content');
 
-									var activeTab = <portlet:namespace />kaleoDesigner.contentTabView.getActiveTab();
+									var activeTab =
+										<portlet:namespace />kaleoDesigner.contentTabView.getActiveTab();
 
 									if (activeTab === <portlet:namespace />kaleoDesigner.sourceNode) {
 										content.value = <portlet:namespace />kaleoDesigner.editor.get('value');
@@ -434,7 +435,8 @@ String randomNamespace = StringUtil.randomId() + StringPool.UNDERLINE;
 
 											reader.onloadend = function (evt) {
 												if (evt.target.readyState == FileReader.DONE) {
-													previousContent = <portlet:namespace />kaleoDesigner.getEditorContent();
+													previousContent =
+														<portlet:namespace />kaleoDesigner.getEditorContent();
 
 													<portlet:namespace />kaleoDesigner.setEditorContent(
 														evt.target.result

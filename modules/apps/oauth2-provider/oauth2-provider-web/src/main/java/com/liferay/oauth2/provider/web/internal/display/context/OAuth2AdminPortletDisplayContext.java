@@ -20,15 +20,15 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
 
 /**
  * @author Tomas Polesovsky
@@ -77,10 +77,10 @@ public class OAuth2AdminPortletDisplayContext
 	public List<GrantType> getGrantTypes(
 		PortletPreferences portletPreferences) {
 
+		List<GrantType> grantTypes = new ArrayList<>();
+
 		String[] oAuth2Grants = StringUtil.split(
 			portletPreferences.getValue("oAuth2Grants", StringPool.BLANK));
-
-		List<GrantType> grantTypes = new ArrayList<>();
 
 		for (String oAuth2Grant : oAuth2Grants) {
 			grantTypes.add(GrantType.valueOf(oAuth2Grant));

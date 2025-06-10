@@ -18,9 +18,11 @@ definition {
 		var curl = '''
 			${portalURL}/api/jsonws/fragment.fragmentcollection/add-fragment-collection \
 				-u ${userLoginInfo} \
+				-d externalReferenceCode='' \
 				-d groupId=${groupId} \
 				-d name=${name} \
-				-d description=${description}
+				-d description=${description} \
+				-d marketplace=false
 		''';
 
 		com.liferay.poshi.runner.util.JSONCurlUtil.post(${curl});
@@ -36,6 +38,7 @@ definition {
 		var curl = '''
 			${portalURL}/api/jsonws/fragment.fragmententry/add-fragment-entry \
 				-u ${userLoginInfo} \
+				-d externalReferenceCode='' \
 				-d groupId=${groupId} \
 				-d fragmentCollectionId=${collectionId} \
 				-d fragmentEntryKey= \
@@ -47,6 +50,7 @@ definition {
 				-d configuration=${configuration} \
 				-d icon= \
 				-d previewFileEntryId=0 \
+				-d marketplace=false \
 				-d readOnly=false \
 				-d type=${type} \
 				-d typeOptions= \

@@ -38,7 +38,6 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
@@ -56,14 +55,14 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -203,7 +202,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			localizedFriendlyURL = getURLSeparator() + urlTitle;
 		}
 
-		if (!Objects.equals(originalFriendlyURL, localizedFriendlyURL)) {
+		if (!isSameFriendlyURL(originalFriendlyURL, localizedFriendlyURL)) {
 			return new LayoutFriendlyURLComposite(
 				layout, localizedFriendlyURL, true);
 		}
@@ -213,14 +212,12 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 
 	@Override
 	public String getURLSeparator() {
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-203351") ||
-			!isURLSeparatorConfigurable()) {
-
+		if (!isURLSeparatorConfigurable()) {
 			return getDefaultURLSeparator();
 		}
 
 		FriendlyURLSeparatorProvider friendlyURLSeparatorProvider =
-			_friendlyURLSeparatorProvider.get();
+			_friendlyURLSeparatorProviderSnapshot.get();
 
 		if (friendlyURLSeparatorProvider == null) {
 			return getDefaultURLSeparator();
@@ -297,6 +294,10 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		}
 
 		return locale;
+	}
+
+	protected boolean isSameFriendlyURL(String url1, String url2) {
+		return Objects.equals(url1, url2);
 	}
 
 	protected boolean useOriginalFriendlyURL() {
@@ -457,12 +458,12 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 				groupId, layoutDisplayPageObjectProvider.getClassNameId(),
 				layoutDisplayPageObjectProvider.getClassTypeId());
 
-		if (layoutPageTemplateEntry != null) {
-			return layoutLocalService.fetchLayout(
-				layoutPageTemplateEntry.getPlid());
+		if (layoutPageTemplateEntry == null) {
+			return null;
 		}
 
-		return null;
+		return layoutLocalService.fetchLayout(
+			layoutPageTemplateEntry.getPlid());
 	}
 
 	private LayoutDisplayPageProvider<?> _getLayoutDisplayPageProvider(
@@ -556,7 +557,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		BaseAssetDisplayPageFriendlyURLResolver.class);
 
 	private static final Snapshot<FriendlyURLSeparatorProvider>
-		_friendlyURLSeparatorProvider = new Snapshot<>(
+		_friendlyURLSeparatorProviderSnapshot = new Snapshot<>(
 			BaseAssetDisplayPageFriendlyURLResolver.class,
 			FriendlyURLSeparatorProvider.class);
 

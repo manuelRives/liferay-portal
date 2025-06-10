@@ -3,53 +3,73 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayIcon from '@clayui/icon';
+import {ClayTooltipProvider} from '@clayui/tooltip';
+import {useAtom} from 'jotai';
 import {Dispatch, useState} from 'react';
 import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
 import {KeyedMutator} from 'swr';
+import JiraLink from '~/components/JiraLink';
+import {useFetch} from '~/hooks/useFetch';
+import {taskSidebarRefresh} from '~/hooks/useSidebarTask';
 
 import FloatingBox from '../../../components/FloatingBox';
 import ListView from '../../../components/ListView';
 import StatusBadge from '../../../components/StatusBadge';
 import {StatusBadgeType} from '../../../components/StatusBadge/StatusBadge';
 import {ListViewTypes} from '../../../context/ListViewContext';
-import SearchBuilder from '../../../core/SearchBuilder';
 import useMutate from '../../../hooks/useMutate';
 import i18n from '../../../i18n';
 import {Liferay} from '../../../services/liferay';
 import {
-	TestraySubTask,
-	TestraySubTaskCaseResult,
-	testraySubTaskImpl,
+	APIResponse,
+	TestrayCaseResult,
+	TestraySubtask,
+	testraySubtaskImpl,
 } from '../../../services/rest';
 import {testraySubtaskCaseResultImpl} from '../../../services/rest/TestraySubtaskCaseResults';
-import {SubTaskStatuses} from '../../../util/statuses';
+import {SubtaskStatuses} from '../../../util/statuses';
+
+let totalItems: TestrayCaseResult[] = [];
+
+type SubtasksCaseResultsProps = {
+	forceRefetch: number;
+};
 
 type OutletContext = {
 	data: {
-		testraySubtask: TestraySubTask;
+		buildId: string;
+		projectId: string;
+		routineId: string;
+		testraySubtask: TestraySubtask;
 	};
 	mutate: {
-		mutateSubtask: KeyedMutator<TestraySubTask>;
+		mutateSubtask: KeyedMutator<TestraySubtask>;
 	};
 };
 
-const SubtasksCaseResults = () => {
+const SubtasksCaseResults: React.FC<SubtasksCaseResultsProps> = ({
+	forceRefetch,
+}) => {
 	const navigate = useNavigate();
 	const {subtaskId, taskId} = useParams();
 	const {updateItemFromList} = useMutate();
 	const [isLoading, setIsLoading] = useState(false);
+	const [, setTaskSidebarRefresh] = useAtom(taskSidebarRefresh);
+
+	const {data: response} = useFetch<APIResponse<TestrayCaseResult>>(
+		`/subtasks/${subtaskId}/subtaskToCaseResults?pageSize=1&fields=id`
+	);
+
 	const {
-		data: {testraySubtask},
+		data: {buildId, projectId, routineId, testraySubtask},
 		mutate: {mutateSubtask},
 	} = useOutletContext<OutletContext>();
 
-	const getFloatingBoxAlerts = (
-		subtasksCaseResults: TestraySubTaskCaseResult[],
-		selectRows: number[]
-	) => {
+	const getFloatingBoxAlerts = (selectRows: number[]) => {
 		const alerts = [];
 
-		if (subtasksCaseResults.length === selectRows.length) {
+		if (selectRows.length === response?.totalCount) {
 			alerts.push({
 				text: i18n.translate(
 					'you-cannot-split-all-case-results-from-a-subtask'
@@ -58,7 +78,7 @@ const SubtasksCaseResults = () => {
 		}
 
 		const subtaskStatusCheck = () => {
-			if (testraySubtask.dueStatus?.key !== SubTaskStatuses.IN_ANALYSIS) {
+			if (testraySubtask.dueStatus?.key !== SubtaskStatuses.IN_ANALYSIS) {
 				return [
 					{
 						text: i18n.sub(
@@ -96,15 +116,18 @@ const SubtasksCaseResults = () => {
 
 	const onSplitSubtasks = async (
 		dispatch: Dispatch<any>,
-		mutate: KeyedMutator<TestraySubTaskCaseResult>,
-		selectedCaseResults: TestraySubTaskCaseResult[]
+		mutate: KeyedMutator<TestrayCaseResult>,
+		selectedCaseResults: TestrayCaseResult[]
 	) => {
 		setIsLoading(true);
-		const {currentSubtask, newSubtask} = await testraySubTaskImpl.split(
+		const {currentSubtask, newSubtask} = await testraySubtaskImpl.split(
 			selectedCaseResults,
+			testraySubtask,
 			Number(subtaskId),
 			Number(taskId)
 		);
+
+		totalItems = [];
 
 		mutateSubtask(currentSubtask);
 
@@ -116,6 +139,8 @@ const SubtasksCaseResults = () => {
 				revalidate: true,
 			}
 		);
+
+		setTaskSidebarRefresh(new Date().getTime());
 
 		dispatch({
 			payload: [],
@@ -134,7 +159,7 @@ const SubtasksCaseResults = () => {
 				const {target} = event;
 
 				if (target?.id === 'testray-link') {
-					navigate(`../../subtasks/${newSubtask.id}`);
+					navigate(`../subtasks/${newSubtask.id}`);
 				}
 			},
 		});
@@ -142,123 +167,115 @@ const SubtasksCaseResults = () => {
 
 	return (
 		<ListView
+			forceRefetch={forceRefetch}
 			managementToolbarProps={{
 				applyFilters: true,
-				visible: false,
+				customFilterFields: {
+					buildId,
+					projectId,
+				},
+				filterSchema: 'subtaskCaseResults',
 			}}
-			resource={testraySubtaskCaseResultImpl.resource}
+			resource={`/testray-case-result/${buildId}?testraySubtaskId=${subtaskId}`}
 			tableProps={{
 				columns: [
 					{
 						clickable: true,
-						key: 'run',
-						render: (
-							_,
-							testraySubTaskCaseResult: TestraySubTaskCaseResult
-						) => testraySubTaskCaseResult?.caseResult?.run?.number,
-
+						key: 'flaky',
+						render: (_, {flaky, testrayCaseName}) => (
+							<>
+								{flaky && (
+									<ClayTooltipProvider>
+										<span
+											className="tr-table__row__flaky-icon"
+											data-tooltip-align="top"
+											title={i18n.translate(
+												'this-is-a-possible-flaky-test'
+											)}
+										>
+											<ClayIcon symbol="flag-full" />
+										</span>
+									</ClayTooltipProvider>
+								)}
+								{testrayCaseName}
+							</>
+						),
+						size: 'md',
+						value: i18n.translate('case'),
+						width: '350',
+					},
+					{
+						clickable: true,
+						key: 'testrayRunNumber',
+						render: (testrayRunNumber) =>
+							testrayRunNumber?.toString().padStart(2, '0'),
 						value: i18n.translate('run'),
 					},
 					{
 						clickable: true,
 						key: 'priority',
-						render: (
-							_,
-							testraySubTaskCaseResult: TestraySubTaskCaseResult
-						) =>
-							testraySubTaskCaseResult.caseResult?.case?.priority,
-
 						value: i18n.translate('priority'),
 					},
 					{
 						clickable: true,
-						key: 'component',
-						render: (
-							_,
-							testraySubTaskCaseResult: TestraySubTaskCaseResult
-						) =>
-							testraySubTaskCaseResult.caseResult?.component?.team
-								?.name,
+						key: 'testrayTeamName',
 						value: i18n.translate('team'),
 					},
 					{
 						clickable: true,
-						key: 'component',
-						render: (
-							_,
-							testraySubTaskCaseResult: TestraySubTaskCaseResult
-						) =>
-							testraySubTaskCaseResult.caseResult?.component
-								?.name,
-
+						key: 'testrayComponentName',
 						value: i18n.translate('component'),
 					},
 					{
-						clickable: true,
-						key: 'case',
-						render: (
-							_,
-							testraySubTaskCaseResult: TestraySubTaskCaseResult
-						) => testraySubTaskCaseResult.caseResult?.case?.name,
-
-						size: 'md',
-						value: i18n.translate('case'),
-					},
-					{
 						key: 'issues',
-						render: (
-							_,
-							testraySubTaskCaseResult: TestraySubTaskCaseResult
-						) => testraySubTaskCaseResult.caseResult?.issues,
+						render: (issues: string) => (
+							<JiraLink
+								displayViewInJira={false}
+								issue={issues}
+							/>
+						),
 						value: i18n.translate('issues'),
 					},
 					{
-						key: 'dueStatus',
-						render: (
-							_,
-							testraySubTaskCaseResult: TestraySubTaskCaseResult
-						) => (
-							<StatusBadge
-								type={
-									testraySubTaskCaseResult.caseResult
-										?.dueStatus.key as StatusBadgeType
-								}
-							>
-								{
-									testraySubTaskCaseResult.caseResult
-										?.dueStatus.name
-								}
+						clickable: true,
+						key: 'status',
+						render: (dueStatus) => (
+							<StatusBadge type={dueStatus as StatusBadgeType}>
+								{dueStatus}
 							</StatusBadge>
 						),
-
 						value: i18n.translate('status'),
 					},
 					{
+						clickable: true,
 						key: 'comment',
-						render: (
-							_,
-							testraySubTaskCaseResult: TestraySubTaskCaseResult
-						) => testraySubTaskCaseResult.caseResult?.comment,
+						size: 'lg',
 						value: i18n.translate('comment'),
 					},
 				],
-				navigateTo: ({caseResult}) =>
-					`/project/${caseResult.build?.project.id}/routines/${caseResult.build?.routine.id}/build/${caseResult.build?.id}/case-result/${caseResult.id}`,
+				navigateTo: ({testrayCaseResultId}) =>
+					`/project/${projectId}/routines/${routineId}/build/${buildId}/case-result/${testrayCaseResultId}`,
 				rowSelectable: true,
 				rowWrap: true,
 			}}
 			transformData={(response) =>
 				testraySubtaskCaseResultImpl.transformDataFromList(response)
 			}
-			variables={{
-				filter: SearchBuilder.eq('subtaskId', subtaskId as string),
-			}}
 		>
 			{({items}, {dispatch, listViewContext: {selectedRows}, mutate}) => {
-				const alerts = getFloatingBoxAlerts(items, selectedRows);
+				const alerts = getFloatingBoxAlerts(selectedRows);
 
-				const selectedCaseResults: TestraySubTaskCaseResult[] = selectedRows.map(
-					(rowId) => items.find(({id}) => rowId === id)
+				totalItems = totalItems.concat(
+					items.filter(
+						(pageItem) =>
+							!totalItems.some((item) => item.id === pageItem.id)
+					)
+				);
+
+				const selectedCaseResults = selectedRows.map((rowId) =>
+					totalItems.find(
+						({testrayCaseResultId}) => rowId === testrayCaseResultId
+					)
 				);
 
 				return (
@@ -275,7 +292,7 @@ const SubtasksCaseResults = () => {
 							onSplitSubtasks(
 								dispatch,
 								mutate,
-								selectedCaseResults
+								selectedCaseResults as TestrayCaseResult[]
 							)
 						}
 						primaryButtonProps={{

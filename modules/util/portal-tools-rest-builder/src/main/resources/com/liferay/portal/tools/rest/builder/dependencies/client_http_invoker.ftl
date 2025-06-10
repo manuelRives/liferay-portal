@@ -1,5 +1,7 @@
 package ${configYAML.apiPackagePath}.client.http;
 
+import ${configYAML.javaEEPackage}.annotation.Generated;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,9 +22,9 @@ import java.util.Base64;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
+import java.util.regex.Matcher;
 
 /**
  * @author ${configYAML.author}
@@ -121,7 +123,7 @@ public class HttpInvoker {
 	}
 
 	public HttpInvoker path(String name, Object value) {
-		_path = _path.replaceFirst("\\{" + name + "\\}", String.valueOf(value));
+		_path = _path.replaceFirst("\\{" + name + "\\}", Matcher.quoteReplacement(String.valueOf(value)));
 
 		return this;
 	}
@@ -241,6 +243,33 @@ public class HttpInvoker {
 		return fileName;
 	}
 
+	private HttpURLConnection _getHttpURLConnection(HttpMethod httpMethod, String urlString) throws IOException {
+		URL url = new URL(urlString);
+
+		HttpURLConnection httpURLConnection = (HttpURLConnection)url.openConnection();
+
+		try {
+			HttpURLConnection methodHttpURLConnection = httpURLConnection;
+
+			if (Objects.equals(url.getProtocol(), "https")) {
+				Class<?> clazz = httpURLConnection.getClass();
+
+				Field field = clazz.getDeclaredField("delegate");
+
+				field.setAccessible(true);
+
+				methodHttpURLConnection = (HttpURLConnection)field.get(httpURLConnection);
+			}
+
+			_methodField.set(methodHttpURLConnection, httpMethod.name());
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new IOException(reflectiveOperationException);
+		}
+
+		return httpURLConnection;
+	}
+
 	private String _getQueryString() throws IOException {
 		StringBuilder sb = new StringBuilder();
 
@@ -290,21 +319,10 @@ public class HttpInvoker {
 			urlString += queryString;
 		}
 
-		URL url = new URL(urlString);
-
-		HttpURLConnection httpURLConnection =
-			(HttpURLConnection)url.openConnection();
-
-		try {
-			_methodField.set(httpURLConnection, _httpMethod.name());
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new IOException(reflectiveOperationException);
-		}
+		HttpURLConnection httpURLConnection = _getHttpURLConnection(_httpMethod, urlString);
 
 		if (_encodedUserNameAndPassword != null) {
-			httpURLConnection.setRequestProperty(
-				"Authorization", "Basic " + _encodedUserNameAndPassword);
+			httpURLConnection.setRequestProperty("Authorization", "Basic " + _encodedUserNameAndPassword);
 		}
 
 		if (_contentType != null) {
@@ -336,16 +354,18 @@ public class HttpInvoker {
 			inputStream = httpURLConnection.getInputStream();
 		}
 
-		byte[] bytes = new byte[8192];
+		if (inputStream != null) {
+			byte[] bytes = new byte[8192];
 
-		while (true) {
-			int read = inputStream.read(bytes, 0, bytes.length);
+			while (true) {
+				int read = inputStream.read(bytes, 0, bytes.length);
 
-			if (read == -1) {
-				break;
+				if (read == -1) {
+					break;
+				}
+
+				byteArrayOutputStream.write(bytes, 0, read);
 			}
-
-			byteArrayOutputStream.write(bytes, 0, read);
 		}
 
 		byteArrayOutputStream.flush();

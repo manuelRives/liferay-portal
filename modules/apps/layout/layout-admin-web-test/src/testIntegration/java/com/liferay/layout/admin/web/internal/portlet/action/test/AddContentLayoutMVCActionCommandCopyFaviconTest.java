@@ -11,16 +11,17 @@ import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.LayoutPageTemplateTestUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionResponse;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -46,10 +47,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,18 +68,6 @@ public class AddContentLayoutMVCActionCommandCopyFaviconTest {
 			new LiferayIntegrationTestRule(),
 			PermissionCheckerMethodTestRule.INSTANCE);
 
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-		_originalName = PrincipalThreadLocal.getName();
-
-		PrincipalThreadLocal.setName(TestPropsValues.getUserId());
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws Exception {
-		PrincipalThreadLocal.setName(_originalName);
-	}
-
 	@Before
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
@@ -88,12 +75,9 @@ public class AddContentLayoutMVCActionCommandCopyFaviconTest {
 		_company = _companyLocalService.getCompany(_group.getCompanyId());
 
 		_layoutPageTemplateEntry =
-			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
-				RandomTestUtil.randomString(),
-				LayoutPageTemplateEntryTypeConstants.BASIC, 0,
-				WorkflowConstants.STATUS_APPROVED,
-				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+			LayoutPageTemplateTestUtil.addLayoutPageTemplateEntry(
+				_group.getGroupId(), LayoutPageTemplateEntryTypeConstants.BASIC,
+				WorkflowConstants.STATUS_APPROVED);
 
 		Layout layout = _layoutLocalService.fetchLayout(
 			_layoutPageTemplateEntry.getPlid());
@@ -108,6 +92,7 @@ public class AddContentLayoutMVCActionCommandCopyFaviconTest {
 	}
 
 	@Test
+	@TestInfo("LPS-153654")
 	public void testAddContentLayoutCopyFavicon() throws Exception {
 		_mvcActionCommand.processAction(
 			_getMockLiferayPortletActionRequest(),
@@ -129,17 +114,17 @@ public class AddContentLayoutMVCActionCommandCopyFaviconTest {
 		return _dlAppLocalService.addFileEntry(
 			null, TestPropsValues.getUserId(), group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			StringUtil.randomString(), ContentTypes.APPLICATION_TEXT, bytes,
-			null, null, null,
+			StringUtil.randomString(), ContentTypes.IMAGE_PNG, bytes, null,
+			null, null,
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 	}
 
 	private byte[] _getBytes(String favicon) throws Exception {
+		byte[] bytes = null;
+
 		URL url = new URL(_getPortalURL() + favicon);
 
 		URLConnection urlConnection = url.openConnection();
-
-		byte[] bytes;
 
 		try (InputStream inputStream = urlConnection.getInputStream()) {
 			bytes = FileUtil.getBytes(inputStream);
@@ -149,7 +134,7 @@ public class AddContentLayoutMVCActionCommandCopyFaviconTest {
 	}
 
 	private byte[] _getExpectedBytes() throws Exception {
-		return FileUtil.getBytes(getClass(), "dependencies/dxp.ico");
+		return FileUtil.getBytes(getClass(), "dependencies/dxp_logo.png");
 	}
 
 	private MockLiferayPortletActionRequest
@@ -196,8 +181,6 @@ public class AddContentLayoutMVCActionCommandCopyFaviconTest {
 
 		return themeDisplay;
 	}
-
-	private static String _originalName;
 
 	private Company _company;
 

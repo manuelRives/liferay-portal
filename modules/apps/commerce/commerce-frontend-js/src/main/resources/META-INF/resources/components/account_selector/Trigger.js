@@ -18,14 +18,15 @@ const Trigger = React.forwardRef(
 			{...props}
 			className={classnames(
 				'btn-account-selector',
-				currentAccount && 'account-selected'
+				currentAccount?.id && 'account-selected'
 			)}
 			displayType="unstyled"
 			ref={ref}
 		>
-			{currentAccount ? (
+			{currentAccount?.id ? (
 				<>
-					<Sticker size="xl" {...currentAccount} />
+					<Sticker {...currentAccount} />
+
 					<div className="d-flex flex-column">
 						<div className="account-name">
 							<span className="text-truncate-inline">
@@ -35,7 +36,7 @@ const Trigger = React.forwardRef(
 							</span>
 						</div>
 
-						<div className="d-flex">
+						<div className="d-flex order-info">
 							{currentOrder?.id ? (
 								<>
 									<span className="order-id">
@@ -65,7 +66,11 @@ const Trigger = React.forwardRef(
 				<div className="no-account-selected-placeholder">
 					<span className="text-truncate-inline">
 						<span className="text-truncate">
-							{Liferay.Language.get('select-account-and-order')}
+							{currentOrder?.id
+								? Liferay.Language.get('select-an-account')
+								: Liferay.Language.get(
+										'select-account-and-order'
+									)}
 						</span>
 					</span>
 				</div>

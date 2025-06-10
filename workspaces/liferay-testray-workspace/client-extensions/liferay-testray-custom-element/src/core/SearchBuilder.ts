@@ -24,11 +24,12 @@ export type Operators =
 
 export interface SearchBuilderConstructor {
 	useURIEncode?: boolean;
+	[key: string]: any;
 }
 
 /**
  * @description
- * Based in the following article https://help.liferay.com/hc/pt/articles/360031163631-Filter-Sort-and-Search
+ * Based on the following article https://learn.liferay.com/w/dxp/headless-delivery/consuming-apis/api-query-parameters
  */
 
 export default class SearchBuilder {
@@ -77,6 +78,10 @@ export default class SearchBuilder {
 	 * @example addressLocality ne 'London'
 	 */
 	static ne(key: Key, value: Value) {
+		if (value === null) {
+			return `${key} ne ${value}`;
+		}
+
 		return `${key} ne '${value}'`;
 	}
 
@@ -114,7 +119,7 @@ export default class SearchBuilder {
 				!value ||
 				!(value as string).length ||
 				(Array.isArray(value) &&
-					value.some((item: any) => item.value === 0))
+					value.some((item: any) => item.value === ''))
 			) {
 				continue;
 			}
@@ -125,17 +130,48 @@ export default class SearchBuilder {
 		return _filter;
 	}
 
+	static formatValuesToString(values: Value[]) {
+		if (values) {
+			return values
+				.map((value) => `${value}`)
+				.join(',')
+				.trim();
+		}
+
+		return '';
+	}
+
 	static createCustomFilter(schema: RendererFields, filter: any) {
 		const customOperator = schema?.operator;
 		const requestOperator = schema?.requestOperator as string;
+		const optionalOperator = schema?.optionalOperator as Operators;
+
+		const isNoFilterApplied =
+			filter.includes('false') || filter.includes('No');
 
 		if (customOperator && SearchBuilder[customOperator]) {
+			if (optionalOperator === 'ne') {
+				if (isNoFilterApplied) {
+					return `not (${SearchBuilder[optionalOperator](
+						requestOperator,
+						null
+					)})`;
+				}
+			}
+
 			if (Array.isArray(filter)) {
 				const filters = filter
 					.map((item) =>
 						typeof item === 'object' ? item.value : item
 					)
 					.join(',');
+
+				if (filters.includes('DIDNOTRUN')) {
+					return SearchBuilder[optionalOperator](
+						requestOperator,
+						filters
+					);
+				}
 
 				return SearchBuilder[customOperator](requestOperator, filters);
 			}
@@ -145,10 +181,19 @@ export default class SearchBuilder {
 					filter.value
 				);
 			}
-			else {
-				return SearchBuilder[customOperator](requestOperator, filter);
-			}
+
+			return SearchBuilder[customOperator](requestOperator, filter);
 		}
+
+		if (typeof filter === 'string') {
+			return filter;
+		}
+
+		return this.formatValuesToString(
+			filter.map((_value: any) =>
+				typeof _value === 'object' ? _value.value : _value
+			)
+		);
 	}
 
 	static createFilter({

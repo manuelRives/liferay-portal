@@ -5,21 +5,22 @@
 
 import {useOutletContext} from 'react-router-dom';
 
+import AccountSelection from '../../../components/Checkout/AccountSelection';
 import {useMarketplaceContext} from '../../../context/MarketplaceContext';
 import i18n from '../../../i18n';
+import {getProductPriceModel} from '../../../utils/productUtils';
 import {useGetAppContext} from '../GetAppContextProvider';
 import {GetAppOutletContext} from '../GetAppOutlet';
-import AccountSelection from '../components/AccountSelection';
 import Container from '../containers/Container';
-import getProductPriceModel from '../utils/getProductPriceModel';
+import LicenseTermsCheckbox from '../containers/LicenseTermsCheckbox';
 
 const GetAppPage = () => {
 	const [
 		{
 			account,
 			formState: {isValid},
-			isCloudApp,
 			product,
+			requiresResources,
 			stepState,
 		},
 		dispatch,
@@ -28,7 +29,7 @@ const GetAppPage = () => {
 	const {isFreeApp} = getProductPriceModel(product);
 	const {myUserAccount} = useMarketplaceContext();
 
-	const isFreeDXPApp = isFreeApp && !isCloudApp;
+	const isFreeAppWithoutResources = isFreeApp && !requiresResources;
 
 	return (
 		<Container
@@ -36,11 +37,11 @@ const GetAppPage = () => {
 			footerProps={{
 				primaryButtonProps: {
 					children: i18n.translate(
-						isFreeDXPApp ? 'get-app' : 'continue'
+						isFreeAppWithoutResources ? 'get-app' : 'continue'
 					),
 					disabled: !isValid || loading,
 					onClick: () => {
-						if (isFreeDXPApp) {
+						if (isFreeAppWithoutResources) {
 							return handleGetApp();
 						}
 
@@ -52,13 +53,17 @@ const GetAppPage = () => {
 			title="Account Selection"
 		>
 			<AccountSelection
-				isFreeApp={isFreeApp}
+				checkPersonalAccount
+				enabledAccountRoles={['Account Administrator', 'Account Buyer']}
 				onSelectAccount={(account: Account) =>
 					dispatch({payload: account, type: 'SET_ACCOUNT'})
 				}
 				selectedAccount={account}
+				showContactSupport={!isFreeApp}
 				userAccount={myUserAccount}
-			/>
+			>
+				{isFreeApp && <LicenseTermsCheckbox />}
+			</AccountSelection>
 		</Container>
 	);
 };

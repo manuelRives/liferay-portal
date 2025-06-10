@@ -58,13 +58,13 @@ import com.liferay.portal.kernel.util.PrefsParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
 
 /**
  * @author Rafael Praxedes
@@ -166,7 +166,8 @@ public class DDLViewRecordsDisplayContext {
 			orderByComparator = new DDLRecordModifiedDateComparator(orderByAsc);
 		}
 		else {
-			orderByComparator = new DDLRecordCreateDateComparator(orderByAsc);
+			orderByComparator = DDLRecordCreateDateComparator.getInstance(
+				orderByAsc);
 		}
 
 		return orderByComparator;
@@ -192,13 +193,13 @@ public class DDLViewRecordsDisplayContext {
 			DDLRecordVersion recordVersion)
 		throws StorageException {
 
+		Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
+			new LinkedHashMap<>();
+
 		DDMFormValues ddmFormValues = recordVersion.getDDMFormValues();
 
 		List<DDMFormFieldValue> ddmFormFieldValues =
 			ddmFormValues.getDDMFormFieldValues();
-
-		Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
-			new LinkedHashMap<>();
 
 		for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
 			_putDDMFormFieldValue(ddmFormFieldValuesMap, ddmFormFieldValue);
@@ -530,11 +531,7 @@ public class DDLViewRecordsDisplayContext {
 	}
 
 	protected boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(getKeywords());
 	}
 
 	protected boolean isShowAddRecordButton() throws PortalException {
@@ -591,11 +588,7 @@ public class DDLViewRecordsDisplayContext {
 	}
 
 	private boolean _isDDMFormFieldTransient(DDMFormField ddmFormField) {
-		if (Validator.isNull(ddmFormField.getDataType())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNull(ddmFormField.getDataType());
 	}
 
 	private void _putDDMFormFieldValue(

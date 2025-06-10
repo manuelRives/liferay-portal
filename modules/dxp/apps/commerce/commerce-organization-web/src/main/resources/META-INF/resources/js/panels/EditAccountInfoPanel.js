@@ -7,7 +7,7 @@ import ClayButton from '@clayui/button';
 import ClayForm, {ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import classnames from 'classnames';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useContext, useEffect, useState} from 'react';
 
@@ -71,6 +71,7 @@ function EditAccountInfoPanel({
 					type: 'danger',
 				});
 			});
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [accountData.id]);
 

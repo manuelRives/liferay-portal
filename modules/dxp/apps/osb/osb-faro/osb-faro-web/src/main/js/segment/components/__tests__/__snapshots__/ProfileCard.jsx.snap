@@ -4,16 +4,16 @@ exports[`SegmentProfileCard should render 1`] = `
 <div>
   <div
     class="card card-root segment-profile-card-root"
-    id="segmentMembershipCardRoot"
+    id="container.report.segmentMembershipCard"
   >
     <div
       class="card-header"
     >
-      <h5
+      <div
         class="card-title"
       >
         Segment Membership
-      </h5>
+      </div>
     </div>
     <div
       class="card-body"

@@ -9,11 +9,15 @@ import com.liferay.headless.commerce.admin.channel.internal.graphql.mutation.v1_
 import com.liferay.headless.commerce.admin.channel.internal.graphql.query.v1_0.Query;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.AccountAddressChannelResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.AccountResourceImpl;
+import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.CategoryDisplayPageResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.ChannelAccountResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.ChannelResourceImpl;
+import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.DefaultCategoryDisplayPageResourceImpl;
+import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.DefaultProductDisplayPageResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.OrderTypeResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.PaymentMethodGroupRelOrderTypeResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.PaymentMethodGroupRelTermResourceImpl;
+import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.ProductDisplayPageResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.ShippingFixedOptionOrderTypeResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.ShippingFixedOptionTermResourceImpl;
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.ShippingMethodResourceImpl;
@@ -21,11 +25,15 @@ import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.TaxCat
 import com.liferay.headless.commerce.admin.channel.internal.resource.v1_0.TermResourceImpl;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.AccountAddressChannelResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.AccountResource;
+import com.liferay.headless.commerce.admin.channel.resource.v1_0.CategoryDisplayPageResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ChannelAccountResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ChannelResource;
+import com.liferay.headless.commerce.admin.channel.resource.v1_0.DefaultCategoryDisplayPageResource;
+import com.liferay.headless.commerce.admin.channel.resource.v1_0.DefaultProductDisplayPageResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.OrderTypeResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.PaymentMethodGroupRelOrderTypeResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.PaymentMethodGroupRelTermResource;
+import com.liferay.headless.commerce.admin.channel.resource.v1_0.ProductDisplayPageResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ShippingFixedOptionOrderTypeResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ShippingFixedOptionTermResource;
 import com.liferay.headless.commerce.admin.channel.resource.v1_0.ShippingMethodResource;
@@ -34,10 +42,10 @@ import com.liferay.headless.commerce.admin.channel.resource.v1_0.TermResource;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -58,15 +66,23 @@ public class ServletDataImpl implements ServletData {
 	public void activate(BundleContext bundleContext) {
 		Mutation.setAccountAddressChannelResourceComponentServiceObjects(
 			_accountAddressChannelResourceComponentServiceObjects);
+		Mutation.setCategoryDisplayPageResourceComponentServiceObjects(
+			_categoryDisplayPageResourceComponentServiceObjects);
 		Mutation.setChannelResourceComponentServiceObjects(
 			_channelResourceComponentServiceObjects);
 		Mutation.setChannelAccountResourceComponentServiceObjects(
 			_channelAccountResourceComponentServiceObjects);
+		Mutation.setDefaultCategoryDisplayPageResourceComponentServiceObjects(
+			_defaultCategoryDisplayPageResourceComponentServiceObjects);
+		Mutation.setDefaultProductDisplayPageResourceComponentServiceObjects(
+			_defaultProductDisplayPageResourceComponentServiceObjects);
 		Mutation.
 			setPaymentMethodGroupRelOrderTypeResourceComponentServiceObjects(
 				_paymentMethodGroupRelOrderTypeResourceComponentServiceObjects);
 		Mutation.setPaymentMethodGroupRelTermResourceComponentServiceObjects(
 			_paymentMethodGroupRelTermResourceComponentServiceObjects);
+		Mutation.setProductDisplayPageResourceComponentServiceObjects(
+			_productDisplayPageResourceComponentServiceObjects);
 		Mutation.setShippingFixedOptionOrderTypeResourceComponentServiceObjects(
 			_shippingFixedOptionOrderTypeResourceComponentServiceObjects);
 		Mutation.setShippingFixedOptionTermResourceComponentServiceObjects(
@@ -80,16 +96,24 @@ public class ServletDataImpl implements ServletData {
 			_accountResourceComponentServiceObjects);
 		Query.setAccountAddressChannelResourceComponentServiceObjects(
 			_accountAddressChannelResourceComponentServiceObjects);
+		Query.setCategoryDisplayPageResourceComponentServiceObjects(
+			_categoryDisplayPageResourceComponentServiceObjects);
 		Query.setChannelResourceComponentServiceObjects(
 			_channelResourceComponentServiceObjects);
 		Query.setChannelAccountResourceComponentServiceObjects(
 			_channelAccountResourceComponentServiceObjects);
+		Query.setDefaultCategoryDisplayPageResourceComponentServiceObjects(
+			_defaultCategoryDisplayPageResourceComponentServiceObjects);
+		Query.setDefaultProductDisplayPageResourceComponentServiceObjects(
+			_defaultProductDisplayPageResourceComponentServiceObjects);
 		Query.setOrderTypeResourceComponentServiceObjects(
 			_orderTypeResourceComponentServiceObjects);
 		Query.setPaymentMethodGroupRelOrderTypeResourceComponentServiceObjects(
 			_paymentMethodGroupRelOrderTypeResourceComponentServiceObjects);
 		Query.setPaymentMethodGroupRelTermResourceComponentServiceObjects(
 			_paymentMethodGroupRelTermResourceComponentServiceObjects);
+		Query.setProductDisplayPageResourceComponentServiceObjects(
+			_productDisplayPageResourceComponentServiceObjects);
 		Query.setShippingFixedOptionOrderTypeResourceComponentServiceObjects(
 			_shippingFixedOptionOrderTypeResourceComponentServiceObjects);
 		Query.setShippingFixedOptionTermResourceComponentServiceObjects(
@@ -157,33 +181,30 @@ public class ServletDataImpl implements ServletData {
 							AccountAddressChannelResourceImpl.class,
 							"postAccountAddressIdAccountAddressChannel"));
 					put(
-						"mutation#createChannelsPageExportBatch",
+						"mutation#deleteCategoryDisplayPage",
 						new ObjectValuePair<>(
-							ChannelResourceImpl.class,
-							"postChannelsPageExportBatch"));
+							CategoryDisplayPageResourceImpl.class,
+							"deleteCategoryDisplayPage"));
 					put(
-						"mutation#createChannel",
+						"mutation#deleteCategoryDisplayPageBatch",
 						new ObjectValuePair<>(
-							ChannelResourceImpl.class, "postChannel"));
+							CategoryDisplayPageResourceImpl.class,
+							"deleteCategoryDisplayPageBatch"));
 					put(
-						"mutation#createChannelBatch",
+						"mutation#patchCategoryDisplayPage",
 						new ObjectValuePair<>(
-							ChannelResourceImpl.class, "postChannelBatch"));
+							CategoryDisplayPageResourceImpl.class,
+							"patchCategoryDisplayPage"));
 					put(
-						"mutation#deleteChannelByExternalReferenceCode",
+						"mutation#createChannelByExternalReferenceCodeCategoryDisplayPage",
 						new ObjectValuePair<>(
-							ChannelResourceImpl.class,
-							"deleteChannelByExternalReferenceCode"));
+							CategoryDisplayPageResourceImpl.class,
+							"postChannelByExternalReferenceCodeCategoryDisplayPage"));
 					put(
-						"mutation#patchChannelByExternalReferenceCode",
+						"mutation#createChannelIdCategoryDisplayPage",
 						new ObjectValuePair<>(
-							ChannelResourceImpl.class,
-							"patchChannelByExternalReferenceCode"));
-					put(
-						"mutation#updateChannelByExternalReferenceCode",
-						new ObjectValuePair<>(
-							ChannelResourceImpl.class,
-							"putChannelByExternalReferenceCode"));
+							CategoryDisplayPageResourceImpl.class,
+							"postChannelIdCategoryDisplayPage"));
 					put(
 						"mutation#deleteChannel",
 						new ObjectValuePair<>(
@@ -193,9 +214,32 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class, "deleteChannelBatch"));
 					put(
+						"mutation#deleteChannelByExternalReferenceCode",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class,
+							"deleteChannelByExternalReferenceCode"));
+					put(
 						"mutation#patchChannel",
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class, "patchChannel"));
+					put(
+						"mutation#patchChannelByExternalReferenceCode",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class,
+							"patchChannelByExternalReferenceCode"));
+					put(
+						"mutation#createChannel",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class, "postChannel"));
+					put(
+						"mutation#createChannelBatch",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class, "postChannelBatch"));
+					put(
+						"mutation#createChannelsPageExportBatch",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class,
+							"postChannelsPageExportBatch"));
 					put(
 						"mutation#updateChannel",
 						new ObjectValuePair<>(
@@ -204,6 +248,11 @@ public class ServletDataImpl implements ServletData {
 						"mutation#updateChannelBatch",
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class, "putChannelBatch"));
+					put(
+						"mutation#updateChannelByExternalReferenceCode",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class,
+							"putChannelByExternalReferenceCode"));
 					put(
 						"mutation#deleteChannelAccount",
 						new ObjectValuePair<>(
@@ -224,6 +273,46 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							ChannelAccountResourceImpl.class,
 							"postChannelIdChannelAccount"));
+					put(
+						"mutation#deleteChannelByExternalReferenceCodeDefaultCategoryDisplayPage",
+						new ObjectValuePair<>(
+							DefaultCategoryDisplayPageResourceImpl.class,
+							"deleteChannelByExternalReferenceCodeDefaultCategoryDisplayPage"));
+					put(
+						"mutation#deleteChannelIdDefaultCategoryDisplayPage",
+						new ObjectValuePair<>(
+							DefaultCategoryDisplayPageResourceImpl.class,
+							"deleteChannelIdDefaultCategoryDisplayPage"));
+					put(
+						"mutation#createChannelByExternalReferenceCodeDefaultCategoryDisplayPage",
+						new ObjectValuePair<>(
+							DefaultCategoryDisplayPageResourceImpl.class,
+							"postChannelByExternalReferenceCodeDefaultCategoryDisplayPage"));
+					put(
+						"mutation#createChannelIdDefaultCategoryDisplayPage",
+						new ObjectValuePair<>(
+							DefaultCategoryDisplayPageResourceImpl.class,
+							"postChannelIdDefaultCategoryDisplayPage"));
+					put(
+						"mutation#deleteChannelByExternalReferenceCodeDefaultProductDisplayPage",
+						new ObjectValuePair<>(
+							DefaultProductDisplayPageResourceImpl.class,
+							"deleteChannelByExternalReferenceCodeDefaultProductDisplayPage"));
+					put(
+						"mutation#deleteChannelIdDefaultProductDisplayPage",
+						new ObjectValuePair<>(
+							DefaultProductDisplayPageResourceImpl.class,
+							"deleteChannelIdDefaultProductDisplayPage"));
+					put(
+						"mutation#createChannelByExternalReferenceCodeDefaultProductDisplayPage",
+						new ObjectValuePair<>(
+							DefaultProductDisplayPageResourceImpl.class,
+							"postChannelByExternalReferenceCodeDefaultProductDisplayPage"));
+					put(
+						"mutation#createChannelIdDefaultProductDisplayPage",
+						new ObjectValuePair<>(
+							DefaultProductDisplayPageResourceImpl.class,
+							"postChannelIdDefaultProductDisplayPage"));
 					put(
 						"mutation#deletePaymentMethodGroupRelOrderType",
 						new ObjectValuePair<>(
@@ -254,6 +343,31 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							PaymentMethodGroupRelTermResourceImpl.class,
 							"postPaymentMethodGroupRelIdPaymentMethodGroupRelTerm"));
+					put(
+						"mutation#deleteProductDisplayPage",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"deleteProductDisplayPage"));
+					put(
+						"mutation#deleteProductDisplayPageBatch",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"deleteProductDisplayPageBatch"));
+					put(
+						"mutation#patchProductDisplayPage",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"patchProductDisplayPage"));
+					put(
+						"mutation#createChannelByExternalReferenceCodeProductDisplayPage",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"postChannelByExternalReferenceCodeProductDisplayPage"));
+					put(
+						"mutation#createChannelIdProductDisplayPage",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"postChannelIdProductDisplayPage"));
 					put(
 						"mutation#deleteShippingFixedOptionOrderType",
 						new ObjectValuePair<>(
@@ -311,23 +425,38 @@ public class ServletDataImpl implements ServletData {
 							AccountAddressChannelResourceImpl.class,
 							"getAccountAddressIdAccountAddressChannelsPage"));
 					put(
+						"query#categoryDisplayPage",
+						new ObjectValuePair<>(
+							CategoryDisplayPageResourceImpl.class,
+							"getCategoryDisplayPage"));
+					put(
+						"query#channelByExternalReferenceCodeCategoryDisplayPages",
+						new ObjectValuePair<>(
+							CategoryDisplayPageResourceImpl.class,
+							"getChannelByExternalReferenceCodeCategoryDisplayPagesPage"));
+					put(
+						"query#channelIdCategoryDisplayPages",
+						new ObjectValuePair<>(
+							CategoryDisplayPageResourceImpl.class,
+							"getChannelIdCategoryDisplayPagesPage"));
+					put(
 						"query#accountAddressChannelChannel",
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class,
 							"getAccountAddressChannelChannel"));
 					put(
-						"query#channels",
+						"query#channel",
 						new ObjectValuePair<>(
-							ChannelResourceImpl.class, "getChannelsPage"));
+							ChannelResourceImpl.class, "getChannel"));
 					put(
 						"query#channelByExternalReferenceCode",
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class,
 							"getChannelByExternalReferenceCode"));
 					put(
-						"query#channel",
+						"query#channels",
 						new ObjectValuePair<>(
-							ChannelResourceImpl.class, "getChannel"));
+							ChannelResourceImpl.class, "getChannelsPage"));
 					put(
 						"query#channelByExternalReferenceCodeChannelAccounts",
 						new ObjectValuePair<>(
@@ -338,6 +467,26 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							ChannelAccountResourceImpl.class,
 							"getChannelIdChannelAccountsPage"));
+					put(
+						"query#channelByExternalReferenceCodeDefaultCategoryDisplayPage",
+						new ObjectValuePair<>(
+							DefaultCategoryDisplayPageResourceImpl.class,
+							"getChannelByExternalReferenceCodeDefaultCategoryDisplayPage"));
+					put(
+						"query#channelIdDefaultCategoryDisplayPage",
+						new ObjectValuePair<>(
+							DefaultCategoryDisplayPageResourceImpl.class,
+							"getChannelIdDefaultCategoryDisplayPage"));
+					put(
+						"query#channelByExternalReferenceCodeDefaultProductDisplayPage",
+						new ObjectValuePair<>(
+							DefaultProductDisplayPageResourceImpl.class,
+							"getChannelByExternalReferenceCodeDefaultProductDisplayPage"));
+					put(
+						"query#channelIdDefaultProductDisplayPage",
+						new ObjectValuePair<>(
+							DefaultProductDisplayPageResourceImpl.class,
+							"getChannelIdDefaultProductDisplayPage"));
 					put(
 						"query#paymentMethodGroupRelOrderTypeOrderType",
 						new ObjectValuePair<>(
@@ -358,6 +507,21 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							PaymentMethodGroupRelTermResourceImpl.class,
 							"getPaymentMethodGroupRelIdPaymentMethodGroupRelTermsPage"));
+					put(
+						"query#channelByExternalReferenceCodeProductDisplayPages",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"getChannelByExternalReferenceCodeProductDisplayPagesPage"));
+					put(
+						"query#channelIdProductDisplayPages",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"getChannelIdProductDisplayPagesPage"));
+					put(
+						"query#productDisplayPage",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"getProductDisplayPage"));
 					put(
 						"query#shippingFixedOptionIdShippingFixedOptionOrderTypes",
 						new ObjectValuePair<>(
@@ -412,12 +576,36 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							ChannelAccountResourceImpl.class,
 							"getChannelByExternalReferenceCodeChannelAccountsPage"));
+					put(
+						"query#Channel.byExternalReferenceCodeProductDisplayPages",
+						new ObjectValuePair<>(
+							ProductDisplayPageResourceImpl.class,
+							"getChannelByExternalReferenceCodeProductDisplayPagesPage"));
+					put(
+						"query#Channel.byExternalReferenceCodeDefaultCategoryDisplayPage",
+						new ObjectValuePair<>(
+							DefaultCategoryDisplayPageResourceImpl.class,
+							"getChannelByExternalReferenceCodeDefaultCategoryDisplayPage"));
+					put(
+						"query#Channel.byExternalReferenceCodeCategoryDisplayPages",
+						new ObjectValuePair<>(
+							CategoryDisplayPageResourceImpl.class,
+							"getChannelByExternalReferenceCodeCategoryDisplayPagesPage"));
+					put(
+						"query#Channel.byExternalReferenceCodeDefaultProductDisplayPage",
+						new ObjectValuePair<>(
+							DefaultProductDisplayPageResourceImpl.class,
+							"getChannelByExternalReferenceCodeDefaultProductDisplayPage"));
 				}
 			};
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<AccountAddressChannelResource>
 		_accountAddressChannelResourceComponentServiceObjects;
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<CategoryDisplayPageResource>
+		_categoryDisplayPageResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<ChannelResource>
@@ -428,12 +616,24 @@ public class ServletDataImpl implements ServletData {
 		_channelAccountResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<DefaultCategoryDisplayPageResource>
+		_defaultCategoryDisplayPageResourceComponentServiceObjects;
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<DefaultProductDisplayPageResource>
+		_defaultProductDisplayPageResourceComponentServiceObjects;
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<PaymentMethodGroupRelOrderTypeResource>
 		_paymentMethodGroupRelOrderTypeResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<PaymentMethodGroupRelTermResource>
 		_paymentMethodGroupRelTermResourceComponentServiceObjects;
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<ProductDisplayPageResource>
+		_productDisplayPageResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<ShippingFixedOptionOrderTypeResource>

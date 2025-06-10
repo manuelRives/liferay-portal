@@ -5,8 +5,8 @@
 
 import fetcher from '../fetcher';
 
-class HeadlessCommerceDeliveryCatalog {
-	async getProduct(
+export default class HeadlessCommerceDeliveryCatalog {
+	static async getProduct(
 		channelId: number | string,
 		productId: number | string,
 		searchParams = new URLSearchParams()
@@ -16,7 +16,7 @@ class HeadlessCommerceDeliveryCatalog {
 		);
 	}
 
-	async getProductsByChannelId(
+	static async getProductsByChannelId(
 		channelId: number,
 		searchParams = new URLSearchParams()
 	) {
@@ -25,13 +25,22 @@ class HeadlessCommerceDeliveryCatalog {
 		);
 	}
 
-	async getChannels(searchParams: URLSearchParams = new URLSearchParams()) {
+	static async getChannels(
+		searchParams: URLSearchParams = new URLSearchParams()
+	) {
 		return fetcher<APIResponse<Channel>>(
 			`o/headless-commerce-delivery-catalog/v1.0/channels?${searchParams.toString()}`
 		);
 	}
+
+	static async getSkuInfo(
+		channelId: number | string,
+		productId: number,
+		skuId: number,
+		searchParams = new URLSearchParams()
+	) {
+		return fetcher<APIResponse<Channel>>(
+			`o/headless-commerce-delivery-catalog/v1.0/channels/${channelId}/products/${productId}/skus/${skuId}?${searchParams.toString()}`
+		);
+	}
 }
-
-const HeadlessCommerceDeliveryCatalogImpl = new HeadlessCommerceDeliveryCatalog();
-
-export default HeadlessCommerceDeliveryCatalogImpl;

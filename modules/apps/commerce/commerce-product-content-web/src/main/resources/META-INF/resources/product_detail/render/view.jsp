@@ -55,7 +55,7 @@ long cpDefinitionId = cpCatalogEntry.getCPDefinitionId();
 							String stockQuantity = cpContentHelper.getStockQuantity(request);
 							%>
 
-							<span data-qa-id="in-stock-quantity"><%= Validator.isNull(stockQuantity) ? StringPool.BLANK : LanguageUtil.format(request, "x-in-stock", stockQuantity) %></span>
+							<span data-qa-id="inStockQuantity"><%= Validator.isNull(stockQuantity) ? StringPool.BLANK : LanguageUtil.format(request, "x-in-stock", stockQuantity) %></span>
 						</span>
 					</div>
 				</div>
@@ -132,7 +132,7 @@ long cpDefinitionId = cpCatalogEntry.getCPDefinitionId();
 
 			<p class="mt-3 product-description"><%= HtmlUtil.escape(cpCatalogEntry.getShortDescription()) %></p>
 
-			<h4 class="commerce-subscription-info mt-3">
+			<div class="commerce-subscription-info h4 mt-3">
 				<c:if test="<%= cpSku != null %>">
 					<commerce-ui:product-subscription-info
 						CPInstanceId="<%= cpSku.getCPInstanceId() %>"
@@ -141,7 +141,7 @@ long cpDefinitionId = cpCatalogEntry.getCPDefinitionId();
 
 				<span class="d-block" data-text-cp-instance-subscription-info></span>
 				<span class="d-block" data-text-cp-instance-delivery-subscription-info></span>
-			</h4>
+			</div>
 
 			<div class="product-detail-options">
 				<commerce-ui:option-selector
@@ -272,7 +272,7 @@ String navSpecificationsId = liferayPortletResponse.getNamespace() + "navSpecifi
 
 <div class="tab-content">
 	<c:if test="<%= hasDescription %>">
-		<div aria-labelledby="navUnderlineFieldsTab" class="fade <portlet:namespace />tab-element tab-pane" id="<%= navDescriptionId %>" role="tabpanel">
+		<div aria-labelledby="navUnderlineFieldsTab" class="fade <portlet:namespace />tab-element tab-pane tab-pane-description" id="<%= navDescriptionId %>" role="tabpanel">
 			<div class="p-4">
 				<%= description %>
 			</div>
@@ -280,7 +280,7 @@ String navSpecificationsId = liferayPortletResponse.getNamespace() + "navSpecifi
 	</c:if>
 
 	<c:if test="<%= hasCPDefinitionSpecificationOptionValues %>">
-		<div aria-labelledby="navUnderlineFieldsTab" class="fade <portlet:namespace />tab-element tab-pane" id="<%= navSpecificationsId %>" role="tabpanel">
+		<div aria-labelledby="navUnderlineFieldsTab" class="fade <portlet:namespace />tab-element tab-pane tab-pane-specifications" id="<%= navSpecificationsId %>" role="tabpanel">
 			<dl class="specification-list">
 
 				<%
@@ -344,7 +344,7 @@ String navSpecificationsId = liferayPortletResponse.getNamespace() + "navSpecifi
 	</c:if>
 
 	<c:if test="<%= hasCPMedia %>">
-		<div aria-labelledby="navUnderlineFieldsTab" class="fade <portlet:namespace />tab-element tab-pane" id="<%= navCPMediaId %>" role="tabpanel">
+		<div aria-labelledby="navUnderlineFieldsTab" class="fade <portlet:namespace />tab-element tab-pane tab-pane-media" id="<%= navCPMediaId %>" role="tabpanel">
 			<ul class="list-group">
 
 				<%
@@ -361,7 +361,7 @@ String navSpecificationsId = liferayPortletResponse.getNamespace() + "navSpecifi
 						</div>
 
 						<div class="autofit-col autofit-col-expand">
-							<h5><%= HtmlUtil.escape(cpMedia.getTitle()) %></h5>
+							<div class="h5"><%= HtmlUtil.escape(cpMedia.getTitle()) %></div>
 
 							<p class="m-0"><%= LanguageUtil.formatStorageSize(cpMedia.getSize(), locale) %></p>
 						</div>
@@ -387,7 +387,7 @@ String navSpecificationsId = liferayPortletResponse.getNamespace() + "navSpecifi
 	</c:if>
 
 	<c:if test="<%= directReplacement %>">
-		<div aria-labelledby="navUnderlineReplacementsTab" class="fade <portlet:namespace />tab-element tab-pane" id="<%= navReplacementsId %>" role="tabpanel" style="display: block; height: 0px; visibility: hidden;">
+		<div aria-labelledby="navUnderlineReplacementsTab" class="fade <portlet:namespace />tab-element tab-pane tab-pane-collapse tab-pane-replacements" id="<%= navReplacementsId %>" role="tabpanel">
 			<frontend-data-set:classic-display
 				contextParams='<%=
 					HashMapBuilder.<String, String>put(
@@ -405,6 +405,7 @@ String navSpecificationsId = liferayPortletResponse.getNamespace() + "navSpecifi
 				dataProviderKey="<%= CPContentFDSNames.REPLACEMENT_CP_INSTANCES %>"
 				id="<%= CPContentFDSNames.REPLACEMENT_CP_INSTANCES %>"
 				itemsPerPage="<%= 10 %>"
+				propsTransformer="{replacementCPInstancePropsTransformer} from commerce-product-content-web"
 				style="stacked"
 			/>
 		</div>

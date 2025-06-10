@@ -16,10 +16,10 @@ import com.liferay.saml.helper.SamlHttpRequestHelper;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.runtime.servlet.profile.SingleLogoutProfile;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,17 +37,6 @@ import org.osgi.service.component.annotations.Reference;
 	service = Filter.class
 )
 public class IdpSsoSamlPortalFilter extends BaseSamlPortalFilter {
-
-	@Override
-	public boolean isFilterEnabled() {
-		if (_samlProviderConfigurationHelper.isEnabled() &&
-			_samlProviderConfigurationHelper.isRoleIdp()) {
-
-			return true;
-		}
-
-		return false;
-	}
 
 	@Override
 	public boolean isFilterEnabled(
@@ -76,11 +65,7 @@ public class IdpSsoSamlPortalFilter extends BaseSamlPortalFilter {
 		String requestPath = _samlHttpRequestHelper.getRequestPath(
 			httpServletRequest);
 
-		if (requestPath.equals("/c/portal/logout")) {
-			return true;
-		}
-
-		return false;
+		return requestPath.equals("/c/portal/logout");
 	}
 
 	@Override

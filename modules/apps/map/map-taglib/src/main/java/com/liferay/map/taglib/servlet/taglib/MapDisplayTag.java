@@ -13,11 +13,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.Collection;
 import java.util.Iterator;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Chema Balsas
@@ -110,9 +110,9 @@ public class MapDisplayTag extends IncludeTag {
 	}
 
 	private MapProvider _getMapProvider() {
-		String mapProviderKey = _getMapProviderKey();
-
 		MapProvider mapProvider = null;
+
+		String mapProviderKey = _getMapProviderKey();
 
 		if (Validator.isNotNull(mapProviderKey)) {
 			mapProvider = ServletContextUtil.getMapProvider(mapProviderKey);

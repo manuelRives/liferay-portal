@@ -5,6 +5,7 @@
 
 package com.liferay.portal.util;
 
+import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.events.EventsProcessorUtil;
@@ -34,6 +35,9 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.site.initializer.kernel.util.SiteInitializerThreadLocal;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.sql.SQLException;
 
@@ -43,8 +47,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * @author Brian Wing Shun Chan
  * @author Jose Oliver
@@ -52,6 +54,19 @@ import javax.servlet.http.HttpServletRequest;
  * @author Mika Koivisto
  */
 public class PortalInstances {
+
+	public static Company addCompany(
+			String siteInitializerKey,
+			UnsafeSupplier<Company, PortalException> unsafeSupplier)
+		throws PortalException {
+
+		try (SafeCloseable safeCloseable =
+				SiteInitializerThreadLocal.setKeyWithSafeCloseable(
+					siteInitializerKey)) {
+
+			return unsafeSupplier.get();
+		}
+	}
 
 	public static long getCompanyId(HttpServletRequest httpServletRequest) {
 		try {
@@ -188,6 +203,10 @@ public class PortalInstances {
 		return PortalInstancePool.getCompanyIds();
 	}
 
+	public static Long getCopyInProcessCompanyId() {
+		return _copyInProcessCompanyId;
+	}
+
 	/**
 	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
 	 *             PortalInstancePool#getDefaultCompanyId}
@@ -204,6 +223,10 @@ public class PortalInstances {
 	@Deprecated
 	public static long getDefaultCompanyIdBySQL() throws SQLException {
 		return PortalInstancePool.getDefaultCompanyId();
+	}
+
+	public static Long getInsertionInProcessCompanyId() {
+		return _insertionInProcessCompanyId;
 	}
 
 	/**
@@ -228,16 +251,15 @@ public class PortalInstances {
 				"Begin initializing company with web ID " + company.getWebId());
 		}
 
-		Long currentThreadCompanyId = CompanyThreadLocal.getCompanyId();
-
 		String currentThreadPrincipalName = PrincipalThreadLocal.getName();
 
-		try {
-			CompanyThreadLocal.setCompanyId(company.getCompanyId());
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					company.getCompanyId())) {
 
 			if (!skipCheck) {
 				try {
-					CompanyLocalServiceUtil.checkCompany(company.getWebId());
+					CompanyLocalServiceUtil.checkCompany(company, false);
 				}
 				catch (Exception exception) {
 					_log.error(exception);
@@ -289,8 +311,6 @@ public class PortalInstances {
 			PortalInstancePool.add(company);
 		}
 		finally {
-			CompanyThreadLocal.setCompanyId(currentThreadCompanyId);
-
 			PrincipalThreadLocal.setName(currentThreadPrincipalName);
 		}
 
@@ -321,8 +341,24 @@ public class PortalInstances {
 		return false;
 	}
 
+	public static boolean isCompanyInCopyProcess() {
+		if (_copyInProcessCompanyId != null) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public static boolean isCompanyInDeletionProcess(long companyId) {
 		return _companyIdsInDeletionProcess.contains(companyId);
+	}
+
+	public static boolean isCompanyInInsertionProcess() {
+		if (_insertionInProcessCompanyId != null) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public static boolean isCurrentCompanyInDeletionProcess() {
@@ -354,7 +390,9 @@ public class PortalInstances {
 		WebAppPool.remove(companyId, WebKeys.PORTLET_CATEGORY);
 	}
 
-	public static SafeCloseable setCompanyInDeletionProcess(long companyId) {
+	public static SafeCloseable setCompanyInDeletionProcessWithSafeCloseable(
+		long companyId) {
+
 		if (_companyIdsInDeletionProcess.contains(companyId)) {
 			throw new UnsupportedOperationException(
 				companyId + " is already in deletion");
@@ -363,6 +401,32 @@ public class PortalInstances {
 		_companyIdsInDeletionProcess.add(companyId);
 
 		return () -> _companyIdsInDeletionProcess.remove(companyId);
+	}
+
+	public static SafeCloseable setCopyInProcessCompanyIdWithSafeCloseable(
+		long companyId) {
+
+		if (_copyInProcessCompanyId != null) {
+			throw new UnsupportedOperationException(
+				"Company in copy process company ID is not null");
+		}
+
+		_copyInProcessCompanyId = companyId;
+
+		return () -> _copyInProcessCompanyId = null;
+	}
+
+	public static SafeCloseable setInsertionInProcessCompanyIdWithSafeCloseable(
+		long companyId) {
+
+		if (_insertionInProcessCompanyId != null) {
+			throw new UnsupportedOperationException(
+				"Company in insertion process company ID is not null");
+		}
+
+		_insertionInProcessCompanyId = companyId;
+
+		return () -> _insertionInProcessCompanyId = null;
 	}
 
 	private static long _getCompanyIdByHost(
@@ -430,11 +494,7 @@ public class PortalInstances {
 			virtualHostname = "localhost";
 		}
 
-		if (Objects.equals(virtualHostname, serverName)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(virtualHostname, serverName);
 	}
 
 	private static void _setAttributes(
@@ -483,6 +543,8 @@ public class PortalInstances {
 	private static final Set<String> _autoLoginIgnorePaths;
 	private static final List<Long> _companyIdsInDeletionProcess =
 		new CopyOnWriteArrayList<>();
+	private static Long _copyInProcessCompanyId;
+	private static Long _insertionInProcessCompanyId;
 	private static final Set<String> _virtualHostsIgnoreHosts;
 	private static final Set<String> _virtualHostsIgnorePaths;
 

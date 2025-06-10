@@ -17,7 +17,11 @@ import java.util.Map;
  */
 public interface TopLevelBuildReport extends BuildReport {
 
+	public void addTestrayAttachmentURL(URL testrayAttachmentURL);
+
 	public Map<String, String> getBuildParameters();
+
+	public Job.BuildProfile getBuildProfile();
 
 	public URL getBuildReportJSONTestrayURL();
 
@@ -25,13 +29,15 @@ public interface TopLevelBuildReport extends BuildReport {
 
 	public TestrayS3Object getBuildReportTestrayS3Object();
 
-	public URL getBuildResultJSONTestrayURL();
+	public ControllerBuildReport getControllerBuildReport();
 
-	public URL getBuildResultJSONUserContentURL();
-
-	public TestrayS3Object getBuildResultTestrayS3Object();
+	public DownstreamBuildReport getDownstreamBuildReport(String axisName);
 
 	public List<DownstreamBuildReport> getDownstreamBuildReports();
+
+	public URL getJenkinsReportURL();
+
+	public String getTestrayBuildDateString();
 
 	public URL getTestResultsJSONUserContentURL();
 
@@ -40,5 +46,7 @@ public interface TopLevelBuildReport extends BuildReport {
 	public long getTopLevelActiveDuration();
 
 	public long getTopLevelPassiveDuration();
+
+	public long getTotalDuration();
 
 }

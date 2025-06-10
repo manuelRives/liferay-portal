@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +34,22 @@ import org.json.JSONObject;
  */
 public abstract class BaseTopLevelBuildReport
 	extends BaseBuildReport implements TopLevelBuildReport {
+
+	@Override
+	public void addTestrayAttachmentURL(URL testrayAttachmentURL) {
+		JSONObject buildReportJSONObject = getBuildReportJSONObject();
+
+		JSONArray jsonArray = buildReportJSONObject.optJSONArray(
+			"testrayAttachmentURLs");
+
+		if (jsonArray == null) {
+			jsonArray = new JSONArray();
+		}
+
+		jsonArray.put(testrayAttachmentURL);
+
+		buildReportJSONObject.put("testrayAttachmentURLs", jsonArray);
+	}
 
 	@Override
 	public Map<String, String> getBuildParameters() {
@@ -55,6 +72,23 @@ public abstract class BaseTopLevelBuildReport
 	}
 
 	@Override
+	public Job.BuildProfile getBuildProfile() {
+		Map<String, String> buildParameters = getBuildParameters();
+
+		String buildProfileString = buildParameters.get(
+			"TEST_PORTAL_BUILD_PROFILE");
+
+		Job.BuildProfile buildProfile = Job.BuildProfile.getByString(
+			buildProfileString);
+
+		if (buildProfile != null) {
+			return buildProfile;
+		}
+
+		return Job.BuildProfile.DXP;
+	}
+
+	@Override
 	public URL getBuildReportJSONTestrayURL() {
 		JobReport jobReport = getJobReport();
 
@@ -63,7 +97,7 @@ public abstract class BaseTopLevelBuildReport
 		try {
 			return new URL(
 				JenkinsResultsParserUtil.combine(
-					"https://testray.liferay.com/reports/production/logs/",
+					"https://storage.cloud.google.com/testray-results/",
 					getStartYearMonth(), "/", jenkinsMaster.getName(), "/",
 					jobReport.getJobName(), "/",
 					String.valueOf(getBuildNumber()), "/build-report.json.gz"));
@@ -108,56 +142,37 @@ public abstract class BaseTopLevelBuildReport
 	}
 
 	@Override
-	public URL getBuildResultJSONTestrayURL() {
-		JobReport jobReport = getJobReport();
+	public ControllerBuildReport getControllerBuildReport() {
+		JSONObject buildReportJSONObject = getBuildReportJSONObject();
 
-		JenkinsMaster jenkinsMaster = jobReport.getJenkinsMaster();
+		if (!buildReportJSONObject.has("controller")) {
+			return null;
+		}
 
-		try {
-			return new URL(
-				JenkinsResultsParserUtil.combine(
-					"https://testray.liferay.com/reports/production/logs/",
-					getStartYearMonth(), "/", jenkinsMaster.getName(), "/",
-					jobReport.getJobName(), "/",
-					String.valueOf(getBuildNumber()), "/build-result.json.gz"));
+		JSONObject controllerJSONObject = buildReportJSONObject.getJSONObject(
+			"controller");
+
+		if (!controllerJSONObject.has("buildURL")) {
+			return null;
 		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
+
+		_controllerBuildReport = BuildReportFactory.newControllerBuildReport(
+			controllerJSONObject, this);
+
+		return _controllerBuildReport;
 	}
 
 	@Override
-	public URL getBuildResultJSONUserContentURL() {
-		JobReport jobReport = getJobReport();
+	public DownstreamBuildReport getDownstreamBuildReport(String axisName) {
+		for (DownstreamBuildReport downstreamBuildReport :
+				getDownstreamBuildReports()) {
 
-		JenkinsMaster jenkinsMaster = jobReport.getJenkinsMaster();
-
-		try {
-			return new URL(
-				JenkinsResultsParserUtil.combine(
-					"https://", jenkinsMaster.getName(),
-					".liferay.com/userContent/jobs/", jobReport.getJobName(),
-					"/builds/", String.valueOf(getBuildNumber()),
-					"/build-result.json"));
+			if (Objects.equals(downstreamBuildReport.getAxisName(), axisName)) {
+				return downstreamBuildReport;
+			}
 		}
-		catch (MalformedURLException malformedURLException) {
-			throw new RuntimeException(malformedURLException);
-		}
-	}
 
-	@Override
-	public TestrayS3Object getBuildResultTestrayS3Object() {
-		JobReport jobReport = getJobReport();
-
-		JenkinsMaster jenkinsMaster = jobReport.getJenkinsMaster();
-
-		TestrayS3Bucket testrayS3Bucket = TestrayS3Bucket.getInstance();
-
-		return testrayS3Bucket.getTestrayS3Object(
-			JenkinsResultsParserUtil.combine(
-				getStartYearMonth(), "/", jenkinsMaster.getName(), "/",
-				jobReport.getJobName(), "/", String.valueOf(getBuildNumber()),
-				"/build-result.json.gz"));
+		return null;
 	}
 
 	@Override
@@ -203,6 +218,29 @@ public abstract class BaseTopLevelBuildReport
 		_downstreamBuildReports.removeAll(Collections.singleton(null));
 
 		return _downstreamBuildReports;
+	}
+
+	@Override
+	public URL getJenkinsReportURL() {
+		JenkinsMaster jenkinsMaster = getJenkinsMaster();
+
+		try {
+			return new URL(
+				JenkinsResultsParserUtil.combine(
+					"https://", jenkinsMaster.getName(), ".liferay.com/",
+					"userContent/jobs/", getJobName(), "/builds/",
+					String.valueOf(getBuildNumber()), "/jenkins-report.html"));
+		}
+		catch (MalformedURLException malformedURLException) {
+			throw new RuntimeException(
+				"Unable to get Jenkins report URL", malformedURLException);
+		}
+	}
+
+	@Override
+	public String getTestrayBuildDateString() {
+		return JenkinsResultsParserUtil.toDateString(
+			getStartDate(), "yyyy-MM-dd HH:mm:ss", "America/Los_Angeles");
 	}
 
 	@Override
@@ -281,6 +319,13 @@ public abstract class BaseTopLevelBuildReport
 		return 0L;
 	}
 
+	@Override
+	public long getTotalDuration() {
+		JSONObject buildReportJSONObject = getBuildReportJSONObject();
+
+		return buildReportJSONObject.optLong("totalDuration");
+	}
+
 	protected BaseTopLevelBuildReport(JSONObject buildReportJSONObject) {
 		super(buildReportJSONObject);
 
@@ -322,7 +367,14 @@ public abstract class BaseTopLevelBuildReport
 			"batches", _getBatchesJSONArray(buildResultJSONObject)
 		).put(
 			"buildURL", String.valueOf(getBuildURL())
-		).put(
+		);
+
+		if (buildResultJSONObject.has("controller")) {
+			buildReportJSONObject.put(
+				"controller", buildResultJSONObject.get("controller"));
+		}
+
+		buildReportJSONObject.put(
 			"duration", buildResultJSONObject.get("duration")
 		).put(
 			"result", buildResultJSONObject.get("result")
@@ -614,6 +666,7 @@ public abstract class BaseTopLevelBuildReport
 	private static final Map<String, Pattern> _variablePatterns =
 		new HashMap<>();
 
+	private ControllerBuildReport _controllerBuildReport;
 	private List<DownstreamBuildReport> _downstreamBuildReports;
 
 }

@@ -77,10 +77,12 @@ import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.editor.configuration.EditorConfiguration;
 import com.liferay.portal.kernel.editor.configuration.EditorConfigurationFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -112,6 +114,16 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.servlet.PipingServletResponseFactory;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -120,16 +132,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Bruno Basto
@@ -283,6 +285,12 @@ public class DDMFormAdminDisplayContext {
 		return new Locale[] {getDefaultLocale()};
 	}
 
+	public JSONArray getAvailableLocalesJSONArray() {
+		return JSONUtil.toJSONArray(
+			LanguageUtil.getAvailableLocales(),
+			locale -> _getLocaleJSONObject(locale), _log);
+	}
+
 	public String getClearResultsURL() throws PortletException {
 		return PortletURLBuilder.create(
 			PortletURLUtil.clone(getPortletURL(), renderResponse)
@@ -413,8 +421,9 @@ public class DDMFormAdminDisplayContext {
 					EditorConfiguration editorConfiguration =
 						EditorConfigurationFactoryUtil.getEditorConfiguration(
 							StringPool.BLANK, ddmFormFieldType.getName(),
-							"ckeditor_classic", new HashMap<String, Object>(),
-							themeDisplay,
+							FeatureFlagManagerUtil.isEnabled("LPD-11235") ?
+								"ckeditor5_classic" : "ckeditor_classic",
+							new HashMap<String, Object>(), themeDisplay,
 							RequestBackedPortletURLFactoryUtil.create(
 								httpServletRequest));
 
@@ -1199,11 +1208,7 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	public boolean hasValidDDMFormFields(DDMFormInstance ddmFormInstance) {
-		if (Validator.isNull(getInvalidDDMFormFieldType(ddmFormInstance))) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNull(getInvalidDDMFormFieldType(ddmFormInstance));
 	}
 
 	public boolean hasValidMappedObject(
@@ -1299,9 +1304,6 @@ public class DDMFormAdminDisplayContext {
 	protected DDMFormRenderingContext createDDMFormRenderingContext(
 		PageContext pageContext, RenderRequest renderRequest) {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
 		DDMFormRenderingContext ddmFormRenderingContext =
 			new DDMFormRenderingContext();
 
@@ -1311,7 +1313,12 @@ public class DDMFormAdminDisplayContext {
 			PipingServletResponseFactory.createPipingServletResponse(
 				pageContext));
 		ddmFormRenderingContext.setContainerId("settingsDDMForm");
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
 		ddmFormRenderingContext.setLocale(themeDisplay.getLocale());
+
 		ddmFormRenderingContext.setPortletNamespace(
 			renderResponse.getNamespace());
 
@@ -1487,11 +1494,7 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	protected boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(getKeywords());
 	}
 
 	protected final DDMFormAdminRequestHelper ddmFormAdminRequestHelper;
@@ -1586,7 +1589,8 @@ public class DDMFormAdminDisplayContext {
 				orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
-			orderByComparator = new DDMFormInstanceNameComparator(orderByAsc);
+			orderByComparator = DDMFormInstanceNameComparator.getInstance(
+				orderByAsc);
 		}
 
 		return orderByComparator;
@@ -1681,6 +1685,19 @@ public class DDMFormAdminDisplayContext {
 
 			return null;
 		}
+	}
+
+	private JSONObject _getLocaleJSONObject(Locale locale) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		return JSONUtil.put(
+			"displayName", locale.getDisplayName(locale)
+		).put(
+			"icon",
+			StringUtil.toLowerCase(StringUtil.replace(languageId, '_', "-"))
+		).put(
+			"localeId", languageId
+		);
 	}
 
 	private void _populateDDMDataProviderNavigationItem(

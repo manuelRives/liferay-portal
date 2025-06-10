@@ -16,6 +16,7 @@ export interface Config {
 	addPortletURL: string;
 	addRuleURL: string;
 	addSegmentsExperienceURL: string;
+	addStepperFragmentEntryLinkURL: string;
 
 	assetCategoryTreeNodeItemSelectorURL: string;
 
@@ -79,6 +80,7 @@ export interface Config {
 	>;
 
 	contentPagePersonalizationLearnURL: string;
+	copyItemsURL: string;
 	createLayoutPageTemplateEntryURL: string;
 
 	defaultEditorConfigurations: Record<
@@ -94,6 +96,7 @@ export interface Config {
 	defaultSegmentsExperienceId: string;
 	defaultStyleBookEntryImagePreviewURL: string;
 	defaultStyleBookEntryName: string;
+	deleteFormStepURL: string;
 	deleteFragmentEntryLinkCommentURL: string;
 	deleteRuleURL: string;
 	deleteSegmentsExperienceURL: string;
@@ -103,6 +106,15 @@ export interface Config {
 	editFragmentEntryLinkCommentURL: string;
 	editFragmentEntryLinkURL: string;
 	editSegmentsEntryURL: string;
+	formTypes: Array<{
+		className: string;
+		isRestricted: boolean;
+		label: string;
+		subtypes: Array<{label: string; value: string}>;
+		value: string;
+	}>;
+	fragmentPortletNamespace: string;
+	fragmentsImportURL: string;
 	frontendTokens: {
 		[key: string]:
 			| {
@@ -135,6 +147,7 @@ export interface Config {
 	getIframeContentURL: string;
 	getInfoItemActionErrorMessageURL: string;
 	getInfoItemFieldValueURL: string;
+	getInfoItemOneToManyRelationshipsURL: string;
 	getLayoutFriendlyURL: string;
 	getLayoutPageTemplateCollectionsURL: string;
 	getPageContentsURL: string;
@@ -142,8 +155,11 @@ export interface Config {
 	getRolesURL: string;
 	getUsersURL: string;
 	imageSelectorURL: string;
+	imagesPath: string;
+	infoFieldItemSelectorURL: string;
 	infoItemPreviewSelectorURL: string;
 	infoItemSelectorURL: string;
+	isCMS: boolean;
 	isConversionDraft: boolean;
 	isPrivateLayoutsEnabled: boolean;
 	layoutConversionWarningMessages: string[] | null;
@@ -158,17 +174,18 @@ export interface Config {
 		name: string;
 	}>;
 	masterUsed: boolean;
-	moveItemURL: string;
+	moveItemsURL: string;
+	moveStepperFragmentEntryLinkURL: string;
 	paddingOptions: Array<{
 		label: string;
 		value: string;
 	}>;
-	panels: string[][];
 	pending: boolean;
 	plid: string;
 	portletNamespace: string;
 	publishURL: string;
 	redirectURL: string;
+	regenerateDisplayPageURL: string;
 	renderFragmentEntriesURL: string;
 	restoreCollectionDisplayConfigURL: string;
 	searchContainerPageMaxDelta: number;
@@ -186,7 +203,8 @@ export interface Config {
 
 	selectedSegmentsEntryId: string;
 
-	sidebarPanels: SidebarPanel[] | Record<string, SidebarPanel>;
+	sidebarPanels: SidebarPanel[];
+	sidebarPanelsMap: Record<string, SidebarPanel>;
 
 	singleSegmentsExperienceMode: boolean;
 	siteNavigationMenuItemSelectorURL: string;
@@ -197,15 +215,10 @@ export interface Config {
 		styleBookEntryId: string;
 	}>;
 	stylebookEntryId: string;
-	themeColorCssClasses: string[];
+	themeColorsCssClasses: string[];
 	toolbarId: string;
 
-	toolbarPlugins: Array<{
-		loadingPlaceholder: string;
-		pluginClass: any;
-		toolbarPluginId: string;
-	}>;
-
+	undoUpdateFormConfigURL: string;
 	unmarkItemsForDeletionURL: string;
 	updateCollectionDisplayConfigURL: string;
 	updateConfigurationValuesURL: string;

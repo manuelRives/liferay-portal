@@ -106,6 +106,7 @@ export function FilterScreen() {
 		if (
 			selectedFilterTypeValue &&
 			(selectedFilterBy?.name === 'status' ||
+				selectedFilterBy?.businessType === 'MultiselectPicklist' ||
 				selectedFilterBy?.businessType === 'Picklist' ||
 				selectedFilterBy?.businessType === 'Relationship') &&
 			!checkedItems.length
@@ -190,7 +191,7 @@ export function FilterScreen() {
 											return objectField;
 										}
 									}
-							  )
+								)
 					}
 					observer={observer}
 					onClose={onClose}

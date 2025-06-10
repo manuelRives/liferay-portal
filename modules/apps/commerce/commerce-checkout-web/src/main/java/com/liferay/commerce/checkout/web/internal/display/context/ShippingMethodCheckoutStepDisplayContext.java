@@ -31,13 +31,13 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Andrea Di Giorgi
@@ -75,10 +75,12 @@ public class ShippingMethodCheckoutStepDisplayContext {
 	public List<CommerceShippingMethod> getCommerceShippingMethods()
 		throws PortalException {
 
-		CommerceAddress shippingAddress = _commerceOrder.getShippingAddress();
+		CommerceAddress shippingCommerceAddress =
+			_commerceOrder.getShippingAddress();
 
 		return _commerceShippingMethodLocalService.getCommerceShippingMethods(
-			_commerceOrder.getGroupId(), shippingAddress.getCountryId(), true);
+			_commerceOrder.getGroupId(), shippingCommerceAddress.getCountryId(),
+			true);
 	}
 
 	public String getCommerceShippingOptionKey(

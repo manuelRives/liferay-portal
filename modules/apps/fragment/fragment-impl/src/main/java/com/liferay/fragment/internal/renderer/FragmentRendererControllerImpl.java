@@ -35,11 +35,11 @@ import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -110,8 +110,11 @@ public class FragmentRendererControllerImpl
 				_log.debug(
 					StringBundler.concat(
 						"Unable to render content of fragment entry ",
-						fragmentEntryLink.getFragmentEntryId(), ":",
-						exception.getMessage(), ", ", throwable.getMessage()),
+						fragmentEntryLink.getFragmentEntryId(),
+						" with fragment entry link ",
+						fragmentEntryLink.getFragmentEntryLinkId(),
+						" and PLID ", fragmentEntryLink.getPlid(), ": ",
+						throwable.getMessage()),
 					exception);
 			}
 

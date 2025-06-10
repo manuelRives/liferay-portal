@@ -18,6 +18,7 @@ import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.DefaultFragmentEntryProcessorContext;
 import com.liferay.fragment.processor.FragmentEntryProcessorContext;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
+import com.liferay.fragment.renderer.DefaultFragmentRendererContext;
 import com.liferay.fragment.renderer.FragmentRenderer;
 import com.liferay.fragment.renderer.FragmentRendererRegistry;
 import com.liferay.fragment.service.FragmentCollectionService;
@@ -65,6 +66,9 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -75,9 +79,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Jürgen Kappler
@@ -350,6 +351,11 @@ public class FragmentLayoutStructureItemImporter
 			html = fragmentEntry.getHtml();
 			type = fragmentEntry.getType();
 		}
+		else {
+			configuration = fragmentRenderer.getConfiguration(
+				new DefaultFragmentRendererContext(null));
+			type = fragmentRenderer.getType();
+		}
 
 		JSONObject fragmentEntryProcessorValuesJSONObject =
 			JSONFactoryUtil.createJSONObject();
@@ -378,7 +384,7 @@ public class FragmentLayoutStructureItemImporter
 				_fragmentEntryProcessorRegistry.
 					getDefaultEditableValuesJSONObject(
 						_getProcessedHTML(
-							fragmentEntry.getCompanyId(), configuration,
+							layout.getCompanyId(), configuration,
 							fragmentEntryProcessorValuesJSONObject.toString(),
 							fragmentCollection, fragmentEntry.getHtml(),
 							fragmentKey, type),
@@ -427,13 +433,16 @@ public class FragmentLayoutStructureItemImporter
 			defaultEditableValuesJSONObject,
 			fragmentEntryProcessorValuesJSONObject);
 
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
 		FragmentEntryLink fragmentEntryLink =
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				layout.getUserId(), layout.getGroupId(), 0, fragmentEntryId,
-				segmentsExperienceId, layout.getPlid(), css, html, js,
-				configuration, jsonObject.toString(), StringUtil.randomId(),
-				position, fragmentKey, type,
-				ServiceContextThreadLocal.getServiceContext());
+				null, serviceContext.getUserId(), layout.getGroupId(), 0,
+				fragmentEntryId, segmentsExperienceId, layout.getPlid(), css,
+				html, js, configuration, jsonObject.toString(),
+				StringUtil.randomId(), position, fragmentKey, type,
+				serviceContext);
 
 		List<Object> widgetInstances = (List<Object>)definitionMap.get(
 			"widgetInstances");

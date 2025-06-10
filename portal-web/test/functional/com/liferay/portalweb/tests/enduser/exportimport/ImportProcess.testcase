@@ -1,15 +1,17 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Export/Import Framework";
+	property testray.main.component.name = "Export/Import";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		Staging.enableDeleteApplicationDataBeforeImport();
 	}
 
 	tearDown {
@@ -119,7 +121,9 @@ definition {
 
 			Navigator.gotoNavItem(navItem = "Scheduled Jobs");
 
-			Click.clickAtNotVisible(locator1 = "Blueprints#PAGINATION_NEXT_LINK");
+			while ((IsElementNotPresent(key_name = "DeleteObsoleteBackgroundTasksSchedulerJobConfiguration", locator1 = "JobScheduler#RUN_NOW_BUTTON")) && (maxIterations = "10")) {
+				Click.clickAtNotVisible(locator1 = "Blueprints#PAGINATION_NEXT_LINK");
+			}
 
 			Click.clickAtNotVisible(
 				key_name = "DeleteObsoleteBackgroundTasksSchedulerJobConfiguration",
@@ -246,7 +250,6 @@ definition {
 				dmDocumentTitle = "Document_1",
 				groupName = "Guest-staging",
 				mimeType = "image/jpeg",
-				site = "false",
 				sourceFileName = "Document_1.jpg");
 
 			for (var layoutUtilityPageName : list "404,500") {
@@ -327,16 +330,18 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com",
 				virtualHostsURL = "http://www.able.com:8080");
+
+			Staging.enableDeleteApplicationDataBeforeImport(navigate = "false");
 
 			JSONWebcontent.addWebContent(
 				content = "WC WebContent Content",
 				groupName = "Guest",
 				title = "WC WebContent Title",
 				userEmailAddress = "test@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 
 			JSONDocument.addFileWithUploadedFile(
 				dmDocumentTitle = "Document_1",
@@ -344,7 +349,7 @@ definition {
 				mimeType = "image/jpeg",
 				sourceFileName = "Document_1.jpg",
 				userEmailAddress = "test@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 
 			Site.openSitesAdmin(baseURL = "http://www.able.com:8080");
 

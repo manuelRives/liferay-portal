@@ -351,13 +351,8 @@ public class Validator {
 	 *         <code>false</code> otherwise
 	 */
 	public static boolean isContent(String s) {
-		if (isNotNull(
-				StringUtil.removeChars(s, CharPool.NEW_LINE, CharPool.TAB))) {
-
-			return true;
-		}
-
-		return false;
+		return isNotNull(
+			StringUtil.removeChars(s, CharPool.NEW_LINE, CharPool.TAB));
 	}
 
 	/**
@@ -609,11 +604,7 @@ public class Validator {
 	 * @see    #isNull(String)
 	 */
 	public static boolean isHex(String s) {
-		if (isNull(s)) {
-			return false;
-		}
-
-		return true;
+		return !isNull(s);
 	}
 
 	/**
@@ -1091,11 +1082,7 @@ public class Validator {
 
 		Matcher matcher = _variableNamePattern.matcher(variableName);
 
-		if (matcher.matches()) {
-			return true;
-		}
-
-		return false;
+		return matcher.matches();
 	}
 
 	/**
@@ -1195,7 +1182,8 @@ public class Validator {
 
 	private static final Pattern _emailAddressPattern = Pattern.compile(
 		"^[\\w!#$%&'*+/=?^_`{|}~-]+(?:\\.[\\w!#$%&'*+/=?^_`{|}~-]+)*@" +
-			"(?:\\w(?:[\\w-]*\\w)?\\.)+(\\w(?:[\\w-]*\\w))$");
+			"(?:[^\\W_](?:[0-9A-Za-z-]*[^\\W_])?\\.)+" +
+				"([^\\W_](?:[0-9A-Za-z-]*[^\\W_]))$");
 	private static final Pattern _ipv4AddressPattern;
 	private static final Pattern _ipv6AddressPattern;
 	private static final Pattern _variableNamePattern = Pattern.compile(

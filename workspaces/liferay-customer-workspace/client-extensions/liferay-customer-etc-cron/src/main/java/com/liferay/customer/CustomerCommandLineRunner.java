@@ -5,11 +5,12 @@
 
 package com.liferay.customer;
 
-import com.liferay.client.extension.util.spring.boot.LiferayOAuth2AccessTokenManager;
+import com.liferay.client.extension.util.spring.boot3.BaseRestController;
+import com.liferay.client.extension.util.spring.boot3.client.LiferayOAuth2AccessTokenManager;
 import com.liferay.osb.spring.boot.client.zendesk.model.ZendeskTicket;
 import com.liferay.osb.spring.boot.client.zendesk.search.SearchHits;
 import com.liferay.osb.spring.boot.client.zendesk.search.ZendeskTicketQuery;
-import com.liferay.osb.spring.boot.client.zendesk.service.ZendeskWebService;
+import com.liferay.osb.spring.boot.client.zendesk.service.ZendeskService;
 
 import java.text.SimpleDateFormat;
 
@@ -25,17 +26,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * @author Amos Fong
  */
 @Component
 @ComponentScan(basePackages = "com.liferay.osb")
-public class CustomerCommandLineRunner implements CommandLineRunner {
+public class CustomerCommandLineRunner
+	extends BaseRestController implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -68,7 +68,7 @@ public class CustomerCommandLineRunner implements CommandLineRunner {
 		while (page > 0) {
 			zendeskTicketQuery.setPage(page);
 
-			SearchHits<ZendeskTicket> searchHits = _zendeskWebService.search(
+			SearchHits<ZendeskTicket> searchHits = _zendeskService.search(
 				zendeskTicketQuery);
 
 			for (ZendeskTicket zendeskTicket : searchHits.getResults()) {
@@ -83,20 +83,14 @@ public class CustomerCommandLineRunner implements CommandLineRunner {
 		throws Exception {
 
 		JSONObject jsonObject = new JSONObject(
-			WebClient.create(
-				_lxcDXPServerProtocol + "://" + _lxcDXPMainDomain
-			).get(
-			).uri(
-				"/o/c/ticketattachments?filter=zendeskTicketId eq " +
-					zendeskTicketId
-			).accept(
-				MediaType.APPLICATION_JSON
-			).header(
-				HttpHeaders.AUTHORIZATION, _getAuthorization()
-			).retrieve(
-			).bodyToMono(
-				String.class
-			).block());
+			get(
+				_getAuthorization(),
+				UriComponentsBuilder.fromPath(
+					"/o/c/ticketattachments"
+				).queryParam(
+					"filter", "zendeskTicketId eq " + zendeskTicketId
+				).build(
+				).toUri()));
 
 		JSONArray jsonArray = jsonObject.getJSONArray("items");
 
@@ -109,26 +103,19 @@ public class CustomerCommandLineRunner implements CommandLineRunner {
 						ticketAttachmentJSONObject.getString("id"));
 			}
 
-			WebClient.create(
-				_etcSpringBootClientExtensionURL
-			).delete(
-			).uri(
-				"/ticket-attachments/" + ticketAttachmentJSONObject.getInt("id")
-			).accept(
-				MediaType.APPLICATION_JSON
-			).header(
-				HttpHeaders.AUTHORIZATION, _getAuthorization()
-			).retrieve(
-			).bodyToMono(
-				String.class
-			).block();
+			delete(
+				_getAuthorization(), "",
+				UriComponentsBuilder.fromPath(
+					"/ticket-attachments/" +
+						ticketAttachmentJSONObject.getInt("id")
+				).build(
+				).toUri());
 		}
 	}
 
 	private String _getAuthorization() {
 		return _liferayOAuth2AccessTokenManager.getAuthorization(
-			"liferay-customer-etc-spring-boot-oauth-application-headless-" +
-				"server");
+			"liferay-customer-etc-cron-oahs");
 	}
 
 	private static final Log _log = LogFactory.getLog(
@@ -146,10 +133,10 @@ public class CustomerCommandLineRunner implements CommandLineRunner {
 	@Value("${com.liferay.lxc.dxp.server.protocol}")
 	private String _lxcDXPServerProtocol;
 
+	@Autowired
+	private ZendeskService _zendeskService;
+
 	@Value("${liferay.customer.zendesk.ticket.closed.days}")
 	private int _zendeskTicketClosedDays;
-
-	@Autowired
-	private ZendeskWebService _zendeskWebService;
 
 }

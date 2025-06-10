@@ -22,10 +22,10 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.RoleNameComparator;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 
-import java.util.Map;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Map;
 
 /**
  * @author Diego Hu
@@ -69,7 +69,7 @@ public class InviteMembersDisplayContext {
 						_themeDisplay.getCompanyId(), null, null,
 						new Integer[] {RoleConstants.TYPE_SITE},
 						QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-						new RoleNameComparator(false))),
+						RoleNameComparator.getInstance(false))),
 				role -> HashMapBuilder.<String, Object>put(
 					"label", role.getTitle(_themeDisplay.getLocale())
 				).put(

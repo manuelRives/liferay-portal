@@ -51,10 +51,10 @@ import freemarker.core.TemplateClassResolver;
 import freemarker.debug.impl.DebuggerService;
 
 import freemarker.ext.beans.BeansWrapper;
-import freemarker.ext.jsp.TaglibFactory;
+import freemarker.ext.jakarta.jsp.TaglibFactory;
+import freemarker.ext.jakarta.servlet.HttpRequestHashModel;
+import freemarker.ext.jakarta.servlet.ServletContextHashModel;
 import freemarker.ext.jsp.internal.WriterFactoryUtil;
-import freemarker.ext.servlet.HttpRequestHashModel;
-import freemarker.ext.servlet.ServletContextHashModel;
 
 import freemarker.template.Configuration;
 import freemarker.template.ObjectWrapper;
@@ -62,6 +62,11 @@ import freemarker.template.SimpleNumber;
 import freemarker.template.TemplateHashModel;
 import freemarker.template.TemplateModel;
 import freemarker.template.TemplateModelException;
+
+import jakarta.servlet.GenericServlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,11 +94,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-
-import javax.servlet.GenericServlet;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -134,12 +134,9 @@ public class FreeMarkerManager extends BaseTemplateManager {
 	public class FreeMarkerTemplateResourceCache
 		extends BaseTemplateResourceCache {
 
-		public FreeMarkerTemplateResourceCache(
-			FreeMarkerEngineConfiguration freeMarkerEngineConfiguration) {
-
+		public FreeMarkerTemplateResourceCache() {
 			init(
-				freeMarkerEngineConfiguration.resourceModificationCheck(),
-				_portalCacheName,
+				Long.MIN_VALUE, _portalCacheName,
 				StringBundler.concat(
 					TemplateResource.class.getName(), StringPool.POUND,
 					TemplateConstants.LANG_TYPE_FTL));
@@ -147,13 +144,6 @@ public class FreeMarkerManager extends BaseTemplateManager {
 
 		public void destroy() {
 			super.destroy();
-		}
-
-		public void setModificationCheckInterval(
-			FreeMarkerEngineConfiguration freeMarkerEngineConfiguration) {
-
-			setModificationCheckInterval(
-				freeMarkerEngineConfiguration.resourceModificationCheck());
 		}
 
 		private final String _portalCacheName =
@@ -196,8 +186,8 @@ public class FreeMarkerManager extends BaseTemplateManager {
 			FreeMarkerEngineConfiguration.class,
 			componentContext.getProperties());
 
-		_freeMarkerTemplateResourceCache = new FreeMarkerTemplateResourceCache(
-			_freeMarkerEngineConfiguration);
+		_freeMarkerTemplateResourceCache =
+			new FreeMarkerTemplateResourceCache();
 
 		_freeMarkerTemplateResourceLoader =
 			new FreeMarkerTemplateResourceLoader(
@@ -333,9 +323,6 @@ public class FreeMarkerManager extends BaseTemplateManager {
 		_freeMarkerEngineConfiguration = ConfigurableUtil.createConfigurable(
 			FreeMarkerEngineConfiguration.class,
 			componentContext.getProperties());
-
-		_freeMarkerTemplateResourceCache.setModificationCheckInterval(
-			_freeMarkerEngineConfiguration);
 
 		_initAsyncRender(componentContext.getBundleContext());
 
@@ -520,7 +507,7 @@ public class FreeMarkerManager extends BaseTemplateManager {
 			return;
 		}
 
-		_configuration = new Configuration(Configuration.VERSION_2_3_32);
+		_configuration = new Configuration(Configuration.VERSION_2_3_33);
 
 		_configuration.setAttemptExceptionReporter(
 			(templateException, environment) -> {

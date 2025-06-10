@@ -16,6 +16,10 @@ declare module Liferay {
 		): Promise<any>;
 	}
 
+	namespace CustomDialogs {
+		export const enabled: boolean;
+	}
+
 	namespace DOMTaskRunner {
 		export function addTask(task: object): void;
 
@@ -109,6 +113,13 @@ declare module Liferay {
 		export function registerStatic(portletId: any): void;
 	}
 
+	namespace PortletKeys {
+		export const DOCUMENT_LIBRARY: string;
+		export const DYNAMIC_DATA_MAPPING: string;
+		export const INSTANCE_SETTINGS: string;
+		export const ITEM_SELECTOR: string;
+	}
+
 	namespace PropsValues {
 		export const UPLOAD_SERVLET_REQUEST_IMPL_MAX_SIZE: number;
 	}
@@ -164,22 +175,26 @@ declare module Liferay {
 		export type Immutable<T> = T extends Builtin
 			? T
 			: T extends Map<infer K, infer V>
-			? ReadonlyMap<Immutable<K>, Immutable<V>>
-			: T extends ReadonlyMap<infer K, infer V>
-			? ReadonlyMap<Immutable<K>, Immutable<V>>
-			: T extends WeakMap<infer K, infer V>
-			? WeakMap<Immutable<K>, Immutable<V>>
-			: T extends Set<infer U>
-			? ReadonlySet<Immutable<U>>
-			: T extends ReadonlySet<infer U>
-			? ReadonlySet<Immutable<U>>
-			: T extends WeakSet<infer U>
-			? WeakSet<Immutable<U>>
-			: T extends Promise<infer U>
-			? Promise<Immutable<U>>
-			: T extends {}
-			? {readonly [K in keyof T]: Immutable<T[K]>}
-			: Readonly<T>;
+				? ReadonlyMap<Immutable<K>, Immutable<V>>
+				: T extends ReadonlyMap<infer K, infer V>
+					? ReadonlyMap<Immutable<K>, Immutable<V>>
+					: T extends WeakMap<infer K, infer V>
+						? WeakMap<Immutable<K>, Immutable<V>>
+						: T extends Set<infer U>
+							? ReadonlySet<Immutable<U>>
+							: T extends ReadonlySet<infer U>
+								? ReadonlySet<Immutable<U>>
+								: T extends WeakSet<infer U>
+									? WeakSet<Immutable<U>>
+									: T extends Promise<infer U>
+										? Promise<Immutable<U>>
+										: T extends {}
+											? {
+													readonly [K in keyof T]: Immutable<
+														T[K]
+													>;
+												}
+											: Readonly<T>;
 
 		const ATOM = 'Liferay.State.ATOM';
 		const SELECTOR = 'Liferay.State.SELECTOR';
@@ -233,11 +248,19 @@ declare module Liferay {
 		export function getCompanyId(): string;
 		export function getDefaultLanguageId(): Language.Locale;
 		export function getLanguageId(): Language.Locale;
+		export function getLayoutRelativeControlPanelURL(): string;
+		export function getPathContext(): string;
+		export function getPathMain(): string;
 		export function getPathThemeImages(): string;
 		export function getPathThemeSpritemap(): string;
 		export function getPortalURL(): string;
+		export function getRealUserId(): string;
 		export function getSiteGroupId(): number;
+		export function getTimeZone(): string;
+		export function getUserId(): string;
 		export function isControlPanel(): boolean;
+		export function isImpersonated(): boolean;
+		export function isSignedIn(): boolean;
 	}
 
 	namespace Util {
@@ -440,6 +463,8 @@ declare module Liferay {
 			name?: string
 		): Array<number> | '';
 
+		export function getDOM(arg: any): HTMLElement | null;
+
 		export function getUncheckedCheckboxes(
 			form: HTMLFormElement,
 			except: string,
@@ -520,71 +545,6 @@ declare module Liferay {
 		export function objectToURLSearchParams(
 			object: Object
 		): URLSearchParams;
-
-		export function openModal(props: Object): void;
-
-		export function openPortletModal(
-			containerProps: Object,
-			footerCssClass: string,
-			headerCssClass: string,
-			iframeBodyCssClass: string,
-			onClose: () => void,
-			portletSelector: string,
-			subTitle: string,
-			title: string,
-			url: string
-		): void;
-
-		export function openSelectionModal(
-			buttonAddLabel: string,
-			buttonCancelLabel: string,
-			containerProps: Object,
-			customSelectEvent: boolean,
-			height: string,
-			id: string,
-			iframeBodyCssClass: string,
-			multiple: boolean,
-			onClose: () => void,
-			onSelect: () => void,
-			selectEventName: string,
-			selectedData: any,
-			size: 'full-screen' | 'lg' | 'md' | 'sm',
-			title: string,
-			url: string,
-			zIndex: number
-		): void;
-
-		/**
-		 * Function that implements the Toast pattern, which allows to present feedback
-		 * to user actions as a toast message in the lower left corner of the page
-		 */
-		export function openToast({
-			autoClose,
-			container,
-			containerId,
-			message,
-			onClick,
-			onClose,
-			renderData,
-			title,
-			toastProps,
-			type,
-			variant,
-		}: {
-			autoClose?: number | boolean;
-			container?: HTMLElement;
-			containerId?: string;
-			message?: string;
-			onClick?: () => void;
-			onClose?: () => void;
-			renderData?: {portletId: string};
-			title?: string;
-			toastProps?: Object;
-			type?: string;
-			variant?: string;
-		}): void;
-
-		export function openWindow(config: object, callback?: Function): void;
 
 		/**
 		 * Submits the form, with optional setting of form elements.
@@ -695,8 +655,6 @@ declare module Liferay {
 		filterFn?: (component: any, componentConfigs: any) => boolean
 	): void;
 
-	export function detach(event: string, callback?: () => void): void;
-
 	/**
 	 * Clears the component promises map to make sure pending promises don't get
 	 * accidentally resolved at a later stage if a component with the same ID
@@ -718,13 +676,12 @@ declare module Liferay {
 
 	export function namespace(object: Object, path: string): Object;
 
-	export function on(events: string | string[], callback?: () => void): void;
-
 	export function SideNavigation(
 		toggler: HTMLElement,
 		options?: Object
 	): void;
 }
+
 interface ThemeDisplay {
 	isSignedIn(): boolean;
 	isStatePopUp(): boolean;

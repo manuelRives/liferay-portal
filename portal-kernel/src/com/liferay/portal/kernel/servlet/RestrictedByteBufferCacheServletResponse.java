@@ -5,18 +5,19 @@
 
 package com.liferay.portal.kernel.servlet;
 
+import com.liferay.petra.io.OutputStreamWriter;
+import com.liferay.petra.io.unsync.UnsyncPrintWriter;
 import com.liferay.portal.kernel.internal.servlet.RestrictedByteArrayCacheOutputStream;
 import com.liferay.portal.kernel.internal.servlet.RestrictedByteArrayCacheOutputStream.FlushPreAction;
-import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.nio.ByteBuffer;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Shuyang Zhou
@@ -103,8 +104,10 @@ public class RestrictedByteBufferCacheServletResponse
 				servletResponse.getOutputStream(), _cacheCapacity,
 				new FinishResponseFlushPreAction());
 
-		_printWriter = UnsyncPrintWriterPool.borrow(
-			_restrictedByteArrayCacheOutputStream, getCharacterEncoding());
+		_printWriter = new UnsyncPrintWriter(
+			new OutputStreamWriter(
+				_restrictedByteArrayCacheOutputStream, getCharacterEncoding(),
+				true));
 
 		calledGetWriter = true;
 

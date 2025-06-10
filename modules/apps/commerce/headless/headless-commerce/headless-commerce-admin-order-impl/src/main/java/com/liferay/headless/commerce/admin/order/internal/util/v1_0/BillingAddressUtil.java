@@ -5,14 +5,17 @@
 
 package com.liferay.headless.commerce.admin.order.internal.util.v1_0;
 
+import com.liferay.commerce.constants.CommerceAddressConstants;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.service.CommerceAddressService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.BillingAddress;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Region;
 import com.liferay.portal.kernel.service.CountryLocalServiceUtil;
+import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.service.RegionLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -24,16 +27,17 @@ import com.liferay.portal.kernel.util.Validator;
 public class BillingAddressUtil {
 
 	public static CommerceOrder addOrUpdateBillingAddress(
+			BillingAddress billingAddress,
 			CommerceAddressService commerceAddressService,
+			CommerceOrder commerceOrder,
 			CommerceOrderService commerceOrderService,
-			CommerceOrder commerceOrder, BillingAddress billingAddress,
-			ServiceContext serviceContext)
+			CountryService countryService, ServiceContext serviceContext)
 		throws Exception {
 
 		if (commerceOrder.getBillingAddressId() > 0) {
 			return _updateCommerceOrderBillingAddress(
-				commerceAddressService, commerceOrderService, commerceOrder,
-				billingAddress, serviceContext);
+				billingAddress, commerceAddressService, commerceOrder,
+				commerceOrderService, countryService, serviceContext);
 		}
 
 		CommerceAddress commerceAddress = _addCommerceAddress(
@@ -41,12 +45,13 @@ public class BillingAddressUtil {
 			serviceContext);
 
 		return commerceOrderService.updateBillingAddress(
-			commerceOrder.getCommerceOrderId(), commerceAddress.getName(),
-			commerceAddress.getDescription(), commerceAddress.getStreet1(),
-			commerceAddress.getStreet2(), commerceAddress.getStreet3(),
-			commerceAddress.getCity(), commerceAddress.getZip(),
-			commerceAddress.getRegionId(), commerceAddress.getCountryId(),
-			commerceAddress.getPhoneNumber(), serviceContext);
+			commerceOrder.getCommerceOrderId(), commerceAddress.getCountryId(),
+			commerceAddress.getRegionId(), commerceAddress.getCity(),
+			commerceAddress.getDescription(), commerceAddress.getName(),
+			commerceAddress.getStreet1(), commerceAddress.getStreet2(),
+			commerceAddress.getStreet3(), commerceAddress.getSubtype(),
+			commerceAddress.getPhoneNumber(), commerceAddress.getZip(),
+			serviceContext);
 	}
 
 	private static CommerceAddress _addCommerceAddress(
@@ -59,16 +64,27 @@ public class BillingAddressUtil {
 			commerceOrder.getCompanyId(), billingAddress.getCountryISOCode());
 
 		return commerceAddressService.addCommerceAddress(
-			commerceOrder.getModelClassName(),
-			commerceOrder.getCommerceOrderId(), billingAddress.getName(),
-			billingAddress.getDescription(), billingAddress.getStreet1(),
-			billingAddress.getStreet2(), billingAddress.getStreet3(),
-			billingAddress.getCity(), billingAddress.getZip(),
-			_getRegionId(null, country, billingAddress), country.getCountryId(),
-			billingAddress.getPhoneNumber(), false, false, serviceContext);
+			StringPool.BLANK, commerceOrder.getModelClassName(),
+			commerceOrder.getCommerceOrderId(), country.getCountryId(),
+			_getRegionId(billingAddress, null, country),
+			billingAddress.getCity(), billingAddress.getDescription(),
+			billingAddress.getName(), billingAddress.getPhoneNumber(),
+			billingAddress.getStreet1(), billingAddress.getStreet2(),
+			billingAddress.getStreet3(), billingAddress.getSubtype(),
+			CommerceAddressConstants.ADDRESS_TYPE_BILLING_AND_SHIPPING,
+			billingAddress.getZip(), serviceContext);
 	}
 
-	private static long _getCountryId(Country country) {
+	private static long _getCountryId(
+		BillingAddress billingAddress, CommerceAddress commerceAddress,
+		Country country) {
+
+		if (Validator.isNull(billingAddress.getCountryISOCode()) &&
+			(commerceAddress != null)) {
+
+			return commerceAddress.getCountryId();
+		}
+
 		if (country == null) {
 			return 0;
 		}
@@ -93,8 +109,8 @@ public class BillingAddressUtil {
 	}
 
 	private static long _getRegionId(
-			CommerceAddress commerceAddress, Country country,
-			BillingAddress billingAddress)
+			BillingAddress billingAddress, CommerceAddress commerceAddress,
+			Country country)
 		throws Exception {
 
 		if (Validator.isNull(billingAddress.getRegionISOCode()) &&
@@ -131,6 +147,14 @@ public class BillingAddressUtil {
 		return commerceAddress.getStreet3();
 	}
 
+	private static String _getSubtype(CommerceAddress commerceAddress) {
+		if (commerceAddress == null) {
+			return null;
+		}
+
+		return commerceAddress.getSubtype();
+	}
+
 	private static String _getZip(CommerceAddress commerceAddress) {
 		if (commerceAddress == null) {
 			return null;
@@ -140,39 +164,38 @@ public class BillingAddressUtil {
 	}
 
 	private static CommerceOrder _updateCommerceOrderBillingAddress(
+			BillingAddress billingAddress,
 			CommerceAddressService commerceAddressService,
+			CommerceOrder commerceOrder,
 			CommerceOrderService commerceOrderService,
-			CommerceOrder commerceOrder, BillingAddress billingAddress,
-			ServiceContext serviceContext)
+			CountryService countryService, ServiceContext serviceContext)
 		throws Exception {
 
 		CommerceAddress commerceAddress =
 			commerceAddressService.fetchCommerceAddress(
 				commerceOrder.getBillingAddressId());
-
-		Country country = null;
-
-		if (commerceAddress != null) {
-			country = commerceAddress.getCountry();
-		}
+		Country country = countryService.fetchCountryByA2(
+			commerceOrder.getCompanyId(), billingAddress.getCountryISOCode());
 
 		return commerceOrderService.updateBillingAddress(
-			commerceOrder.getCommerceOrderId(), billingAddress.getName(),
+			commerceOrder.getCommerceOrderId(),
+			_getCountryId(billingAddress, commerceAddress, country),
+			_getRegionId(billingAddress, commerceAddress, country),
+			billingAddress.getCity(),
 			GetterUtil.get(
 				billingAddress.getDescription(),
 				_getDescription(commerceAddress)),
-			billingAddress.getStreet1(),
+			billingAddress.getName(), billingAddress.getStreet1(),
 			GetterUtil.get(
 				billingAddress.getStreet2(), _getStreet2(commerceAddress)),
 			GetterUtil.get(
 				billingAddress.getStreet3(), _getStreet3(commerceAddress)),
-			billingAddress.getCity(),
-			GetterUtil.get(billingAddress.getZip(), _getZip(commerceAddress)),
-			_getRegionId(commerceAddress, country, billingAddress),
-			_getCountryId(country),
+			GetterUtil.get(
+				billingAddress.getSubtype(), _getSubtype(commerceAddress)),
 			GetterUtil.get(
 				billingAddress.getPhoneNumber(),
 				_getPhoneNumber(commerceAddress)),
+			GetterUtil.get(billingAddress.getZip(), _getZip(commerceAddress)),
 			serviceContext);
 	}
 

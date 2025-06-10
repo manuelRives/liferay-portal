@@ -19,15 +19,21 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -37,6 +43,7 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.site.navigation.exception.DuplicateSiteNavigationMenuExternalReferenceCodeException;
 import com.liferay.site.navigation.exception.NoSuchMenuException;
 import com.liferay.site.navigation.model.SiteNavigationMenu;
 import com.liferay.site.navigation.model.SiteNavigationMenuTable;
@@ -652,7 +659,6 @@ public class SiteNavigationMenuPersistenceImpl
 		"(siteNavigationMenu.uuid IS NULL OR siteNavigationMenu.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the site navigation menu where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchMenuException</code> if it could not be found.
@@ -838,68 +844,13 @@ public class SiteNavigationMenuPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		try (SafeCloseable safeCloseable =
-				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
-					SiteNavigationMenu.class)) {
+		SiteNavigationMenu siteNavigationMenu = fetchByUUID_G(uuid, groupId);
 
-			uuid = Objects.toString(uuid, "");
-
-			FinderPath finderPath = _finderPathCountByUUID_G;
-
-			Object[] finderArgs = new Object[] {uuid, groupId};
-
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if (count == null) {
-				StringBundler sb = new StringBundler(3);
-
-				sb.append(_SQL_COUNT_SITENAVIGATIONMENU_WHERE);
-
-				boolean bindUuid = false;
-
-				if (uuid.isEmpty()) {
-					sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-				}
-				else {
-					bindUuid = true;
-
-					sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-				}
-
-				sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-				String sql = sb.toString();
-
-				Session session = null;
-
-				try {
-					session = openSession();
-
-					Query query = session.createQuery(sql);
-
-					QueryPos queryPos = QueryPos.getInstance(query);
-
-					if (bindUuid) {
-						queryPos.add(uuid);
-					}
-
-					queryPos.add(groupId);
-
-					count = (Long)query.uniqueResult();
-
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-				catch (Exception exception) {
-					throw processException(exception);
-				}
-				finally {
-					closeSession(session);
-				}
-			}
-
-			return count.intValue();
+		if (siteNavigationMenu == null) {
+			return 0;
 		}
+
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -2035,7 +1986,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -2232,7 +2184,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -2382,7 +2335,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -3383,7 +3337,6 @@ public class SiteNavigationMenuPersistenceImpl
 		"siteNavigationMenu.companyId = ?";
 
 	private FinderPath _finderPathFetchByG_N;
-	private FinderPath _finderPathCountByG_N;
 
 	/**
 	 * Returns the site navigation menu where groupId = &#63; and name = &#63; or throws a <code>NoSuchMenuException</code> if it could not be found.
@@ -3569,68 +3522,13 @@ public class SiteNavigationMenuPersistenceImpl
 	 */
 	@Override
 	public int countByG_N(long groupId, String name) {
-		try (SafeCloseable safeCloseable =
-				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
-					SiteNavigationMenu.class)) {
+		SiteNavigationMenu siteNavigationMenu = fetchByG_N(groupId, name);
 
-			name = Objects.toString(name, "");
-
-			FinderPath finderPath = _finderPathCountByG_N;
-
-			Object[] finderArgs = new Object[] {groupId, name};
-
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if (count == null) {
-				StringBundler sb = new StringBundler(3);
-
-				sb.append(_SQL_COUNT_SITENAVIGATIONMENU_WHERE);
-
-				sb.append(_FINDER_COLUMN_G_N_GROUPID_2);
-
-				boolean bindName = false;
-
-				if (name.isEmpty()) {
-					sb.append(_FINDER_COLUMN_G_N_NAME_3);
-				}
-				else {
-					bindName = true;
-
-					sb.append(_FINDER_COLUMN_G_N_NAME_2);
-				}
-
-				String sql = sb.toString();
-
-				Session session = null;
-
-				try {
-					session = openSession();
-
-					Query query = session.createQuery(sql);
-
-					QueryPos queryPos = QueryPos.getInstance(query);
-
-					queryPos.add(groupId);
-
-					if (bindName) {
-						queryPos.add(name);
-					}
-
-					count = (Long)query.uniqueResult();
-
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-				catch (Exception exception) {
-					throw processException(exception);
-				}
-				finally {
-					closeSession(session);
-				}
-			}
-
-			return count.intValue();
+		if (siteNavigationMenu == null) {
+			return 0;
 		}
+
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_N_GROUPID_2 =
@@ -4236,7 +4134,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -4453,7 +4352,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -4627,7 +4527,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -5805,7 +5706,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -6009,7 +5911,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -6763,7 +6666,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -6967,7 +6871,8 @@ public class SiteNavigationMenuPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SiteNavigationMenuModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SiteNavigationMenuModelImpl.ORDER_BY_SQL);
@@ -7156,6 +7061,219 @@ public class SiteNavigationMenuPersistenceImpl
 	private static final String _FINDER_COLUMN_G_A_AUTO_2_SQL =
 		"siteNavigationMenu.auto_ = ?";
 
+	private FinderPath _finderPathFetchByERC_G;
+
+	/**
+	 * Returns the site navigation menu where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchMenuException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching site navigation menu
+	 * @throws NoSuchMenuException if a matching site navigation menu could not be found
+	 */
+	@Override
+	public SiteNavigationMenu findByERC_G(
+			String externalReferenceCode, long groupId)
+		throws NoSuchMenuException {
+
+		SiteNavigationMenu siteNavigationMenu = fetchByERC_G(
+			externalReferenceCode, groupId);
+
+		if (siteNavigationMenu == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("externalReferenceCode=");
+			sb.append(externalReferenceCode);
+
+			sb.append(", groupId=");
+			sb.append(groupId);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchMenuException(sb.toString());
+		}
+
+		return siteNavigationMenu;
+	}
+
+	/**
+	 * Returns the site navigation menu where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching site navigation menu, or <code>null</code> if a matching site navigation menu could not be found
+	 */
+	@Override
+	public SiteNavigationMenu fetchByERC_G(
+		String externalReferenceCode, long groupId) {
+
+		return fetchByERC_G(externalReferenceCode, groupId, true);
+	}
+
+	/**
+	 * Returns the site navigation menu where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching site navigation menu, or <code>null</code> if a matching site navigation menu could not be found
+	 */
+	@Override
+	public SiteNavigationMenu fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SiteNavigationMenu.class)) {
+
+			externalReferenceCode = Objects.toString(externalReferenceCode, "");
+
+			Object[] finderArgs = null;
+
+			if (useFinderCache) {
+				finderArgs = new Object[] {externalReferenceCode, groupId};
+			}
+
+			Object result = null;
+
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByERC_G, finderArgs, this);
+			}
+
+			if (result instanceof SiteNavigationMenu) {
+				SiteNavigationMenu siteNavigationMenu =
+					(SiteNavigationMenu)result;
+
+				if (!Objects.equals(
+						externalReferenceCode,
+						siteNavigationMenu.getExternalReferenceCode()) ||
+					(groupId != siteNavigationMenu.getGroupId())) {
+
+					result = null;
+				}
+			}
+
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
+
+				sb.append(_SQL_SELECT_SITENAVIGATIONMENU_WHERE);
+
+				boolean bindExternalReferenceCode = false;
+
+				if (externalReferenceCode.isEmpty()) {
+					sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3);
+				}
+				else {
+					bindExternalReferenceCode = true;
+
+					sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2);
+				}
+
+				sb.append(_FINDER_COLUMN_ERC_G_GROUPID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindExternalReferenceCode) {
+						queryPos.add(externalReferenceCode);
+					}
+
+					queryPos.add(groupId);
+
+					List<SiteNavigationMenu> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByERC_G, finderArgs, list);
+						}
+					}
+					else {
+						SiteNavigationMenu siteNavigationMenu = list.get(0);
+
+						result = siteNavigationMenu;
+
+						cacheResult(siteNavigationMenu);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (SiteNavigationMenu)result;
+			}
+		}
+	}
+
+	/**
+	 * Removes the site navigation menu where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the site navigation menu that was removed
+	 */
+	@Override
+	public SiteNavigationMenu removeByERC_G(
+			String externalReferenceCode, long groupId)
+		throws NoSuchMenuException {
+
+		SiteNavigationMenu siteNavigationMenu = findByERC_G(
+			externalReferenceCode, groupId);
+
+		return remove(siteNavigationMenu);
+	}
+
+	/**
+	 * Returns the number of site navigation menus where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching site navigation menus
+	 */
+	@Override
+	public int countByERC_G(String externalReferenceCode, long groupId) {
+		SiteNavigationMenu siteNavigationMenu = fetchByERC_G(
+			externalReferenceCode, groupId);
+
+		if (siteNavigationMenu == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2 =
+		"siteNavigationMenu.externalReferenceCode = ? AND ";
+
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3 =
+		"(siteNavigationMenu.externalReferenceCode IS NULL OR siteNavigationMenu.externalReferenceCode = '') AND ";
+
+	private static final String _FINDER_COLUMN_ERC_G_GROUPID_2 =
+		"siteNavigationMenu.groupId = ?";
+
 	public SiteNavigationMenuPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
@@ -7201,6 +7319,14 @@ public class SiteNavigationMenuPersistenceImpl
 				new Object[] {
 					siteNavigationMenu.getGroupId(),
 					siteNavigationMenu.getName()
+				},
+				siteNavigationMenu);
+
+			finderCache.putResult(
+				_finderPathFetchByERC_G,
+				new Object[] {
+					siteNavigationMenu.getExternalReferenceCode(),
+					siteNavigationMenu.getGroupId()
 				},
 				siteNavigationMenu);
 		}
@@ -7295,8 +7421,6 @@ public class SiteNavigationMenuPersistenceImpl
 			};
 
 			finderCache.putResult(
-				_finderPathCountByUUID_G, args, Long.valueOf(1));
-			finderCache.putResult(
 				_finderPathFetchByUUID_G, args, siteNavigationMenuModelImpl);
 
 			args = new Object[] {
@@ -7304,9 +7428,16 @@ public class SiteNavigationMenuPersistenceImpl
 				siteNavigationMenuModelImpl.getName()
 			};
 
-			finderCache.putResult(_finderPathCountByG_N, args, Long.valueOf(1));
 			finderCache.putResult(
 				_finderPathFetchByG_N, args, siteNavigationMenuModelImpl);
+
+			args = new Object[] {
+				siteNavigationMenuModelImpl.getExternalReferenceCode(),
+				siteNavigationMenuModelImpl.getGroupId()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByERC_G, args, siteNavigationMenuModelImpl);
 		}
 	}
 
@@ -7453,6 +7584,72 @@ public class SiteNavigationMenuPersistenceImpl
 			String uuid = PortalUUIDUtil.generate();
 
 			siteNavigationMenu.setUuid(uuid);
+		}
+
+		if (Validator.isNull(siteNavigationMenu.getExternalReferenceCode())) {
+			siteNavigationMenu.setExternalReferenceCode(
+				siteNavigationMenu.getUuid());
+		}
+		else {
+			if (!Objects.equals(
+					siteNavigationMenuModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					siteNavigationMenu.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = siteNavigationMenu.getCompanyId();
+
+					long groupId = siteNavigationMenu.getGroupId();
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = siteNavigationMenu.getPrimaryKey();
+					}
+
+					try {
+						siteNavigationMenu.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								SiteNavigationMenu.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								siteNavigationMenu.getExternalReferenceCode(),
+								null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
+			SiteNavigationMenu ercSiteNavigationMenu = fetchByERC_G(
+				siteNavigationMenu.getExternalReferenceCode(),
+				siteNavigationMenu.getGroupId());
+
+			if (isNew) {
+				if (ercSiteNavigationMenu != null) {
+					throw new DuplicateSiteNavigationMenuExternalReferenceCodeException(
+						"Duplicate site navigation menu with external reference code " +
+							siteNavigationMenu.getExternalReferenceCode() +
+								" and group " +
+									siteNavigationMenu.getGroupId());
+				}
+			}
+			else {
+				if ((ercSiteNavigationMenu != null) &&
+					(siteNavigationMenu.getSiteNavigationMenuId() !=
+						ercSiteNavigationMenu.getSiteNavigationMenuId())) {
+
+					throw new DuplicateSiteNavigationMenuExternalReferenceCodeException(
+						"Duplicate site navigation menu with external reference code " +
+							siteNavigationMenu.getExternalReferenceCode() +
+								" and group " +
+									siteNavigationMenu.getGroupId());
+				}
+			}
 		}
 
 		ServiceContext serviceContext =
@@ -7999,26 +8196,29 @@ public class SiteNavigationMenuPersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
 		ctStrictColumnNames.add("groupId");
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
 		ctIgnoreColumnNames.add("modifiedDate");
-		ctStrictColumnNames.add("name");
-		ctStrictColumnNames.add("type_");
-		ctStrictColumnNames.add("auto_");
-		ctStrictColumnNames.add("lastPublishDate");
+		ctMergeColumnNames.add("name");
+		ctMergeColumnNames.add("type_");
+		ctMergeColumnNames.add("auto_");
+		ctMergeColumnNames.add("lastPublishDate");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("siteNavigationMenuId"));
@@ -8028,6 +8228,9 @@ public class SiteNavigationMenuPersistenceImpl
 		_uniqueIndexColumnNames.add(new String[] {"uuid_", "groupId"});
 
 		_uniqueIndexColumnNames.add(new String[] {"groupId", "name"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "groupId"});
 	}
 
 	/**
@@ -8072,11 +8275,6 @@ public class SiteNavigationMenuPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
-
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
 
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
@@ -8143,11 +8341,6 @@ public class SiteNavigationMenuPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"groupId", "name"}, true);
 
-		_finderPathCountByG_N = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_N",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "name"}, false);
-
 		_finderPathWithPaginationFindByG_LikeN = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_LikeN",
 			new String[] {
@@ -8199,6 +8392,11 @@ public class SiteNavigationMenuPersistenceImpl
 			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_A",
 			new String[] {Long.class.getName(), Boolean.class.getName()},
 			new String[] {"groupId", "auto_"}, false);
+
+		_finderPathFetchByERC_G = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_G",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "groupId"}, true);
 
 		SiteNavigationMenuUtil.setPersistence(this);
 	}

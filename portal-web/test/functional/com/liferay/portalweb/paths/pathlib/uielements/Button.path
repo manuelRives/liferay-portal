@@ -381,6 +381,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>DOWNLOAD_BUTTON_ON_PORTLET</td>
+	<td>//button[@type='button']//span[text()='Download']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>DOWNLOAD_SIDEBAR</td>
 	<td>//div[contains(@class,'sidebar-section')]//a[contains(@class,'btn') and contains(.,'Download')]</td>
 	<td></td>
@@ -437,12 +442,12 @@
 </tr>
 <tr>
 	<td>EXPORT_MODAL</td>
-	<td>//div[contains(@class,'btn-group-item')]/button[contains(@class,'btn') and contains(.,'Export')]</td>
+	<td>//div[contains(@class,'btn-group-spaced')]/button[contains(@class,'btn') and contains(.,'Export')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>EXPORT_MODAL_DISABLED</td>
-	<td>//div[contains(@class,'btn-group-item')]/button[@disabled and contains(.,'Export')]</td>
+	<td>//div[contains(@class,'btn-group-spaced')]/button[@disabled and contains(.,'Export')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -473,11 +478,6 @@
 <tr>
 	<td>IGNORE</td>
 	<td>//button[contains(.,'Ignore')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>IGNORE_REDIRECT_URLS</td>
-	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-hidden')]]</td>
 	<td></td>
 </tr>
 <tr>
@@ -527,7 +527,7 @@
 </tr>
 <tr>
 	<td>LOCALIZATION_GENERIC</td>
-	<td>//div[contains(@class,'form-group')]//div[contains(@class,'localized')]//button[contains(@class,'localized')] | //button[contains(@class,'localized')]</td>
+	<td>//div[contains(@class,'form-group')]//div[contains(@class,'localized')]//button[contains(@class,'localized')] | //button[contains(@class,'localized')] | //div[contains(@class,'translation-manager')]/button</td>
 	<td></td>
 </tr>
 <tr>
@@ -548,6 +548,11 @@
 <tr>
 	<td>LOCALIZATION_SUMMARY</td>
 	<td>//button[@id='_com_liferay_journal_web_portlet_JournalPortlet__com_liferay_journal_web_portlet_JournalPortlet_descriptionMapAsXMLMenu']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LOCALIZATION_TRANSLATED</td>
+	<td>//div[@role='group']//ul[@class='tbar-nav']//button[@role='combobox']</td>
 	<td></td>
 </tr>
 <tr>
@@ -577,12 +582,12 @@
 </tr>
 <tr>
 	<td>MOVE_AVAILABLE_TO_CURRENT</td>
-	<td>//button[@title='Move selected items from Available to Current.']</td>
+	<td>//button[@aria-label='Move selected items from Available to Current.']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MOVE_CURRENT_TO_AVAILABLE</td>
-	<td>//button[@title='Move selected items from Current to Available.']</td>
+	<td>//button[@aria-label='Move selected items from Current to Available.']</td>
 	<td></td>
 </tr>
 <tr>
@@ -637,7 +642,7 @@
 </tr>
 <tr>
 	<td>PLUS</td>
-	<td>//button[not(contains(@class,'borderless'))][not(contains(@class,'btn-unstyled') or contains(@class,'none'))][*[contains(@class,'icon-plus')]] | //*[self::a or self::button][contains(@class,'btn-primary')][normalize-space()='New']</td>
+	<td>//button[not(contains(@class,'borderless'))][not(contains(@class,'btn-unstyled') or contains(@class,'none'))][*[contains(@class,'icon-plus')]] | //*[self::a or self::button][contains(@class,'btn-primary')][normalize-space()='New'] | //button[not(contains(@class,'d-md-none'))][contains(@class, 'd-md-flex')][contains(@data-qa-id,'creationMenuNewButton')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -857,7 +862,7 @@
 </tr>
 <tr>
 	<td>TRANSLATIONS_LOCALIZATION</td>
-	<td>//div[contains(@class,'dropdown')]//button[contains(@class,'dropdown-toggle')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')] | //button[contains(@aria-haspopup,'listbox')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')]</td>
+	<td>//div[contains(@class,'dropdown')]//button[contains(@class,'dropdown-toggle')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')] | //button[contains(@aria-haspopup,'listbox')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')] | //button[contains(@aria-haspopup,'true')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -957,7 +962,7 @@
 </tr>
 <tr>
 	<td>SUBMIT_FOR_WORKFLOW_DISABLED</td>
-	<td>//div[contains(@class,'btn-group-item')]//button[@disabled and contains(.,'Submit for Workflow')]</td>
+	<td>//div[contains(@class,'btn-group-spaced')]//button[@disabled and contains(.,'Submit for Workflow')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -973,11 +978,6 @@
 <tr>
 	<td>UNDO</td>
 	<td>//button[contains(.,'Undo')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>UNIGNORE_REDIRECT_URLS</td>
-	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-view')]]</td>
 	<td></td>
 </tr>
 <tr>

@@ -32,12 +32,14 @@ public class MBObjectsModifiedDateComparator<T> extends OrderByComparator<T> {
 		"modelCategory", "priority", "modifiedDate", "name", "modelId"
 	};
 
-	public MBObjectsModifiedDateComparator() {
-		this(false);
-	}
+	public static MBObjectsModifiedDateComparator getInstance(
+		boolean ascending) {
 
-	public MBObjectsModifiedDateComparator(boolean ascending) {
-		_ascending = ascending;
+		if (ascending) {
+			return _INSTANCE_ASCENDING;
+		}
+
+		return _INSTANCE_DESCENDING;
 	}
 
 	@Override
@@ -80,14 +82,24 @@ public class MBObjectsModifiedDateComparator<T> extends OrderByComparator<T> {
 			return mbCategory.getModifiedDate();
 		}
 
-		if (object instanceof MBThread) {
-			MBThread mbThread = (MBThread)object;
-
-			return mbThread.getModifiedDate();
+		if (!(object instanceof MBThread)) {
+			return null;
 		}
 
-		return null;
+		MBThread mbThread = (MBThread)object;
+
+		return mbThread.getModifiedDate();
 	}
+
+	private MBObjectsModifiedDateComparator(boolean ascending) {
+		_ascending = ascending;
+	}
+
+	private static final MBObjectsModifiedDateComparator _INSTANCE_ASCENDING =
+		new MBObjectsModifiedDateComparator(true);
+
+	private static final MBObjectsModifiedDateComparator _INSTANCE_DESCENDING =
+		new MBObjectsModifiedDateComparator(false);
 
 	private final boolean _ascending;
 

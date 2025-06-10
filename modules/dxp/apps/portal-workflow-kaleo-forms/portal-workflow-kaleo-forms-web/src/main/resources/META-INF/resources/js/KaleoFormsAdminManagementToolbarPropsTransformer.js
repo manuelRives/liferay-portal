@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {getCheckedCheckboxes, openConfirmModal} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {getCheckedCheckboxes} from 'frontend-js-web';
 
 export default function propsTransformer({
 	additionalProps: {deleteKaleoProcessURL},
@@ -28,9 +29,10 @@ export default function propsTransformer({
 								otherProps.searchContainerId
 							);
 
-							const kaleoProcessIdsElement = document.getElementById(
-								`${portletNamespace}kaleoProcessIds`
-							);
+							const kaleoProcessIdsElement =
+								document.getElementById(
+									`${portletNamespace}kaleoProcessIds`
+								);
 
 							if (
 								!form ||

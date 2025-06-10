@@ -7,24 +7,29 @@ package com.liferay.portal.service.impl;
 
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.DuplicateOrganizationException;
+import com.liferay.portal.kernel.exception.NoSuchOrganizationException;
 import com.liferay.portal.kernel.exception.OrganizationNameException;
 import com.liferay.portal.kernel.exception.OrganizationParentException;
 import com.liferay.portal.kernel.exception.OrganizationTypeException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredOrganizationException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.kernel.model.ListTypeConstants;
+import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.model.Region;
@@ -316,6 +321,14 @@ public class OrganizationLocalServiceImpl
 		organization.setCountryId(countryId);
 		organization.setStatusListTypeId(statusListTypeId);
 		organization.setComments(comments);
+
+		if (LazyReferencingThreadLocal.isIncompleteModel()) {
+			organization.setStatus(WorkflowConstants.STATUS_INCOMPLETE);
+		}
+		else {
+			organization.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
 		organization.setExpandoBridgeAttributes(serviceContext);
 
 		organization = organizationPersistence.update(organization);
@@ -699,6 +712,48 @@ public class OrganizationLocalServiceImpl
 		return organizationFinder.findO_ByNoAssets();
 	}
 
+	@Override
+	public Organization getOrAddIncompleteOrganization(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws Exception {
+
+		Organization organization = fetchOrganizationByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		if (organization != null) {
+			return organization;
+		}
+
+		if (!LazyReferencingThreadLocal.isEnabled()) {
+			throw new NoSuchOrganizationException(
+				StringBundler.concat(
+					"Unable to find organization with external reference code ",
+					externalReferenceCode, " and company ", companyId));
+		}
+
+		if (Validator.isNull(name) ||
+			(fetchOrganization(companyId, name) != null)) {
+
+			name = externalReferenceCode;
+		}
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setIncompleteModelWithSafeCloseable(
+					true)) {
+
+			String[] types = getTypes();
+
+			ListType listType = _listTypeLocalService.getListType(
+				companyId, ListTypeConstants.ORGANIZATION_STATUS_DEFAULT,
+				ListTypeConstants.ORGANIZATION_STATUS);
+
+			return addOrganization(
+				externalReferenceCode, userId, 0, name, types[0], 0, 0,
+				listType.getListTypeId(), StringPool.BLANK, false, null);
+		}
+	}
+
 	/**
 	 * Returns the organization with the name.
 	 *
@@ -759,7 +814,7 @@ public class OrganizationLocalServiceImpl
 		}
 
 		if (orderByComparator == null) {
-			orderByComparator = new OrganizationNameComparator(true);
+			orderByComparator = OrganizationNameComparator.getInstance(true);
 		}
 
 		Collections.sort(organizations, orderByComparator);
@@ -1063,15 +1118,15 @@ public class OrganizationLocalServiceImpl
 		List<Organization> allOrganizations,
 		List<Organization> availableOrganizations) {
 
-		List<Organization> subsetOrganizations = new ArrayList<>();
+		return TransformUtil.transform(
+			allOrganizations,
+			organization -> {
+				if (availableOrganizations.contains(organization)) {
+					return organization;
+				}
 
-		for (Organization organization : allOrganizations) {
-			if (availableOrganizations.contains(organization)) {
-				subsetOrganizations.add(organization);
-			}
-		}
-
-		return subsetOrganizations;
+				return null;
+			});
 	}
 
 	@Override
@@ -1339,7 +1394,7 @@ public class OrganizationLocalServiceImpl
 					return organizationPersistence.findByGtO_C_P(
 						previousId, companyId, parentPrimaryKey,
 						QueryUtil.ALL_POS, size,
-						new OrganizationIdComparator(true));
+						OrganizationIdComparator.getInstance(true));
 				}
 
 			});
@@ -1453,7 +1508,7 @@ public class OrganizationLocalServiceImpl
 		return search(
 			companyId, parentOrganizationId, keywords, type, regionId,
 			countryId, params, start, end,
-			new OrganizationNameComparator(true));
+			OrganizationNameComparator.getInstance(true));
 	}
 
 	/**
@@ -1567,7 +1622,7 @@ public class OrganizationLocalServiceImpl
 		return search(
 			companyId, parentOrganizationId, name, type, street, city, zip,
 			regionId, countryId, params, andOperator, start, end,
-			new OrganizationNameComparator(true));
+			OrganizationNameComparator.getInstance(true));
 	}
 
 	/**
@@ -2125,6 +2180,10 @@ public class OrganizationLocalServiceImpl
 			userFileUploadsSettings.getImageMaxHeight(),
 			userFileUploadsSettings.getImageMaxWidth());
 
+		if (organization.getStatus() == WorkflowConstants.STATUS_INCOMPLETE) {
+			organization.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
 		organization.setExpandoBridgeAttributes(serviceContext);
 
 		organization = organizationPersistence.update(organization);
@@ -2438,7 +2497,7 @@ public class OrganizationLocalServiceImpl
 						organization.getOrganizationId(),
 						StringPool.FORWARD_SLASH))[0],
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-				new OrganizationNameComparator(true));
+				OrganizationNameComparator.getInstance(true));
 
 		long[] organizationIds = new long[organizations.size()];
 
@@ -2502,21 +2561,12 @@ public class OrganizationLocalServiceImpl
 
 		String treePath = organization.getTreePath();
 
-		if (treePath.contains(
-				StringPool.SLASH + parentOrganizationId + StringPool.SLASH)) {
-
-			return true;
-		}
-
-		return false;
+		return treePath.contains(
+			StringPool.SLASH + parentOrganizationId + StringPool.SLASH);
 	}
 
 	protected boolean isUseCustomSQL(LinkedHashMap<String, Object> params) {
-		if (MapUtil.isEmpty(params)) {
-			return false;
-		}
-
-		return true;
+		return MapUtil.isNotEmpty(params);
 	}
 
 	protected void reindex(long companyId, long[] userIds)
@@ -2619,7 +2669,15 @@ public class OrganizationLocalServiceImpl
 		}
 
 		if (Validator.isNull(name)) {
-			throw new OrganizationNameException();
+			throw new OrganizationNameException.MustNotBeNull();
+		}
+
+		int maxLength = ModelHintsUtil.getMaxLength(
+			Organization.class.getName(), "name");
+
+		if (name.length() > maxLength) {
+			throw new OrganizationNameException.MustNotExceedMaximumLength(
+				name, maxLength);
 		}
 
 		Organization organization = organizationPersistence.fetchByC_N(
@@ -2640,7 +2698,10 @@ public class OrganizationLocalServiceImpl
 		boolean countryRequired = organizationTypesSettings.isCountryRequired(
 			type);
 
-		if (countryRequired || (countryId > 0)) {
+		if ((countryRequired &&
+			 !LazyReferencingThreadLocal.isIncompleteModel()) ||
+			(countryId > 0)) {
+
 			_countryPersistence.findByPrimaryKey(countryId);
 		}
 

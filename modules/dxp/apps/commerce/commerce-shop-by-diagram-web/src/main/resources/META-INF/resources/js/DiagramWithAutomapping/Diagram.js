@@ -7,7 +7,7 @@ import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
 import {useCommerceAccount, useCommerceCart} from 'commerce-frontend-js';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {
 	useCallback,
@@ -41,6 +41,7 @@ function Diagram({
 	commerceAccountId: initialAccountId,
 	commerceCurrencyCode,
 	datasetDisplayId,
+	guestOrderEnabled,
 	imageURL,
 	isAdmin,
 	orderUUID,
@@ -57,7 +58,10 @@ function Diagram({
 	const [highlightedTexts, setHighlightedTexts] = useState([]);
 	const chartInstanceRef = useRef(null);
 	const commerceAccount = useCommerceAccount({id: initialAccountId});
-	const commerceCart = useCommerceCart({id: initialCartId});
+	const commerceCart = useCommerceCart({
+		guestOrderEnabled,
+		initialCart: {id: initialCartId},
+	});
 	const isMounted = useIsMounted();
 	const svgRef = useRef(null);
 	const wrapperRef = useRef(null);
@@ -286,7 +290,7 @@ function Diagram({
 										mappedProduct:
 											newMappedProduct.mappedProduct,
 										quantity: newMappedProduct.quantity,
-								  }
+									}
 								: mappedProduct
 					);
 
@@ -295,7 +299,7 @@ function Diagram({
 								updatedMappedProduct.id === newMappedProduct.id
 									? newMappedProduct
 									: updatedMappedProduct
-						  )
+							)
 						: [...updatedMappedProducts, newMappedProduct];
 				});
 

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -231,8 +232,7 @@ public class ObjectStateLocalServiceUtil {
 	}
 
 	public static ObjectState fetchObjectStateFlowObjectState(
-			long listTypeEntryId, long objectStateFlowId)
-		throws PortalException {
+		long listTypeEntryId, long objectStateFlowId) {
 
 		return getService().fetchObjectStateFlowObjectState(
 			listTypeEntryId, objectStateFlowId);
@@ -364,13 +364,11 @@ public class ObjectStateLocalServiceUtil {
 	}
 
 	public static ObjectStateLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectStateLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectStateLocalService _service;
+	private static final Snapshot<ObjectStateLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			ObjectStateLocalServiceUtil.class, ObjectStateLocalService.class);
 
 }

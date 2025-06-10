@@ -19,11 +19,11 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 /**
  * @author Leonardo Barros
@@ -54,7 +54,7 @@ public class DDMFormInstanceRecordSearch
 				orderByAsc);
 		}
 		else {
-			orderByComparator = new DDMFormInstanceRecordIdComparator(
+			orderByComparator = DDMFormInstanceRecordIdComparator.getInstance(
 				orderByAsc);
 		}
 

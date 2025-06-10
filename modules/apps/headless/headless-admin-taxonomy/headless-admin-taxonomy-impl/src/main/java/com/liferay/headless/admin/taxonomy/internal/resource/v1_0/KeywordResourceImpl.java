@@ -6,10 +6,12 @@
 package com.liferay.headless.admin.taxonomy.internal.resource.v1_0;
 
 import com.liferay.asset.kernel.model.AssetTag;
+import com.liferay.asset.kernel.service.AssetTagGroupRelLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.asset.kernel.service.AssetTagService;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.Keyword;
 import com.liferay.headless.admin.taxonomy.internal.odata.entity.v1_0.KeywordEntityModel;
+import com.liferay.headless.admin.taxonomy.internal.util.TaxonomyGroupUtil;
 import com.liferay.headless.admin.taxonomy.resource.v1_0.KeywordResource;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -18,11 +20,20 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionList;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Type;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.search.BooleanClause;
+import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
+import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -38,15 +49,17 @@ import com.liferay.portal.vulcan.util.SearchUtil;
 import com.liferay.portlet.asset.model.impl.AssetTagImpl;
 import com.liferay.portlet.asset.service.permission.AssetTagsPermission;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.sql.Timestamp;
 
 import java.util.Date;
 import java.util.Map;
 
-import javax.ws.rs.core.MultivaluedMap;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.component.annotations.ServiceScope;
 
 /**
@@ -59,8 +72,40 @@ import org.osgi.service.component.annotations.ServiceScope;
 public class KeywordResourceImpl extends BaseKeywordResourceImpl {
 
 	@Override
+	public void deleteAssetLibraryKeywordByExternalReferenceCode(
+			Long assetLibraryId, String externalReferenceCode)
+		throws Exception {
+
+		AssetTag assetTag = _assetTagService.getAssetTagByExternalReferenceCode(
+			externalReferenceCode, assetLibraryId);
+
+		_assetTagService.deleteTag(assetTag.getTagId());
+	}
+
+	@Override
 	public void deleteKeyword(Long keywordId) throws Exception {
 		_assetTagService.deleteTag(keywordId);
+	}
+
+	@Override
+	public void deleteSiteKeywordByExternalReferenceCode(
+			Long siteId, String externalReferenceCode)
+		throws Exception {
+
+		AssetTag assetTag = _assetTagService.getAssetTagByExternalReferenceCode(
+			externalReferenceCode, siteId);
+
+		_assetTagService.deleteTag(assetTag.getTagId());
+	}
+
+	@Override
+	public Keyword getAssetLibraryKeywordByExternalReferenceCode(
+			Long assetLibraryId, String externalReferenceCode)
+		throws Exception {
+
+		return _toKeyword(
+			_assetTagLocalService.getAssetTagByExternalReferenceCode(
+				externalReferenceCode, assetLibraryId));
 	}
 
 	@Override
@@ -110,6 +155,58 @@ public class KeywordResourceImpl extends BaseKeywordResourceImpl {
 	}
 
 	@Override
+	public Page<Keyword> getKeywordsPage(
+			String search, Aggregation aggregation, Filter filter,
+			Pagination pagination, Sort[] sorts)
+		throws Exception {
+
+		if (!FeatureFlagManagerUtil.isEnabled("LPD-17564")) {
+			throw new UnsupportedOperationException();
+		}
+
+		return SearchUtil.search(
+			null,
+			booleanQuery -> {
+			},
+			filter, AssetTag.class.getName(), search, pagination,
+			queryConfig -> queryConfig.setSelectedFieldNames(
+				Field.ENTRY_CLASS_PK),
+			searchContext -> {
+				searchContext.addVulcanAggregation(aggregation);
+				searchContext.setAttribute(Field.NAME, search);
+
+				BooleanFilter booleanFilter = new BooleanFilter();
+
+				booleanFilter.addRequiredTerm(
+					Field.GROUP_ID,
+					TaxonomyGroupUtil.getCMSGroupId(
+						contextCompany.getCompanyId()));
+
+				searchContext.setBooleanClauses(
+					new BooleanClause[] {
+						BooleanClauseFactoryUtil.create(
+							new BooleanQueryImpl() {
+								{
+									if (filter != null) {
+										booleanFilter.add(
+											filter, BooleanClauseOccur.MUST);
+									}
+
+									setPreBooleanFilter(booleanFilter);
+								}
+							},
+							BooleanClauseOccur.MUST.getName())
+					});
+
+				searchContext.setCompanyId(contextCompany.getCompanyId());
+			},
+			sorts,
+			document -> _toKeyword(
+				_assetTagService.getTag(
+					GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)))));
+	}
+
+	@Override
 	public Page<Keyword> getKeywordsRankedPage(
 		String search, Long siteId, Pagination pagination) {
 
@@ -141,6 +238,16 @@ public class KeywordResourceImpl extends BaseKeywordResourceImpl {
 					this::_toAssetTag),
 				this::_toKeyword),
 			pagination, _getTotalCount(search, siteId));
+	}
+
+	@Override
+	public Keyword getSiteKeywordByExternalReferenceCode(
+			Long siteId, String externalReferenceCode)
+		throws Exception {
+
+		return _toKeyword(
+			_assetTagService.getAssetTagByExternalReferenceCode(
+				externalReferenceCode, siteId));
 	}
 
 	@Override
@@ -187,33 +294,127 @@ public class KeywordResourceImpl extends BaseKeywordResourceImpl {
 	}
 
 	@Override
+	public Keyword postKeyword(Keyword keyword) throws Exception {
+		if (!FeatureFlagManagerUtil.isEnabled("LPD-17564")) {
+			throw new UnsupportedOperationException();
+		}
+
+		Keyword postKeyword = postSiteKeyword(
+			TaxonomyGroupUtil.getCMSGroupId(contextCompany.getCompanyId()),
+			keyword);
+
+		_assetTagGroupRelLocalService.setAssetTagGroupRels(
+			postKeyword.getId(),
+			TaxonomyGroupUtil.getAssetLibraryGroupIds(
+				keyword.getAssetLibraries()));
+
+		return keyword;
+	}
+
+	@Override
 	public Keyword postSiteKeyword(Long siteId, Keyword keyword)
 		throws Exception {
 
 		return _toKeyword(
 			_assetTagService.addTag(
-				siteId, keyword.getName(), new ServiceContext()));
+				keyword.getExternalReferenceCode(), siteId, keyword.getName(),
+				new ServiceContext()));
+	}
+
+	@Override
+	public Keyword putAssetLibraryKeywordByExternalReferenceCode(
+			Long assetLibraryId, String externalReferenceCode, Keyword keyword)
+		throws Exception {
+
+		AssetTag assetTag =
+			_assetTagService.fetchAssetTagByExternalReferenceCode(
+				externalReferenceCode, assetLibraryId);
+
+		if (assetTag != null) {
+			return _toKeyword(
+				_assetTagService.updateTag(
+					externalReferenceCode, assetTag.getTagId(),
+					keyword.getName(), null));
+		}
+
+		return _toKeyword(
+			_assetTagService.addTag(
+				externalReferenceCode, assetLibraryId, keyword.getName(),
+				new ServiceContext()));
 	}
 
 	@Override
 	public Keyword putKeyword(Long keywordId, Keyword keyword)
 		throws Exception {
 
-		return _toKeyword(
-			_assetTagService.updateTag(keywordId, keyword.getName(), null));
+		AssetTag assetTag = _assetTagService.updateTag(
+			keyword.getExternalReferenceCode(), keywordId, keyword.getName(),
+			null);
+
+		if (FeatureFlagManagerUtil.isEnabled("LPD-17564") &&
+			ArrayUtil.isNotEmpty(keyword.getAssetLibraries())) {
+
+			_assetTagGroupRelLocalService.setAssetTagGroupRels(
+				assetTag.getTagId(),
+				TaxonomyGroupUtil.getAssetLibraryGroupIds(
+					keyword.getAssetLibraries()));
+		}
+
+		return _toKeyword(assetTag);
 	}
 
 	@Override
-	public void putKeywordSubscribe(Long tagId) throws Exception {
-		AssetTag assetTag = _assetTagLocalService.getAssetTag(tagId);
+	public void putKeywordMerge(Long toKeywordId, Long[] fromKeywordIds)
+		throws Exception {
+
+		if (!FeatureFlagManagerUtil.isEnabled("LPD-17564")) {
+			throw new UnsupportedOperationException();
+		}
+
+		for (long fromKeywordId : fromKeywordIds) {
+			_assetTagService.mergeTags(fromKeywordId, toKeywordId);
+		}
+
+		AssetTag assetTag = _assetTagService.getTag(toKeywordId);
+
+		_assetTagGroupRelLocalService.setAssetTagGroupRels(
+			assetTag.getTagId(),
+			new long[] {GroupConstants.ANY_PARENT_GROUP_ID});
+	}
+
+	@Override
+	public void putKeywordSubscribe(Long keywordId) throws Exception {
+		AssetTag assetTag = _assetTagLocalService.getAssetTag(keywordId);
 
 		_assetTagService.subscribeTag(
-			contextUser.getUserId(), assetTag.getGroupId(), tagId);
+			contextUser.getUserId(), assetTag.getGroupId(), keywordId);
 	}
 
 	@Override
-	public void putKeywordUnsubscribe(Long tagId) throws Exception {
-		_assetTagService.unsubscribeTag(contextUser.getUserId(), tagId);
+	public void putKeywordUnsubscribe(Long keywordId) throws Exception {
+		_assetTagService.unsubscribeTag(contextUser.getUserId(), keywordId);
+	}
+
+	@Override
+	public Keyword putSiteKeywordByExternalReferenceCode(
+			Long siteId, String externalReferenceCode, Keyword keyword)
+		throws Exception {
+
+		AssetTag assetTag =
+			_assetTagLocalService.fetchAssetTagByExternalReferenceCode(
+				externalReferenceCode, siteId);
+
+		if (assetTag != null) {
+			return _toKeyword(
+				_assetTagService.updateTag(
+					externalReferenceCode, assetTag.getTagId(),
+					keyword.getName(), null));
+		}
+
+		return _toKeyword(
+			_assetTagService.addTag(
+				externalReferenceCode, siteId, keyword.getName(),
+				new ServiceContext()));
 	}
 
 	@Override
@@ -325,7 +526,34 @@ public class KeywordResourceImpl extends BaseKeywordResourceImpl {
 	private Keyword _toKeyword(AssetTag assetTag) throws Exception {
 		return _keywordDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
-				contextAcceptLanguage.isAcceptAllLanguages(), null,
+				contextAcceptLanguage.isAcceptAllLanguages(),
+				HashMapBuilder.put(
+					"delete",
+					addAction(
+						ActionKeys.MANAGE_TAG, assetTag.getTagId(),
+						"deleteKeyword", _assetTagModelResourcePermission)
+				).put(
+					"get",
+					addAction(
+						ActionKeys.MANAGE_TAG, assetTag.getTagId(),
+						"getKeyword", _assetTagModelResourcePermission)
+				).put(
+					"replace",
+					addAction(
+						ActionKeys.MANAGE_TAG, assetTag.getTagId(),
+						"putKeyword", _assetTagModelResourcePermission)
+				).put(
+					"subscribe",
+					addAction(
+						ActionKeys.SUBSCRIBE, assetTag.getTagId(),
+						"putKeywordSubscribe", _assetTagModelResourcePermission)
+				).put(
+					"unsubscribe",
+					addAction(
+						ActionKeys.SUBSCRIBE, assetTag.getTagId(),
+						"putKeywordUnsubscribe",
+						_assetTagModelResourcePermission)
+				).build(),
 				_dtoConverterRegistry, assetTag.getTagId(),
 				contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
 				contextUser),
@@ -335,7 +563,18 @@ public class KeywordResourceImpl extends BaseKeywordResourceImpl {
 	private static final EntityModel _entityModel = new KeywordEntityModel();
 
 	@Reference
+	private AssetTagGroupRelLocalService _assetTagGroupRelLocalService;
+
+	@Reference
 	private AssetTagLocalService _assetTagLocalService;
+
+	@Reference(
+		policy = ReferencePolicy.DYNAMIC,
+		policyOption = ReferencePolicyOption.GREEDY,
+		target = "(model.class.name=com.liferay.asset.kernel.model.AssetTag)"
+	)
+	private volatile ModelResourcePermission<AssetTag>
+		_assetTagModelResourcePermission;
 
 	@Reference
 	private AssetTagService _assetTagService;

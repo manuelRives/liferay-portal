@@ -11,7 +11,7 @@
 DLAccessFromDesktopDisplayContext dlAccessFromDesktopDisplayContext = new DLAccessFromDesktopDisplayContext(request);
 %>
 
-<div id="<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>webDav" style="display: none;">
+<div class="hide" id="<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>webDav">
 	<div class="portlet-document-library">
 		<liferay-ui:message key="<%= dlAccessFromDesktopDisplayContext.getWebDAVHelpMessage() %>" />
 
@@ -56,8 +56,7 @@ DLAccessFromDesktopDisplayContext dlAccessFromDesktopDisplayContext = new DLAcce
 							webdavURLInput.focus();
 						}
 					},
-					title:
-						'<%= UnicodeLanguageUtil.get(request, "access-from-desktop") %>',
+					title: '<%= UnicodeLanguageUtil.get(request, "access-from-desktop") %>',
 				});
 			}
 		}

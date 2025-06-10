@@ -8,7 +8,6 @@ package com.liferay.gogo.shell.web.internal.portlet;
 import com.liferay.captcha.util.CaptchaUtil;
 import com.liferay.gogo.shell.web.internal.constants.GogoShellPortletKeys;
 import com.liferay.gogo.shell.web.internal.constants.GogoShellWebKeys;
-import com.liferay.portal.kernel.captcha.CaptchaException;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.language.Language;
@@ -24,21 +23,21 @@ import com.liferay.portal.kernel.util.TransientValue;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.apache.felix.service.command.CommandProcessor;
 import org.apache.felix.service.command.CommandSession;
@@ -58,14 +57,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.css-class-wrapper=portlet-gogo-shell",
 		"com.liferay.portlet.display-category=category.hidden",
 		"com.liferay.portlet.render-weight=50",
-		"javax.portlet.display-name=Gogo Shell",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + GogoShellPortletKeys.GOGO_SHELL,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Gogo Shell",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + GogoShellPortletKeys.GOGO_SHELL,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -91,12 +90,7 @@ public class GogoShellPortlet extends MVCPortlet {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		try {
-			CaptchaUtil.check(actionRequest);
-		}
-		catch (CaptchaException captchaException) {
-			throw new PortletException(captchaException);
-		}
+		CaptchaUtil.check(actionRequest);
 
 		String command = ParamUtil.getString(actionRequest, "command");
 
@@ -144,6 +138,14 @@ public class GogoShellPortlet extends MVCPortlet {
 			if (Validator.isNotNull(errorContent)) {
 				throw new Exception(errorContent);
 			}
+
+			String successMessage = ParamUtil.getString(
+				actionRequest, "successMessage");
+
+			SessionMessages.add(
+				actionRequest, "requestProcessed", successMessage);
+
+			sendRedirect(actionRequest, actionResponse);
 		}
 		catch (Exception exception) {
 			hideDefaultErrorMessage(actionRequest);
@@ -208,14 +210,13 @@ public class GogoShellPortlet extends MVCPortlet {
 
 		Object sessionAttribute = portletSession.getAttribute(name);
 
-		if (sessionAttribute instanceof TransientValue) {
-			TransientValue<T> transientValue =
-				(TransientValue<T>)sessionAttribute;
-
-			return transientValue.getValue();
+		if (!(sessionAttribute instanceof TransientValue)) {
+			return null;
 		}
 
-		return null;
+		TransientValue<T> transientValue = (TransientValue<T>)sessionAttribute;
+
+		return transientValue.getValue();
 	}
 
 	private void _initCommandSession(PortletRequest portletRequest) {

@@ -4,6 +4,7 @@
  */
 
 import {CollectionItemLayoutDataItem} from '../../types/layout_data/CollectionItemLayoutDataItem';
+import {FormLayoutDataItem} from '../../types/layout_data/FormLayoutDataItem';
 import {LayoutData, LayoutDataItem} from '../../types/layout_data/LayoutData';
 import {
 	FragmentEntryLink,
@@ -108,12 +109,12 @@ export default {
 	},
 
 	markItemForDeletion({
-		itemId,
+		itemIds,
 		onNetworkStatus,
 		portletIds = [],
 		segmentsExperienceId,
 	}: {
-		itemId: string;
+		itemIds: string[];
 		onNetworkStatus: OnNetworkStatus;
 		portletIds?: string[];
 		segmentsExperienceId: string;
@@ -125,7 +126,7 @@ export default {
 			config.markItemForDeletionURL,
 			{
 				body: {
-					itemId,
+					itemIds,
 					portletIds,
 					segmentsExperienceId,
 				},
@@ -134,24 +135,57 @@ export default {
 		);
 	},
 
-	moveItem({
+	moveItems({
+		itemIds,
+		onNetworkStatus,
+		parentItemIds,
+		positions,
+		segmentsExperienceId,
+	}: {
+		itemIds: string[];
+		onNetworkStatus: OnNetworkStatus;
+		parentItemIds: string[];
+		positions: number[];
+		segmentsExperienceId: string;
+	}) {
+		return draftServiceFetch<LayoutData>(
+			config.moveItemsURL,
+			{
+				body: {
+					itemIds,
+					parentItemIds,
+					positions,
+					segmentsExperienceId,
+				},
+			},
+			onNetworkStatus
+		);
+	},
+
+	moveStepper({
+		fragmentEntryLinkId,
 		itemId,
+		numberOfSteps,
 		onNetworkStatus,
 		parentItemId,
 		position,
 		segmentsExperienceId,
 	}: {
+		fragmentEntryLinkId: FragmentEntryLink['fragmentEntryLinkId'];
 		itemId: string;
+		numberOfSteps: number;
 		onNetworkStatus: OnNetworkStatus;
 		parentItemId: string;
 		position: number;
 		segmentsExperienceId: string;
 	}) {
 		return draftServiceFetch<LayoutData>(
-			config.moveItemURL,
+			config.moveStepperFragmentEntryLinkURL,
 			{
 				body: {
+					fragmentEntryLinkId,
 					itemId,
+					numberOfSteps,
 					parentItemId,
 					position,
 					segmentsExperienceId,
@@ -187,6 +221,45 @@ export default {
 					itemConfig: JSON.stringify(itemConfig),
 					itemId,
 					segmentsExperienceId,
+				},
+			},
+			onNetworkStatus
+		);
+	},
+
+	undoUpdateFormConfig({
+		addedItemIds,
+		itemConfig,
+		itemId,
+		movedItemIds,
+		onNetworkStatus,
+		removedItemIds,
+		segmentsExperienceId,
+		stepperFragmentEntryLinkId,
+	}: {
+		addedItemIds: string[];
+		itemConfig: FormLayoutDataItem['config'];
+		itemId: string;
+		movedItemIds: {itemId: string; parentId: string}[];
+		onNetworkStatus: OnNetworkStatus;
+		removedItemIds: string[];
+		segmentsExperienceId: string;
+		stepperFragmentEntryLinkId?: FragmentEntryLink['fragmentEntryLinkId'];
+	}) {
+		return draftServiceFetch<{
+			fragmentEntryLinks: FragmentEntryLinkMap;
+			layoutData: LayoutData;
+		}>(
+			config.undoUpdateFormConfigURL,
+			{
+				body: {
+					addedItemIds,
+					config: JSON.stringify(itemConfig),
+					itemId,
+					movedItemIds: JSON.stringify(movedItemIds),
+					removedItemIds,
+					segmentsExperienceId,
+					stepperFragmentEntryLinkId,
 				},
 			},
 			onNetworkStatus
@@ -250,12 +323,12 @@ export default {
 
 	updateItemConfig({
 		itemConfig,
-		itemId,
+		itemIds,
 		onNetworkStatus,
 		segmentsExperienceId,
 	}: {
 		itemConfig: LayoutDataItem['config'];
-		itemId: string;
+		itemIds: string[];
 		onNetworkStatus: OnNetworkStatus;
 		segmentsExperienceId: string;
 	}) {
@@ -267,7 +340,7 @@ export default {
 			{
 				body: {
 					itemConfig: JSON.stringify(itemConfig),
-					itemId,
+					itemIds,
 					segmentsExperienceId,
 				},
 			},

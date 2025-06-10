@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {openModal} from 'frontend-js-components-web';
 import {
 	createPortletURL,
 	createResourceURL,
 	fetch,
 	navigate,
 	objectToFormData,
-	openModal,
 	sub,
 } from 'frontend-js-web';
 
@@ -65,7 +65,7 @@ const _invalidFileCountContent = (
 						),
 						_translatedStrongKeys(translatedKeys.continue),
 						_translatedStrongKeys(translatedKeys.cancel)
-				  )}</div>`
+					)}</div>`
 				: ''
 		}
 	</div>`;
@@ -130,7 +130,7 @@ const _showWarningModal = ({
 			? sub(
 					Liferay.Language.get('maximum-of-x-files-per-envelope'),
 					MAXIMUM_SELECTED_FILES
-			  )
+				)
 			: Liferay.Language.get('file-extensions-not-supported'),
 	});
 

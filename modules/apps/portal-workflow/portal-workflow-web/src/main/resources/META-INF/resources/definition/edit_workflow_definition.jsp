@@ -123,11 +123,11 @@ renderResponse.setTitle((workflowDefinition == null) ? LanguageUtil.get(request,
 						<clay:content-col
 							expand="<%= true %>"
 						>
-							<h4 class="component-title">
+							<div class="component-title">
 								<span class="text-truncate-inline">
 									<span class="text-truncate"><%= HtmlUtil.escape(workflowDefinition.getTitle(LanguageUtil.getLanguageId(request))) %></span>
 								</span>
-							</h4>
+							</div>
 						</clay:content-col>
 					</clay:content-row>
 				</div>
@@ -139,7 +139,7 @@ renderResponse.setTitle((workflowDefinition == null) ? LanguageUtil.get(request,
 						refresh="<%= false %>"
 					>
 						<liferay-ui:section>
-							<div style="margin-top: 1.5rem;">
+							<div class="mt-4">
 
 								<%
 								String creatorUserName = workflowDefinitionDisplayContext.getCreatorUserName(workflowDefinition);

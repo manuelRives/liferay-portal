@@ -46,16 +46,16 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portlet.LiferayPortletUtil;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Sergio González
@@ -290,7 +290,7 @@ public class KBAdminNavigationDisplayContext {
 		List<KBArticle> kbArticles = KBArticleServiceUtil.getKBArticles(
 			parentKBArticle.getGroupId(), parentKBArticle.getResourcePrimKey(),
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, WorkflowConstants.STATUS_ANY,
-			new KBArticleTitleComparator(true));
+			KBArticleTitleComparator.getInstance(true));
 
 		for (KBArticle kbArticle : kbArticles) {
 			if (moveKBObjectId == kbArticle.getResourcePrimKey()) {
@@ -342,7 +342,7 @@ public class KBAdminNavigationDisplayContext {
 		List<Object> kbObjects = KBFolderServiceUtil.getKBFoldersAndKBArticles(
 			_themeDisplay.getScopeGroupId(), parentFolderId,
 			WorkflowConstants.STATUS_ANY, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new KBObjectsPriorityComparator<>(true));
+			KBObjectsPriorityComparator.getInstance(true));
 
 		for (Object kbObject : kbObjects) {
 			if (kbObject instanceof KBFolder) {
@@ -425,7 +425,7 @@ public class KBAdminNavigationDisplayContext {
 			KBTemplateServiceUtil.getGroupKBTemplates(
 				_themeDisplay.getScopeGroupId(), QueryUtil.ALL_POS,
 				WorkflowConstants.STATUS_ANY,
-				new KBTemplateTitleComparator(true));
+				KBTemplateTitleComparator.getInstance(true));
 
 		for (KBTemplate kbTemplate : kbTemplates) {
 			navigationItemsJSONArray.put(
@@ -528,14 +528,14 @@ public class KBAdminNavigationDisplayContext {
 			_httpServletRequest, "resourcePrimKey",
 			KBArticleConstants.DEFAULT_PARENT_RESOURCE_PRIM_KEY);
 
-		if (resourcePrimKey !=
+		if (resourcePrimKey ==
 				KBArticleConstants.DEFAULT_PARENT_RESOURCE_PRIM_KEY) {
 
-			return KBArticleServiceUtil.getLatestKBArticle(
-				resourcePrimKey, WorkflowConstants.STATUS_ANY);
+			return null;
 		}
 
-		return null;
+		return KBArticleServiceUtil.getLatestKBArticle(
+			resourcePrimKey, WorkflowConstants.STATUS_ANY);
 	}
 
 	private boolean _isKBArticleSelected() {

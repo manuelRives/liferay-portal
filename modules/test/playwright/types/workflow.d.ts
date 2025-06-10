@@ -9,12 +9,12 @@ interface Notification {
 	notificationTypeEmail: boolean;
 	notificationTypeUser: boolean;
 	recipientType: string;
-	recipientTypeData: RoleRecipientType | ScriptRecipientType;
+	recipientTypeData: Role | RoleType | ScriptedRecipient;
 	template: string;
 	templateLanguage: string;
 }
 
-interface RoleRecipientType {
+interface Role {
 	roleName: string;
 }
 
@@ -24,16 +24,41 @@ interface RoleType {
 	roleType: string;
 }
 
-interface ScriptRecipientType {
+interface ScriptedRecipient {
 	script: string;
 	scriptLanguage: string;
 }
 
 interface WorkflowDefinition {
-	active: true;
+	active: boolean;
 	content: string;
-	id?: number;
+	dateCreated: string;
+	dateModified: string;
+	externalReferenceCode: string;
+	id: number;
 	name: string;
 	title_i18n: DataObject;
 	version: string;
+}
+
+interface WorkflowTaskDefinition {
+	completed: boolean;
+	description: string;
+	id: number;
+	label: string;
+	name: string;
+	objectReviewed: {
+		assetTitle: string;
+		assetType: string;
+		id: number;
+		resourceType: string;
+	};
+	workflowDefinitionId: number;
+	workflowDefinitionName: string;
+	workflowDefinitionVersion: string;
+	workflowInstanceId: number;
+}
+
+interface WorkflowTaskDefinitions {
+	items: WorkflowTaskDefinition[];
 }

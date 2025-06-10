@@ -21,7 +21,7 @@ const DISPLAY_TYPE = {
 	HORIZONTAL: 'HORIZONTAL',
 } as const;
 
-type DisplayType = typeof DISPLAY_TYPE[keyof typeof DISPLAY_TYPE];
+type DisplayType = (typeof DISPLAY_TYPE)[keyof typeof DISPLAY_TYPE];
 
 interface IProps extends Translations {
 	adminMode?: boolean;
@@ -63,8 +63,7 @@ const TriggerButton = React.forwardRef(
 			selectedItem.displayName
 		);
 
-		return Liferay.FeatureFlags['LPS-114700'] &&
-			displayType === DISPLAY_TYPE.HORIZONTAL ? (
+		return displayType === DISPLAY_TYPE.HORIZONTAL ? (
 			<ClayButton
 				{...props}
 				aria-label={ariaLabelButton}
@@ -123,14 +122,12 @@ export default function TranslationAdminSelector({
 	const [activeLanguageIds, setActiveLanguageIds] = useState<
 		Liferay.Language.Locale[]
 	>(initialActiveLanguageIds);
-	const [selectedLanguageId, setSelectedLanguageId] = useState<
-		Liferay.Language.Locale
-	>(initialSelectedLanguageId);
+	const [selectedLanguageId, setSelectedLanguageId] =
+		useState<Liferay.Language.Locale>(initialSelectedLanguageId);
 	const [selectorDropdownActive, setSelectorDropdownActive] = useState(false);
 	const selectorId = useId();
-	const [translationModalVisible, setTranslationModalVisible] = useState(
-		false
-	);
+	const [translationModalVisible, setTranslationModalVisible] =
+		useState(false);
 	const triggerRef = useRef<HTMLButtonElement | null>(null);
 
 	const handleCloseTranslationModal = (
@@ -177,7 +174,25 @@ export default function TranslationAdminSelector({
 		setSelectedLanguageId(initialSelectedLanguageId);
 	}, [initialSelectedLanguageId]);
 
-	if (Liferay.FeatureFlags['LPS-114700'] && !adminMode) {
+	useEffect(() => {
+		const handleUpdateSelectedLanguage = (event: any) => {
+			const selectedLanguageId = event.item.getAttribute('data-value');
+			setSelectedLanguageId(selectedLanguageId);
+		};
+		Liferay.on(
+			'journal:updateSelectedLanguage',
+			handleUpdateSelectedLanguage
+		);
+
+		return () => {
+			Liferay.detach(
+				'journal:updateSelectedLanguage',
+				handleUpdateSelectedLanguage as () => void
+			);
+		};
+	}, [initialSelectedLanguageId]);
+
+	if (!adminMode) {
 		return (
 			<Picker
 				active={selectorDropdownActive}
@@ -194,6 +209,12 @@ export default function TranslationAdminSelector({
 				}}
 				onSelectionChange={(id: React.Key) => {
 					setSelectedLanguageId(id as Liferay.Language.Locale);
+
+					Liferay.fire('journal:localeChanged', {
+						item: document.querySelector(
+							`[data-languageid="${id}"][data-value="${id}"]`
+						),
+					});
 				}}
 				selectedItem={activeLocales.find(
 					(locale) => locale.id === selectedLanguageId

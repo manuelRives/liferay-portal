@@ -54,18 +54,18 @@ import com.liferay.site.navigation.service.SiteNavigationMenuItemLocalService;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemType;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeContext;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -203,6 +203,10 @@ public class LayoutSiteNavigationMenuItemType
 
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
 
+		if (layout == null) {
+			return StringPool.BLANK;
+		}
+
 		return layout.getRegularURL(httpServletRequest);
 	}
 
@@ -213,6 +217,10 @@ public class LayoutSiteNavigationMenuItemType
 		throws Exception {
 
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
+
+		if (layout == null) {
+			return StringPool.BLANK;
+		}
 
 		return layout.getResetLayoutURL(httpServletRequest);
 	}
@@ -225,6 +233,10 @@ public class LayoutSiteNavigationMenuItemType
 
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
 
+		if (layout == null) {
+			return StringPool.BLANK;
+		}
+
 		return layout.getResetMaxStateURL(httpServletRequest);
 	}
 
@@ -233,6 +245,10 @@ public class LayoutSiteNavigationMenuItemType
 		SiteNavigationMenuItem siteNavigationMenuItem, Locale locale) {
 
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
+
+		if (layout == null) {
+			return StringPool.BLANK;
+		}
 
 		Group group = layout.getGroup();
 
@@ -251,6 +267,10 @@ public class LayoutSiteNavigationMenuItemType
 	public String getTarget(SiteNavigationMenuItem siteNavigationMenuItem) {
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
 
+		if (layout == null) {
+			return StringPool.BLANK;
+		}
+
 		return layout.getTarget();
 	}
 
@@ -260,7 +280,7 @@ public class LayoutSiteNavigationMenuItemType
 
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
 
-		if (!_isUseCustomName(siteNavigationMenuItem)) {
+		if ((layout != null) && !_isUseCustomName(siteNavigationMenuItem)) {
 			return layout.getName(locale);
 		}
 
@@ -313,6 +333,10 @@ public class LayoutSiteNavigationMenuItemType
 
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
 
+		if (layout == null) {
+			return StringPool.BLANK;
+		}
+
 		return layout.getName(languageId);
 	}
 
@@ -323,6 +347,10 @@ public class LayoutSiteNavigationMenuItemType
 		throws PortalException {
 
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
+
+		if (layout == null) {
+			return false;
+		}
 
 		return LayoutPermissionUtil.contains(
 			permissionChecker, layout.getPlid(), ActionKeys.VIEW);
@@ -401,6 +429,10 @@ public class LayoutSiteNavigationMenuItemType
 	public boolean isBrowsable(SiteNavigationMenuItem siteNavigationMenuItem) {
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
 
+		if (layout == null) {
+			return false;
+		}
+
 		LayoutType layoutType = layout.getLayoutType();
 
 		return layoutType.isBrowsable();
@@ -460,7 +492,7 @@ public class LayoutSiteNavigationMenuItemType
 
 		Layout layout = _fetchLayout(siteNavigationMenuItem);
 
-		if (layout.getPlid() == curLayout.getPlid()) {
+		if ((layout != null) && (layout.getPlid() == curLayout.getPlid())) {
 			return true;
 		}
 
@@ -509,8 +541,19 @@ public class LayoutSiteNavigationMenuItemType
 		boolean privateLayout = GetterUtil.getBoolean(
 			typeSettingsUnicodeProperties.get("privateLayout"));
 
-		return _layoutLocalService.fetchLayoutByUuidAndGroupId(
+		Layout layout = _layoutLocalService.fetchLayoutByUuidAndGroupId(
 			layoutUuid, siteNavigationMenuItem.getGroupId(), privateLayout);
+
+		if ((layout == null) && _log.isWarnEnabled()) {
+			_log.warn(
+				StringBundler.concat(
+					"No layout found for site navigation menu item ID ",
+					siteNavigationMenuItem.getSiteNavigationMenuItemId(),
+					" with layout UUID ", layoutUuid, " and private layout ",
+					privateLayout));
+		}
+
+		return layout;
 	}
 
 	private Layout _getLayout(

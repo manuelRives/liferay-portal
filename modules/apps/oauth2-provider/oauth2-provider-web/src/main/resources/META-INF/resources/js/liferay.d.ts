@@ -9,10 +9,9 @@ declare module Liferay {
 	namespace OAuth2 {
 		function getAuthorizeURL(): string;
 		function getBuiltInRedirectURL(): string;
+		function getIntrospectURL(): string;
 		function getTokenURL(): string;
-		function getUserAgentApplication(
-			externalReferenceCode: string
-		): {
+		function getUserAgentApplication(externalReferenceCode: string): {
 			clientId: string;
 			homePageURL: string;
 			redirectURIs: Array<string>;

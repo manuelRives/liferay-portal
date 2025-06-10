@@ -4,7 +4,7 @@
  */
 
 import ClayEmptyState from '@clayui/empty-state';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import React, {Component} from 'react';
 
 import {DEFAULT_ERROR} from '../utils/errorMessages';
@@ -35,10 +35,10 @@ class ErrorBoundary extends Component {
 			? !this.props.toast && (
 					<ClayEmptyState
 						description={DEFAULT_ERROR}
-						imgSrc="/o/admin-theme/images/states/empty_state.gif"
+						imgSrc="/o/admin-theme/images/states/empty_state.svg"
 						title={Liferay.Language.get('unable-to-load-content')}
 					/>
-			  )
+				)
 			: this.props.children;
 	}
 }

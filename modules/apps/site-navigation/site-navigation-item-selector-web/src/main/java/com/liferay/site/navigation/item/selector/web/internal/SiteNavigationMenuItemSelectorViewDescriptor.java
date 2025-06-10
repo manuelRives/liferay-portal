@@ -22,10 +22,10 @@ import com.liferay.site.navigation.service.SiteNavigationMenuServiceUtil;
 import com.liferay.site.navigation.util.comparator.SiteNavigationMenuModifiedDateComparator;
 import com.liferay.site.navigation.util.comparator.SiteNavigationMenuNameComparator;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -134,18 +134,15 @@ public class SiteNavigationMenuItemSelectorViewDescriptor
 			orderByAsc = true;
 		}
 
-		OrderByComparator<SiteNavigationMenu> orderByComparator = null;
-
 		if (orderByCol.equals("modified-date")) {
-			orderByComparator = new SiteNavigationMenuModifiedDateComparator(
+			return SiteNavigationMenuModifiedDateComparator.getInstance(
 				orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
-			orderByComparator = new SiteNavigationMenuNameComparator(
-				orderByAsc);
+			return SiteNavigationMenuNameComparator.getInstance(orderByAsc);
 		}
 
-		return orderByComparator;
+		return null;
 	}
 
 	private final HttpServletRequest _httpServletRequest;

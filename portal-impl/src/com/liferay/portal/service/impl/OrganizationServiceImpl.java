@@ -24,6 +24,7 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
@@ -426,7 +427,29 @@ public class OrganizationServiceImpl extends OrganizationServiceBaseImpl {
 
 		return organizationPersistence.filterFindByGtO_C_P(
 			gtOrganizationId, companyId, parentOrganizationId, 0, size,
-			new OrganizationIdComparator(true));
+			OrganizationIdComparator.getInstance(true));
+	}
+
+	@Override
+	public Organization getOrAddIncompleteOrganization(
+			String externalReferenceCode, String name)
+		throws Exception {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		Organization organization = fetchOrganizationByExternalReferenceCode(
+			externalReferenceCode, permissionChecker.getCompanyId());
+
+		if (organization != null) {
+			return organization;
+		}
+
+		PortalPermissionUtil.check(
+			getPermissionChecker(), ActionKeys.ADD_ORGANIZATION);
+
+		return organizationLocalService.getOrAddIncompleteOrganization(
+			externalReferenceCode, permissionChecker.getCompanyId(),
+			permissionChecker.getUserId(), name);
 	}
 
 	/**
@@ -450,7 +473,7 @@ public class OrganizationServiceImpl extends OrganizationServiceBaseImpl {
 
 	@Override
 	public Organization getOrganizationByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		Organization organization =

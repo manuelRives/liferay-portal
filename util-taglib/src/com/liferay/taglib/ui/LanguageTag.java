@@ -7,9 +7,12 @@ package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.portletdisplaytemplate.PortletDisplayTemplateManagerUtil;
 import com.liferay.portal.kernel.servlet.taglib.ui.LanguageEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -18,6 +21,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.aui.AUIUtil;
 import com.liferay.taglib.util.IncludeTag;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspWriter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,14 +39,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *             com.liferay.site.navigation.taglib.servlet.taglib.LanguageTag}
  */
+@Deprecated
 public class LanguageTag extends IncludeTag {
 
 	public long getDdmTemplateGroupId() {
@@ -160,6 +168,9 @@ public class LanguageTag extends IncludeTag {
 
 		Layout layout = themeDisplay.getLayout();
 
+		formAction = HttpComponentsUtil.setParameter(
+			formAction, "privateLayout", layout.isPrivateLayout());
+
 		return HttpComponentsUtil.setParameter(
 			formAction, "layoutId", layout.getLayoutId());
 	}
@@ -277,27 +288,47 @@ public class LanguageTag extends IncludeTag {
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest httpServletRequest) {
-		httpServletRequest.setAttribute(
-			"liferay-ui:language:ddmTemplateKey", _ddmTemplateKey);
-		httpServletRequest.setAttribute(
-			"liferay-ui:language:displayCurrentLocale",
-			String.valueOf(_displayCurrentLocale));
-		httpServletRequest.setAttribute(
-			"liferay-ui:language:displayStyleGroupId",
-			getDisplayStyleGroupId());
-		httpServletRequest.setAttribute(
-			"liferay-ui:language:formAction", getFormAction());
-		httpServletRequest.setAttribute(
-			"liferay-ui:language:formName", _formName);
-		httpServletRequest.setAttribute(
-			"liferay-ui:language:languageEntries",
-			getLanguageEntries(
-				getLocales(), _displayCurrentLocale, getFormAction(),
-				getNamespacedName()));
-		httpServletRequest.setAttribute(
-			"liferay-ui:language:languageId", _languageId);
-		httpServletRequest.setAttribute("liferay-ui:language:name", _name);
+	protected int processStartTag() throws Exception {
+		String formAction = getFormAction();
+		String namespace = getNamespacedName();
+
+		List<LanguageEntry> languageEntries = getLanguageEntries(
+			getLocales(), _displayCurrentLocale, formAction, namespace);
+
+		if (!languageEntries.isEmpty()) {
+			JspWriter jspWriter = pageContext.getOut();
+
+			jspWriter.write(
+				PortletDisplayTemplateManagerUtil.renderDDMTemplate(
+					PortalUtil.getClassNameId(LanguageEntry.class),
+					HashMapBuilder.<String, Object>put(
+						"formAction", formAction
+					).put(
+						"formName", getFormName()
+					).put(
+						"languageId",
+						() -> {
+							HttpServletRequest httpServletRequest =
+								getRequest();
+
+							ThemeDisplay themeDisplay =
+								(ThemeDisplay)httpServletRequest.getAttribute(
+									WebKeys.THEME_DISPLAY);
+
+							return GetterUtil.getString(
+								_languageId, themeDisplay.getLanguageId());
+						}
+					).put(
+						"name", _name
+					).put(
+						"namespace", namespace
+					).build(),
+					_ddmTemplateKey, languageEntries, getDisplayStyleGroupId(),
+					getRequest(),
+					(HttpServletResponse)pageContext.getResponse(), true));
+		}
+
+		return SKIP_BODY;
 	}
 
 	private static final String _PAGE = "/html/taglib/ui/language/page.jsp";

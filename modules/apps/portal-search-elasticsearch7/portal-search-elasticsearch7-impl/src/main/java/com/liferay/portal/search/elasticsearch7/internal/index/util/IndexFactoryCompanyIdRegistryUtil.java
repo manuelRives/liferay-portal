@@ -5,16 +5,18 @@
 
 package com.liferay.portal.search.elasticsearch7.internal.index.util;
 
+import com.liferay.portal.kernel.util.ArrayUtil;
+
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @author Joao Victor Alves
+ * @author João Victor Alves
  */
 public class IndexFactoryCompanyIdRegistryUtil {
 
-	public static Set<Long> getCompanyIds() {
-		return _companyIds;
+	public static long[] getCompanyIds() {
+		return ArrayUtil.toLongArray(_companyIds);
 	}
 
 	public static synchronized void registerCompanyId(long companyId) {

@@ -40,8 +40,8 @@ public class FriendlyURLMapperTrackerImplTest {
 
 		Portlet portlet = new PortletImpl();
 
-		portlet.setPortletClass(MVCPortlet.class.getName());
 		portlet.setPortletId(_PORTLET_NAME);
+		portlet.setPortletClass(MVCPortlet.class.getName());
 
 		FriendlyURLMapperTracker friendlyURLMapperTracker =
 			new FriendlyURLMapperTrackerImpl(portlet);
@@ -53,7 +53,7 @@ public class FriendlyURLMapperTrackerImplTest {
 			bundleContext.registerService(
 				FriendlyURLMapper.class, friendlyURLMapper,
 				MapUtil.singletonDictionary(
-					"javax.portlet.name", _PORTLET_NAME));
+					"jakarta.portlet.name", _PORTLET_NAME));
 
 		try {
 			Assert.assertSame(

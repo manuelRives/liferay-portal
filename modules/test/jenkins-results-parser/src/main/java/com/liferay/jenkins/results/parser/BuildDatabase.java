@@ -9,6 +9,7 @@ import java.io.File;
 
 import java.net.URL;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -20,7 +21,11 @@ import org.json.JSONObject;
  */
 public interface BuildDatabase {
 
-	public static final String FILE_NAME_BUILD_DATABASE = "build-database.json";
+	public static final String FILE_NAME_BUILD_DATABASE_JSON =
+		"build-database.json";
+
+	public static final String FILE_NAME_BUILD_DATABASE_JSON_SHA =
+		"build-database.json.sha512";
 
 	public File getBuildDatabaseFile();
 
@@ -30,15 +35,23 @@ public interface BuildDatabase {
 
 	public Job getJob(String key);
 
+	public List<Job> getJobs();
+
+	public JSONObject getJSONObject();
+
 	public Properties getProperties(String key);
 
 	public Properties getProperties(String key, Pattern pattern);
 
 	public PullRequest getPullRequest(String key);
 
+	public List<PullRequest> getPullRequests();
+
 	public Workspace getWorkspace(String key);
 
 	public WorkspaceGitRepository getWorkspaceGitRepository(String key);
+
+	public List<Workspace> getWorkspaces();
 
 	public boolean hasBuildData(String key);
 
@@ -58,7 +71,20 @@ public interface BuildDatabase {
 
 	public void putProperties(String key, File propertiesFile);
 
+	public void putProperties(
+		String key, File propertiesFile, boolean writeFile);
+
 	public void putProperties(String key, Properties properties);
+
+	public void putProperties(
+		String key, Properties properties, boolean writeFile);
+
+	public void putProperty(
+		String key, String propertyName, String propertyValue);
+
+	public void putProperty(
+		String key, String propertyName, String propertyValue,
+		boolean writeFile);
 
 	public void putPullRequest(String key, PullRequest pullRequest);
 
@@ -67,7 +93,13 @@ public interface BuildDatabase {
 	public void putWorkspaceGitRepository(
 		String key, WorkspaceGitRepository workspaceGitRepository);
 
-	public void readBuildDatabaseFile();
+	public FilePropagator rsyncBuildDatabaseFile(
+		List<String> distNodes, String distPath, String preDistCommand,
+		String postDistCommand, int threadCount);
+
+	public void uploadBuildDatabaseFileToCloudBucket();
+
+	public void uploadBuildDatabaseFileToCloudBucket(String path);
 
 	public void writeFilteredPropertiesToFile(
 		String destFilePath, Pattern pattern, String key);

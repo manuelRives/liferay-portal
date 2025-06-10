@@ -15,9 +15,13 @@ import com.liferay.commerce.payment.exception.CommercePaymentEntryPaymentIntegra
 import com.liferay.commerce.payment.exception.CommercePaymentEntryPaymentStatusException;
 import com.liferay.commerce.payment.exception.CommercePaymentEntryReasonKeyException;
 import com.liferay.commerce.payment.model.CommercePaymentEntry;
+import com.liferay.commerce.payment.model.CommercePaymentEntryTable;
 import com.liferay.commerce.payment.service.CommercePaymentEntryAuditLocalService;
 import com.liferay.commerce.payment.service.base.CommercePaymentEntryLocalServiceBaseImpl;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -53,6 +57,7 @@ import com.liferay.portal.search.searcher.Searcher;
 
 import java.math.BigDecimal;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -76,7 +81,7 @@ public class CommercePaymentEntryLocalServiceImpl
 	public CommercePaymentEntry addCommercePaymentEntry(
 			long userId, long classNameId, long classPK, long commerceChannelId,
 			BigDecimal amount, String callbackURL, String cancelURL,
-			String currencyCode, String languageId, String note,
+			String currencyCode, String languageId, String note, String payload,
 			String paymentIntegrationKey, int paymentIntegrationType,
 			String reasonKey, String transactionCode, int type,
 			ServiceContext serviceContext)
@@ -111,6 +116,7 @@ public class CommercePaymentEntryLocalServiceImpl
 		commercePaymentEntry.setCurrencyCode(currencyCode);
 		commercePaymentEntry.setLanguageId(languageId);
 		commercePaymentEntry.setNote(note);
+		commercePaymentEntry.setPayload(payload);
 		commercePaymentEntry.setPaymentIntegrationKey(paymentIntegrationKey);
 		commercePaymentEntry.setPaymentIntegrationType(paymentIntegrationType);
 		commercePaymentEntry.setPaymentStatus(
@@ -140,14 +146,11 @@ public class CommercePaymentEntryLocalServiceImpl
 			long classPK, long commerceChannelId, BigDecimal amount,
 			String callbackURL, String cancelURL, String currencyCode,
 			String errorMessages, String languageId, String note,
-			String paymentIntegrationKey, int paymentIntegrationType,
-			int paymentStatus, String reasonKey, String redirectURL,
-			String transactionCode, int type, ServiceContext serviceContext)
+			String payload, String paymentIntegrationKey,
+			int paymentIntegrationType, int paymentStatus, String reasonKey,
+			String redirectURL, String transactionCode, int type,
+			ServiceContext serviceContext)
 		throws PortalException {
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
 
 		CommercePaymentEntry commercePaymentEntry = null;
 
@@ -158,17 +161,18 @@ public class CommercePaymentEntryLocalServiceImpl
 
 		if (commercePaymentEntry != null) {
 			return commercePaymentEntryLocalService.updateCommercePaymentEntry(
-				externalReferenceCode, commerceChannelId,
-				commercePaymentEntry.getCommercePaymentEntryId(), amount,
-				callbackURL, cancelURL, currencyCode, errorMessages, languageId,
-				note, paymentIntegrationKey, paymentIntegrationType,
-				paymentStatus, reasonKey, redirectURL, transactionCode, type);
+				externalReferenceCode,
+				commercePaymentEntry.getCommercePaymentEntryId(),
+				commerceChannelId, amount, callbackURL, cancelURL, currencyCode,
+				errorMessages, languageId, note, payload, paymentIntegrationKey,
+				paymentIntegrationType, paymentStatus, reasonKey, redirectURL,
+				transactionCode, type);
 		}
 
 		commercePaymentEntry =
 			commercePaymentEntryLocalService.addCommercePaymentEntry(
 				userId, classNameId, classPK, commerceChannelId, amount,
-				callbackURL, cancelURL, currencyCode, languageId, note,
+				callbackURL, cancelURL, currencyCode, languageId, note, payload,
 				paymentIntegrationKey, paymentIntegrationType, reasonKey,
 				transactionCode, type, serviceContext);
 
@@ -259,6 +263,68 @@ public class CommercePaymentEntryLocalServiceImpl
 	}
 
 	@Override
+	public List<CommercePaymentEntry> getRefundCommercePaymentEntries(
+		long companyId, long classNameId, long classPK, int start, int end) {
+
+		return dslQuery(
+			DSLQueryFactoryUtil.select(
+				CommercePaymentEntryTable.INSTANCE
+			).from(
+				CommercePaymentEntryTable.INSTANCE
+			).where(
+				_getPredicate(companyId, classNameId, classPK)
+			).limit(
+				start, end
+			));
+	}
+
+	@Override
+	public int getRefundCommercePaymentEntriesCount(
+		long companyId, long classNameId, long classPK) {
+
+		return dslQueryCount(
+			DSLQueryFactoryUtil.count(
+			).from(
+				CommercePaymentEntryTable.INSTANCE
+			).where(
+				_getPredicate(companyId, classNameId, classPK)
+			));
+	}
+
+	@Override
+	public BigDecimal getRefundedAmount(
+		long companyId, long classNameId, long classPK) {
+
+		Iterable<BigDecimal> iterable = dslQuery(
+			DSLQueryFactoryUtil.select(
+				DSLFunctionFactoryUtil.sum(
+					CommercePaymentEntryTable.INSTANCE.amount
+				).as(
+					"SUM_VALUE"
+				)
+			).from(
+				CommercePaymentEntryTable.INSTANCE
+			).where(
+				_getPredicate(
+					companyId, classNameId, classPK
+				).and(
+					CommercePaymentEntryTable.INSTANCE.paymentStatus.eq(
+						CommercePaymentEntryConstants.STATUS_REFUNDED)
+				)
+			));
+
+		Iterator<BigDecimal> iterator = iterable.iterator();
+
+		BigDecimal refundedAmount = iterator.next();
+
+		if (refundedAmount == null) {
+			return BigDecimal.ZERO;
+		}
+
+		return refundedAmount;
+	}
+
+	@Override
 	public BaseModelSearchResult<CommercePaymentEntry>
 		searchCommercePaymentEntries(
 			long companyId, String keywords,
@@ -306,14 +372,11 @@ public class CommercePaymentEntryLocalServiceImpl
 			String externalReferenceCode, long commercePaymentEntryId,
 			long commerceChannelId, BigDecimal amount, String callbackURL,
 			String cancelURL, String currencyCode, String errorMessages,
-			String languageId, String note, String paymentIntegrationKey,
-			int paymentIntegrationType, int paymentStatus, String reasonKey,
-			String redirectURL, String transactionCode, int type)
+			String languageId, String note, String payload,
+			String paymentIntegrationKey, int paymentIntegrationType,
+			int paymentStatus, String reasonKey, String redirectURL,
+			String transactionCode, int type)
 		throws PortalException {
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
 
 		CommercePaymentEntry commercePaymentEntry =
 			commercePaymentEntryLocalService.getCommercePaymentEntry(
@@ -339,6 +402,7 @@ public class CommercePaymentEntryLocalServiceImpl
 		commercePaymentEntry.setErrorMessages(errorMessages);
 		commercePaymentEntry.setLanguageId(languageId);
 		commercePaymentEntry.setNote(note);
+		commercePaymentEntry.setPayload(payload);
 		commercePaymentEntry.setPaymentIntegrationKey(paymentIntegrationKey);
 		commercePaymentEntry.setPaymentIntegrationType(paymentIntegrationType);
 		commercePaymentEntry.setPaymentStatus(paymentStatus);
@@ -428,6 +492,36 @@ public class CommercePaymentEntryLocalServiceImpl
 		}
 
 		return commercePaymentEntryPersistence.update(commercePaymentEntry);
+	}
+
+	private Predicate _getPredicate(
+		long companyId, long classNameId, long classPK) {
+
+		return CommercePaymentEntryTable.INSTANCE.classPK.in(
+			DSLQueryFactoryUtil.select(
+				CommercePaymentEntryTable.INSTANCE.commercePaymentEntryId
+			).from(
+				CommercePaymentEntryTable.INSTANCE
+			).where(
+				CommercePaymentEntryTable.INSTANCE.companyId.eq(
+					companyId
+				).and(
+					CommercePaymentEntryTable.INSTANCE.classNameId.eq(
+						classNameId)
+				).and(
+					CommercePaymentEntryTable.INSTANCE.classPK.eq(classPK)
+				).and(
+					CommercePaymentEntryTable.INSTANCE.paymentStatus.eq(
+						CommercePaymentEntryConstants.STATUS_COMPLETED)
+				).and(
+					CommercePaymentEntryTable.INSTANCE.type.eq(
+						CommercePaymentEntryConstants.TYPE_PAYMENT)
+				)
+			)
+		).and(
+			CommercePaymentEntryTable.INSTANCE.type.eq(
+				CommercePaymentEntryConstants.TYPE_REFUND)
+		);
 	}
 
 	private SearchRequest _getSearchRequest(

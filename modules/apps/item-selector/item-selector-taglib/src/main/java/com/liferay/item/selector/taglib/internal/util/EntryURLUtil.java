@@ -21,11 +21,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
 
 /**
  * @author Adolfo Pérez
@@ -38,6 +38,8 @@ public class EntryURLUtil {
 			PortletURL portletURL)
 		throws PortalException, PortletException {
 
+		PortletURL folderPortletURL = null;
+
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)liferayPortletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
@@ -47,8 +49,6 @@ public class EntryURLUtil {
 		if (folder.getGroupId() != group.getGroupId()) {
 			group = GroupServiceUtil.getGroup(folder.getGroupId());
 		}
-
-		PortletURL folderPortletURL = null;
 
 		String scope = ParamUtil.getString(liferayPortletRequest, "scope");
 

@@ -13,10 +13,10 @@ export default function MockDefinitionBuilderContext({children}) {
 	const [selectedLanguageId, setSelectedLanguageId] = useState('');
 	const [translations, setTranslations] = useState({});
 	const [showDefinitionInfo, setShowDefinitionInfo] = useState(false);
-	const [
-		definitionTitleTranslations,
-		setDefinitionTitleTranslations,
-	] = useState('');
+	const [definitionTitleTranslations, setDefinitionTitleTranslations] =
+		useState('');
+	const [workflowDefinitionVersions, setWorkflowDefinitionVersions] =
+		useState([{}]);
 
 	const contextProps = {
 		blockingError,
@@ -28,8 +28,10 @@ export default function MockDefinitionBuilderContext({children}) {
 		setSelectedLanguageId,
 		setShowDefinitionInfo,
 		setTranslations,
+		setWorkflowDefinitionVersions,
 		showDefinitionInfo,
 		translations,
+		workflowDefinitionVersions,
 	};
 
 	return (

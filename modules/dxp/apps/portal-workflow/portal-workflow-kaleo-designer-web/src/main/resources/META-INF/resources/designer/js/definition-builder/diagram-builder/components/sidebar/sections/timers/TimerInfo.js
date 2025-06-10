@@ -20,7 +20,7 @@ const TimerInfo = ({
 }) => {
 	const {
 		allowScriptContentToBeExecutedOrIncluded,
-		hasGroovyScript,
+		hasGroovyOrJavaScript,
 		scriptManagementConfigurationPortletURL,
 	} = useContext(DefinitionBuilderContext);
 	const [timerDescription, setTimerDescription] = useState([description]);
@@ -41,14 +41,14 @@ const TimerInfo = ({
 				return updatedSections;
 			});
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [timerDescription, timerIdentifier, timerName, timersIndex]);
 
 	return (
 		<>
-			{Liferay.FeatureFlags['LPD-11179'] &&
-				!allowScriptContentToBeExecutedOrIncluded &&
-				hasGroovyScript && (
+			{!allowScriptContentToBeExecutedOrIncluded &&
+				hasGroovyOrJavaScript && (
 					<DisabledGroovyScriptAlert
 						scriptManagementConfigurationPortletURL={
 							scriptManagementConfigurationPortletURL

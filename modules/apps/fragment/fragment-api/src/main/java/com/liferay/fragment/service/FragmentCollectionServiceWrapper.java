@@ -31,23 +31,26 @@ public class FragmentCollectionServiceWrapper
 
 	@Override
 	public FragmentCollection addFragmentCollection(
-			long groupId, String name, String description,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _fragmentCollectionService.addFragmentCollection(
-			groupId, name, description, serviceContext);
-	}
-
-	@Override
-	public FragmentCollection addFragmentCollection(
-			long groupId, String fragmentCollectionKey, String name,
+			String externalReferenceCode, long groupId, String name,
 			String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _fragmentCollectionService.addFragmentCollection(
-			groupId, fragmentCollectionKey, name, description, serviceContext);
+			externalReferenceCode, groupId, name, description, serviceContext);
+	}
+
+	@Override
+	public FragmentCollection addFragmentCollection(
+			String externalReferenceCode, long groupId,
+			String fragmentCollectionKey, String name, String description,
+			boolean marketplace,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentCollectionService.addFragmentCollection(
+			externalReferenceCode, groupId, fragmentCollectionKey, name,
+			description, marketplace, serviceContext);
 	}
 
 	@Override
@@ -57,6 +60,15 @@ public class FragmentCollectionServiceWrapper
 
 		return _fragmentCollectionService.deleteFragmentCollection(
 			fragmentCollectionId);
+	}
+
+	@Override
+	public FragmentCollection deleteFragmentCollection(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentCollectionService.deleteFragmentCollection(
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -73,6 +85,16 @@ public class FragmentCollectionServiceWrapper
 
 		return _fragmentCollectionService.fetchFragmentCollection(
 			fragmentCollectionId);
+	}
+
+	@Override
+	public FragmentCollection getFragmentCollectionByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentCollectionService.
+			getFragmentCollectionByExternalReferenceCode(
+				externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -156,12 +178,32 @@ public class FragmentCollectionServiceWrapper
 
 	@Override
 	public java.util.List<FragmentCollection> getFragmentCollections(
+		long[] groupIds, boolean marketplace, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentCollection>
+			orderByComparator) {
+
+		return _fragmentCollectionService.getFragmentCollections(
+			groupIds, marketplace, start, end, orderByComparator);
+	}
+
+	@Override
+	public java.util.List<FragmentCollection> getFragmentCollections(
 		long[] groupIds, int start, int end,
 		com.liferay.portal.kernel.util.OrderByComparator<FragmentCollection>
 			orderByComparator) {
 
 		return _fragmentCollectionService.getFragmentCollections(
 			groupIds, start, end, orderByComparator);
+	}
+
+	@Override
+	public java.util.List<FragmentCollection> getFragmentCollections(
+		long[] groupIds, String name, boolean marketplace, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentCollection>
+			orderByComparator) {
+
+		return _fragmentCollectionService.getFragmentCollections(
+			groupIds, name, marketplace, start, end, orderByComparator);
 	}
 
 	@Override
@@ -207,9 +249,25 @@ public class FragmentCollectionServiceWrapper
 	}
 
 	@Override
+	public int getFragmentCollectionsCount(
+		long[] groupIds, boolean marketplace) {
+
+		return _fragmentCollectionService.getFragmentCollectionsCount(
+			groupIds, marketplace);
+	}
+
+	@Override
 	public int getFragmentCollectionsCount(long[] groupIds, String name) {
 		return _fragmentCollectionService.getFragmentCollectionsCount(
 			groupIds, name);
+	}
+
+	@Override
+	public int getFragmentCollectionsCount(
+		long[] groupIds, String name, boolean marketplace) {
+
+		return _fragmentCollectionService.getFragmentCollectionsCount(
+			groupIds, name, marketplace);
 	}
 
 	/**

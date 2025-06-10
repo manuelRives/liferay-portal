@@ -19,15 +19,21 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -37,6 +43,7 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.segments.exception.DuplicateSegmentsExperienceExternalReferenceCodeException;
 import com.liferay.segments.exception.NoSuchExperienceException;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.model.SegmentsExperienceTable;
@@ -652,7 +659,6 @@ public class SegmentsExperiencePersistenceImpl
 		"(segmentsExperience.uuid IS NULL OR segmentsExperience.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the segments experience where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchExperienceException</code> if it could not be found.
@@ -838,68 +844,13 @@ public class SegmentsExperiencePersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		try (SafeCloseable safeCloseable =
-				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
-					SegmentsExperience.class)) {
+		SegmentsExperience segmentsExperience = fetchByUUID_G(uuid, groupId);
 
-			uuid = Objects.toString(uuid, "");
-
-			FinderPath finderPath = _finderPathCountByUUID_G;
-
-			Object[] finderArgs = new Object[] {uuid, groupId};
-
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if (count == null) {
-				StringBundler sb = new StringBundler(3);
-
-				sb.append(_SQL_COUNT_SEGMENTSEXPERIENCE_WHERE);
-
-				boolean bindUuid = false;
-
-				if (uuid.isEmpty()) {
-					sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-				}
-				else {
-					bindUuid = true;
-
-					sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-				}
-
-				sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-				String sql = sb.toString();
-
-				Session session = null;
-
-				try {
-					session = openSession();
-
-					Query query = session.createQuery(sql);
-
-					QueryPos queryPos = QueryPos.getInstance(query);
-
-					if (bindUuid) {
-						queryPos.add(uuid);
-					}
-
-					queryPos.add(groupId);
-
-					count = (Long)query.uniqueResult();
-
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-				catch (Exception exception) {
-					throw processException(exception);
-				}
-				finally {
-					closeSession(session);
-				}
-			}
-
-			return count.intValue();
+		if (segmentsExperience == null) {
+			return 0;
 		}
+
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -2034,7 +1985,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -2231,7 +2183,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -3488,7 +3441,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -3692,7 +3646,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -4484,7 +4439,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -4695,7 +4651,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -4900,7 +4857,6 @@ public class SegmentsExperiencePersistenceImpl
 		"segmentsExperience.plid = ?";
 
 	private FinderPath _finderPathFetchByG_SEK_P;
-	private FinderPath _finderPathCountByG_SEK_P;
 
 	/**
 	 * Returns the segments experience where groupId = &#63; and segmentsExperienceKey = &#63; and plid = &#63; or throws a <code>NoSuchExperienceException</code> if it could not be found.
@@ -5112,74 +5068,14 @@ public class SegmentsExperiencePersistenceImpl
 	public int countByG_SEK_P(
 		long groupId, String segmentsExperienceKey, long plid) {
 
-		try (SafeCloseable safeCloseable =
-				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
-					SegmentsExperience.class)) {
+		SegmentsExperience segmentsExperience = fetchByG_SEK_P(
+			groupId, segmentsExperienceKey, plid);
 
-			segmentsExperienceKey = Objects.toString(segmentsExperienceKey, "");
-
-			FinderPath finderPath = _finderPathCountByG_SEK_P;
-
-			Object[] finderArgs = new Object[] {
-				groupId, segmentsExperienceKey, plid
-			};
-
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if (count == null) {
-				StringBundler sb = new StringBundler(4);
-
-				sb.append(_SQL_COUNT_SEGMENTSEXPERIENCE_WHERE);
-
-				sb.append(_FINDER_COLUMN_G_SEK_P_GROUPID_2);
-
-				boolean bindSegmentsExperienceKey = false;
-
-				if (segmentsExperienceKey.isEmpty()) {
-					sb.append(_FINDER_COLUMN_G_SEK_P_SEGMENTSEXPERIENCEKEY_3);
-				}
-				else {
-					bindSegmentsExperienceKey = true;
-
-					sb.append(_FINDER_COLUMN_G_SEK_P_SEGMENTSEXPERIENCEKEY_2);
-				}
-
-				sb.append(_FINDER_COLUMN_G_SEK_P_PLID_2);
-
-				String sql = sb.toString();
-
-				Session session = null;
-
-				try {
-					session = openSession();
-
-					Query query = session.createQuery(sql);
-
-					QueryPos queryPos = QueryPos.getInstance(query);
-
-					queryPos.add(groupId);
-
-					if (bindSegmentsExperienceKey) {
-						queryPos.add(segmentsExperienceKey);
-					}
-
-					queryPos.add(plid);
-
-					count = (Long)query.uniqueResult();
-
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-				catch (Exception exception) {
-					throw processException(exception);
-				}
-				finally {
-					closeSession(session);
-				}
-			}
-
-			return count.intValue();
+		if (segmentsExperience == null) {
+			return 0;
 		}
+
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_SEK_P_GROUPID_2 =
@@ -5195,7 +5091,6 @@ public class SegmentsExperiencePersistenceImpl
 		"segmentsExperience.plid = ?";
 
 	private FinderPath _finderPathFetchByG_P_P;
-	private FinderPath _finderPathCountByG_P_P;
 
 	/**
 	 * Returns the segments experience where groupId = &#63; and plid = &#63; and priority = &#63; or throws a <code>NoSuchExperienceException</code> if it could not be found.
@@ -5386,59 +5281,14 @@ public class SegmentsExperiencePersistenceImpl
 	 */
 	@Override
 	public int countByG_P_P(long groupId, long plid, int priority) {
-		try (SafeCloseable safeCloseable =
-				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
-					SegmentsExperience.class)) {
+		SegmentsExperience segmentsExperience = fetchByG_P_P(
+			groupId, plid, priority);
 
-			FinderPath finderPath = _finderPathCountByG_P_P;
-
-			Object[] finderArgs = new Object[] {groupId, plid, priority};
-
-			Long count = (Long)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if (count == null) {
-				StringBundler sb = new StringBundler(4);
-
-				sb.append(_SQL_COUNT_SEGMENTSEXPERIENCE_WHERE);
-
-				sb.append(_FINDER_COLUMN_G_P_P_GROUPID_2);
-
-				sb.append(_FINDER_COLUMN_G_P_P_PLID_2);
-
-				sb.append(_FINDER_COLUMN_G_P_P_PRIORITY_2);
-
-				String sql = sb.toString();
-
-				Session session = null;
-
-				try {
-					session = openSession();
-
-					Query query = session.createQuery(sql);
-
-					QueryPos queryPos = QueryPos.getInstance(query);
-
-					queryPos.add(groupId);
-
-					queryPos.add(plid);
-
-					queryPos.add(priority);
-
-					count = (Long)query.uniqueResult();
-
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-				catch (Exception exception) {
-					throw processException(exception);
-				}
-				finally {
-					closeSession(session);
-				}
-			}
-
-			return count.intValue();
+		if (segmentsExperience == null) {
+			return 0;
 		}
+
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_P_P_GROUPID_2 =
@@ -6040,7 +5890,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -6251,7 +6102,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -7043,7 +6895,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -7254,7 +7107,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -8055,7 +7909,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -8265,7 +8120,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -9116,7 +8972,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -9333,7 +9190,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -9514,7 +9372,8 @@ public class SegmentsExperiencePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperienceModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperienceModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperienceModelImpl.ORDER_BY_SQL);
@@ -10151,6 +10010,219 @@ public class SegmentsExperiencePersistenceImpl
 	private static final String _FINDER_COLUMN_G_S_P_A_ACTIVE_2_SQL =
 		"segmentsExperience.active_ = ?";
 
+	private FinderPath _finderPathFetchByERC_G;
+
+	/**
+	 * Returns the segments experience where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchExperienceException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching segments experience
+	 * @throws NoSuchExperienceException if a matching segments experience could not be found
+	 */
+	@Override
+	public SegmentsExperience findByERC_G(
+			String externalReferenceCode, long groupId)
+		throws NoSuchExperienceException {
+
+		SegmentsExperience segmentsExperience = fetchByERC_G(
+			externalReferenceCode, groupId);
+
+		if (segmentsExperience == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("externalReferenceCode=");
+			sb.append(externalReferenceCode);
+
+			sb.append(", groupId=");
+			sb.append(groupId);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchExperienceException(sb.toString());
+		}
+
+		return segmentsExperience;
+	}
+
+	/**
+	 * Returns the segments experience where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching segments experience, or <code>null</code> if a matching segments experience could not be found
+	 */
+	@Override
+	public SegmentsExperience fetchByERC_G(
+		String externalReferenceCode, long groupId) {
+
+		return fetchByERC_G(externalReferenceCode, groupId, true);
+	}
+
+	/**
+	 * Returns the segments experience where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching segments experience, or <code>null</code> if a matching segments experience could not be found
+	 */
+	@Override
+	public SegmentsExperience fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperience.class)) {
+
+			externalReferenceCode = Objects.toString(externalReferenceCode, "");
+
+			Object[] finderArgs = null;
+
+			if (useFinderCache) {
+				finderArgs = new Object[] {externalReferenceCode, groupId};
+			}
+
+			Object result = null;
+
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByERC_G, finderArgs, this);
+			}
+
+			if (result instanceof SegmentsExperience) {
+				SegmentsExperience segmentsExperience =
+					(SegmentsExperience)result;
+
+				if (!Objects.equals(
+						externalReferenceCode,
+						segmentsExperience.getExternalReferenceCode()) ||
+					(groupId != segmentsExperience.getGroupId())) {
+
+					result = null;
+				}
+			}
+
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
+
+				sb.append(_SQL_SELECT_SEGMENTSEXPERIENCE_WHERE);
+
+				boolean bindExternalReferenceCode = false;
+
+				if (externalReferenceCode.isEmpty()) {
+					sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3);
+				}
+				else {
+					bindExternalReferenceCode = true;
+
+					sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2);
+				}
+
+				sb.append(_FINDER_COLUMN_ERC_G_GROUPID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindExternalReferenceCode) {
+						queryPos.add(externalReferenceCode);
+					}
+
+					queryPos.add(groupId);
+
+					List<SegmentsExperience> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByERC_G, finderArgs, list);
+						}
+					}
+					else {
+						SegmentsExperience segmentsExperience = list.get(0);
+
+						result = segmentsExperience;
+
+						cacheResult(segmentsExperience);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (SegmentsExperience)result;
+			}
+		}
+	}
+
+	/**
+	 * Removes the segments experience where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the segments experience that was removed
+	 */
+	@Override
+	public SegmentsExperience removeByERC_G(
+			String externalReferenceCode, long groupId)
+		throws NoSuchExperienceException {
+
+		SegmentsExperience segmentsExperience = findByERC_G(
+			externalReferenceCode, groupId);
+
+		return remove(segmentsExperience);
+	}
+
+	/**
+	 * Returns the number of segments experiences where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching segments experiences
+	 */
+	@Override
+	public int countByERC_G(String externalReferenceCode, long groupId) {
+		SegmentsExperience segmentsExperience = fetchByERC_G(
+			externalReferenceCode, groupId);
+
+		if (segmentsExperience == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2 =
+		"segmentsExperience.externalReferenceCode = ? AND ";
+
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3 =
+		"(segmentsExperience.externalReferenceCode IS NULL OR segmentsExperience.externalReferenceCode = '') AND ";
+
+	private static final String _FINDER_COLUMN_ERC_G_GROUPID_2 =
+		"segmentsExperience.groupId = ?";
+
 	public SegmentsExperiencePersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
@@ -10205,6 +10277,14 @@ public class SegmentsExperiencePersistenceImpl
 					segmentsExperience.getGroupId(),
 					segmentsExperience.getPlid(),
 					segmentsExperience.getPriority()
+				},
+				segmentsExperience);
+
+			finderCache.putResult(
+				_finderPathFetchByERC_G,
+				new Object[] {
+					segmentsExperience.getExternalReferenceCode(),
+					segmentsExperience.getGroupId()
 				},
 				segmentsExperience);
 		}
@@ -10299,8 +10379,6 @@ public class SegmentsExperiencePersistenceImpl
 			};
 
 			finderCache.putResult(
-				_finderPathCountByUUID_G, args, Long.valueOf(1));
-			finderCache.putResult(
 				_finderPathFetchByUUID_G, args, segmentsExperienceModelImpl);
 
 			args = new Object[] {
@@ -10309,8 +10387,6 @@ public class SegmentsExperiencePersistenceImpl
 				segmentsExperienceModelImpl.getPlid()
 			};
 
-			finderCache.putResult(
-				_finderPathCountByG_SEK_P, args, Long.valueOf(1));
 			finderCache.putResult(
 				_finderPathFetchByG_SEK_P, args, segmentsExperienceModelImpl);
 
@@ -10321,9 +10397,15 @@ public class SegmentsExperiencePersistenceImpl
 			};
 
 			finderCache.putResult(
-				_finderPathCountByG_P_P, args, Long.valueOf(1));
-			finderCache.putResult(
 				_finderPathFetchByG_P_P, args, segmentsExperienceModelImpl);
+
+			args = new Object[] {
+				segmentsExperienceModelImpl.getExternalReferenceCode(),
+				segmentsExperienceModelImpl.getGroupId()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByERC_G, args, segmentsExperienceModelImpl);
 		}
 	}
 
@@ -10470,6 +10552,72 @@ public class SegmentsExperiencePersistenceImpl
 			String uuid = PortalUUIDUtil.generate();
 
 			segmentsExperience.setUuid(uuid);
+		}
+
+		if (Validator.isNull(segmentsExperience.getExternalReferenceCode())) {
+			segmentsExperience.setExternalReferenceCode(
+				segmentsExperience.getUuid());
+		}
+		else {
+			if (!Objects.equals(
+					segmentsExperienceModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					segmentsExperience.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = segmentsExperience.getCompanyId();
+
+					long groupId = segmentsExperience.getGroupId();
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = segmentsExperience.getPrimaryKey();
+					}
+
+					try {
+						segmentsExperience.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								SegmentsExperience.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								segmentsExperience.getExternalReferenceCode(),
+								null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
+			SegmentsExperience ercSegmentsExperience = fetchByERC_G(
+				segmentsExperience.getExternalReferenceCode(),
+				segmentsExperience.getGroupId());
+
+			if (isNew) {
+				if (ercSegmentsExperience != null) {
+					throw new DuplicateSegmentsExperienceExternalReferenceCodeException(
+						"Duplicate segments experience with external reference code " +
+							segmentsExperience.getExternalReferenceCode() +
+								" and group " +
+									segmentsExperience.getGroupId());
+				}
+			}
+			else {
+				if ((ercSegmentsExperience != null) &&
+					(segmentsExperience.getSegmentsExperienceId() !=
+						ercSegmentsExperience.getSegmentsExperienceId())) {
+
+					throw new DuplicateSegmentsExperienceExternalReferenceCodeException(
+						"Duplicate segments experience with external reference code " +
+							segmentsExperience.getExternalReferenceCode() +
+								" and group " +
+									segmentsExperience.getGroupId());
+				}
+			}
 		}
 
 		ServiceContext serviceContext =
@@ -11016,30 +11164,33 @@ public class SegmentsExperiencePersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
 		ctStrictColumnNames.add("groupId");
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
 		ctIgnoreColumnNames.add("modifiedDate");
-		ctStrictColumnNames.add("segmentsEntryId");
-		ctStrictColumnNames.add("segmentsExperienceKey");
-		ctStrictColumnNames.add("plid");
-		ctStrictColumnNames.add("name");
-		ctStrictColumnNames.add("priority");
-		ctStrictColumnNames.add("active_");
-		ctStrictColumnNames.add("typeSettings");
-		ctStrictColumnNames.add("lastPublishDate");
+		ctMergeColumnNames.add("segmentsEntryId");
+		ctMergeColumnNames.add("segmentsExperienceKey");
+		ctMergeColumnNames.add("plid");
+		ctMergeColumnNames.add("name");
+		ctMergeColumnNames.add("priority");
+		ctMergeColumnNames.add("active_");
+		ctMergeColumnNames.add("typeSettings");
+		ctMergeColumnNames.add("lastPublishDate");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("segmentsExperienceId"));
@@ -11053,6 +11204,9 @@ public class SegmentsExperiencePersistenceImpl
 
 		_uniqueIndexColumnNames.add(
 			new String[] {"groupId", "plid", "priority"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "groupId"});
 	}
 
 	/**
@@ -11097,11 +11251,6 @@ public class SegmentsExperiencePersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
-
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
 
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
@@ -11208,14 +11357,6 @@ public class SegmentsExperiencePersistenceImpl
 			},
 			new String[] {"groupId", "segmentsExperienceKey", "plid"}, true);
 
-		_finderPathCountByG_SEK_P = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_SEK_P",
-			new String[] {
-				Long.class.getName(), String.class.getName(),
-				Long.class.getName()
-			},
-			new String[] {"groupId", "segmentsExperienceKey", "plid"}, false);
-
 		_finderPathFetchByG_P_P = new FinderPath(
 			FINDER_CLASS_NAME_ENTITY, "fetchByG_P_P",
 			new String[] {
@@ -11223,14 +11364,6 @@ public class SegmentsExperiencePersistenceImpl
 				Integer.class.getName()
 			},
 			new String[] {"groupId", "plid", "priority"}, true);
-
-		_finderPathCountByG_P_P = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_P_P",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				Integer.class.getName()
-			},
-			new String[] {"groupId", "plid", "priority"}, false);
 
 		_finderPathWithPaginationFindByG_P_GtP = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_P_GtP",
@@ -11328,6 +11461,11 @@ public class SegmentsExperiencePersistenceImpl
 			},
 			new String[] {"groupId", "segmentsEntryId", "plid", "active_"},
 			false);
+
+		_finderPathFetchByERC_G = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_G",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "groupId"}, true);
 
 		SegmentsExperienceUtil.setPersistence(this);
 	}

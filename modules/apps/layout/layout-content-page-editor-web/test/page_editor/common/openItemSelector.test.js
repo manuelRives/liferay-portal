@@ -3,15 +3,16 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
 
 import {openItemSelector} from '../../../src/main/resources/META-INF/resources/page_editor/common/openItemSelector';
 
-jest.mock('frontend-js-web');
+jest.mock('frontend-js-components-web');
 
 const openModal = ({
 	callback = () => {},
 	destroyedCallback = null,
+	selectedItem,
 	transformValueCallback = (item) => item,
 }) => {
 	openItemSelector({
@@ -19,6 +20,7 @@ const openModal = ({
 		destroyedCallback,
 		eventName: '',
 		itemSelectorURL: '',
+		selectedItem,
 		transformValueCallback,
 	});
 
@@ -107,5 +109,40 @@ describe('openItemSelector', () => {
 		onSelect({'item-1': {name: 'Item 1'}});
 
 		expect(callback).toHaveBeenCalledWith({name: 'Item 1'});
+	});
+
+	it('passes selected item information to the selection modal', () => {
+		const selectedItem = {
+			classPK: '12345',
+			externalReferenceCode: 'abcd-efgh',
+			title: 'My Item',
+		};
+
+		openModal({
+			selectedItem,
+		});
+
+		expect(openSelectionModal).toHaveBeenCalledWith(
+			expect.objectContaining({
+				selectedData: [
+					{
+						externalReferenceCode:
+							selectedItem.externalReferenceCode,
+						id: selectedItem.classPK,
+						label: selectedItem.title,
+					},
+				],
+			})
+		);
+	});
+
+	it('omits selectedData prop if no items are selected', () => {
+		openModal({});
+
+		expect(openSelectionModal).toHaveBeenCalledWith(
+			expect.not.objectContaining({
+				selectedData: expect.anything(),
+			})
+		);
 	});
 });

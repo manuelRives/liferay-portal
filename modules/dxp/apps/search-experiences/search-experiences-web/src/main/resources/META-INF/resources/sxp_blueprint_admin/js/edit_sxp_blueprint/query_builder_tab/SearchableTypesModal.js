@@ -16,14 +16,13 @@ import sub from '../../utils/language/sub';
 function SearchableTypesModal({
 	initialSelectedTypes,
 	observer,
+	onChangeTypes,
 	onClose,
 	onFetchSearchableTypes,
-	onFrameworkConfigChange,
 	searchableTypes,
 }) {
-	const [modalSelectedTypes, setModalSelectedTypes] = useState(
-		initialSelectedTypes
-	);
+	const [modalSelectedTypes, setModalSelectedTypes] =
+		useState(initialSelectedTypes);
 
 	const searchableTypesClassNames = searchableTypes.map(
 		({className}) => className
@@ -32,9 +31,7 @@ function SearchableTypesModal({
 	const _handleModalDone = () => {
 		onClose();
 
-		onFrameworkConfigChange({
-			searchableAssetTypes: modalSelectedTypes,
-		});
+		onChangeTypes(modalSelectedTypes);
 	};
 
 	const _handleRowCheck = (type) => () => {
@@ -133,9 +130,10 @@ function SearchableTypesModal({
 							<ClayTable.Body>
 								{searchableTypes.map(
 									({className, displayName}) => {
-										const isSelected = modalSelectedTypes.includes(
-											className
-										);
+										const isSelected =
+											modalSelectedTypes.includes(
+												className
+											);
 
 										return (
 											<ClayTable.Row
@@ -180,7 +178,7 @@ function SearchableTypesModal({
 						description={Liferay.Language.get(
 							'an-error-has-occurred-and-we-were-unable-to-load-the-results'
 						)}
-						imgSrc="/o/admin-theme/images/states/empty_state.gif"
+						imgSrc="/o/admin-theme/images/states/empty_state.svg"
 						title={Liferay.Language.get('no-items-were-found')}
 					>
 						<ClayButton
@@ -213,8 +211,8 @@ function SearchableTypesModal({
 export default function ({
 	children,
 	initialSelectedTypes,
+	onChangeTypes,
 	onFetchSearchableTypes,
-	onFrameworkConfigChange,
 	searchableTypes,
 }) {
 	const {observer, onOpenChange, open} = useModal();
@@ -229,9 +227,9 @@ export default function ({
 				<SearchableTypesModal
 					initialSelectedTypes={initialSelectedTypes}
 					observer={observer}
+					onChangeTypes={onChangeTypes}
 					onClose={_handleClose}
 					onFetchSearchableTypes={onFetchSearchableTypes}
-					onFrameworkConfigChange={onFrameworkConfigChange}
 					searchableTypes={searchableTypes}
 				/>
 			)}
