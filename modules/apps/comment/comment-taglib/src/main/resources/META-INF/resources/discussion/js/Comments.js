@@ -184,21 +184,17 @@ export default function Comments({
 			method: 'POST',
 		})
 			.then((response) => {
-				let promise;
-
 				const contentType = response.headers.get('content-type');
 
 				if (
-					contentType &&
-					contentType.indexOf('application/json') !== -1
+					!response.ok ||
+					!contentType ||
+					contentType.indexOf('application/json') === -1
 				) {
-					promise = response.json();
-				}
-				else {
-					promise = response.text();
+					throw new Error('Unexpected response');
 				}
 
-				return promise;
+				return response.json();
 			})
 			.then((response) => {
 				const exception = response.exception;

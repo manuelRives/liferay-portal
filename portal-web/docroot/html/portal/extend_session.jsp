@@ -7,7 +7,11 @@
 
 <%@ include file="/html/portal/init.jsp" %>
 
+<%@ page import="com.liferay.portal.kernel.security.auth.AuthTokenUtil" %>
+
 <%
+response.setHeader("Liferay-Auth-Token", AuthTokenUtil.getToken(request));
+
 String requestedSessionId = request.getRequestedSessionId();
 
 if (Validator.isNotNull(requestedSessionId)) {

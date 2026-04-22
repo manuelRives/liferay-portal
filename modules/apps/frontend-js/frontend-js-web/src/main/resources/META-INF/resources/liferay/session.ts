@@ -153,6 +153,22 @@ export class Session {
 		).then((response) => {
 			if (response.status === 500) {
 				this.expire();
+
+				return;
+			}
+
+			const authToken = response.headers.get('Liferay-Auth-Token');
+
+			if (authToken && authToken !== Liferay.authToken) {
+				Liferay.authToken = authToken;
+
+				document
+					.querySelectorAll<HTMLInputElement>(
+						'input[name="p_auth"]'
+					)
+					.forEach((input) => {
+						input.value = authToken;
+					});
 			}
 		});
 	}
