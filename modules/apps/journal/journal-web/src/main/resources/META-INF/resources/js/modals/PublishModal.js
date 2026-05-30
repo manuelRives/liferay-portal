@@ -50,7 +50,7 @@ export default function PublishModal({
 			}
 		});
 
-		return () => handler.detach();
+		return () => handler?.detach();
 	}, [onClose]);
 
 	const handleButtonClick = () => {
